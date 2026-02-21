@@ -1,6 +1,8 @@
 import json
 from pyspark.sql import SparkSession
-from flask import Flask, request, Response, redirect 
+from pyspark.errors import AnalysisException
+from flask import Flask, request, Response, redirect
+import re
 from pyspark.sql import functions as F
 from pyvis.network import Network
 from enum import Enum
@@ -53,6 +55,7 @@ NODE_STYLE_MAP = {
 # Spark Session
 # ============================================================
 
+
 def open_spark_connect_session():
     os.environ["SPARK_REMOTE"] = "sc://localhost:15002"
     return SparkSession.builder.remote(os.environ["SPARK_REMOTE"]).getOrCreate()
@@ -65,21 +68,21 @@ spark = open_spark_connect_session()
 # Utility Helpers
 # ============================================================
 
+
 def to_utc_timestamp(date_str: str):
     return arrow.get(date_str).replace(tzinfo="Asia/Jerusalem").to("UTC").datetime
 
 
 def format_node_info(file_type: str, file_info: dict):
     return (
-        file_type.upper()
-        + "\n"
-        + "\n".join(f"{k}: {v}" for k, v in file_info.items())
+        file_type.upper() + "\n" + "\n".join(f"{k}: {v}" for k, v in file_info.items())
     )
 
 
 # ============================================================
 # Iceberg Metadata Queries
 # ============================================================
+
 
 def get_table_all_files_info(full_table_name: str):
     all_file_info = spark.sql(f"SELECT * FROM {full_table_name}.entries")
@@ -149,14 +152,13 @@ def load_metadata_and_snapshots(full_table_name: str):
 # Inventory Builder
 # ============================================================
 
+
 def get_linked_table_inventory(full_table_name: str, date_to_view: str = None):
     inventory = []
     referenced_data_files = set()
     processed_manifests = set()
 
-    manifests_to_ignore = discover_baseline_manifests(
-        full_table_name, date_to_view
-    )
+    manifests_to_ignore = discover_baseline_manifests(full_table_name, date_to_view)
 
     df = load_metadata_and_snapshots(full_table_name)
 
@@ -316,31 +318,73 @@ def append_data_files(full_table_name, referenced_data_files, inventory):
 # Sticky UI Injection
 # ============================================================
 
+
 def inject_custom_ui(html: str) -> str:
     sticky_js = """
     <style>
-        body, html { margin:0; padding:0; overflow:hidden; }
+    body, html, .card {
+        margin: 0;
+        padding: 0;
+        overflow: hidden !important; 
+        width: 100%;
+        height: 100%;
+    }
+    center, h1 { display: none !important;}
+    <style>
+        body, html { margin:0; padding:0; overflow:hidden; background-color: #f8fafc; }
+        
         #sticky-info {
-            position: fixed; top: 20px; right: 20px; width: 400px; max-height: 85vh;
-            overflow-y: auto; background: white; border-left: 10px solid #2E86C1;
-            border-radius: 4px; padding: 20px; z-index: 1000;
-            box-shadow: -5px 5px 20px rgba(0,0,0,0.2);
-            font-family: sans-serif; display: none;
+            position: fixed; top: 20px; right: 20px; width: 420px; max-height: 85vh;
+            overflow-y: auto; background: rgba(255, 255, 255, 0.98); 
+            border-left: 12px solid #2E86C1; border-radius: 8px; padding: 25px; 
+            z-index: 1000; box-shadow: -10px 10px 30px rgba(0,0,0,0.15);
+            font-family: 'Inter', -apple-system, sans-serif; display: none;
+            backdrop-filter: blur(5px);
         }
-        .meta-header { font-weight: bold; font-size: 1.2em; margin-bottom: 10px; border-bottom: 1px solid #eee; }
-        .meta-row { margin-bottom: 8px; }
-        .meta-label { font-weight: bold; color: #555; font-size: 0.8em; text-transform: uppercase; display: block; }
-        .meta-value { font-family: monospace; background: #f4f4f4; padding: 4px; border-radius: 3px; word-break: break-all; display: block; }
+
+        .meta-header { 
+            font-weight: 800; font-size: 1.4em; color: #1a202c;
+            margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #edf2f7; 
+            letter-spacing: -0.02em;
+        }
+
+        .meta-row { margin-bottom: 12px; }
+
+        .meta-label { 
+            font-weight: 700; color: #4a5568; font-size: 0.75em; 
+            text-transform: uppercase; display: block; margin-bottom: 4px;
+            letter-spacing: 0.05em;
+        }
+
+        .meta-value { 
+            font-family: 'JetBrains Mono', 'Fira Code', monospace; 
+            background: #2d3748; color: #ebf8ff; padding: 8px 12px; 
+            border-radius: 6px; word-break: break-all; display: block;
+            font-size: 0.9em; line-height: 1.4; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
         #reset-btn {
-            position: fixed; top: 20px; left: 20px; padding: 10px 20px;
-            background: #222; color: #fff; border: none; border-radius: 4px;
-            cursor: pointer; z-index: 2000; font-weight: bold;
+            position: fixed; top: 20px; left: 20px; padding: 12px 24px;
+            background: #1a202c; color: #fff; border: none; border-radius: 6px;
+            cursor: pointer; z-index: 2000; font-weight: 800; font-size: 0.9em;
+            text-transform: uppercase; letter-spacing: 0.05em;
+            transition: all 0.2s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
+
+        #reset-btn:hover { background: #2d3748; transform: translateY(-1px); box-shadow: 0 6px 8px rgba(0,0,0,0.15); }
+        #reset-btn:active { transform: translateY(0); }
+
+        /* Close Button Styling */
+        .close-btn {
+            float: right; cursor: pointer; border: none; background: #edf2f7;
+            border-radius: 50%; width: 30px; height: 30px; font-weight: bold;
+            color: #4a5568; transition: background 0.2s;
+        }
+        .close-btn:hover { background: #e2e8f0; color: #1a202c; }
     </style>
 
     <div id="sticky-info">
-        <button onclick="document.getElementById('sticky-info').style.display='none'" 
-                style="float:right; cursor:pointer; border:none; background:none;">✕</button>
+        <button class="close-btn" onclick="document.getElementById('sticky-info').style.display='none'">✕</button>
         <div id="sticky-content"></div>
     </div>
 
@@ -376,25 +420,30 @@ def inject_custom_ui(html: str) -> str:
         // Update Side Panel
         let nodeData = nodes.get(selectedNodeId);
         let panel = document.getElementById('sticky-info');
-        panel.style.borderColor = nodeData.color;
+        panel.style.borderLeftColor = nodeData.color;
         
         let lines = nodeData.title.split('\\n');
         let contentHtml = '<div class="meta-header">' + lines[0] + '</div>';
         for (let i = 1; i < lines.length; i++) {
             if (!lines[i].includes(':')) continue;
-            let [label, ...val] = lines[i].split(':');
-            contentHtml += `<div class="meta-row"><span class="meta-label">${label}</span><span class="meta-value">${val.join(':')}</span></div>`;
+            let splitIdx = lines[i].indexOf(':');
+            let label = lines[i].substring(0, splitIdx);
+            let val = lines[i].substring(splitIdx + 1);
+            contentHtml += `<div class="meta-row"><span class="meta-label">${label}</span><span class="meta-value">${val}</span></div>`;
         }
         document.getElementById('sticky-content').innerHTML = contentHtml;
         panel.style.display = 'block';
     });
     </script>
     """
+
     return html.replace("</body>", sticky_js + "</body>")
+
 
 # ============================================================
 # Graph Generator (IN MEMORY)
 # ============================================================
+
 
 def generate_graph_html(inventory_list):
 
@@ -402,7 +451,7 @@ def generate_graph_html(inventory_list):
         height="100vh",
         width="100%",
         directed=True,
-        cdn_resources = 'remote'
+        cdn_resources="local",
     )
 
     added_nodes = set()
@@ -434,19 +483,21 @@ def generate_graph_html(inventory_list):
                 net.add_edge(parent, child)
 
     options = {
-      "layout": { "hierarchical": { "enabled": True, "direction": "LR", "nodeSpacing": 150, "levelSeparation": 600 } },
-      "physics": { "enabled": False },
-      "edges": { 
-        "color": "#999",
-        "smooth": { "type": "cubicBezier", "forceDirection": "horizontal" } 
-      },
-      "interaction": { "hover": True, "navigationButtons": True, "multiselect": True },
-      "physics": {
-          "stabilization": {
-            "enabled": True,
-            "iterations": 1000
-          }
-        }
+        "layout": {
+            "hierarchical": {
+                "enabled": True,
+                "direction": "LR",
+                "nodeSpacing": 150,
+                "levelSeparation": 600,
+            }
+        },
+        "physics": {"enabled": False},
+        "edges": {
+            "color": "#999",
+            "smooth": {"type": "cubicBezier", "forceDirection": "horizontal"},
+        },
+        "interaction": {"hover": True, "navigationButtons": True, "multiselect": True},
+        "physics": {"stabilization": {"enabled": True, "iterations": 1000}},
     }
 
     net.set_options(json.dumps(options))
@@ -461,9 +512,9 @@ def generate_graph_html(inventory_list):
 # Routes
 # ============================================================
 
+
 @app.route("/", methods=["GET"])
 def home():
-    # Check if we were redirected here because of an error
     error_flag = request.args.get("error")
     error_script = ""
     if error_flag:
@@ -475,36 +526,21 @@ def home():
         <title>IceGraph</title>
         {error_script}
         <style>
-            body {{ 
-                font-family: sans-serif; background-color: #f0f4f8; 
-                display: flex; justify-content: center; align-items: center; 
-                height: 100vh; margin: 0; 
-            }}
-            .card {{ 
-                background: white; padding: 40px; border-radius: 12px; 
-                box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 350px; 
-            }}
+            body {{ font-family: sans-serif; background-color: #f0f4f8; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }}
+            .card {{ background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 380px; }}
             h2 {{ color: #2E86C1; text-align: center; margin-top: 0; }}
-            input {{ 
-                width: 100%; padding: 12px; margin: 10px 0 20px 0; 
-                border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box;
-            }}
-            button {{ 
-                width: 100%; padding: 14px; background-color: #2E86C1; color: white; 
-                border: none; border-radius: 6px; cursor: pointer; font-weight: bold;
-            }}
+            p {{ font-size: 0.85em; color: #666; text-align: center; margin-bottom: 20px; line-height: 1.4; }}
+            input {{ width: 100%; padding: 12px; margin: 10px 0 20px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }}
+            button {{ width: 100%; padding: 14px; background-color: #2E86C1; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }}
             #loader {{ display: none; text-align: center; margin-top: 20px; color: #2E86C1; }}
-            .spinner {{
-                border: 4px solid #f3f3f3; border-top: 4px solid #2E86C1;
-                border-radius: 50%; width: 25px; height: 25px;
-                animation: spin 1s linear infinite; display: inline-block;
-            }}
+            .spinner {{ border: 4px solid #f3f3f3; border-top: 4px solid #2E86C1; border-radius: 50%; width: 25px; height: 25px; animation: spin 1s linear infinite; display: inline-block; }}
             @keyframes spin {{ 0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }} }}
         </style>
     </head>
     <body>
         <div class="card">
             <h2>IceGraph</h2>
+            <p>Enter a table to visualize its structure. <br><b>Time Filter:</b> Prunes metadata logs, snapshots, and data files added after the selected time.</p>
             <form id="gen-form" method="POST" action="/generate">
                 <label>Table Name</label>
                 <input type="text" name="table_name" placeholder="db.table" required>
@@ -516,7 +552,7 @@ def home():
             </form>
 
             <div id="loader">
-                <div class="spinner"></div> <b>Working...</b>
+                <div class="spinner"></div> <b>Analyzing Lineage...</b>
             </div>
         </div>
 
@@ -530,6 +566,7 @@ def home():
     </html>
     """
 
+
 @app.route("/generate", methods=["POST"])
 def generate():
     table_name = request.form.get("table_name")
@@ -539,8 +576,8 @@ def generate():
         inventory = get_linked_table_inventory(table_name, date_value)
         html = generate_graph_html(inventory)
         return Response(html, mimetype="text/html")
-        
-    except Exception as e:
+
+    except AnalysisException as e:
         print(f"Spark Error: {e}")
         return redirect("/?error=table_not_found")
 
