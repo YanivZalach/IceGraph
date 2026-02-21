@@ -580,15 +580,15 @@ def generate():
         inventory = get_linked_table_inventory(table_name, date_value)
         html = generate_graph_html(inventory)
 
-        html = html.replace(
-            "https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css",
+        html = re.sub(
+            r'https?://[^"]+/bootstrap\.min\.css',
             "/lib/bootstrap/bootstrap.min.css",
+            html,
         )
-
-        # Replace the Bootstrap JS link
-        html = html.replace(
-            "https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js",
+        html = re.sub(
+            r'https?://[^"]+/bootstrap\.bundle\.min\.js',
             "/lib/bootstrap/bootstrap.bundle.min.js",
+            html,
         )
 
         return Response(html, mimetype="text/html")
