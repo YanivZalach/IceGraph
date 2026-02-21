@@ -162,7 +162,7 @@ def get_linked_table_inventory(full_table_name: str, date_to_view: str = None):
     df = load_metadata_and_snapshots(full_table_name)
 
     if date_to_view:
-        cutoff = arrow.get(date_to_view).replace(tzinfo="Asia/Jerusalem")
+        cutoff = to_utc_timestamp(date_to_view)
         df = df.filter(
             F.coalesce(F.col("snapshot_timestamp"), F.col("meta_log_timestamp"))
             >= F.lit(str(cutoff)).cast("timestamp")
@@ -311,53 +311,6 @@ def process_manifests(
         )
 
         processed_manifests.add(m_path)
-        entries = (
-            spark.read.format("avro")
-            .load(m_path)
-            .select(
-                F.col("data_file.file_size_in_bytes").alias("size"),
-                F.col("data_file.record_count").alias("rows"),
-                F.col("data_file.content").alias("content_type"),
-                F.col("data_file.file_path").alias("path"),
-            )
-            .collect()
-        )
-
-        # Calculate Aggregates
-        file_paths = [e["path"] for e in entries]
-        total_rows = sum(e["rows"] for e in entries)
-        total_size_bytes = sum(e["size"] for e in entries)
-
-        # Count Data files vs Delete files
-        data_file_count = sum(1 for e in entries if e["content_type"] == 0)
-        delete_file_count = sum(1 for e in entries if e["content_type"] > 0)
-
-        referenced_data_files.update(file_paths)
-
-        inventory.append(
-            {
-                "type": FileType.MANIFEST.value,
-                "file_path": m_path,
-                "file_info": {
-                    "added_snapshot_id": m_row["added_snapshot_id"],
-                    "pointed_files_summary": {
-                        "total_files": len(entries),
-                        "data_files": data_file_count,
-                        "delete_files": delete_file_count,
-                        "total_rows": f"{total_rows:,}",
-                        "total_size_mb": round(total_size_bytes / (1024 * 1024), 2),
-                        "avg_file_size_kb": (
-                            round((total_size_bytes / len(entries)) / 1024, 2)
-                            if entries
-                            else 0
-                        ),
-                    },
-                    "child_files": file_paths,
-                },
-            }
-        )
-
-        processed_manifests.add(m_path)
 
 
 def append_data_files(full_table_name, referenced_data_files, inventory):
@@ -396,57 +349,56 @@ def inject_custom_ui(html: str) -> str:
         height: 100%;
     }
     center, h1 { display: none !important;}
-    <style>
-        body, html { margin:0; padding:0; overflow:hidden; background-color: #f8fafc; }
-        
-        #sticky-info {
-            position: fixed; top: 20px; right: 20px; width: 420px; max-height: 85vh;
-            overflow-y: auto; background: rgba(255, 255, 255, 0.98); 
-            border-left: 12px solid #2E86C1; border-radius: 8px; padding: 25px; 
-            z-index: 1000; box-shadow: -10px 10px 30px rgba(0,0,0,0.15);
-            font-family: 'Inter', -apple-system, sans-serif; display: none;
-            backdrop-filter: blur(5px);
-        }
+    body, html { margin:0; padding:0; overflow:hidden; background-color: #f8fafc; }
+    
+    #sticky-info {
+        position: fixed; top: 20px; right: 20px; width: 420px; max-height: 85vh;
+        overflow-y: auto; background: rgba(255, 255, 255, 0.98); 
+        border-left: 12px solid #2E86C1; border-radius: 8px; padding: 25px; 
+        z-index: 1000; box-shadow: -10px 10px 30px rgba(0,0,0,0.15);
+        font-family: 'Inter', -apple-system, sans-serif; display: none;
+        backdrop-filter: blur(5px);
+    }
 
-        .meta-header { 
-            font-weight: 800; font-size: 1.4em; color: #1a202c;
-            margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #edf2f7; 
-            letter-spacing: -0.02em;
-        }
+    .meta-header { 
+        font-weight: 800; font-size: 1.4em; color: #1a202c;
+        margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #edf2f7; 
+        letter-spacing: -0.02em;
+    }
 
-        .meta-row { margin-bottom: 12px; }
+    .meta-row { margin-bottom: 12px; }
 
-        .meta-label { 
-            font-weight: 700; color: #4a5568; font-size: 0.75em; 
-            text-transform: uppercase; display: block; margin-bottom: 4px;
-            letter-spacing: 0.05em;
-        }
+    .meta-label { 
+        font-weight: 700; color: #4a5568; font-size: 0.75em; 
+        text-transform: uppercase; display: block; margin-bottom: 4px;
+        letter-spacing: 0.05em;
+    }
 
-        .meta-value { 
-            font-family: 'JetBrains Mono', 'Fira Code', monospace; 
-            background: #2d3748; color: #ebf8ff; padding: 8px 12px; 
-            border-radius: 6px; word-break: break-all; display: block;
-            font-size: 0.9em; line-height: 1.4; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
-        }
+    .meta-value { 
+        font-family: 'JetBrains Mono', 'Fira Code', monospace; 
+        background: #2d3748; color: #ebf8ff; padding: 8px 12px; 
+        border-radius: 6px; word-break: break-all; display: block;
+        font-size: 0.9em; line-height: 1.4; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+    }
 
-        #reset-btn {
-            position: fixed; top: 20px; left: 20px; padding: 12px 24px;
-            background: #1a202c; color: #fff; border: none; border-radius: 6px;
-            cursor: pointer; z-index: 2000; font-weight: 800; font-size: 0.9em;
-            text-transform: uppercase; letter-spacing: 0.05em;
-            transition: all 0.2s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
+    #reset-btn {
+        position: fixed; top: 20px; left: 20px; padding: 12px 24px;
+        background: #1a202c; color: #fff; border: none; border-radius: 6px;
+        cursor: pointer; z-index: 2000; font-weight: 800; font-size: 0.9em;
+        text-transform: uppercase; letter-spacing: 0.05em;
+        transition: all 0.2s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
 
-        #reset-btn:hover { background: #2d3748; transform: translateY(-1px); box-shadow: 0 6px 8px rgba(0,0,0,0.15); }
-        #reset-btn:active { transform: translateY(0); }
+    #reset-btn:hover { background: #2d3748; transform: translateY(-1px); box-shadow: 0 6px 8px rgba(0,0,0,0.15); }
+    #reset-btn:active { transform: translateY(0); }
 
-        /* Close Button Styling */
-        .close-btn {
-            float: right; cursor: pointer; border: none; background: #edf2f7;
-            border-radius: 50%; width: 30px; height: 30px; font-weight: bold;
-            color: #4a5568; transition: background 0.2s;
-        }
-        .close-btn:hover { background: #e2e8f0; color: #1a202c; }
+    /* Close Button Styling */
+    .close-btn {
+        float: right; cursor: pointer; border: none; background: #edf2f7;
+        border-radius: 50%; width: 30px; height: 30px; font-weight: bold;
+        color: #4a5568; transition: background 0.2s;
+    }
+    .close-btn:hover { background: #e2e8f0; color: #1a202c; }
     </style>
 
     <div id="sticky-info">
@@ -557,7 +509,6 @@ def generate_graph_html(inventory_list):
                 "levelSeparation": 600,
             }
         },
-        "physics": {"enabled": False},
         "edges": {
             "color": "#999",
             "smooth": {"type": "cubicBezier", "forceDirection": "horizontal"},
