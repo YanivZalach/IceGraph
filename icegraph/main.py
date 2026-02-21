@@ -272,11 +272,27 @@ def process_manifests(
         entries = (
             spark.read.format("avro")
             .load(m_path)
-            .select(F.col("data_file.file_path").alias("path"))
+            .select(
+                F.col("data_file.file_size_in_bytes").alias("size"),
+                F.col("data_file.record_count").alias("rows"),
+                F.col("data_file.content").alias("content_type"),
+                F.col("data_file.partition").alias("partition"),
+                F.col("data_file.file_path").alias("path"),
+            )
             .collect()
         )
 
         file_paths = [e["path"] for e in entries]
+        total_rows = sum(e["rows"] for e in entries)
+        total_size_bytes = sum(e["size"] for e in entries)
+
+        unique_partitions = set()
+        for e in entries:
+            if e["partition"]:
+                p_dict = e["partition"].asDict()
+                p_str = ", ".join([f"{k}={v}" for k, v in p_dict.items()])
+                unique_partitions.add(p_str)
+
         referenced_data_files.update(file_paths)
 
         inventory.append(
@@ -285,6 +301,57 @@ def process_manifests(
                 "file_path": m_path,
                 "file_info": {
                     "added_snapshot_id": m_row["added_snapshot_id"],
+                    "total_indexed_files": len(entries),
+                    "total_indexed_rows": f"{total_rows:,}",
+                    "total_indexed_size_mb": round(total_size_bytes / (1024 * 1024), 2),
+                    "indexed_partitions": list(unique_partitions),
+                    "child_files": file_paths,
+                },
+            }
+        )
+
+        processed_manifests.add(m_path)
+        entries = (
+            spark.read.format("avro")
+            .load(m_path)
+            .select(
+                F.col("data_file.file_size_in_bytes").alias("size"),
+                F.col("data_file.record_count").alias("rows"),
+                F.col("data_file.content").alias("content_type"),
+                F.col("data_file.file_path").alias("path"),
+            )
+            .collect()
+        )
+
+        # Calculate Aggregates
+        file_paths = [e["path"] for e in entries]
+        total_rows = sum(e["rows"] for e in entries)
+        total_size_bytes = sum(e["size"] for e in entries)
+
+        # Count Data files vs Delete files
+        data_file_count = sum(1 for e in entries if e["content_type"] == 0)
+        delete_file_count = sum(1 for e in entries if e["content_type"] > 0)
+
+        referenced_data_files.update(file_paths)
+
+        inventory.append(
+            {
+                "type": FileType.MANIFEST.value,
+                "file_path": m_path,
+                "file_info": {
+                    "added_snapshot_id": m_row["added_snapshot_id"],
+                    "pointed_files_summary": {
+                        "total_files": len(entries),
+                        "data_files": data_file_count,
+                        "delete_files": delete_file_count,
+                        "total_rows": f"{total_rows:,}",
+                        "total_size_mb": round(total_size_bytes / (1024 * 1024), 2),
+                        "avg_file_size_kb": (
+                            round((total_size_bytes / len(entries)) / 1024, 2)
+                            if entries
+                            else 0
+                        ),
+                    },
                     "child_files": file_paths,
                 },
             }
