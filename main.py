@@ -1,4 +1,6 @@
+import json
 from pyspark.sql import SparkSession
+from flask import Flask, request, Response, redirect 
 from pyspark.sql import functions as F
 from pyvis.network import Network
 from enum import Enum
@@ -6,6 +8,11 @@ import arrow
 import pandas as pd
 import os
 
+# ============================================================
+# Flask App
+# ============================================================
+
+app = Flask(__name__)
 
 # ============================================================
 # Configuration
@@ -306,239 +313,241 @@ def append_data_files(full_table_name, referenced_data_files, inventory):
 
 
 # ============================================================
-# Graph Generator
+# Sticky UI Injection
 # ============================================================
 
-def generate_interactive_tree(inventory_list):
-    net = Network(
-        height="100vh",
-        width="100%",
-        bgcolor="#ffffff",
-        font_color="black",
-        directed=True,
-    )
-
-    added_nodes = set()
-
-    # ------------------ Add Nodes ------------------
-    for item in inventory_list:
-        path = item.get("file_path")
-        f_type = item.get("type")
-
-        if not path or not f_type:
-            continue
-
-        name = os.path.basename(path)
-        file_info = item.get("file_info", {})
-        color, level = NODE_STYLE_MAP.get(f_type, ("#CB4335", 2))
-
-        net.add_node(
-            path,
-            label=name,
-            title=format_node_info(f_type, file_info),
-            color=color,
-            level=level,
-            shape="box",
-            margin=10,
-            font={"face": "monospace", "size": 12, "color": "white"},
-            shapeProperties={"borderRadius": 6},
-        )
-
-        added_nodes.add(path)
-
-    # ------------------ Add Edges ------------------
-    for item in inventory_list:
-        parent = item.get("file_path")
-        children = item.get("file_info", {}).get("child_files", [])
-
-        for child in children:
-            if parent in added_nodes and child in added_nodes:
-                net.add_edge(parent, child)
-
-    # ------------------ Options ------------------
-    net.set_options("""
-    var options = {
-      "layout": { "hierarchical": { "enabled": true, "direction": "LR", "nodeSpacing": 150, "levelSeparation": 600 } },
-      "physics": { "enabled": false },
-      "edges": { 
-        "color": "#999",
-        "smooth": { "type": "cubicBezier", "forceDirection": "horizontal" } 
-      },
-      "interaction": { "hover": true, "navigationButtons": true, "multiselect": true }
-    }
-    """)
-
-    output_path = "iceberg_inventory_tree.html"
-    net.write_html(output_path)
-    append_custom_ui(output_path)
-
-    print(f"Success! File: {os.path.abspath(output_path)}")
-
-
-def append_custom_ui(output_path):
+def inject_custom_ui(html: str) -> str:
     sticky_js = """
     <style>
-        body, html, .card {
-            margin: 0;
-            padding: 0;
-            overflow: hidden !important; 
-            width: 100%;
-            height: 100%;
-        }
-        center, h1 { display: none !important;}
-
+        body, html { margin:0; padding:0; overflow:hidden; }
         #sticky-info {
-            position: fixed; top: 20px; right: 20px; width: 450px; max-height: 80vh;
-            overflow-y: auto; background: #ffffff; border-left: 10px solid #2E86C1;
-            border-radius: 4px; padding: 25px; z-index: 1000;
-            box-shadow: -5px 5px 20px rgba(0,0,0,0.15);
-            font-family: sans-serif;
-            display: none;
+            position: fixed; top: 20px; right: 20px; width: 400px; max-height: 85vh;
+            overflow-y: auto; background: white; border-left: 10px solid #2E86C1;
+            border-radius: 4px; padding: 20px; z-index: 1000;
+            box-shadow: -5px 5px 20px rgba(0,0,0,0.2);
+            font-family: sans-serif; display: none;
         }
-
-        .meta-header {
-            font-weight: bold;
-            font-size: 1.3em;
-            margin-bottom: 15px;
-            border-bottom: 2px solid #eee;
-        }
-
-        .meta-row {
-            margin-bottom: 8px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .meta-label {
-            font-weight: bold;
-            color: #555;
-            font-size: 0.85em;
-            text-transform: uppercase;
-        }
-
-        .meta-value {
-            font-family: 'Courier New', monospace;
-            background: #f4f4f4;
-            padding: 6px;
-            border-radius: 4px;
-            word-break: break-all;
-        }
-
+        .meta-header { font-weight: bold; font-size: 1.2em; margin-bottom: 10px; border-bottom: 1px solid #eee; }
+        .meta-row { margin-bottom: 8px; }
+        .meta-label { font-weight: bold; color: #555; font-size: 0.8em; text-transform: uppercase; display: block; }
+        .meta-value { font-family: monospace; background: #f4f4f4; padding: 4px; border-radius: 3px; word-break: break-all; display: block; }
         #reset-btn {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            padding: 12px 24px; 
-            background: #222;
-            color: #fff;
-            border: none;
-            border-radius: 4px; 
-            cursor: pointer;
-            z-index: 2000;
-            font-family: sans-serif;
-            font-weight: bold;
+            position: fixed; top: 20px; left: 20px; padding: 10px 20px;
+            background: #222; color: #fff; border: none; border-radius: 4px;
+            cursor: pointer; z-index: 2000; font-weight: bold;
         }
     </style>
 
     <div id="sticky-info">
         <button onclick="document.getElementById('sticky-info').style.display='none'" 
-            style="float:right; cursor:pointer; border:none; background:none; font-size:20px;">
-            ✕
-        </button>
+                style="float:right; cursor:pointer; border:none; background:none;">✕</button>
         <div id="sticky-content"></div>
     </div>
 
     <button id="reset-btn" onclick="resetView()">RESET FULL VIEW</button>
 
-    <script type="text/javascript">
-
+    <script>
     function resetView() {
-        let allNodes = nodes.get();
-        allNodes.forEach(node => { node.hidden = false; });
-        nodes.update(allNodes);
-
-        let allEdges = edges.get();
-        allEdges.forEach(edge => { edge.hidden = false; });
-        edges.update(allEdges);
-
+        nodes.update(nodes.get().map(n => { n.hidden = false; return n; }));
+        edges.update(edges.get().map(e => { e.hidden = false; return e; }));
         document.getElementById('sticky-info').style.display = 'none';
     }
 
     network.on("click", function(params) {
+        if (params.nodes.length === 0) return;
+        
+        let selectedNodeId = params.nodes[0];
+        let relatedNodes = new Set([selectedNodeId]);
 
-        if (params.nodes.length === 0) {
-            return;
-        }
-
-        let selectedNode = params.nodes[0];
-        let relatedNodes = new Set();
-        relatedNodes.add(selectedNode);
-
-        function findConnected(nodeId, direction) {
-            let connected = (direction === 'out') 
-                ? network.getConnectedNodes(nodeId, 'to')
-                : network.getConnectedNodes(nodeId, 'from');
-
-            connected.forEach(id => {
+        function traverse(nodeId, direction) {
+            network.getConnectedNodes(nodeId, direction).forEach(id => {
                 if (!relatedNodes.has(id)) {
                     relatedNodes.add(id);
-                    findConnected(id, direction);
+                    traverse(id, direction);
                 }
             });
         }
+        traverse(selectedNodeId, 'to');
+        traverse(selectedNodeId, 'from');
 
-        findConnected(selectedNode, 'out');
-        findConnected(selectedNode, 'in');
+        nodes.update(nodes.get().map(n => { n.hidden = !relatedNodes.has(n.id); return n; }));
+        edges.update(edges.get().map(e => { e.hidden = !(relatedNodes.has(e.from) && relatedNodes.has(e.to)); return e; }));
 
-        let allNodes = nodes.get();
-        allNodes.forEach(node => {
-            node.hidden = !relatedNodes.has(node.id);
-        });
-        nodes.update(allNodes);
-
-        let allEdges = edges.get();
-        allEdges.forEach(edge => {
-            edge.hidden = !(relatedNodes.has(edge.from) && relatedNodes.has(edge.to));
-        });
-        edges.update(allEdges);
-
-        var nodeData = nodes.get(selectedNode);
-        var panel = document.getElementById('sticky-info');
+        // Update Side Panel
+        let nodeData = nodes.get(selectedNodeId);
+        let panel = document.getElementById('sticky-info');
         panel.style.borderColor = nodeData.color;
-
+        
         let lines = nodeData.title.split('\\n');
-        let html = '<div class="meta-header">' + lines[0] + '</div>';
-
+        let contentHtml = '<div class="meta-header">' + lines[0] + '</div>';
         for (let i = 1; i < lines.length; i++) {
-            if (!lines[i].trim()) continue;
-            let parts = lines[i].split(':');
-            html += '<div class="meta-row">';
-            html += '<span class="meta-label">' + parts[0] + '</span>';
-            html += '<span class="meta-value">' + (parts.slice(1).join(':') || '') + '</span>';
-            html += '</div>';
+            if (!lines[i].includes(':')) continue;
+            let [label, ...val] = lines[i].split(':');
+            contentHtml += `<div class="meta-row"><span class="meta-label">${label}</span><span class="meta-value">${val.join(':')}</span></div>`;
         }
-
-        document.getElementById('sticky-content').innerHTML = html;
+        document.getElementById('sticky-content').innerHTML = contentHtml;
         panel.style.display = 'block';
     });
-
     </script>
     """
+    return html.replace("</body>", sticky_js + "</body>")
 
-    with open(output_path, "r", encoding="utf-8") as f:
-        html = f.read()
+# ============================================================
+# Graph Generator (IN MEMORY)
+# ============================================================
 
-    html = html.replace("</body>", sticky_js + "\n</body>")
+def generate_graph_html(inventory_list):
 
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write(html)
+    net = Network(
+        height="100vh",
+        width="100%",
+        directed=True,
+        cdn_resources = 'remote'
+    )
+
+    added_nodes = set()
+
+    for item in inventory_list:
+        path = item.get("file_path")
+        f_type = item.get("type")
+        if not path or not f_type:
+            continue
+
+        color, level = NODE_STYLE_MAP.get(f_type, ("#CB4335", 2))
+
+        net.add_node(
+            path,
+            label=os.path.basename(path),
+            title=format_node_info(f_type, item.get("file_info", {})),
+            color=color,
+            level=level,
+            shape="box",
+        )
+
+        added_nodes.add(path)
+
+    for item in inventory_list:
+        parent = item.get("file_path")
+        children = item.get("file_info", {}).get("child_files", [])
+        for child in children:
+            if parent in added_nodes and child in added_nodes:
+                net.add_edge(parent, child)
+
+    options = {
+      "layout": { "hierarchical": { "enabled": True, "direction": "LR", "nodeSpacing": 150, "levelSeparation": 600 } },
+      "physics": { "enabled": False },
+      "edges": { 
+        "color": "#999",
+        "smooth": { "type": "cubicBezier", "forceDirection": "horizontal" } 
+      },
+      "interaction": { "hover": True, "navigationButtons": True, "multiselect": True },
+      "physics": {
+          "stabilization": {
+            "enabled": True,
+            "iterations": 1000
+          }
+        }
+    }
+
+    net.set_options(json.dumps(options))
+
+    html = net.generate_html()  # 🔥 IN MEMORY
+    html = inject_custom_ui(html)
+
+    return html
 
 
 # ============================================================
-# Execution
+# Routes
+# ============================================================
+
+@app.route("/", methods=["GET"])
+def home():
+    # Check if we were redirected here because of an error
+    error_flag = request.args.get("error")
+    error_script = ""
+    if error_flag:
+        error_script = "<script>alert('Error: Could not find or access the Iceberg table. Please check the name and try again.');</script>"
+
+    return f"""
+    <html>
+    <head>
+        <title>IceGraph</title>
+        {error_script}
+        <style>
+            body {{ 
+                font-family: sans-serif; background-color: #f0f4f8; 
+                display: flex; justify-content: center; align-items: center; 
+                height: 100vh; margin: 0; 
+            }}
+            .card {{ 
+                background: white; padding: 40px; border-radius: 12px; 
+                box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 350px; 
+            }}
+            h2 {{ color: #2E86C1; text-align: center; margin-top: 0; }}
+            input {{ 
+                width: 100%; padding: 12px; margin: 10px 0 20px 0; 
+                border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box;
+            }}
+            button {{ 
+                width: 100%; padding: 14px; background-color: #2E86C1; color: white; 
+                border: none; border-radius: 6px; cursor: pointer; font-weight: bold;
+            }}
+            #loader {{ display: none; text-align: center; margin-top: 20px; color: #2E86C1; }}
+            .spinner {{
+                border: 4px solid #f3f3f3; border-top: 4px solid #2E86C1;
+                border-radius: 50%; width: 25px; height: 25px;
+                animation: spin 1s linear infinite; display: inline-block;
+            }}
+            @keyframes spin {{ 0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }} }}
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <h2>IceGraph</h2>
+            <form id="gen-form" method="POST" action="/generate">
+                <label>Table Name</label>
+                <input type="text" name="table_name" placeholder="db.table" required>
+
+                <label>View As Of</label>
+                <input type="datetime-local" name="date">
+
+                <button type="submit" id="submit-btn">Generate Graph</button>
+            </form>
+
+            <div id="loader">
+                <div class="spinner"></div> <b>Working...</b>
+            </div>
+        </div>
+
+        <script>
+            document.getElementById('gen-form').onsubmit = function() {{
+                document.getElementById('submit-btn').style.display = 'none';
+                document.getElementById('loader').style.display = 'block';
+            }};
+        </script>
+    </body>
+    </html>
+    """
+
+@app.route("/generate", methods=["POST"])
+def generate():
+    table_name = request.form.get("table_name")
+    date_value = request.form.get("date")
+
+    try:
+        inventory = get_linked_table_inventory(table_name, date_value)
+        html = generate_graph_html(inventory)
+        return Response(html, mimetype="text/html")
+        
+    except Exception as e:
+        print(f"Spark Error: {e}")
+        return redirect("/?error=table_not_found")
+
+
+# ============================================================
+# Run
 # ============================================================
 
 if __name__ == "__main__":
-    full_table_name = "default.test_table"
-    inventory = get_linked_table_inventory(full_table_name,"2026-02-21 11")
-    generate_interactive_tree(inventory)
+    app.run(debug=True, port=5000)
