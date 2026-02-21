@@ -4,6 +4,8 @@
 
 > **Opinionated Design**: IceGraph is built exclusively for **Spark Connect** backends.
 
+![IceGraph Visualization](images/example.png)
+
 ## 🛠 Features
 
 * 🕰 **Time-Travel**: View the physical state of your table as of any `datetime`.
