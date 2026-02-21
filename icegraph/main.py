@@ -41,15 +41,14 @@ class FileType(Enum):
 # ============================================================
 
 NODE_STYLE_MAP = {
-    FileType.METADATA.value: ("#7D3C98", -1),
-    FileType.SNAPSHOT.value: ("#2E86C1", 0),
+    FileType.METADATA.value: ("#BF5AF2", -1),
+    FileType.SNAPSHOT.value: ("#3ABEF9", 0),
     FileType.MANIFEST.value: ("#F39C12", 1),
-    FileType.DATA.value: ("#28B463", 2),
-    FileType.POSITION_DELETE.value: ("#CB4335", 2),
-    FileType.EQUALITY_DELETE.value: ("#CB4335", 2),
-    FileType.UNKNOWN.value: ("#CB4335", 2),
+    FileType.DATA.value: ("#2ECC71", 2),
+    FileType.POSITION_DELETE.value: ("#E74C3C", 2),
+    FileType.EQUALITY_DELETE.value: ("#E74C3C", 2),
+    FileType.UNKNOWN.value: ("#95A5A6", 2),
 }
-
 
 # ============================================================
 # Spark Session
@@ -580,6 +579,17 @@ def generate():
     try:
         inventory = get_linked_table_inventory(table_name, date_value)
         html = generate_graph_html(inventory)
+
+        html = html.replace(
+            "https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css",
+            "/lib/bootstrap/bootstrap.min.css",
+        )
+
+        # Replace the Bootstrap JS link
+        html = html.replace(
+            "https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js",
+            "/lib/bootstrap/bootstrap.bundle.min.js",
+        )
 
         return Response(html, mimetype="text/html")
 
