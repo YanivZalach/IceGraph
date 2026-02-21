@@ -1,7 +1,7 @@
 import json
 from pyspark.sql import SparkSession
 from pyspark.errors import AnalysisException
-from flask import Flask, request, Response, redirect
+from flask import Flask, request, Response, redirect, send_from_directory
 import re
 from pyspark.sql import functions as F
 from pyvis.network import Network
@@ -14,7 +14,7 @@ import os
 # Flask App
 # ============================================================
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path="/static")
 
 # ============================================================
 # Configuration
@@ -513,6 +513,11 @@ def generate_graph_html(inventory_list):
 # ============================================================
 
 
+@app.route("/lib/<path:path>")
+def send_lib(path):
+    return send_from_directory("lib", path)
+
+
 @app.route("/", methods=["GET"])
 def home():
     error_flag = request.args.get("error")
@@ -575,6 +580,7 @@ def generate():
     try:
         inventory = get_linked_table_inventory(table_name, date_value)
         html = generate_graph_html(inventory)
+
         return Response(html, mimetype="text/html")
 
     except AnalysisException as e:
