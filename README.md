@@ -32,6 +32,7 @@ python tests/create_mock_tables.py
 ```
 
 ### 3. Run
+Be in the icegraph inner directory:
 
 ```bash
 python main.py
