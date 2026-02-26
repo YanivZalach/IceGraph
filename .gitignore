@@ -1,3 +1,4 @@
 tests/data
+.idea
 tests/jars
 */__pycache__

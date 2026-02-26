@@ -1,0 +1,125 @@
+<style>
+    /* 1. Global Layout Fixes */
+    body, html {
+        margin: 0; padding: 0; height: 100vh; width: 100vw;
+        overflow: hidden; background-color: #f8fafc;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    center, h1 { display: none !important; }
+
+    /* 2. Reset Button (Back to Top-Left) */
+    #reset-btn {
+        position: fixed; top: 20px; left: 20px; padding: 12px 20px;
+        background: #1a202c; color: white; border: none; border-radius: 8px;
+        cursor: pointer; z-index: 9999; font-weight: 700; font-size: 0.85rem;
+        text-transform: uppercase; letter-spacing: 0.05em;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        transition: transform 0.2s, background 0.2s;
+    }
+    #reset-btn:hover { background: #2d3748; transform: translateY(-1px); }
+
+    /* 3. The Sticky Info Panel */
+    #sticky-info {
+        position: fixed; top: 20px; right: 20px; width: 420px; max-height: 85vh;
+        overflow-y: auto; background: rgba(255, 255, 255, 0.98);
+        border-left: 12px solid #2E86C1; border-radius: 12px; padding: 25px;
+        z-index: 1000; box-shadow: -10px 10px 30px rgba(0,0,0,0.1);
+        display: none; backdrop-filter: blur(8px);
+    }
+
+    /* 4. The "Pretty" Close Button */
+    .close-btn {
+        position: absolute; top: 15px; right: 15px;
+        width: 32px; height: 32px; border-radius: 50%;
+        background: #f1f5f9; color: #64748b; border: none;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 18px; cursor: pointer; transition: all 0.2s;
+    }
+    .close-btn:hover { background: #e2e8f0; color: #0f172a; transform: rotate(90deg); }
+
+    /* 5. Meta Content Styling */
+    .meta-header {
+        font-weight: 800; font-size: 1.3em; color: #0f172a;
+        margin-bottom: 18px; padding-bottom: 12px; border-bottom: 2px solid #f1f5f9;
+    }
+    .meta-row { margin-bottom: 14px; }
+    .meta-label {
+        font-weight: 700; color: #64748b; font-size: 0.7rem;
+        text-transform: uppercase; display: block; margin-bottom: 4px;
+    }
+    .meta-value {
+        font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        background: #1e293b; color: #ffffff; padding: 10px 14px;
+        border-radius: 8px; font-size: 0.85rem; word-break: break-all; display: block;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+</style>
+
+<div id="sticky-info">
+    <button class="close-btn" onclick="document.getElementById('sticky-info').style.display='none'">✕</button>
+    <div id="sticky-content"></div>
+</div>
+
+<button id="reset-btn" onclick="resetView()">Reset Full View</button>
+
+<script>
+function resetView() {
+    nodes.update(nodes.get().map(n => { n.hidden = false; return n; }));
+    edges.update(edges.get().map(e => { e.hidden = false; return e; }));
+    document.getElementById('sticky-info').style.display = 'none';
+    network.fit();
+}
+
+network.on("click", function(params) {
+    if (params.nodes.length === 0) return;
+
+    let selectedNodeId = params.nodes[0];
+    let nodeData = nodes.get(selectedNodeId);
+
+    // Lineage Traversal
+    let relatedNodes = new Set([selectedNodeId]);
+    function traverse(nodeId, direction) {
+        network.getConnectedNodes(nodeId, direction).forEach(id => {
+            if (!relatedNodes.has(id)) {
+                relatedNodes.add(id);
+                traverse(id, direction);
+            }
+        });
+    }
+    traverse(selectedNodeId, 'to');
+    traverse(selectedNodeId, 'from');
+
+    // Update visibility
+    nodes.update(nodes.get().map(n => { n.hidden = !relatedNodes.has(n.id); return n; }));
+    edges.update(edges.get().map(e => { e.hidden = !(relatedNodes.has(e.from) && relatedNodes.has(e.to)); return e; }));
+
+    // Update Panel
+    let panel = document.getElementById('sticky-info');
+    panel.style.borderLeftColor = nodeData.color;
+
+    // Parsing title (handles both escaped and literal newlines)
+    let rawTitle = nodeData.title || "";
+    let lines = rawTitle.split(/\\n|\n/);
+
+    let contentHtml = `<div class="meta-header">${lines[0]}</div>`;
+    for (let i = 1; i < lines.length; i++) {
+        let line = lines[i].trim();
+        if (!line.includes(':')) continue;
+
+        let splitIdx = line.indexOf(':');
+        let label = line.substring(0, splitIdx);
+        let val = line.substring(splitIdx + 1);
+
+        contentHtml += `
+            <div class="meta-row">
+                <span class="meta-label">${label}</span>
+                <span class="meta-value">${val}</span>
+            </div>`;
+    }
+
+    document.getElementById('sticky-content').innerHTML = contentHtml;
+    panel.style.display = 'block';
+});
+
+</script>
