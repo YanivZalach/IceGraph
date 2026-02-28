@@ -26,7 +26,15 @@ def to_utc_timestamp(date_str: str):
     return arrow.get(date_str).replace(tzinfo="Asia/Jerusalem").to("UTC").datetime
 
 
-def format_node_info(file_type: str, file_info: dict):
-    return (
-            file_type.upper() + "\n" + "\n".join(f"{k}: {v}" for k, v in file_info.items())
+def format_node_info(file_info: dict):
+    formatted_info = file_info["type"].upper() + "\n"
+    formatted_info += "\n".join(
+        f"{key}: {value}"
+        for key, value in file_info.items()
+        if key not in ["type", "child_files"]
     )
+    if "child_files" in file_info.keys():
+        print("inhere")
+        formatted_info += "\nchild_files:" + ",".join(file_info["child_files"])
+
+    return formatted_info

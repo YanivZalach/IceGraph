@@ -2,6 +2,7 @@ from typing import Optional, List, Dict, Any, Set
 
 from pyspark.sql import SparkSession, functions as F
 
+from constants import FileType
 from utils import to_utc_timestamp
 
 
@@ -33,8 +34,11 @@ class IcebergInventoryBuilder:
             )
 
         rows = df.sort(F.desc("meta_log_timestamp")).collect()
-        for row in rows:
-            self._process_row(row)
+        for index, row in enumerate(rows):
+            is_main_metadata_file = False
+            if index == 0:
+                is_main_metadata_file = True
+            self._process_row(row, is_main_metadata_file)
 
         return self.inventory
 
@@ -67,7 +71,7 @@ class IcebergInventoryBuilder:
         ).collect()
         return {m["path"] for m in old_manifests}
 
-    def _process_row(self, row):
+    def _process_row(self, row, is_main_metadata_file):
         row_dict = row.asDict()
         snap_id = row_dict.get("snapshot_id")
         meta_file = row_dict.get("file")
@@ -76,18 +80,19 @@ class IcebergInventoryBuilder:
         if meta_file:
             self.inventory.append(
                 {
-                    "type": "metadata",
+                    "type": (
+                        FileType.MAIN_METADATA.value
+                        if is_main_metadata_file
+                        else FileType.METADATA.value
+                    ),
                     "file_path": meta_file,
-                    "file_info": {
-                        "file_path": meta_file,
-                        "timestamp": str(row_dict.get("meta_log_timestamp")),
-                        "snapshot_id": snap_id,
-                        "child_files": (
-                            [row_dict.get("manifest_list")]
-                            if row_dict.get("manifest_list")
-                            else []
-                        ),
-                    },
+                    "timestamp": str(row_dict.get("meta_log_timestamp")),
+                    "snapshot_id": snap_id,
+                    "child_files": (
+                        [row_dict.get("manifest_list")]
+                        if row_dict.get("manifest_list")
+                        else []
+                    ),
                 }
             )
 
@@ -99,14 +104,11 @@ class IcebergInventoryBuilder:
 
             self.inventory.append(
                 {
-                    "type": "snapshot",
+                    "type": FileType.SNAPSHOT.value,
                     "file_path": row_dict["manifest_list"],
-                    "file_info": {
-                        "file_path": row_dict["manifest_list"],
-                        "snapshot_id": snap_id,
-                        "operation": row_dict["operation"],
-                        "child_files": [m["path"] for m in manifests],
-                    },
+                    "snapshot_id": snap_id,
+                    "operation": row_dict["operation"],
+                    "child_files": [m["path"] for m in manifests],
                 }
             )
             self._process_manifests(manifests)
@@ -139,14 +141,17 @@ class IcebergInventoryBuilder:
 
                 # DATA FILE NODE (only add if we haven't seen it yet)
                 if f_path not in self.processed_data_files:
-                    f_type = "data" if f.content == 0 else "delete"
+                    f_type = (
+                        FileType.DATA.value if f.content == 0 else FileType.DELETE.value
+                    )
 
                     # Pivot logic: Create a master dictionary of column metrics
                     column_metrics = {}
 
                     # helper to populate the pivot table
                     def update_col_metric(source_list, metric_name):
-                        if not source_list: return
+                        if not source_list:
+                            return
                         for row in source_list:
                             col_id = row.key
                             if col_id not in column_metrics:
@@ -159,10 +164,9 @@ class IcebergInventoryBuilder:
                     update_col_metric(f.nan_value_counts, "nan_count")
                     update_col_metric(f.value_counts, "total_values")
 
-                    self.inventory.append({
-                        "type": f_type,
-                        "file_path": f_path,
-                        "file_info": {
+                    self.inventory.append(
+                        {
+                            "type": f_type,
                             "file_path": f_path,
                             "format": f.file_format,
                             "size_gb": f"{(f.file_size_in_bytes / 1024 ** 3):.10f}",
@@ -172,21 +176,18 @@ class IcebergInventoryBuilder:
                             "columns": "The columns are by there id",
                             **column_metrics,
                         }
-                    })
+                    )
                     self.processed_data_files.add(f_path)
 
             # MANIFEST NODE
             self.inventory.append(
                 {
-                    "type": "manifest",
+                    "type": FileType.MANIFEST.value,
                     "file_path": m_path,
-                    "file_info": {
-                        "file_path": m_path,
-                        "added_snapshot_id": m_row["added_snapshot_id"],
-                        "partitions": list(all_partitions),
-                        "total_rows": total_rows,
-                        "child_files": child_data_paths,
-                    },
+                    "added_snapshot_id": m_row["added_snapshot_id"],
+                    "partitions": list(all_partitions),
+                    "total_rows": total_rows,
+                    "child_files": child_data_paths,
                 }
             )
             self.processed_manifests.add(m_path)

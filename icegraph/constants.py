@@ -5,21 +5,21 @@ APPLICATION_PORT = 5000
 
 
 class FileType(Enum):
+    MAIN_METADATA = "main_metadata"
     METADATA = "metadata"
     SNAPSHOT = "snapshot"
     MANIFEST = "manifest"
     DATA = "data"
     DELETE = "delete"
-    UNKNOWN = "unknown"
 
 
 NODE_STYLE_MAP = {
+    FileType.MAIN_METADATA.value: {"color": "#fa70b5", "level": -1},
     FileType.METADATA.value: {"color": "#BF5AF2", "level": -1},
     FileType.SNAPSHOT.value: {"color": "#3ABEF9", "level": 0},
     FileType.MANIFEST.value: {"color": "#F39C12", "level": 1},
     FileType.DATA.value: {"color": "#2ECC71", "level": 2},
     FileType.DELETE.value: {"color": "#E74C3C", "level": 2},
-    FileType.UNKNOWN.value: {"color": "#95A5A6", "level": 2},
 }
 
 VISUALIZATION_OPTIONS = {
@@ -30,12 +30,11 @@ VISUALIZATION_OPTIONS = {
             "nodeSpacing": 170,
             "levelSeparation": 800,
             "sortMethod": "hubsize",
-            "shakeNeighbours": False,
             "blockShifting": True,
             "edgeMinimization": True,
-            "parentCentralization": True
+            "parentCentralization": True,
         },
-        "improvedLayout": False
+        "improvedLayout": False,
     },
     "edges": {
         "color": "#999",
@@ -43,8 +42,8 @@ VISUALIZATION_OPTIONS = {
             "enabled": True,
             "type": "cubicBezier",
             "forceDirection": "horizontal",
-            "roundness": 0.5
-        }
+            "roundness": 0.5,
+        },
     },
     "physics": {
         "enabled": False,
@@ -53,14 +52,14 @@ VISUALIZATION_OPTIONS = {
             "iterations": 1000,
             "updateInterval": 100,
             "onlyDynamicEdges": False,
-            "fit": True
-        }
+            "fit": True,
+        },
     },
     "interaction": {
         "hover": True,
         "navigationButtons": True,
         "multiselect": True,
         "tooltipDelay": 100,
-        "hideEdgesOnDrag": True
-    }
+        "hideEdgesOnDrag": True,
+    },
 }

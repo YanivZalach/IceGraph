@@ -49,10 +49,30 @@
     }
     .meta-value {
         font-family: 'JetBrains Mono', 'Fira Code', monospace;
-        background: #1e293b; color: #ffffff; padding: 10px 14px;
-        border-radius: 8px; font-size: 0.85rem; word-break: break-all; display: block;
+        background: #1e293b;
+        color: #ffffff;
+        padding: 10px 14px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        display: block;
         box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+        white-space: pre;
+        overflow-x: auto;
+        word-break: normal;
+        overflow-wrap: normal;
     }
+
+    canvas:focus,
+    div:focus,
+    #mynetwork:focus {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+    .vis-network:focus {
+        outline: none !important;
+    }
+
 
 </style>
 
@@ -100,7 +120,7 @@ network.on("click", function(params) {
 
     // Parsing title (handles both escaped and literal newlines)
     let rawTitle = nodeData.title || "";
-    let lines = rawTitle.split(/\\n|\n/);
+    let lines = rawTitle.split(/\\n|\n/).map(line => line.replace(/,/g, '\n'));
 
     let contentHtml = `<div class="meta-header">${lines[0]}</div>`;
     for (let i = 1; i < lines.length; i++) {
@@ -121,5 +141,6 @@ network.on("click", function(params) {
     document.getElementById('sticky-content').innerHTML = contentHtml;
     panel.style.display = 'block';
 });
+
 
 </script>
