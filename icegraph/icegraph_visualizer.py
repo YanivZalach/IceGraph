@@ -4,7 +4,7 @@ import re
 
 from pyvis.network import Network
 
-from constants import NODE_STYLE_MAP, VISUALIZATION_OPTIONS
+from constants import NODE_STYLE_MAP, VISUALIZATION_OPTIONS, FileType
 from utils import format_node_info
 
 
@@ -26,17 +26,17 @@ class IceGraphVisualizer:
         for item in self.inventory:
             path = item.get("file_path")
             f_type = item.get("type")
-            if not path or not f_type:
-                continue
-
             style = NODE_STYLE_MAP[f_type]
+            rgb_colors = ",".join([str(val) for val in style["rgb"]])
+            color_shift = item.get("hidden_metadata", {}).get("color_append", 1)
 
             net.add_node(
                 path,
                 label=os.path.basename(path),
                 title=format_node_info(item),
                 shape="box",
-                **style
+                color=f"rgba({rgb_colors} ,{color_shift}",
+                level=style["level"],
             )
             added_nodes.add(path)
 

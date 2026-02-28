@@ -40,7 +40,9 @@ class IcebergInventoryBuilder:
             if index + 1 < len(rows):
                 previous_metadata_file = rows[index + 1].asDict().get("file")
 
-            self._process_row(row, is_main_metadata_file, previous_metadata_file)
+            self._process_row(
+                row, is_main_metadata_file, previous_metadata_file, index, len(rows)
+            )
 
         return self.inventory
 
@@ -73,7 +75,14 @@ class IcebergInventoryBuilder:
         ).collect()
         return {m["path"] for m in old_manifests}
 
-    def _process_row(self, row, is_main_metadata_file, previous_metadata_file):
+    def _process_row(
+        self,
+        row,
+        is_main_metadata_file,
+        previous_metadata_file,
+        index,
+        number_of_metadata_files,
+    ):
         row_dict = row.asDict()
         snap_id = row_dict.get("snapshot_id")
         meta_file = row_dict.get("file")
@@ -96,6 +105,9 @@ class IcebergInventoryBuilder:
                         if row_dict.get("manifest_list")
                         else []
                     ),
+                    "hidden_metadata": {
+                        "color_append": 1 - index / (1.5 * number_of_metadata_files)
+                    },
                 }
             )
 

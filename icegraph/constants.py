@@ -14,12 +14,12 @@ class FileType(Enum):
 
 
 NODE_STYLE_MAP = {
-    FileType.MAIN_METADATA.value: {"color": "#fa70b5", "level": -1},
-    FileType.METADATA.value: {"color": "#BF5AF2", "level": -1},
-    FileType.SNAPSHOT.value: {"color": "#3ABEF9", "level": 0},
-    FileType.MANIFEST.value: {"color": "#F39C12", "level": 1},
-    FileType.DATA.value: {"color": "#2ECC71", "level": 2},
-    FileType.DELETE.value: {"color": "#E74C3C", "level": 2},
+    FileType.MAIN_METADATA.value: {"rgb": (250, 112, 181), "level": -1},
+    FileType.METADATA.value: {"rgb": (191, 90, 242), "level": -1},
+    FileType.SNAPSHOT.value: {"rgb": (58, 190, 249), "level": 0},
+    FileType.MANIFEST.value: {"rgb": (243, 156, 18), "level": 1},
+    FileType.DATA.value: {"rgb": (46, 204, 113), "level": 2},
+    FileType.DELETE.value: {"rgb": (231, 76, 60), "level": 2},
 }
 
 VISUALIZATION_OPTIONS = {
@@ -27,14 +27,14 @@ VISUALIZATION_OPTIONS = {
         "hierarchical": {
             "enabled": True,
             "direction": "LR",
-            "nodeSpacing": 170,
+            "nodeSpacing": 150,
             "levelSeparation": 800,
-            "sortMethod": "hubsize",
+            "sortMethod": "directed",
             "blockShifting": True,
             "edgeMinimization": True,
             "parentCentralization": True,
         },
-        "improvedLayout": False,
+        "improvedLayout": True,
     },
     "edges": {
         "color": "#999",
@@ -47,13 +47,6 @@ VISUALIZATION_OPTIONS = {
     },
     "physics": {
         "enabled": False,
-        "stabilization": {
-            "enabled": True,
-            "iterations": 1000,
-            "updateInterval": 100,
-            "onlyDynamicEdges": False,
-            "fit": True,
-        },
     },
     "interaction": {
         "hover": True,
