@@ -3,7 +3,7 @@ from typing import Optional, List, Dict, Any, Set
 from pyspark.sql import SparkSession, functions as F
 
 from constants import FileType
-from utils import to_utc_timestamp
+from utils import to_utc_timestamp, get_json_metadata_from_path, _update_col_metric
 
 
 class IcebergInventoryBuilder:
@@ -13,6 +13,7 @@ class IcebergInventoryBuilder:
         self.date_to_view = date_to_view
 
         # Internal State
+        self.metadata_file_content = None
         self.inventory: List[Dict[str, Any]] = []
         self.processed_data_files: Set[str] = set()  # To avoid duplicates
         self.processed_manifests: Set[str] = set()
@@ -44,7 +45,23 @@ class IcebergInventoryBuilder:
                 row, is_main_metadata_file, previous_metadata_file, index, len(rows)
             )
 
+        self._convert_column_id_to_column_name()
+
         return self.inventory
+
+    def _convert_column_id_to_column_name(self):
+        schemas = self.metadata_file_content["schemas"]
+        latest_schema_fields = max(schemas, key=lambda x: x["schema-id"])["fields"]
+        column_id_to_name = {
+            field["id"]: field["name"] for field in latest_schema_fields
+        }
+
+        for item in self.inventory:
+            if item.get("columns"):
+                item["columns"] = {
+                    column_id_to_name[col_id]: col_stats
+                    for col_id, col_stats in item.get("columns").items()
+                }
 
     def _load_metadata_and_snapshots(self):
         metadata_df = (
@@ -89,6 +106,9 @@ class IcebergInventoryBuilder:
 
         # METADATA NODE
         if meta_file:
+            if is_main_metadata_file:
+                self.metadata_file_content = get_json_metadata_from_path(meta_file)
+
             self.inventory.append(
                 {
                     "type": (
@@ -160,24 +180,18 @@ class IcebergInventoryBuilder:
                         FileType.DATA.value if f.content == 0 else FileType.DELETE.value
                     )
 
-                    # Pivot logic: Create a master dictionary of column metrics
                     column_metrics = {}
-
-                    # helper to populate the pivot table
-                    def update_col_metric(source_list, metric_name):
-                        if not source_list:
-                            return
-                        for row in source_list:
-                            col_id = row.key
-                            if col_id not in column_metrics:
-                                column_metrics[col_id] = {}
-                            column_metrics[col_id][metric_name] = row.value
-
-                    # Fill the metrics
-                    update_col_metric(f.column_sizes, "size_bytes")
-                    update_col_metric(f.null_value_counts, "null_count")
-                    update_col_metric(f.nan_value_counts, "nan_count")
-                    update_col_metric(f.value_counts, "total_values")
+                    _update_col_metric(f.column_sizes, "size_bytes", column_metrics)
+                    _update_col_metric(f.lower_bounds, "lower_bound", column_metrics)
+                    _update_col_metric(f.upper_bounds, "upper_bound", column_metrics)
+                    _update_col_metric(f.column_sizes, "size_bytes", column_metrics)
+                    _update_col_metric(
+                        f.null_value_counts, "null_count", column_metrics
+                    )
+                    _update_col_metric(
+                        f.nan_value_counts, "not_a_number_count", column_metrics
+                    )
+                    _update_col_metric(f.value_counts, "total_values", column_metrics)
 
                     self.inventory.append(
                         {
@@ -188,8 +202,7 @@ class IcebergInventoryBuilder:
                             "row_count": f.record_count,
                             "partition": f_partition,
                             "spec_id": f.sort_order_id,
-                            "columns": "The columns are by there id",
-                            **column_metrics,
+                            "columns": column_metrics,
                         }
                     )
                     self.processed_data_files.add(f_path)

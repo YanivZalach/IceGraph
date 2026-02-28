@@ -129,7 +129,7 @@ network.on("click", function(params) {
 
         let splitIdx = line.indexOf(':');
         let label = line.substring(0, splitIdx);
-        let val = line.substring(splitIdx + 1);
+        let val = line.substring(splitIdx + 1).trim();
 
         contentHtml += `
             <div class="meta-row">
