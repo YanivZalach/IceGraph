@@ -44,7 +44,7 @@ Go to `http://localhost:5000` and explore your mock tables.
 
 | Color | Type | Role |
 | --- | --- | --- |
-| 🟣 | **Metadata** | The root JSON source of truth. |
+| 🟣 | **Metadata** | The root JSON source of truth. The pink Metadata is the current one. The rest gradient in color, the more recent, the more color. |
 | 🔵 | **Snapshot** | Manifest List representing a table version. |
 | 🟠 | **Manifest** | Groupings of physical data files. |
 | 🟢 | **Data** | Parquet/Avro files containing records. |
