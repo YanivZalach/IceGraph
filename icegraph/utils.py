@@ -1,4 +1,5 @@
 import json
+import os
 
 import arrow
 from pyspark.errors import AnalysisException
@@ -24,8 +25,14 @@ def verify_iceberg_table(table_name: str) -> bool:
     raise AnalysisException("Not an iceberg table")
 
 
-def to_utc_timestamp(date_str: str):
-    return arrow.get(date_str).replace(tzinfo="Asia/Jerusalem").to("UTC").datetime
+def to_spark_timestamp(date_str: str):
+    spark = SparkSession.builder.getOrCreate()
+    return (
+        arrow.get(date_str)
+        .replace(tzinfo=os.environ["TIMEZONE"])
+        .to(spark.conf.get("spark.sql.session.timeZone"))
+        .datetime
+    )
 
 
 def format_node_info(file_info: dict):

@@ -3,7 +3,7 @@ from typing import Optional, List, Dict, Any, Set
 from pyspark.sql import SparkSession, functions as F
 
 from constants import FileType
-from utils import to_utc_timestamp, get_json_metadata_from_path, _update_col_metric
+from utils import to_spark_timestamp, get_json_metadata_from_path, _update_col_metric
 
 
 class IcebergInventoryBuilder:
@@ -20,7 +20,7 @@ class IcebergInventoryBuilder:
         self.manifests_to_ignore: Set[str] = set()
 
         # Convert date to UTC cutoff once
-        self.utc_cutoff = to_utc_timestamp(date_to_view) if date_to_view else None
+        self.utc_cutoff = to_spark_timestamp(date_to_view) if date_to_view else None
 
     def collect(self) -> List[Dict[str, Any]]:
         print(f"Analyzing {self.table_name}...")
@@ -30,7 +30,7 @@ class IcebergInventoryBuilder:
 
         if self.utc_cutoff:
             df = df.filter(
-                F.coalesce(F.col("snapshot_timestamp"), F.col("meta_log_timestamp"))
+                F.col("snapshot_timestamp")
                 >= F.lit(str(self.utc_cutoff)).cast("timestamp")
             )
 
@@ -141,6 +141,7 @@ class IcebergInventoryBuilder:
                 {
                     "type": FileType.SNAPSHOT.value,
                     "file_path": row_dict["manifest_list"],
+                    "timestamp": str(row_dict.get("snapshot_timestamp")),
                     "snapshot_id": snap_id,
                     "operation": row_dict["operation"],
                     "child_files": [m["path"] for m in manifests],

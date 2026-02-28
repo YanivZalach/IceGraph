@@ -1,3 +1,6 @@
+import os
+
+from dotenv import load_dotenv
 from flask import (
     Flask,
     request,
@@ -8,12 +11,12 @@ from flask import (
 )
 from pyspark.errors import AnalysisException
 
-from constants import APPLICATION_PORT
 from iceberg_inventory_builder import IcebergInventoryBuilder
-from utils import verify_iceberg_table
 from icegraph_visualizer import IceGraphVisualizer
 from spark_connect import open_spark_connect_session
+from utils import verify_iceberg_table
 
+load_dotenv()
 app = Flask(__name__, static_url_path="/static")
 spark = open_spark_connect_session()
 
@@ -48,4 +51,4 @@ def generate():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=APPLICATION_PORT, debug=True)
+    app.run(host="0.0.0.0", port=int(os.environ["APPLICATION_PORT"]))

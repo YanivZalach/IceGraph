@@ -1,8 +1,5 @@
 from enum import Enum
 
-SPARK_CONNECT = "sc://localhost:15002"
-APPLICATION_PORT = 5000
-
 
 class FileType(Enum):
     MAIN_METADATA = "main_metadata"

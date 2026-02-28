@@ -26,12 +26,27 @@ cd tests/spark_connect_docker && docker-compose up -d
 
 ### 2. Setup & Mock Data
 
+Install:
 ```bash
 pip install -r requirements.txt
+```
+
+Create mock if needed:
+```bash
 python tests/create_mock_tables.py
 ```
 
-### 3. Run
+### 3. Setup your Envs
+
+We will create inside the inner icegraph directory a file, named `.env`:
+
+```bash
+TIMEZONE=My timezone
+SPARK_REMOTE=sc://localhost:15002 # Our local testing spark
+APPLICATION_PORT=5000
+```
+
+### 4. Run
 Be in the icegraph inner directory:
 
 ```bash
@@ -44,7 +59,7 @@ Go to `http://localhost:5000` and explore your mock tables.
 
 | Color | Type | Role |
 | --- | --- | --- |
-| 🟣 | **Metadata** | The root JSON source of truth. The pink Metadata is the current one. The rest gradient in color, the more recent, the more color. |
+| 🟣 | **Metadata** | The root JSON source of truth. The pink Metadata is the current one. The rest shift in color, the more recent, the more color. |
 | 🔵 | **Snapshot** | Manifest List representing a table version. |
 | 🟠 | **Manifest** | Groupings of physical data files. |
 | 🟢 | **Data** | Parquet/Avro files containing records. |
