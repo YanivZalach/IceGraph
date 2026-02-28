@@ -35,9 +35,8 @@ class IceGraphVisualizer:
                 path,
                 label=os.path.basename(path),
                 title=format_node_info(item),
-                color=style["color"],
-                level=style["level"],
                 shape="box",
+                **style
             )
             added_nodes.add(path)
 

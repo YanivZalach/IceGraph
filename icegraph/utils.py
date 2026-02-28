@@ -33,7 +33,7 @@ def format_node_info(file_info: dict):
         for key, value in file_info.items()
         if key not in ["type", "child_files"]
     )
-    if "child_files" in file_info.keys():
+    if "child_files" in file_info.keys() and file_info["child_files"] is not None:
         print("inhere")
         formatted_info += "\nchild_files:" + ",".join(file_info["child_files"])
 

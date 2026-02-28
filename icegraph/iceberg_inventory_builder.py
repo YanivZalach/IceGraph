@@ -35,10 +35,12 @@ class IcebergInventoryBuilder:
 
         rows = df.sort(F.desc("meta_log_timestamp")).collect()
         for index, row in enumerate(rows):
-            is_main_metadata_file = False
-            if index == 0:
-                is_main_metadata_file = True
-            self._process_row(row, is_main_metadata_file)
+            is_main_metadata_file = index == 0
+            previous_metadata_file = None
+            if index + 1 < len(rows):
+                previous_metadata_file = rows[index + 1].asDict().get("file")
+
+            self._process_row(row, is_main_metadata_file, previous_metadata_file)
 
         return self.inventory
 
@@ -71,7 +73,7 @@ class IcebergInventoryBuilder:
         ).collect()
         return {m["path"] for m in old_manifests}
 
-    def _process_row(self, row, is_main_metadata_file):
+    def _process_row(self, row, is_main_metadata_file, previous_metadata_file):
         row_dict = row.asDict()
         snap_id = row_dict.get("snapshot_id")
         meta_file = row_dict.get("file")
@@ -88,6 +90,7 @@ class IcebergInventoryBuilder:
                     "file_path": meta_file,
                     "timestamp": str(row_dict.get("meta_log_timestamp")),
                     "snapshot_id": snap_id,
+                    "previous_metadata_file": previous_metadata_file,
                     "child_files": (
                         [row_dict.get("manifest_list")]
                         if row_dict.get("manifest_list")
