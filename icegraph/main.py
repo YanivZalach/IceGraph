@@ -40,8 +40,8 @@ def generate():
 
     try:
         verify_iceberg_table(table_name)
-        inventory = IcebergInventoryBuilder(table_name, date_value).collect()
-        html = IceGraphVisualizer(inventory).generate()
+        table_data = IcebergInventoryBuilder(table_name, date_value).collect()
+        html = IceGraphVisualizer(table_data).generate()
 
         return Response(html, mimetype="text/html")
 

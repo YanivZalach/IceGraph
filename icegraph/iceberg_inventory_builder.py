@@ -32,7 +32,7 @@ class IcebergInventoryBuilder:
         )
         self.lock = threading.Lock()
 
-    def collect(self) -> List[Dict[str, Any]]:
+    def collect(self):
         print(f"Analyzing {self.table_name}...")
 
         self.manifests_to_ignore = self._discover_baseline_manifests()
@@ -55,7 +55,18 @@ class IcebergInventoryBuilder:
                 row, is_main_metadata_file, previous_metadata_file, index, len(rows)
             )
 
-        return self.inventory
+        return {
+            "inventory": self.inventory,
+            "metadata_specs": {
+                "table-name": self.table_name,
+                "current-schema-id": self.metadata_file_content.get(
+                    "current-schema-id"
+                ),
+                "schemas": self.metadata_file_content.get("schemas"),
+                "default-spec-id": self.metadata_file_content.get("default-spec-id"),
+                "partition-specs": self.metadata_file_content.get("partition-specs"),
+            },
+        }
 
     def _load_metadata_and_snapshots(self):
         metadata_df = (

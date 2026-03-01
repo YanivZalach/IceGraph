@@ -4,13 +4,14 @@ import re
 
 from pyvis.network import Network
 
-from constants import NODE_STYLE_MAP, VISUALIZATION_OPTIONS, FileType
+from constants import NODE_STYLE_MAP, VISUALIZATION_OPTIONS
 from utils import format_node_info
 
 
 class IceGraphVisualizer:
-    def __init__(self, inventory):
-        self.inventory = inventory
+    def __init__(self, table_data):
+        self.inventory = table_data["inventory"]
+        self.metadata_specs = table_data["metadata_specs"]
 
     def generate(self) -> str:
         net = Network(
@@ -51,10 +52,17 @@ class IceGraphVisualizer:
         net.set_options(json.dumps(VISUALIZATION_OPTIONS))
 
         html = net.generate_html()
+        html = self._inject_metadata(html)
         html = self._load_custom_ui(html)
         html = self._reroute_libs(html)
 
         return html
+
+    def _inject_metadata(self, html):
+        specs_json = json.dumps(self.metadata_specs)
+        inject_metadata = f"<script>const TABLE_METADATA = {specs_json};</script>"
+
+        return html.replace("</body>", f"{inject_metadata}</body>")
 
     def _load_custom_ui(self, html) -> str:
         with open("js_inject.html", "r") as f:

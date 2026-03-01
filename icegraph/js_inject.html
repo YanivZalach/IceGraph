@@ -169,6 +169,127 @@
     #inspect-status-icon {
         margin-right: 8px;
     }
+
+    /* 1. Button Consistency */
+    #details-btn {
+        text-overflow: ellipsis;
+        padding: 12px 18px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transition: all 0.2s ease;
+        text-align: left;
+        width: 220px;
+        background: #ffffff;
+        color: #1a202c;
+        display: flex;
+        align-items: center;
+    }
+
+    .specs-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    #details-panel {
+        background: #f8fafc;
+        width: 350px;
+        /* Slightly wider for JSON readability */
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid #334155;
+    }
+
+    #details-panel.collapsed {
+        max-height: 0;
+        opacity: 0;
+        transform: scale(0.95);
+        pointer-events: none;
+    }
+
+    #details-panel:not(.collapsed) {
+        max-height: 500px;
+        padding: 15px;
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    /* 3. Raw Text Content */
+    .panel-header {
+        color: #94a3b8;
+        font-size: 0.65rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+        letter-spacing: 0.05em;
+    }
+
+    #metadata-raw {
+        font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        font-size: 0.75rem;
+        color: #1e1b4b;
+        margin: 0;
+        white-space: pre-wrap;
+        word-break: break-all;
+        max-height: 400px;
+        overflow-y: auto;
+        padding-right: 5px;
+    }
+
+    /* Custom scrollbar for the JSON */
+    #metadata-raw::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    #metadata-raw::-webkit-scrollbar-thumb {
+        background: #475569;
+        border-radius: 10px;
+    }
+
+    #details-panel {
+        width: 320px;
+        /* Slightly wider for raw JSON */
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+    }
+
+    #details-panel.collapsed {
+        max-height: 0;
+        opacity: 0;
+        border: none;
+    }
+
+    #details-panel:not(.collapsed) {
+        max-height: 600px;
+        padding: 12px;
+        opacity: 1;
+    }
+
+    .spec-code {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.7rem;
+        background: #1e293b;
+        /* Dark mode for raw data */
+        color: #f8fafc;
+        padding: 12px;
+        border-radius: 6px;
+        overflow: auto;
+        white-space: pre-wrap;
+        /* Wraps long lines */
+        word-break: break-all;
+    }
 </style>
 
 <div id="sticky-info">
@@ -179,9 +300,17 @@
 <div id="controls-container">
     <button id="reset-btn" onclick="resetView()">Reset Full View</button>
     <button id="inspect-btn" onclick="toggleInspectMode()">
-        <span id="inspect-status-icon">🔍</span>
-        <span id="inspect-text">Mode: Lineage Traversal</span>
+        <span id="inspect-icon">🔍</span> <span id="inspect-text">Mode: Lineage Traversal</span>
     </button>
+    <div class="specs-wrapper">
+        <button id="details-btn" onclick="toggleDetailsPanel()">
+            <span id="details-btn-text">Loading Specs...</span>
+        </button>
+        <div id="details-panel" class="collapsed">
+            <div class="panel-header">Raw Metadata Specs</div>
+            <pre id="metadata-raw"></pre>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -264,5 +393,22 @@
         panel.style.display = 'block';
     });
 
+    window.toggleDetailsPanel = function () {
+        const panel = document.getElementById('details-panel');
+        if (panel) panel.classList.toggle('collapsed');
+    };
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const rawContainer = document.getElementById('metadata-raw');
+        const btnText = document.getElementById('details-btn-text');
+
+        if (TABLE_METADATA["table-name"] && btnText) {
+            btnText.textContent = TABLE_METADATA["table-name"];
+        } else if (btnText) {
+            btnText.textContent = "Table Specs";
+        }
+
+        rawContainer.textContent = JSON.stringify(TABLE_METADATA, null, 2);
+    });
 
 </script>
