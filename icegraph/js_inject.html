@@ -285,6 +285,7 @@
         isInspectMode = !isInspectMode;
         const btn = document.getElementById('inspect-btn');
         const text = document.getElementById('inspect-text');
+        const icon = document.getElementById('inspect-icon');
 
         if (isInspectMode) {
             btn.classList.add('active');
@@ -365,5 +366,15 @@
         rawContainer.textContent = JSON.stringify(TABLE_METADATA, null, 2);
     });
 
+    document.addEventListener("DOMContentLoaded", function () {
+        const errorEntries = Object.entries(TABLE_ERRORS);
 
+        if (errorEntries.length > 0) {
+            const errorSummary = errorEntries
+                .map(([file, err]) => `• ${file.split('/').pop()}: ${err}`)
+                .join('\n');
+
+            alert(`⚠️IceGraph :${errorEntries.length} Errors Detected On Build\nThe full errors are under the TABLE_ERRORS var in the console\n\n${errorSummary}`);
+        }
+    });
 </script>

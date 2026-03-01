@@ -20,10 +20,9 @@ class IcebergInventoryBuilder:
         self.table_name = full_table_name
         self.date_to_view = date_to_view
 
-        # Internal State
         self.metadata_file_content = None
         self.inventory: List[Dict[str, Any]] = []
-        self.processed_data_files: Set[str] = set()  # To avoid duplicates
+        self.processed_data_files: Set[str] = set()
         self.processed_manifests: Set[str] = set()
         self.manifests_to_ignore: Set[str] = set()
 
@@ -31,33 +30,43 @@ class IcebergInventoryBuilder:
             to_spark_timestamp(date_to_view) if date_to_view else None
         )
         self.lock = threading.Lock()
+        self.errors = {}
 
     def collect(self) -> Dict[str, Any]:
         print(f"Analyzing {self.table_name}...")
 
-        self.manifests_to_ignore = self._discover_baseline_manifests()
-        df = self._load_metadata_and_snapshots()
+        try:
+            self.manifests_to_ignore = self._discover_baseline_manifests()
+            df = self._load_metadata_and_snapshots()
 
-        if self.timestamp_cutoff:
-            df = df.filter(
-                F.col("snapshot_timestamp")
-                >= F.lit(str(self.timestamp_cutoff)).cast("timestamp")
-            )
+            if self.timestamp_cutoff:
+                df = df.filter(
+                    F.col("snapshot_timestamp")
+                    >= F.lit(str(self.timestamp_cutoff)).cast("timestamp")
+                )
 
-        rows = df.sort(F.desc("meta_log_timestamp")).collect()
-        for index, row in enumerate(rows):
-            is_main_metadata_file = index == 0
-            previous_metadata_file = None
-            if index + 1 < len(rows):
-                previous_metadata_file = rows[index + 1].asDict().get("file")
+            rows = df.sort(F.desc("meta_log_timestamp")).collect()
+            for index, row in enumerate(rows):
+                is_main_metadata_file = index == 0
+                previous_metadata_file = None
+                if index + 1 < len(rows):
+                    previous_metadata_file = rows[index + 1].asDict().get("file")
 
-            self._process_row(
-                row, is_main_metadata_file, previous_metadata_file, index, len(rows)
-            )
+                self._process_row(
+                    row, is_main_metadata_file, previous_metadata_file, index, len(rows)
+                )
 
-        return {
+        except Exception as e:
+            self.errors[self.table_name] = f"Critical Table Error: {str(e)}"
+
+        result = {
             "inventory": self.inventory,
-            "metadata_specs": {
+            "errors": self.errors,
+            "metadata_specs": {},
+        }
+
+        if self.metadata_file_content:
+            result["metadata_specs"] = {
                 "table-name": self.table_name,
                 "current-schema-id": self.metadata_file_content.get(
                     "current-schema-id"
@@ -65,8 +74,9 @@ class IcebergInventoryBuilder:
                 "schemas": self.metadata_file_content.get("schemas"),
                 "default-spec-id": self.metadata_file_content.get("default-spec-id"),
                 "partition-specs": self.metadata_file_content.get("partition-specs"),
-            },
-        }
+            }
+
+        return result
 
     def _load_metadata_and_snapshots(self):
         metadata_df = (
@@ -109,50 +119,55 @@ class IcebergInventoryBuilder:
         snap_id = row_dict.get("snapshot_id")
         meta_file = row_dict.get("file")
 
-        # METADATA NODE
         if meta_file:
-            if is_main_metadata_file:
-                self.metadata_file_content = get_json_metadata_from_path(meta_file)
+            try:
+                if is_main_metadata_file:
+                    self.metadata_file_content = get_json_metadata_from_path(meta_file)
 
-            self.inventory.append(
-                {
-                    "type": (
-                        FileType.MAIN_METADATA.value
-                        if is_main_metadata_file
-                        else FileType.METADATA.value
-                    ),
-                    "file_path": meta_file,
-                    "timestamp": str(row_dict.get("meta_log_timestamp")),
-                    "snapshot_id": snap_id,
-                    "previous_metadata_file": previous_metadata_file,
-                    "child_files": (
-                        [row_dict.get("manifest_list")]
-                        if row_dict.get("manifest_list")
-                        else []
-                    ),
-                    "hidden_metadata": {
-                        "color_append": 1 - index / (1.5 * number_of_metadata_files)
-                    },
-                }
-            )
+                self.inventory.append(
+                    {
+                        "type": (
+                            FileType.MAIN_METADATA.value
+                            if is_main_metadata_file
+                            else FileType.METADATA.value
+                        ),
+                        "file_path": meta_file,
+                        "timestamp": str(row_dict.get("meta_log_timestamp")),
+                        "snapshot_id": snap_id,
+                        "previous_metadata_file": previous_metadata_file,
+                        "child_files": (
+                            [row_dict.get("manifest_list")]
+                            if row_dict.get("manifest_list")
+                            else []
+                        ),
+                        "hidden_metadata": {
+                            "color_append": 1 - index / (1.5 * number_of_metadata_files)
+                        },
+                    }
+                )
+            except Exception as e:
+                self.errors[meta_file] = f"Metadata Read Error: {str(e)}"
 
-        # SNAPSHOT NODE
         if snap_id and row_dict.get("manifest_list"):
-            manifests = self.spark.sql(
-                f"SELECT * FROM {self.table_name}.manifests VERSION AS OF {snap_id}"
-            ).collect()
+            manifest_list_path = row_dict["manifest_list"]
+            try:
+                manifests = self.spark.sql(
+                    f"SELECT * FROM {self.table_name}.manifests VERSION AS OF {snap_id}"
+                ).collect()
 
-            self.inventory.append(
-                {
-                    "type": FileType.SNAPSHOT.value,
-                    "file_path": row_dict["manifest_list"],
-                    "timestamp": str(row_dict.get("snapshot_timestamp")),
-                    "snapshot_id": snap_id,
-                    "operation": row_dict["operation"],
-                    "child_files": [m["path"] for m in manifests],
-                }
-            )
-            self._process_manifests(manifests)
+                self.inventory.append(
+                    {
+                        "type": FileType.SNAPSHOT.value,
+                        "file_path": manifest_list_path,
+                        "timestamp": str(row_dict.get("snapshot_timestamp")),
+                        "snapshot_id": snap_id,
+                        "operation": row_dict["operation"],
+                        "child_files": [m["path"] for m in manifests],
+                    }
+                )
+                self._process_manifests(manifests)
+            except Exception as e:
+                self.errors[manifest_list_path] = f"Snapshot SQL Error: {str(e)}"
 
     def _process_manifests(self, manifests):
         with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
@@ -165,75 +180,82 @@ class IcebergInventoryBuilder:
         if m_path in self.manifests_to_ignore or m_path in self.processed_manifests:
             return
 
-        entries = (
-            self.spark.read.format("avro")
-            .load(m_path)
-            .select("status", "data_file")
-            .collect()
-        )
-
-        child_data_paths = []
-        total_rows = 0
-        all_partitions = set()
-        local_new_data_files = []
-
-        for entry in entries:
-            f = entry["data_file"]
-            f_path = f["file_path"]
-            f_partition = f.partition.asDict() if f.partition else {"Root": "Root"}
-            child_data_paths.append(f_path)
-            total_rows += f["record_count"]
-            partition_repr = "|".join(
-                f"'{key}'='{value}'" for key, value in f_partition.items()
+        try:
+            entries = (
+                self.spark.read.format("avro")
+                .load(m_path)
+                .select("status", "data_file")
+                .collect()
             )
-            all_partitions.add(partition_repr)
 
-            if f_path not in self.processed_data_files:
-                f_type = (
-                    FileType.DATA.value if f.content == 0 else FileType.DELETE.value
+            child_data_paths = []
+            total_rows = 0
+            all_partitions = set()
+            local_new_data_files = []
+
+            for entry in entries:
+                f = entry["data_file"]
+                f_path = f["file_path"]
+                f_partition = f.partition.asDict() if f.partition else {"Root": "Root"}
+                child_data_paths.append(f_path)
+                total_rows += f["record_count"]
+                partition_repr = "|".join(
+                    f"'{key}'='{value}'" for key, value in f_partition.items()
                 )
+                all_partitions.add(partition_repr)
 
-                column_metrics = {}
-                _update_col_metric(f.column_sizes, "size_bytes", column_metrics)
-                _update_col_metric(f.lower_bounds, "lower_bound", column_metrics)
-                _update_col_metric(f.upper_bounds, "upper_bound", column_metrics)
-                _update_col_metric(f.column_sizes, "size_bytes", column_metrics)
-                _update_col_metric(f.null_value_counts, "null_count", column_metrics)
-                _update_col_metric(
-                    f.nan_value_counts, "not_a_number_count", column_metrics
-                )
-                _update_col_metric(f.value_counts, "total_values", column_metrics)
+                if f_path not in self.processed_data_files:
+                    f_type = (
+                        FileType.DATA.value if f.content == 0 else FileType.DELETE.value
+                    )
 
-                local_new_data_files.append(
+                    column_metrics = {}
+                    _update_col_metric(f.column_sizes, "size_bytes", column_metrics)
+                    _update_col_metric(f.lower_bounds, "lower_bound", column_metrics)
+                    _update_col_metric(f.upper_bounds, "upper_bound", column_metrics)
+                    _update_col_metric(f.column_sizes, "size_bytes", column_metrics)
+                    _update_col_metric(
+                        f.null_value_counts, "null_count", column_metrics
+                    )
+                    _update_col_metric(
+                        f.nan_value_counts, "not_a_number_count", column_metrics
+                    )
+                    _update_col_metric(f.value_counts, "total_values", column_metrics)
+
+                    local_new_data_files.append(
+                        {
+                            "type": f_type,
+                            "file_path": f_path,
+                            "format": f.file_format,
+                            "size_gb": f"{(f.file_size_in_bytes / 1024 ** 3):.10f}",
+                            "row_count": f.record_count,
+                            "partition": partition_repr,
+                            "spec_id": f.sort_order_id,
+                            "columns": column_metrics,
+                        }
+                    )
+
+            with self.lock:
+                if m_path in self.processed_manifests:
+                    return
+
+                for data_file in local_new_data_files:
+                    if data_file["file_path"] not in self.processed_data_files:
+                        self.inventory.append(data_file)
+                        self.processed_data_files.add(data_file["file_path"])
+
+                self.inventory.append(
                     {
-                        "type": f_type,
-                        "file_path": f_path,
-                        "format": f.file_format,
-                        "size_gb": f"{(f.file_size_in_bytes / 1024 ** 3):.10f}",
-                        "row_count": f.record_count,
-                        "partition": partition_repr,
-                        "spec_id": f.sort_order_id,
-                        "columns": column_metrics,
+                        "type": FileType.MANIFEST.value,
+                        "file_path": m_path,
+                        "added_snapshot_id": m_row["added_snapshot_id"],
+                        "partitions": ",".join(all_partitions),
+                        "total_rows": total_rows,
+                        "child_files": child_data_paths,
                     }
                 )
+                self.processed_manifests.add(m_path)
 
-        with self.lock:
-            if m_path in self.processed_manifests:
-                return
-
-            for data_file in local_new_data_files:
-                if data_file["file_path"] not in self.processed_data_files:
-                    self.inventory.append(data_file)
-                    self.processed_data_files.add(data_file["file_path"])
-
-            self.inventory.append(
-                {
-                    "type": FileType.MANIFEST.value,
-                    "file_path": m_path,
-                    "added_snapshot_id": m_row["added_snapshot_id"],
-                    "partitions": ",".join(all_partitions),
-                    "total_rows": total_rows,
-                    "child_files": child_data_paths,
-                }
-            )
-            self.processed_manifests.add(m_path)
+        except Exception as e:
+            with self.lock:
+                self.errors[m_path] = f"Manifest Processing Error: {str(e)}"

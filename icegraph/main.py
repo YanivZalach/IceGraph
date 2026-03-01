@@ -41,6 +41,7 @@ def generate():
     try:
         verify_iceberg_table(table_name)
         table_data = IcebergInventoryBuilder(table_name, date_value).collect()
+        print(table_data["errors"])
         html = IceGraphVisualizer(table_data).generate()
 
         return Response(html, mimetype="text/html")

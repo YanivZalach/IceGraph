@@ -14,6 +14,7 @@ class IceGraphVisualizer:
     def __init__(self, table_data: Dict[str, Any]):
         self.inventory = table_data["inventory"]
         self.metadata_specs = table_data["metadata_specs"]
+        self.errors = table_data["errors"]
 
     def generate(self) -> str:
         net = Network(
@@ -25,7 +26,6 @@ class IceGraphVisualizer:
 
         added_nodes = set()
 
-        # 1. Add Nodes
         for item in self.inventory:
             path = item.get("file_path")
             f_type = item.get("type")
@@ -43,7 +43,6 @@ class IceGraphVisualizer:
             )
             added_nodes.add(path)
 
-        # 2. Add Edges
         for item in self.inventory:
             parent = item.get("file_path")
             children = item.get("child_files", [])
@@ -54,9 +53,10 @@ class IceGraphVisualizer:
         net.set_options(json.dumps(VISUALIZATION_OPTIONS))
 
         html = net.generate_html()
+        html = self._create_html_with_inject_errors(html)
         html = self._create_html_with_inject_metadata(html)
-        html = self._create_html_with_custom_ui(html)
         html = self._create_html_with_reroute_libs(html)
+        html = self._create_html_with_custom_ui(html)
 
         return html
 
@@ -66,12 +66,11 @@ class IceGraphVisualizer:
 
         return html.replace("</body>", f"{inject_metadata}</body>")
 
-    def _create_html_with_custom_ui(self, html) -> str:
-        base_dir = Path(__file__).parent
-        with open(base_dir / "js_inject.html", "r") as f:
-            custom_ui = f.read()
+    def _create_html_with_inject_errors(self, html: str) -> str:
+        errors_json = json.dumps(self.errors)
+        inject_errors = f"<script>const TABLE_ERRORS = {errors_json};</script>"
 
-        return html.replace("</body>", custom_ui + "</body>")
+        return html.replace("</body>", f"{inject_errors}</body>")
 
     def _create_html_with_reroute_libs(self, html: str) -> str:
         html = re.sub(
@@ -98,3 +97,10 @@ class IceGraphVisualizer:
         )
 
         return html
+
+    def _create_html_with_custom_ui(self, html) -> str:
+        base_dir = Path(__file__).parent
+        with open(base_dir / "js_inject.html", "r") as f:
+            custom_ui = f.read()
+
+        return html.replace("</body>", custom_ui + "</body>")
