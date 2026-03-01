@@ -1,5 +1,4 @@
 <style>
-    /* 1. Global Layout Fixes */
     body,
     html {
         margin: 0;
@@ -16,7 +15,6 @@
         display: none !important;
     }
 
-    /* 2. Reset Button (Back to Top-Left) */
     #reset-btn {
         padding: 12px 20px;
         background: #1a202c;
@@ -33,7 +31,6 @@
         transition: transform 0.2s, background 0.2s;
     }
 
-    /* 3. The Sticky Info Panel */
     #sticky-info {
         position: fixed;
         top: 20px;
@@ -51,7 +48,6 @@
         backdrop-filter: blur(8px);
     }
 
-    /* 4. The "Pretty" Close Button */
     .close-btn {
         position: absolute;
         top: 15px;
@@ -70,7 +66,6 @@
         transition: all 0.2s;
     }
 
-    /* 5. Meta Content Styling */
     .meta-header {
         font-weight: 800;
         font-size: 1.3em;
@@ -146,31 +141,23 @@
         width: 220px;
     }
 
-    /* Reset Button Style */
     #reset-btn {
         background: #1a202c;
         color: white;
     }
 
-    /* Inspect Button Style */
     #inspect-btn {
         background: #ffffff;
         color: #1a202c;
         border: 2px solid #1a202c;
     }
 
-    /* State: Inspect Mode Active */
     #inspect-btn.active {
         background: #2E86C1;
         color: white;
         border-color: #2E86C1;
     }
 
-    #inspect-status-icon {
-        margin-right: 8px;
-    }
-
-    /* 1. Button Consistency */
     #details-btn {
         text-overflow: ellipsis;
         padding: 12px 18px;
@@ -197,32 +184,6 @@
         gap: 6px;
     }
 
-    #details-panel {
-        background: #f8fafc;
-        width: 350px;
-        /* Slightly wider for JSON readability */
-        border-radius: 12px;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-        overflow: hidden;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        border: 1px solid #334155;
-    }
-
-    #details-panel.collapsed {
-        max-height: 0;
-        opacity: 0;
-        transform: scale(0.95);
-        pointer-events: none;
-    }
-
-    #details-panel:not(.collapsed) {
-        max-height: 500px;
-        padding: 15px;
-        opacity: 1;
-        transform: scale(1);
-    }
-
-    /* 3. Raw Text Content */
     .panel-header {
         color: #94a3b8;
         font-size: 0.65rem;
@@ -234,17 +195,17 @@
 
     #metadata-raw {
         font-family: 'JetBrains Mono', 'Fira Code', monospace;
-        font-size: 0.75rem;
+        font-size: 0.85rem;
         color: #1e1b4b;
         margin: 0;
-        white-space: pre-wrap;
-        word-break: break-all;
-        max-height: 400px;
+        white-space: pre;
+        word-break: normal;
+        overflow-x: auto;
         overflow-y: auto;
-        padding-right: 5px;
+        max-height: 400px;
+        padding: 10px;
     }
 
-    /* Custom scrollbar for the JSON */
     #metadata-raw::-webkit-scrollbar {
         width: 4px;
     }
@@ -255,8 +216,7 @@
     }
 
     #details-panel {
-        width: 320px;
-        /* Slightly wider for raw JSON */
+        width: 25vw;
         background: white;
         border-radius: 8px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -281,13 +241,11 @@
         font-family: 'JetBrains Mono', monospace;
         font-size: 0.7rem;
         background: #1e293b;
-        /* Dark mode for raw data */
         color: #f8fafc;
         padding: 12px;
         border-radius: 6px;
         overflow: auto;
         white-space: pre-wrap;
-        /* Wraps long lines */
         word-break: break-all;
     }
 </style>
@@ -327,7 +285,6 @@
         isInspectMode = !isInspectMode;
         const btn = document.getElementById('inspect-btn');
         const text = document.getElementById('inspect-text');
-        const icon = document.getElementById('inspect-status-icon');
 
         if (isInspectMode) {
             btn.classList.add('active');
@@ -346,7 +303,6 @@
         let selectedNodeId = params.nodes[0];
         let nodeData = nodes.get(selectedNodeId);
 
-        // --- LINEAGE TRAVERSAL (Only if NOT in Inspect Mode) ---
         if (!isInspectMode) {
             let relatedNodes = new Set([selectedNodeId]);
             function traverse(nodeId, direction) {
@@ -364,7 +320,6 @@
             edges.update(edges.get().map(e => { e.hidden = !(relatedNodes.has(e.from) && relatedNodes.has(e.to)); return e; }));
         }
 
-        // --- UPDATE SIDE PANEL ---
         let panel = document.getElementById('sticky-info');
         panel.style.borderLeftColor = nodeData.color;
 
@@ -373,7 +328,6 @@
 
         let contentHtml = `<div class="meta-header">${lines[0]}</div>`;
 
-        // Add a status badge to the panel
         if (isInspectMode) {
             contentHtml += `<div style="background: #e1effe; color: #1e42af; padding: 4px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 800; margin-bottom: 15px; display: inline-block;">LOCKED VIEW</div>`;
         }
@@ -410,5 +364,6 @@
 
         rawContainer.textContent = JSON.stringify(TABLE_METADATA, null, 2);
     });
+
 
 </script>

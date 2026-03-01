@@ -2,6 +2,7 @@ import json
 import os
 import re
 from pathlib import Path
+from typing import Dict, Any
 
 from pyvis.network import Network
 
@@ -10,7 +11,7 @@ from utils import format_node_info
 
 
 class IceGraphVisualizer:
-    def __init__(self, table_data):
+    def __init__(self, table_data: Dict[str, Any]):
         self.inventory = table_data["inventory"]
         self.metadata_specs = table_data["metadata_specs"]
 
@@ -37,7 +38,7 @@ class IceGraphVisualizer:
                 label=os.path.basename(path),
                 title=format_node_info(item),
                 shape="box",
-                color=f"rgba({rgb_colors} ,{color_shift}",
+                color=f"rgba({rgb_colors} ,{color_shift})",
                 level=style["level"],
             )
             added_nodes.add(path)
@@ -53,26 +54,26 @@ class IceGraphVisualizer:
         net.set_options(json.dumps(VISUALIZATION_OPTIONS))
 
         html = net.generate_html()
-        html = self._inject_metadata(html)
-        html = self._load_custom_ui(html)
-        html = self._reroute_libs(html)
+        html = self._create_html_with_inject_metadata(html)
+        html = self._create_html_with_custom_ui(html)
+        html = self._create_html_with_reroute_libs(html)
 
         return html
 
-    def _inject_metadata(self, html):
+    def _create_html_with_inject_metadata(self, html: str) -> str:
         specs_json = json.dumps(self.metadata_specs)
         inject_metadata = f"<script>const TABLE_METADATA = {specs_json};</script>"
 
         return html.replace("</body>", f"{inject_metadata}</body>")
 
-    def _load_custom_ui(self, html) -> str:
+    def _create_html_with_custom_ui(self, html) -> str:
         base_dir = Path(__file__).parent
         with open(base_dir / "js_inject.html", "r") as f:
             custom_ui = f.read()
 
         return html.replace("</body>", custom_ui + "</body>")
 
-    def _reroute_libs(self, html):
+    def _create_html_with_reroute_libs(self, html: str) -> str:
         html = re.sub(
             r'<link[^>]+href="https?://[^"]+/bootstrap\.min\.css"[^>]*>',
             '<link rel="stylesheet" href="/lib/bootstrap/bootstrap.min.css">',

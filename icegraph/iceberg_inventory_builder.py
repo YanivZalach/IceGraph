@@ -32,7 +32,7 @@ class IcebergInventoryBuilder:
         )
         self.lock = threading.Lock()
 
-    def collect(self):
+    def collect(self) -> Dict[str, Any]:
         print(f"Analyzing {self.table_name}...")
 
         self.manifests_to_ignore = self._discover_baseline_manifests()

@@ -1,5 +1,8 @@
 import json
 import os
+from contextlib import suppress
+from datetime import datetime
+from typing import Any, Dict
 
 import arrow
 from pyspark.errors import AnalysisException
@@ -7,10 +10,7 @@ from pyspark.sql import SparkSession
 
 
 def verify_iceberg_table(table_name: str) -> bool:
-    """
-    Checks if the given table is using the Iceberg provider.
-    """
-    try:
+    with suppress(AnalysisException, AttributeError, IndexError):
         spark = SparkSession.builder.getOrCreate()
 
         df_desc = spark.sql(f"DESCRIBE FORMATTED {table_name}")
@@ -19,13 +19,11 @@ def verify_iceberg_table(table_name: str) -> bool:
         if provider_row:
             provider_value = provider_row[0].data_type.lower().strip()
             return provider_value == "iceberg"
-    except:
-        pass
 
-    raise AnalysisException("Not an iceberg table")
+    raise AnalysisException(f"Table '{table_name}' is not an Iceberg table.")
 
 
-def to_spark_timestamp(date_str: str):
+def to_spark_timestamp(date_str: str) -> datetime:
     spark = SparkSession.builder.getOrCreate()
     return (
         arrow.get(date_str)
@@ -35,7 +33,7 @@ def to_spark_timestamp(date_str: str):
     )
 
 
-def format_node_info(file_info: dict):
+def format_node_info(file_info: Dict[str, Any]) -> str:
     formatted_info = file_info["type"].upper()
     formatted_info += "\n" + "\n".join(
         f"{key}: {value}"
@@ -69,7 +67,7 @@ def format_node_info(file_info: dict):
     return formatted_info
 
 
-def get_json_metadata_from_path(metadata_path):
+def get_json_metadata_from_path(metadata_path: str) -> Dict[str, Any]:
     spark = SparkSession.builder.getOrCreate()
 
     json_lines = spark.read.text(metadata_path).collect()
@@ -86,7 +84,7 @@ def _update_col_metric(source_list, metric_name, column_metrics):
         column_metrics[col_id][metric_name] = str(row.value)
 
 
-def _format_cell(val, width=40):
+def _format_cell(val: Any, width=40) -> str:
     s_val = str(val)
     if len(s_val) > width:
         return s_val[: width - 3] + "..."
