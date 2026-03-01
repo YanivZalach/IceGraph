@@ -1,9 +1,13 @@
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, List, Dict, Any, Set
 
 from pyspark.sql import SparkSession, functions as F
 
 from constants import FileType
 from utils import to_spark_timestamp, get_json_metadata_from_path, _update_col_metric
+
+MAX_WORKERS = 50
 
 
 class IcebergInventoryBuilder:
@@ -19,8 +23,10 @@ class IcebergInventoryBuilder:
         self.processed_manifests: Set[str] = set()
         self.manifests_to_ignore: Set[str] = set()
 
-        # Convert date to UTC cutoff once
-        self.utc_cutoff = to_spark_timestamp(date_to_view) if date_to_view else None
+        self.timestamp_cutoff = (
+            to_spark_timestamp(date_to_view) if date_to_view else None
+        )
+        self.lock = threading.Lock()
 
     def collect(self) -> List[Dict[str, Any]]:
         print(f"Analyzing {self.table_name}...")
@@ -28,10 +34,10 @@ class IcebergInventoryBuilder:
         self.manifests_to_ignore = self._discover_baseline_manifests()
         df = self._load_metadata_and_snapshots()
 
-        if self.utc_cutoff:
+        if self.timestamp_cutoff:
             df = df.filter(
                 F.col("snapshot_timestamp")
-                >= F.lit(str(self.utc_cutoff)).cast("timestamp")
+                >= F.lit(str(self.timestamp_cutoff)).cast("timestamp")
             )
 
         rows = df.sort(F.desc("meta_log_timestamp")).collect()
@@ -76,11 +82,11 @@ class IcebergInventoryBuilder:
         return metadata_df.join(snapshots_df, on="snapshot_id", how="full")
 
     def _discover_baseline_manifests(self) -> Set[str]:
-        if not self.utc_cutoff:
+        if not self.timestamp_cutoff:
             return set()
 
         baseline_snap_row = self.spark.sql(
-            f"SELECT snapshot_id FROM {self.table_name}.snapshots WHERE committed_at < '{self.utc_cutoff}' ORDER BY committed_at DESC LIMIT 1"
+            f"SELECT snapshot_id FROM {self.table_name}.snapshots WHERE committed_at < '{self.timestamp_cutoff}' ORDER BY committed_at DESC LIMIT 1"
         ).collect()
 
         if not baseline_snap_row:
@@ -150,65 +156,74 @@ class IcebergInventoryBuilder:
             self._process_manifests(manifests)
 
     def _process_manifests(self, manifests):
-        for m_row in manifests:
-            m_path = m_row["path"]
-            if m_path in self.manifests_to_ignore or m_path in self.processed_manifests:
-                continue
+        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+            executor.map(self._process_single_manifest, manifests)
 
-            # Read manifest entries (fast Avro read)
-            entries = (
-                self.spark.read.format("avro")
-                .load(m_path)
-                .select("status", "data_file")
-                .collect()
-            )
+    def _process_single_manifest(self, m_row):
+        m_path = m_row["path"]
 
-            child_data_paths = []
-            total_rows = 0
-            all_partitions = set()
+        # Quick check without lock for speed; we'll re-check inside the lock
+        if m_path in self.manifests_to_ignore or m_path in self.processed_manifests:
+            return
 
-            for entry in entries:
-                f = entry["data_file"]
-                f_path = f["file_path"]
-                f_partition = f.partition.asDict() if f.partition else "Root"
-                child_data_paths.append(f_path)
-                total_rows += f["record_count"]
-                all_partitions.add(str(f_partition))
+        entries = (
+            self.spark.read.format("avro")
+            .load(m_path)
+            .select("status", "data_file")
+            .collect()
+        )
 
-                # DATA FILE NODE (only add if we haven't seen it yet)
-                if f_path not in self.processed_data_files:
-                    f_type = (
-                        FileType.DATA.value if f.content == 0 else FileType.DELETE.value
-                    )
+        child_data_paths = []
+        total_rows = 0
+        all_partitions = set()
+        local_new_data_files = []
 
-                    column_metrics = {}
-                    _update_col_metric(f.column_sizes, "size_bytes", column_metrics)
-                    _update_col_metric(f.lower_bounds, "lower_bound", column_metrics)
-                    _update_col_metric(f.upper_bounds, "upper_bound", column_metrics)
-                    _update_col_metric(f.column_sizes, "size_bytes", column_metrics)
-                    _update_col_metric(
-                        f.null_value_counts, "null_count", column_metrics
-                    )
-                    _update_col_metric(
-                        f.nan_value_counts, "not_a_number_count", column_metrics
-                    )
-                    _update_col_metric(f.value_counts, "total_values", column_metrics)
+        for entry in entries:
+            f = entry["data_file"]
+            f_path = f["file_path"]
+            f_partition = f.partition.asDict() if f.partition else "Root"
+            child_data_paths.append(f_path)
+            total_rows += f["record_count"]
+            all_partitions.add(str(f_partition))
 
-                    self.inventory.append(
-                        {
-                            "type": f_type,
-                            "file_path": f_path,
-                            "format": f.file_format,
-                            "size_gb": f"{(f.file_size_in_bytes / 1024 ** 3):.10f}",
-                            "row_count": f.record_count,
-                            "partition": f_partition,
-                            "spec_id": f.sort_order_id,
-                            "columns": column_metrics,
-                        }
-                    )
-                    self.processed_data_files.add(f_path)
+            if f_path not in self.processed_data_files:
+                f_type = (
+                    FileType.DATA.value if f.content == 0 else FileType.DELETE.value
+                )
 
-            # MANIFEST NODE
+                column_metrics = {}
+                _update_col_metric(f.column_sizes, "size_bytes", column_metrics)
+                _update_col_metric(f.lower_bounds, "lower_bound", column_metrics)
+                _update_col_metric(f.upper_bounds, "upper_bound", column_metrics)
+                _update_col_metric(f.column_sizes, "size_bytes", column_metrics)
+                _update_col_metric(f.null_value_counts, "null_count", column_metrics)
+                _update_col_metric(
+                    f.nan_value_counts, "not_a_number_count", column_metrics
+                )
+                _update_col_metric(f.value_counts, "total_values", column_metrics)
+
+                local_new_data_files.append(
+                    {
+                        "type": f_type,
+                        "file_path": f_path,
+                        "format": f.file_format,
+                        "size_gb": f"{(f.file_size_in_bytes / 1024 ** 3):.10f}",
+                        "row_count": f.record_count,
+                        "partition": f_partition,
+                        "spec_id": f.sort_order_id,
+                        "columns": column_metrics,
+                    }
+                )
+
+        with self.lock:
+            if m_path in self.processed_manifests:
+                return
+
+            for data_file in local_new_data_files:
+                if data_file["file_path"] not in self.processed_data_files:
+                    self.inventory.append(data_file)
+                    self.processed_data_files.add(data_file["file_path"])
+
             self.inventory.append(
                 {
                     "type": FileType.MANIFEST.value,
