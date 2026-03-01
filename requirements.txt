@@ -1,9 +1,0 @@
-grpc-status==0.0.1
-grpcio-status==1.78.1
-parquet-tools==0.2.16
-pyspark==3.5.4
-pandas==2.3.1
-numpy==1.25.2
-arrow==1.4.0
-pyvis==0.3.2
-python-dotenv==1.2.1

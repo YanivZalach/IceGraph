@@ -1,6 +1,7 @@
 import json
 import os
 import re
+from pathlib import Path
 
 from pyvis.network import Network
 
@@ -65,7 +66,8 @@ class IceGraphVisualizer:
         return html.replace("</body>", f"{inject_metadata}</body>")
 
     def _load_custom_ui(self, html) -> str:
-        with open("js_inject.html", "r") as f:
+        base_dir = Path(__file__).parent
+        with open(base_dir / "js_inject.html", "r") as f:
             custom_ui = f.read()
 
         return html.replace("</body>", custom_ui + "</body>")

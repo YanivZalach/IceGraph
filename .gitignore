@@ -1,5 +1,12 @@
 tests/data
+*/.idea
 .idea
 tests/jars
 */__pycache__
-icegraph/.env
+.venv/
+.uv/
+*.pyc
+.env
+dist/
+build/
+*.egg-info/

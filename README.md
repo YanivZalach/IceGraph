@@ -17,6 +17,12 @@
 
 ## 🚦 Quick Start
 
+### Prerequisites
+
+- Docker
+- UV (python)
+- Python 3.9
+
 ### 1. Backend
 
 Start your Spark Connect server (example via Docker):
@@ -27,19 +33,19 @@ cd tests/spark_connect_docker && docker-compose up -d
 
 ### 2. Setup & Mock Data
 
-Install:
+Sync the environment:
 ```bash
-pip install -r requirements.txt
+uv sync
 ```
 
 Create mock if needed:
 ```bash
-python tests/create_mock_tables.py
+uv run python tests/create_mock_tables.py
 ```
 
 ### 3. Setup your Envs
 
-We will create inside the inner icegraph directory a file, named `.env`:
+We will create an `.env` file in the root directory of icegraph:
 
 ```bash
 TIMEZONE=My timezone
@@ -48,10 +54,9 @@ APPLICATION_PORT=5000
 ```
 
 ### 4. Run
-Be in the icegraph inner directory:
 
 ```bash
-python main.py
+uv run python icegraph/main.py
 ```
 
 Go to `http://localhost:5000` and explore your mock tables.
