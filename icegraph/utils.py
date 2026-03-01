@@ -51,9 +51,7 @@ def format_node_info(file_info: dict):
         sorted_keys = sorted(list(all_stats_keys))
 
         header_cols = [_format_cell(k) for k in sorted_keys]
-        header = f"\ncolumns: {_format_cell('Column Name')} | " + " | ".join(
-            header_cols
-        )
+        header = f"\ncolumns: {_format_cell('Column ID')} | " + " | ".join(header_cols)
 
         separator = "-" * len(header)
         formatted_info += f"{header},{separator}"

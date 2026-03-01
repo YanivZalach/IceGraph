@@ -5,7 +5,11 @@ from typing import Optional, List, Dict, Any, Set
 from pyspark.sql import SparkSession, functions as F
 
 from constants import FileType
-from utils import to_spark_timestamp, get_json_metadata_from_path, _update_col_metric
+from utils import (
+    to_spark_timestamp,
+    get_json_metadata_from_path,
+    _update_col_metric,
+)
 
 MAX_WORKERS = 50
 
@@ -51,23 +55,7 @@ class IcebergInventoryBuilder:
                 row, is_main_metadata_file, previous_metadata_file, index, len(rows)
             )
 
-        self._convert_column_id_to_column_name()
-
         return self.inventory
-
-    def _convert_column_id_to_column_name(self):
-        schemas = self.metadata_file_content["schemas"]
-        latest_schema_fields = max(schemas, key=lambda x: x["schema-id"])["fields"]
-        column_id_to_name = {
-            field["id"]: field["name"] for field in latest_schema_fields
-        }
-
-        for item in self.inventory:
-            if item.get("columns"):
-                item["columns"] = {
-                    column_id_to_name[col_id]: col_stats
-                    for col_id, col_stats in item.get("columns").items()
-                }
 
     def _load_metadata_and_snapshots(self):
         metadata_df = (
@@ -181,10 +169,13 @@ class IcebergInventoryBuilder:
         for entry in entries:
             f = entry["data_file"]
             f_path = f["file_path"]
-            f_partition = f.partition.asDict() if f.partition else "Root"
+            f_partition = f.partition.asDict() if f.partition else {"Root": "Root"}
             child_data_paths.append(f_path)
             total_rows += f["record_count"]
-            all_partitions.add(str(f_partition))
+            partition_repr = "|".join(
+                f"'{key}'='{value}'" for key, value in f_partition.items()
+            )
+            all_partitions.add(partition_repr)
 
             if f_path not in self.processed_data_files:
                 f_type = (
@@ -209,7 +200,7 @@ class IcebergInventoryBuilder:
                         "format": f.file_format,
                         "size_gb": f"{(f.file_size_in_bytes / 1024 ** 3):.10f}",
                         "row_count": f.record_count,
-                        "partition": f_partition,
+                        "partition": partition_repr,
                         "spec_id": f.sort_order_id,
                         "columns": column_metrics,
                     }
@@ -229,7 +220,7 @@ class IcebergInventoryBuilder:
                     "type": FileType.MANIFEST.value,
                     "file_path": m_path,
                     "added_snapshot_id": m_row["added_snapshot_id"],
-                    "partitions": list(all_partitions),
+                    "partitions": ",".join(all_partitions),
                     "total_rows": total_rows,
                     "child_files": child_data_paths,
                 }
