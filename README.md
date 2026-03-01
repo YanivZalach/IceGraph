@@ -10,6 +10,7 @@
 
 * 🕰 **Time-Travel**: View the physical state of your table as of any `datetime`.
 * 🎯 **Lineage Focus**: Click a node to isolate its specific upstream and downstream path.
+* 🔒 **Inspect Mode**: Toggle the **Lock View** to explore file metadata in the side panel without shifting the graph's visibility.
 * 📋 **Metadata Inspector**: A sticky side panel displaying record counts, stats, and file paths.
 * 🌳 **Directed Layout**: Left-to-Right (LR) flow representing the Metadata ➔ Data hierarchy.
 * 🔴 **MOR Awareness**: Visual tracking of Equality and Position delete files.
@@ -59,8 +60,14 @@ Go to `http://localhost:5000` and explore your mock tables.
 
 | Color | Type | Role |
 | --- | --- | --- |
-| 🟣 | **Metadata** | The root JSON source of truth. The pink Metadata is the current one. The rest shift in color, the more recent, the more color. |
-| 🔵 | **Snapshot** | Manifest List representing a table version. |
-| 🟠 | **Manifest** | Groupings of physical data files. |
-| 🟢 | **Data** | Parquet/Avro files containing records. |
-| 🔴 | **Deletes** | MOR markers (Equality/Position deletes). |
+| 🟣 | **Metadata** | The root JSON source. The **Pink** node is the current state; others fade with age. |
+| 🔵 | **Snapshot** | The Manifest List representing a specific table version. |
+| 🟠 | **Manifest** | Groupings of physical data files (Avro). |
+| 🟢 | **Data** | Parquet/Avro files containing actual records. |
+| 🔴 | **Deletes** | MOR markers (Equality or Position delete files). |
+
+## 🎮 UI Controls
+
+* **Reset Full View**: Clears all filters and returns the graph to its full hierarchical state.
+* **Mode: Lineage Traversal**: Default mode. Clicking a node hides everything except its direct parents and children.
+* **Mode: Inspect (Locked)**: Keeps the current graph layout static. Clicking nodes updates the **Metadata Inspector** without changing visibility.
