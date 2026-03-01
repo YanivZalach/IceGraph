@@ -71,4 +71,4 @@ Go to `http://localhost:5000` and explore your mock tables.
 * **Reset Full View**: Clears all filters and returns the graph to its full hierarchical state.
 * **Mode: Lineage Traversal**: Default mode. Clicking a node hides everything except its direct parents and children.
 * **Mode: Inspect (Locked)**: Keeps the current graph layout static. Clicking nodes updates the **Metadata Inspector** without changing visibility.
-* **Table Info**: Show you the Schema and Partition spec of the table.
+* **Table Info**: Pop-up panel showing Schema and Partition spec info of the table.
