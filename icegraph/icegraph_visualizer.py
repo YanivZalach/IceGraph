@@ -100,7 +100,7 @@ class IceGraphVisualizer:
 
     def _create_html_with_custom_ui(self, html) -> str:
         base_dir = Path(__file__).parent
-        with open(base_dir / "js_inject.html", "r") as f:
+        with open(base_dir / "js_inject.html", "r", encoding="utf-8") as f:
             custom_ui = f.read()
 
         return html.replace("</body>", custom_ui + "</body>")
