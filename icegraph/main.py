@@ -12,6 +12,7 @@ from flask import (
 from pyspark.errors import AnalysisException
 
 from iceberg_inventory_builder import IcebergInventoryBuilder
+from icegraph_logger import logger
 from icegraph_visualizer import IceGraphVisualizer
 from spark_connect import open_spark_connect_session
 from utils import verify_iceberg_table
@@ -41,13 +42,12 @@ def generate():
     try:
         verify_iceberg_table(table_name)
         table_data = IcebergInventoryBuilder(table_name, date_value).collect()
-        print(table_data["errors"])
         html = IceGraphVisualizer(table_data).generate()
 
         return Response(html, mimetype="text/html")
 
     except AnalysisException as e:
-        print(f"Spark Error: {e}")
+        logger.error(f"Spark Error: {e}")
         return redirect("/?error=table_not_found")
 
 

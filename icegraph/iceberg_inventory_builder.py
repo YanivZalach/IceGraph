@@ -5,6 +5,7 @@ from typing import Optional, List, Dict, Any, Set
 from pyspark.sql import SparkSession, functions as F
 
 from constants import FileType
+from icegraph_logger import logger
 from utils import (
     to_spark_timestamp,
     get_json_metadata_from_path,
@@ -33,7 +34,7 @@ class IcebergInventoryBuilder:
         self.errors = {}
 
     def collect(self) -> Dict[str, Any]:
-        print(f"Analyzing {self.table_name}...")
+        logger.info(f"Analyzing Table {self.table_name}")
 
         try:
             self.manifests_to_ignore = self._discover_baseline_manifests()
@@ -58,6 +59,9 @@ class IcebergInventoryBuilder:
 
         except Exception as e:
             self.errors[self.table_name] = f"Critical Table Error: {str(e)}"
+
+        for file, msg in self.errors.items():
+            logger.error(f"Error when processing file {file} - {msg}")
 
         result = {
             "inventory": self.inventory,
