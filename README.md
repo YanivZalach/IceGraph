@@ -8,6 +8,7 @@
 
 ## 🛠 Features
 
+* 🔒 **Read-Only**: The application is read-only and does not modify the table.
 * 🕰 **Time-Travel**: View the physical state of your table as of any `datetime`.
 * 🎯 **Lineage Focus**: Click a node to isolate its specific upstream and downstream path.
 * 🔒 **Inspect Mode**: Toggle the **Lock View** to explore file metadata in the side panel without shifting the graph's visibility.
@@ -30,6 +31,8 @@ Start your Spark Connect server (example via Docker):
 ```bash
 cd tests/spark_connect_docker && docker-compose up -d
 ```
+
+**Recommended**: In production, use a user with read-only permissions for the Spark Connect server, for extra peace of mind.
 
 ### 2. Setup & Mock Data
 

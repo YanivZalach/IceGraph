@@ -154,6 +154,18 @@ class IcebergInventoryBuilder:
 
         if snap_id and row_dict.get("manifest_list"):
             manifest_list_path = row_dict["manifest_list"]
+            summary = row_dict.get("summary", {})
+            summary_repr = ",".join(
+                [
+                    (
+                        f"{k}: {(int(v) / (1024**3)):.5f} GB"
+                        if k.endswith("files-size")
+                        else f"{k}: {v}"
+                    )
+                    for k, v in summary.items()
+                ]
+            )
+
             try:
                 manifests = self.spark.sql(
                     f"SELECT * FROM {self.table_name}.manifests VERSION AS OF {snap_id}"
@@ -166,6 +178,7 @@ class IcebergInventoryBuilder:
                         "timestamp": str(row_dict.get("snapshot_timestamp")),
                         "snapshot_id": snap_id,
                         "operation": row_dict["operation"],
+                        "summary": summary_repr,
                         "child_files": [m["path"] for m in manifests],
                     }
                 )
