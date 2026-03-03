@@ -78,6 +78,7 @@ class IcebergInventoryBuilder:
                 "schemas": self.metadata_file_content.get("schemas"),
                 "default-spec-id": self.metadata_file_content.get("default-spec-id"),
                 "partition-specs": self.metadata_file_content.get("partition-specs"),
+                "sort-orders": self.metadata_file_content.get("sort-orders"),
             }
 
         return result
@@ -139,6 +140,10 @@ class IcebergInventoryBuilder:
                         "timestamp": str(row_dict.get("meta_log_timestamp")),
                         "snapshot_id": snap_id,
                         "previous_metadata_file": previous_metadata_file,
+                        "latest_schema_id": row_dict.get("latest_schema_id"),
+                        "latest_sequence_number": row_dict.get(
+                            "latest_sequence_number"
+                        ),
                         "child_files": (
                             [row_dict.get("manifest_list")]
                             if row_dict.get("manifest_list")
@@ -177,6 +182,7 @@ class IcebergInventoryBuilder:
                         "file_path": manifest_list_path,
                         "timestamp": str(row_dict.get("snapshot_timestamp")),
                         "snapshot_id": snap_id,
+                        "parent_id": row_dict.get("parent_id"),
                         "operation": row_dict["operation"],
                         "summary": summary_repr,
                         "child_files": [m["path"] for m in manifests],
@@ -222,12 +228,14 @@ class IcebergInventoryBuilder:
                 all_partitions.add(partition_repr)
 
                 if f_path not in self.processed_data_files:
-                    f_type = (
-                        FileType.DATA.value if f.content == 0 else FileType.DELETE.value
-                    )
+                    if f.content == 0:
+                        f_type = FileType.DATA.value
+                    elif f.content == 1:
+                        f_type = FileType.POSITION_DELETE.value
+                    else:
+                        f_type = FileType.EQUALITY_DELETE.value
 
                     column_metrics = {}
-                    _update_col_metric(f.column_sizes, "size_bytes", column_metrics)
                     _update_col_metric(f.lower_bounds, "lower_bound", column_metrics)
                     _update_col_metric(f.upper_bounds, "upper_bound", column_metrics)
                     _update_col_metric(f.column_sizes, "size_bytes", column_metrics)
@@ -247,8 +255,11 @@ class IcebergInventoryBuilder:
                             "size_gb": f"{(f.file_size_in_bytes / 1024 ** 3):.10f}",
                             "row_count": f.record_count,
                             "partition": partition_repr,
-                            "spec_id": f.sort_order_id,
+                            "sort_order_id": f.sort_order_id,
                             "columns": column_metrics,
+                            "split_offsets": ",".join(map(str, f.split_offsets or [])),
+                            "key_metadata": f.key_metadata,
+                            "equality_ids": f.equality_ids,
                         }
                     )
 

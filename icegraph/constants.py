@@ -7,7 +7,8 @@ class FileType(Enum):
     SNAPSHOT = "snapshot"
     MANIFEST = "manifest"
     DATA = "data"
-    DELETE = "delete"
+    POSITION_DELETE = "position_delete"
+    EQUALITY_DELETE = "equality_delete"
 
 
 NODE_STYLE_MAP = {
@@ -16,7 +17,8 @@ NODE_STYLE_MAP = {
     FileType.SNAPSHOT.value: {"rgb": (58, 190, 249), "level": 0},
     FileType.MANIFEST.value: {"rgb": (243, 156, 18), "level": 1},
     FileType.DATA.value: {"rgb": (46, 204, 113), "level": 2},
-    FileType.DELETE.value: {"rgb": (231, 76, 60), "level": 2},
+    FileType.POSITION_DELETE.value: {"rgb": (231, 76, 60), "level": 2},
+    FileType.EQUALITY_DELETE.value: {"rgb": (231, 76, 60), "level": 2},
 }
 
 VISUALIZATION_OPTIONS = {
