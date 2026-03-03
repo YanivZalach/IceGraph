@@ -41,7 +41,7 @@ class IcebergInventoryBuilder:
 
             if self.timestamp_cutoff:
                 df = df.filter(
-                    F.col("snapshot_timestamp")
+                    F.coalesce(F.col("snapshot_timestamp"), F.col("meta_log_timestamp"))
                     >= F.lit(str(self.timestamp_cutoff)).cast("timestamp")
                 )
 
