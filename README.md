@@ -4,6 +4,9 @@
 
 > **Opinionated Design**: IceGraph is built exclusively for **Spark Connect** backends.
 
+> **Table Version**: Currently IceGraph officially supports Table Version 2.
+
+
 ![IceGraph Visualization](images/example.png)
 
 ## 🛠 Features
