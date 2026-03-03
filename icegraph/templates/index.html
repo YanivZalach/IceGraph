@@ -102,7 +102,7 @@
             <input type="text" name="table_name" placeholder="db.table" required>
 
             <label>View As Of</label>
-            <input type="datetime-local" name="date">
+            <input type="datetime-local" name="date" id="view_as_of">
 
             <button type="submit" id="submit-btn">Generate Graph</button>
         </form>
@@ -114,6 +114,11 @@
     </div>
 
     <script>
+        window.addEventListener('load', () => {
+            const date = new Date(Date.now() - 7200000);
+            date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+            document.getElementById('view_as_of').value = date.toISOString().slice(0, 16);
+        });
         document.getElementById('gen-form').onsubmit = function () {
             document.getElementById('submit-btn').style.display = 'none';
             document.getElementById('loader').style.display = 'block';
