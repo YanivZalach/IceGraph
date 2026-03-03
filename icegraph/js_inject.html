@@ -23,7 +23,7 @@
         border-radius: 8px;
         cursor: pointer;
         z-index: 9999;
-        font-weight: 700;
+        font-weight: bold;
         font-size: 0.85rem;
         text-transform: uppercase;
         letter-spacing: 0.05em;
@@ -32,6 +32,7 @@
     }
 
     #sticky-info {
+        font-family: 'Segoe UI Light', Tahoma, Geneva, Verdana, sans-serif;
         position: fixed;
         top: 20px;
         right: 20px;
@@ -67,6 +68,7 @@
     }
 
     .meta-header {
+        font-family: 'Segoe UI Black', Tahoma, Geneva, Verdana, sans-serif;
         font-weight: 800;
         font-size: 1.3em;
         color: #0f172a;
@@ -125,13 +127,51 @@
         z-index: 9999;
     }
 
-    #reset-btn,
+    #reset-btn {
+    font-family: 'Segoe UI Semibold', Tahoma, Geneva, Verdana, sans-serif;
+    padding: 12px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s ease;
+    width: 220px;
+    }
+
+    #details-btn.partial {
+        background: white;
+        color: #2E86C1;
+        border: 2px solid #2E86C1;
+    }
+
+    #details-btn.full {
+        background: #2E86C1;
+        color: white;
+        border: none;
+    }
+
+    #reset-btn.full {
+        background: #2E86C1;
+        color: white;
+        border: none;
+    }
+
+    #reset-btn.partial {
+        background: #ffffff;
+        color: #2E86C1;
+        border: 2px solid #2E86C1;
+    }
+
     #inspect-btn {
-        padding: 12px 18px;
+        font-family: 'Segoe UI Semibold', Tahoma, Geneva, Verdana, sans-serif;
+        padding: 0;
         border: none;
         border-radius: 8px;
         cursor: pointer;
-        font-weight: 700;
+        font-weight: bold;
         font-size: 0.75rem;
         text-transform: uppercase;
         letter-spacing: 0.03em;
@@ -139,17 +179,40 @@
         transition: all 0.2s ease;
         text-align: left;
         width: 220px;
+        text-align: center;
+
+        display: flex;
+        overflow: hidden;
     }
 
+    #inspect-icon {
+        width: 30%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        font-size: 1.5rem;
+        background: rgba(0,0,0,0.05);
+    }
+
+    #inspect-text {
+        width: 70%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        padding: 12px;
+    }      
+
     #reset-btn {
-        background: #1a202c;
+        background: #2E86C1;
         color: white;
     }
 
     #inspect-btn {
         background: #ffffff;
-        color: #1a202c;
-        border: 2px solid #1a202c;
+        color: #2E86C1;
+        border: 2px solid #2E86C1;
     }
 
     #inspect-btn.active {
@@ -159,6 +222,7 @@
     }
 
     #details-btn {
+        font-family: 'Segoe UI Semibold', Tahoma, Geneva, Verdana, sans-serif;
         text-overflow: ellipsis;
         padding: 12px 18px;
         border: 2px solid #e2e8f0;
@@ -170,12 +234,13 @@
         letter-spacing: 0.03em;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         transition: all 0.2s ease;
-        text-align: left;
+        text-align: center;
         width: 220px;
         background: #ffffff;
-        color: #1a202c;
+        color: #2E86C1;
         display: flex;
         align-items: center;
+        justify-content: center;
     }
 
     .specs-wrapper {
@@ -185,18 +250,19 @@
     }
 
     .panel-header {
-        color: #94a3b8;
+        font-family: 'Segoe UI Black', Tahoma, Geneva, Verdana, sans-serif;
+        color: #475569;
         font-size: 0.65rem;
         font-weight: 800;
         text-transform: uppercase;
-        margin-bottom: 10px;
+        margin-bottom: 5px;
         letter-spacing: 0.05em;
     }
 
     #metadata-raw {
         font-family: 'JetBrains Mono', 'Fira Code', monospace;
         font-size: 0.85rem;
-        color: #1e1b4b;
+        color: #2E86C1;
         margin: 0;
         white-space: pre;
         word-break: normal;
@@ -256,12 +322,13 @@
 </div>
 
 <div id="controls-container">
-    <button id="reset-btn" onclick="resetView()">Reset Full View</button>
+    <button id="reset-btn" class="full" onclick="resetView()">Reset Full View</button>
     <button id="inspect-btn" onclick="toggleInspectMode()">
-        <span id="inspect-icon">🔍</span> <span id="inspect-text">Mode: Lineage Traversal</span>
+        <span id="inspect-icon">🔍</span>
+        <span id="inspect-text">Mode: Lineage Traversal</span>
     </button>
     <div class="specs-wrapper">
-        <button id="details-btn" onclick="toggleDetailsPanel()">
+        <button id="details-btn" class="partial" onclick="toggleDetailsPanel()">
             <span id="details-btn-text">Loading Specs...</span>
         </button>
         <div id="details-panel" class="collapsed">
@@ -272,14 +339,31 @@
 </div>
 
 <script>
+    let isInspectMode = false;
+    let isFullView = true;
+
     function resetView() {
         nodes.update(nodes.get().map(n => { n.hidden = false; return n; }));
         edges.update(edges.get().map(e => { e.hidden = false; return e; }));
+    
         document.getElementById('sticky-info').style.display = 'none';
         network.fit();
+
+        isFullView = true;
+        updateResetButton();
     }
 
-    let isInspectMode = false;
+    function updateResetButton() {
+        const btn = document.getElementById('reset-btn');
+
+        if (isFullView) {
+            btn.classList.remove('partial');
+            btn.classList.add('full');
+        } else {
+            btn.classList.remove('full');
+            btn.classList.add('partial');
+        }
+    }
 
     function toggleInspectMode() {
         isInspectMode = !isInspectMode;
@@ -297,6 +381,20 @@
             icon.innerText = "🔍";
         }
     }
+
+    network.on("zoom", function () {
+        if (isFullView) {
+            isFullView = false;
+            updateResetButton();
+        }
+    });
+
+    network.on("dragEnd", function () {
+        if (isFullView) {
+            isFullView = false;
+            updateResetButton();
+        }
+    });
 
     network.on("click", function (params) {
         if (params.nodes.length === 0) return;
@@ -350,7 +448,21 @@
 
     window.toggleDetailsPanel = function () {
         const panel = document.getElementById('details-panel');
-        if (panel) panel.classList.toggle('collapsed');
+        const btn = document.getElementById('details-btn');
+
+        if (!panel) return;
+
+        panel.classList.toggle('collapsed');
+
+        const isOpen = !panel.classList.contains('collapsed');
+
+        if (isOpen) {
+            btn.classList.remove('partial');
+            btn.classList.add('full');
+        } else {
+            btn.classList.remove('full');
+            btn.classList.add('partial');
+        }
     };
 
     document.addEventListener("DOMContentLoaded", function () {
