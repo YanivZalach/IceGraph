@@ -4,15 +4,13 @@ from typing import Optional, List, Dict, Any, Set
 
 from pyspark.sql import SparkSession, functions as F
 
-from constants import FileType
+from constants import FileType, PARALLEL_SPARK_SQL
 from icegraph_logger import logger
 from utils import (
     to_spark_timestamp,
     get_json_metadata_from_path,
     _update_col_metric,
 )
-
-MAX_WORKERS = 50
 
 
 class IcebergInventoryBuilder:
@@ -32,6 +30,7 @@ class IcebergInventoryBuilder:
         )
         self.lock = threading.Lock()
         self.errors = {}
+        self.manifest_cache: Dict[int, List[Dict[str, Any]]] = {}
 
     def collect(self) -> Dict[str, Any]:
         logger.info(f"Analyzing Table {self.table_name}")
@@ -47,6 +46,9 @@ class IcebergInventoryBuilder:
                 )
 
             rows = df.sort(F.desc("meta_log_timestamp")).collect()
+
+            self._prefetch_all_manifests(rows)
+
             for index, row in enumerate(rows):
                 is_main_metadata_file = index == 0
                 previous_metadata_file = None
@@ -112,6 +114,29 @@ class IcebergInventoryBuilder:
         ).collect()
         return {m["path"] for m in old_manifests}
 
+    def _prefetch_all_manifests(self, rows: List[Any]):
+        snap_ids = {
+            row.asDict()["snapshot_id"]
+            for row in rows
+            if row.asDict().get("snapshot_id")
+        }
+
+        with ThreadPoolExecutor(max_workers=PARALLEL_SPARK_SQL) as executor:
+            results = executor.map(self._fetch_snapshot_manifests, snap_ids)
+            for snap_id, manifests in results:
+                self.manifest_cache[snap_id] = manifests
+
+    def _fetch_snapshot_manifests(self, snap_id: int):
+        try:
+            manifests = self.spark.sql(
+                f"SELECT * FROM {self.table_name}.manifests VERSION AS OF {snap_id}"
+            ).collect()
+            return snap_id, manifests
+        except Exception as e:
+            with self.lock:
+                self.errors[f"snap_{snap_id}"] = f"Pre-fetch SQL Error: {str(e)}"
+            return snap_id, []
+
     def _process_row(
         self,
         row,
@@ -172,9 +197,7 @@ class IcebergInventoryBuilder:
             )
 
             try:
-                manifests = self.spark.sql(
-                    f"SELECT * FROM {self.table_name}.manifests VERSION AS OF {snap_id}"
-                ).collect()
+                manifests = self.manifest_cache.get(snap_id, [])
 
                 self.inventory.append(
                     {
@@ -193,7 +216,7 @@ class IcebergInventoryBuilder:
                 self.errors[manifest_list_path] = f"Snapshot SQL Error: {str(e)}"
 
     def _process_manifests(self, manifests):
-        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        with ThreadPoolExecutor(max_workers=PARALLEL_SPARK_SQL) as executor:
             executor.map(self._process_single_manifest, manifests)
 
     def _process_single_manifest(self, m_row):

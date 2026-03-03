@@ -1,5 +1,7 @@
 from enum import Enum
 
+PARALLEL_SPARK_SQL = 50
+
 
 class FileType(Enum):
     MAIN_METADATA = "main_metadata"
