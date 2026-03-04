@@ -16,16 +16,19 @@
 <body>
     <div class="card">
         <h2>IceGraph</h2>
-        <p>Enter a table to visualize its structure. <br><b>Time Filter:</b> Filter by the timestamp of the <b>snapshot
-                files</b>, accordingly icegraph will prunes metadata logs, manifests, and data files
-            added after the selected time. Only if no snapshot exist for the metadata file, we filter by its own
-            timesatmp.</p>
         <form id="gen-form" method="POST" action="/generate">
             <label>Table Name</label>
             <input type="text" name="table_name" placeholder="db.table" required>
 
             <label>View As Of</label>
             <input type="datetime-local" name="date" id="view_as_of">
+
+            <p>Enter a table to visualize its structure. <br><b>Time Filter:</b> Filter by the timestamp of the
+                <b>snapshot
+                    files</b>, accordingly icegraph will prunes metadata logs, manifests, and data files
+                added after the selected time. Only if no snapshot exist for the metadata file, we filter by its own
+                timesatmp.
+            </p>
 
             <button type="submit" id="submit-btn">Generate Graph</button>
         </form>
@@ -34,6 +37,7 @@
             <div class="spinner"></div>
             <b>Analyzing Lineage...</b>
         </div>
+
     </div>
 
     <script>
