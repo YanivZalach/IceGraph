@@ -128,17 +128,17 @@
     }
 
     #reset-btn {
-    font-family: 'Segoe UI Semibold', Tahoma, Geneva, Verdana, sans-serif;
-    padding: 12px 18px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    transition: all 0.2s ease;
-    width: 220px;
+        font-family: 'Segoe UI Semibold', Tahoma, Geneva, Verdana, sans-serif;
+        padding: 12px 18px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        transition: all 0.2s ease;
+        width: 220px;
     }
 
     #details-btn.partial {
@@ -192,7 +192,7 @@
         justify-content: center;
 
         font-size: 1.5rem;
-        background: rgba(0,0,0,0.05);
+        background: rgba(0, 0, 0, 0.05);
     }
 
     #inspect-text {
@@ -202,7 +202,7 @@
         justify-content: center;
 
         padding: 12px;
-    }      
+    }
 
     #reset-btn {
         background: #2E86C1;
@@ -298,21 +298,145 @@
     }
 
     #details-panel:not(.collapsed) {
-        max-height: 600px;
+        max-height: 80vh;
         padding: 12px;
         opacity: 1;
+        overflow-y: auto;
     }
 
     .spec-code {
         font-family: 'JetBrains Mono', monospace;
-        font-size: 0.7rem;
+        font-size: 0.85rem;
         background: #1e293b;
         color: #f8fafc;
         padding: 12px;
         border-radius: 6px;
         overflow: auto;
-        white-space: pre-wrap;
-        word-break: break-all;
+        white-space: pre;
+        word-break: normal;
+        max-height: 400px;
+    }
+
+    .metadata-section {
+        margin-bottom: 20px;
+    }
+
+    .metadata-section-title {
+        font-size: 0.75rem;
+        font-weight: 800;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 10px;
+        border-bottom: 1px solid #f1f5f9;
+        padding-bottom: 4px;
+    }
+
+    .schema-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .schema-box {
+        background: #f8fafc;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 10px;
+        min-width: 60px;
+        text-align: center;
+        transition: all 0.2s ease;
+        cursor: help;
+        position: relative;
+    }
+
+    .schema-box.active {
+        border-color: #2E86C1;
+        background: #eef2ff;
+        box-shadow: 0 0 0 2px rgba(46, 134, 193, 0.2);
+    }
+
+    .schema-box.selected {
+        border-color: #f59e0b;
+        background: #fffbeb;
+        box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+    }
+
+    .schema-box.active::after {
+        content: "ACTIVE";
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background: #2E86C1;
+        color: white;
+        font-size: 0.5rem;
+        font-weight: 900;
+        padding: 2px 5px;
+        border-radius: 4px;
+        letter-spacing: 0.05em;
+    }
+
+    .schema-id {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: #1e293b;
+        display: block;
+    }
+
+    .schema-label {
+        font-size: 0.6rem;
+        color: #64748b;
+        text-transform: uppercase;
+        font-weight: 700;
+    }
+
+    .metadata-item {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.8rem;
+        padding: 4px 0;
+        border-bottom: 1px dashed #f1f5f9;
+    }
+
+    .metadata-item-label {
+        color: #64748b;
+        font-weight: 600;
+    }
+
+    .metadata-item-value {
+        color: #1e293b;
+        font-family: 'JetBrains Mono', monospace;
+        font-weight: 700;
+    }
+
+    #metadata-selection-detail {
+        margin-top: 15px;
+        padding: 10px;
+        background: #f1f5f9;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        display: none;
+    }
+
+    #metadata-selection-detail.visible {
+        display: block;
+    }
+
+    .detail-header {
+        font-size: 0.7rem;
+        font-weight: 800;
+        color: #475569;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .detail-close {
+        cursor: pointer;
+        color: #94a3b8;
+        font-size: 1.1rem;
     }
 </style>
 
@@ -332,7 +456,16 @@
             <span id="details-btn-text">Loading Specs...</span>
         </button>
         <div id="details-panel" class="collapsed">
-            <div class="panel-header">Raw Metadata Specs</div>
+            <div class="panel-header">Table Specification</div>
+            <div id="metadata-structured"></div>
+            <div id="metadata-selection-detail">
+                <div class="detail-header">
+                    <span id="detail-title">Selection Detail</span>
+                    <span class="detail-close" onclick="closeMetadataDetail()">×</span>
+                </div>
+                <pre class="spec-code" id="detail-content"></pre>
+            </div>
+            <div class="panel-header" style="margin-top: 15px;">Raw Metadata JSON</div>
             <pre id="metadata-raw"></pre>
         </div>
     </div>
@@ -345,7 +478,7 @@
     function resetView() {
         nodes.update(nodes.get().map(n => { n.hidden = false; return n; }));
         edges.update(edges.get().map(e => { e.hidden = false; return e; }));
-    
+
         document.getElementById('sticky-info').style.display = 'none';
         network.fit();
 
@@ -467,6 +600,7 @@
 
     document.addEventListener("DOMContentLoaded", function () {
         const rawContainer = document.getElementById('metadata-raw');
+        const structuredContainer = document.getElementById('metadata-structured');
         const btnText = document.getElementById('details-btn-text');
 
         if (TABLE_METADATA["table-name"] && btnText) {
@@ -476,7 +610,101 @@
         }
 
         rawContainer.textContent = JSON.stringify(TABLE_METADATA, null, 2);
+
+        let html = '';
+
+        if (TABLE_METADATA.schemas && Array.isArray(TABLE_METADATA.schemas)) {
+            html += `<div class="metadata-section">
+                <div class="metadata-section-title">Schemas History</div>
+                <div class="schema-container">`;
+
+            TABLE_METADATA.schemas.forEach(schema => {
+                const isActive = schema["schema-id"] === TABLE_METADATA["current-schema-id"];
+                html += `
+                    <div class="schema-box ${isActive ? 'active' : ''}" 
+                         onclick="showMetadataDetail('schema', ${schema["schema-id"]})"
+                         title="Fields: ${schema.fields ? schema.fields.length : 0}">
+                        <span class="schema-label">Schema</span>
+                        <span class="schema-id">${schema["schema-id"]}</span>
+                    </div>`;
+            });
+
+            html += `</div></div>`;
+        }
+
+        if (TABLE_METADATA["partition-specs"] && Array.isArray(TABLE_METADATA["partition-specs"])) {
+            html += `<div class="metadata-section">
+                <div class="metadata-section-title">Partition Specs</div>
+                <div class="schema-container">`;
+
+            TABLE_METADATA["partition-specs"].forEach(spec => {
+                const isActive = spec["spec-id"] === TABLE_METADATA["default-spec-id"];
+                html += `
+                    <div class="schema-box ${isActive ? 'active' : ''}" 
+                         onclick="showMetadataDetail('spec', ${spec["spec-id"]})"
+                         title="Fields: ${spec.fields ? spec.fields.length : 0}">
+                        <span class="schema-label">Spec</span>
+                        <span class="schema-id">${spec["spec-id"]}</span>
+                    </div>`;
+            });
+
+            html += `</div></div>`;
+        }
+
+        if (TABLE_METADATA["sort-orders"] && Array.isArray(TABLE_METADATA["sort-orders"])) {
+            html += `<div class="metadata-section">
+                <div class="metadata-section-title">Sort Orders</div>
+                <div class="schema-container">`;
+
+            TABLE_METADATA["sort-orders"].forEach(order => {
+                const isActive = order["order-id"] === TABLE_METADATA["default-sort-order-id"];
+                html += `
+                    <div class="schema-box ${isActive ? 'active' : ''}" 
+                         onclick="showMetadataDetail('order', ${order["order-id"]})"
+                         title="Fields: ${order.fields ? order.fields.length : 0}">
+                        <span class="schema-label">Order</span>
+                        <span class="schema-id">${order["order-id"]}</span>
+                    </div>`;
+            });
+
+            html += `</div></div>`;
+        }
+
+        structuredContainer.innerHTML = html;
     });
+
+    window.showMetadataDetail = function (type, id) {
+        const detailPanel = document.getElementById('metadata-selection-detail');
+        const detailTitle = document.getElementById('detail-title');
+        const detailContent = document.getElementById('detail-content');
+
+        document.querySelectorAll('.schema-box').forEach(box => box.classList.remove('selected'));
+        const target = event.currentTarget;
+        if (target) target.classList.add('selected');
+
+        let data = null;
+        if (type === 'schema') {
+            data = TABLE_METADATA.schemas.find(s => s["schema-id"] === id);
+            detailTitle.textContent = `Schema ID: ${id}`;
+        } else if (type === 'spec') {
+            data = TABLE_METADATA["partition-specs"].find(s => s["spec-id"] === id);
+            detailTitle.textContent = `Partition Spec ID: ${id}`;
+        } else if (type === 'order') {
+            data = TABLE_METADATA["sort-orders"].find(s => s["order-id"] === id);
+            detailTitle.textContent = `Sort Order ID: ${id}`;
+        }
+
+        if (data) {
+            detailContent.textContent = JSON.stringify(data, null, 2);
+            detailPanel.classList.add('visible');
+            detailPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    };
+
+    window.closeMetadataDetail = function () {
+        document.getElementById('metadata-selection-detail').classList.remove('visible');
+        document.querySelectorAll('.schema-box').forEach(box => box.classList.remove('selected'));
+    };
 
     document.addEventListener("DOMContentLoaded", function () {
         const errorEntries = Object.entries(TABLE_ERRORS);

@@ -7,7 +7,7 @@
 > **Table Version**: Currently IceGraph officially supports Table Version 2.
 
 
-![IceGraph Visualization](images/example.png)
+![IceGraph Visualization](images/example1.png)
 
 ## 🛠 Features
 
@@ -20,6 +20,8 @@
 * 🔴 **MOR Awareness**: Visual tracking of Equality and Position delete files.
 
 ## 🚦 Quick Start
+
+![IceGraph Visualization](images/example2.png)
 
 ### Prerequisites
 

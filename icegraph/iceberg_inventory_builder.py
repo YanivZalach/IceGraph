@@ -80,6 +80,9 @@ class IcebergInventoryBuilder:
                 "schemas": self.metadata_file_content.get("schemas"),
                 "default-spec-id": self.metadata_file_content.get("default-spec-id"),
                 "partition-specs": self.metadata_file_content.get("partition-specs"),
+                "default-sort-order-id": self.metadata_file_content.get(
+                    "default-sort-order-id"
+                ),
                 "sort-orders": self.metadata_file_content.get("sort-orders"),
             }
 
