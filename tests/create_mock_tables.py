@@ -8,8 +8,7 @@ spark = SparkSession.builder.remote("sc://localhost:15002").getOrCreate()
 # ============================================================
 spark.sql("DROP TABLE IF EXISTS default.sales_partitioned")
 
-spark.sql(
-    """
+spark.sql("""
 CREATE TABLE default.sales_partitioned (
     sale_id INT,
     category STRING,
@@ -22,26 +21,21 @@ TBLPROPERTIES (
     'format-version' = '2',
     'write.delete.mode' = 'merge-on-read'
 )
-"""
-)
+""")
 
 # Insert data into multiple partitions (Category A and B)
-spark.sql(
-    """
+spark.sql("""
 INSERT INTO default.sales_partitioned VALUES 
 (1, 'Electronics', 500.0, CAST('2026-02-20' AS DATE)),
 (2, 'Electronics', 150.0, CAST('2026-02-20' AS DATE)),
 (3, 'Furniture', 1200.0, CAST('2026-02-21' AS DATE))
-"""
-)
+""")
 
 # Add more data to trigger a second manifest
-spark.sql(
-    """
+spark.sql("""
 INSERT INTO default.sales_partitioned VALUES 
 (4, 'Electronics', 200.0, CAST('2026-02-21' AS DATE))
-"""
-)
+""")
 
 # Perform an UPDATE to create Equality Deletes (RED nodes in your graph)
 spark.sql("UPDATE default.sales_partitioned SET amount = 550.0 WHERE sale_id = 1")
@@ -52,8 +46,7 @@ spark.sql("UPDATE default.sales_partitioned SET amount = 550.0 WHERE sale_id = 1
 # ============================================================
 spark.sql("DROP TABLE IF EXISTS default.system_logs")
 
-spark.sql(
-    """
+spark.sql("""
 CREATE TABLE default.system_logs (
     log_id BIGINT,
     level STRING,
@@ -62,8 +55,7 @@ CREATE TABLE default.system_logs (
 ) 
 USING iceberg
 TBLPROPERTIES ('format-version' = '2')
-"""
-)
+""")
 
 # Rapid fire inserts to create multiple snapshots quickly
 for i in range(3):

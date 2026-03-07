@@ -6,7 +6,11 @@ from typing import Dict, Any
 
 from pyvis.network import Network
 
-from constants import NODE_STYLE_MAP, VISUALIZATION_OPTIONS
+from constants import (
+    NODE_STYLE_MAP,
+    VISUALIZATION_OPTIONS,
+    DELETED_DATA_FILE_CONNECTION_COLOR,
+)
 from utils import format_node_info
 
 
@@ -46,9 +50,14 @@ class IceGraphVisualizer:
         for item in self.inventory:
             parent = item.get("file_path")
             children = item.get("child_files", [])
+            deleted_children = set(item.get("deleted_child_files", []))
             for child in children:
                 if parent in added_nodes and child in added_nodes:
-                    net.add_edge(parent, child)
+                    edge_options = {}
+                    if child in deleted_children:
+                        edge_options["color"] = DELETED_DATA_FILE_CONNECTION_COLOR
+                        edge_options["title"] = "deleted"
+                    net.add_edge(parent, child, **edge_options)
 
         net.set_options(json.dumps(VISUALIZATION_OPTIONS))
 

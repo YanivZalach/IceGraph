@@ -2,6 +2,8 @@ from enum import Enum
 
 PARALLEL_SPARK_SQL = 50
 
+DELETED_DATA_FILE_CONNECTION_COLOR = "#FF0000"
+
 
 class FileType(Enum):
     MAIN_METADATA = "main_metadata"

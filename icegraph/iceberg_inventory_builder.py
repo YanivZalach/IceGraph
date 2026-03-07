@@ -237,7 +237,7 @@ class IcebergInventoryBuilder:
                 .collect()
             )
 
-            child_data_paths = []
+            child_data_paths_status = {"existing": [], "deleted": []}
             total_rows = 0
             all_partitions = set()
             local_new_data_files = []
@@ -246,21 +246,27 @@ class IcebergInventoryBuilder:
                 f = entry["data_file"]
                 f_path = f["file_path"]
                 f_partition = f.partition.asDict() if f.partition else {"Root": "Root"}
-                child_data_paths.append(f_path)
+                f_status = entry["status"]
+
+                if f_status == 2:
+                    child_data_paths_status["deleted"].append(f_path)
+                else:
+                    child_data_paths_status["existing"].append(f_path)
+
                 total_rows += f["record_count"]
                 partition_repr = "|".join(
                     f"'{key}'='{value}'" for key, value in f_partition.items()
                 )
                 all_partitions.add(partition_repr)
 
-                if f_path not in self.processed_data_files:
-                    if f.content == 0:
-                        f_type = FileType.DATA.value
-                    elif f.content == 1:
-                        f_type = FileType.POSITION_DELETE.value
-                    else:
-                        f_type = FileType.EQUALITY_DELETE.value
+                if f.content == 0:
+                    f_type = FileType.DATA.value
+                elif f.content == 1:
+                    f_type = FileType.POSITION_DELETE.value
+                else:
+                    f_type = FileType.EQUALITY_DELETE.value
 
+                if f_path not in self.processed_data_files:
                     column_metrics = {}
                     _update_col_metric(f.lower_bounds, "lower_bound", column_metrics)
                     _update_col_metric(f.upper_bounds, "upper_bound", column_metrics)
@@ -305,7 +311,10 @@ class IcebergInventoryBuilder:
                         "added_snapshot_id": m_row["added_snapshot_id"],
                         "partitions": ",".join(all_partitions),
                         "total_rows": total_rows,
-                        "child_files": child_data_paths,
+                        "existing_child_files": child_data_paths_status["existing"],
+                        "deleted_child_files": child_data_paths_status["deleted"],
+                        "child_files": child_data_paths_status["existing"]
+                        + child_data_paths_status["deleted"],
                     }
                 )
                 self.processed_manifests.add(m_path)
