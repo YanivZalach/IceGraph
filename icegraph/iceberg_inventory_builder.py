@@ -88,12 +88,36 @@ class IcebergInventoryBuilder:
 
         return result
 
+    def _get_schema_id(self, meta_file: str):
+        try:
+            metadata = get_json_metadata_from_path(meta_file)
+            return (meta_file, metadata.get("current-schema-id"))
+        except Exception:
+            return (meta_file, None)
+
     def _load_metadata_and_snapshots(self):
         metadata_df = (
             self.spark.sql(f"SELECT * FROM {self.table_name}.metadata_log_entries")
             .withColumnRenamed("latest_snapshot_id", "snapshot_id")
             .withColumnRenamed("timestamp", "meta_log_timestamp")
         )
+
+        metadata_files = [
+            row["file"] for row in metadata_df.select("file").distinct().collect()
+        ]
+
+        if metadata_files:
+            with ThreadPoolExecutor(max_workers=PARALLEL_SPARK_SQL) as executor:
+                schema_results = list(executor.map(self._get_schema_id, metadata_files))
+        else:
+            schema_results = []
+
+        schema_df = self.spark.createDataFrame(
+            schema_results, schema="file STRING, current_schema_id INT"
+        )
+
+        metadata_df = metadata_df.join(schema_df, on="file", how="left")
+
         snapshots_df = self.spark.sql(
             f"SELECT * FROM {self.table_name}.snapshots"
         ).withColumnRenamed("committed_at", "snapshot_timestamp")
@@ -168,7 +192,8 @@ class IcebergInventoryBuilder:
                         "timestamp": str(row_dict.get("meta_log_timestamp")),
                         "snapshot_id": snap_id,
                         "previous_metadata_file": previous_metadata_file,
-                        "latest_schema_id": row_dict.get("latest_schema_id"),
+                        "current_schema_id": row_dict.get("current_schema_id"),
+                        "latest_writen_schema_id": row_dict.get("latest_schema_id"),
                         "latest_sequence_number": row_dict.get(
                             "latest_sequence_number"
                         ),
