@@ -70,10 +70,17 @@ def format_node_info(file_info: Dict[str, Any]) -> str:
 def get_json_metadata_from_path(metadata_path: str) -> Dict[str, Any]:
     spark = SparkSession.builder.getOrCreate()
 
-    json_lines = spark.read.text(metadata_path).collect()
-    metadata_json = "\n".join([row["value"] for row in json_lines])
+    row = (
+        spark.read.option("multiLine", True)
+        .json(metadata_path)
+        .drop("metadata-log")
+        .drop("snapshot-log")
+        .drop("snapshots")
+        .drop("statistics")
+        .first()
+    )
 
-    return json.loads(metadata_json)
+    return row.asDict(recursive=True)
 
 
 def _update_col_metric(source_list, metric_name, column_metrics):
