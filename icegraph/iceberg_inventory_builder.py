@@ -1,4 +1,5 @@
 import threading
+import json
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, List, Dict, Any, Set
 
@@ -88,12 +89,19 @@ class IcebergInventoryBuilder:
 
         return result
 
-    def _get_schema_id(self, meta_file: str):
+    def _get_schema_info(self, meta_file: str):
         try:
             metadata = get_json_metadata_from_path(meta_file)
-            return (meta_file, metadata.get("current-schema-id"))
+
+            refs = metadata.get("refs", {})
+            refs_str = ",".join(
+                f"{key}: {' | '.join(f'{k}={v}' for k, v in attrs.items())}"
+                for key, attrs in refs.items()
+            )
+
+            return (meta_file, metadata.get("current-schema-id"), refs_str)
         except Exception:
-            return (meta_file, None)
+            return (meta_file, None, None)
 
     def _load_metadata_and_snapshots(self):
         metadata_df = (
@@ -108,12 +116,14 @@ class IcebergInventoryBuilder:
 
         if metadata_files:
             with ThreadPoolExecutor(max_workers=PARALLEL_SPARK_SQL) as executor:
-                schema_results = list(executor.map(self._get_schema_id, metadata_files))
+                schema_results = list(
+                    executor.map(self._get_schema_info, metadata_files)
+                )
         else:
             schema_results = []
 
         schema_df = self.spark.createDataFrame(
-            schema_results, schema="file STRING, current_schema_id INT"
+            schema_results, schema="file STRING, current_schema_id INT, refs STRING"
         )
 
         metadata_df = metadata_df.join(schema_df, on="file", how="left")
@@ -197,6 +207,7 @@ class IcebergInventoryBuilder:
                         "latest_sequence_number": row_dict.get(
                             "latest_sequence_number"
                         ),
+                        "refs": row_dict.get("refs"),
                         "child_files": (
                             [row_dict.get("manifest_list")]
                             if row_dict.get("manifest_list")
