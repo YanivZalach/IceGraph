@@ -53,7 +53,7 @@ class IceGraphVisualizer:
             children = item.get("child_files", [])
             deleted_children = set(item.get("deleted_child_files", []))
             branch_children = item.get("hidden_metadata", {}).get("branch_files", {})
-            signal_branches = set()
+            connected_branches = set()
 
             for child in children:
                 if parent in added_nodes and child in added_nodes:
@@ -63,12 +63,13 @@ class IceGraphVisualizer:
                         edge_options["title"] = "deleted"
                     elif (
                         child in branch_children
-                        and branch_children[child] not in signal_branches
+                        and branch_children[child] not in connected_branches
                     ):
+                        branch_names = branch_children[child]
                         edge_options["dashes"] = [15, 20, 5, 20]
                         edge_options["color"] = BRANCH_CONNECTION_COLOR
-                        edge_options["title"] = branch_children[child]
-                        signal_branches.add(branch_children[child])
+                        edge_options["title"] = branch_names
+                        connected_branches.add(branch_names)
 
                     net.add_edge(parent, child, **edge_options)
 

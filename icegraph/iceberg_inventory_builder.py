@@ -110,12 +110,12 @@ class IcebergInventoryBuilder:
             }
 
             item["hidden_metadata"]["branch_files"] = {}
-            for branch_name, snapshot_id in label_to_snapshot.items():
+            for branch_names, snapshot_id in label_to_snapshot.items():
                 if snapshot_id in self.snapshots_to_path:
                     item["child_files"].append(self.snapshots_to_path[snapshot_id])
                     item["hidden_metadata"]["branch_files"][
                         self.snapshots_to_path[snapshot_id]
-                    ] = branch_name
+                    ] = branch_names
 
     def _get_schema_info(self, meta_file: str):
         try:
