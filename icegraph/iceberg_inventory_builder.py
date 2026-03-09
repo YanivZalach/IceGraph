@@ -1,11 +1,10 @@
 import threading
-import json
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, List, Dict, Any, Set
 
 from pyspark.sql import SparkSession, functions as F
 
-from constants import FileType, PARALLEL_SPARK_SQL
+from constants import FileType, PARALLEL_SPARK_SQL, MAIN_BRANCH_ICEBERG_TABLE_NAME
 from icegraph_logger import logger
 from utils import (
     to_spark_timestamp,
@@ -25,6 +24,7 @@ class IcebergInventoryBuilder:
         self.processed_data_files: Set[str] = set()
         self.processed_manifests: Set[str] = set()
         self.manifests_to_ignore: Set[str] = set()
+        self.snapshots_to_path: Dict[str, int] = {}
 
         self.timestamp_cutoff = (
             to_spark_timestamp(date_to_view) if date_to_view else None
@@ -66,6 +66,8 @@ class IcebergInventoryBuilder:
         for file, msg in self.errors.items():
             logger.error(f"Error when processing file {file} - {msg}")
 
+        self._connect_metadata_branches()
+
         result = {
             "inventory": self.inventory,
             "errors": self.errors,
@@ -89,19 +91,59 @@ class IcebergInventoryBuilder:
 
         return result
 
+    def _connect_metadata_branches(self):
+        for item in self.inventory:
+            if item["type"] not in [
+                FileType.METADATA.value,
+                FileType.MAIN_METADATA.value,
+            ]:
+                continue
+
+            branches = item["hidden_metadata"].get("branches", {})
+            snapshot_to_branches = {}
+            for branch_name, snapshot_id in branches.items():
+                snapshot_to_branches.setdefault(snapshot_id, []).append(branch_name)
+
+            label_to_snapshot = {
+                ", ".join(names): snapshot_id
+                for snapshot_id, names in snapshot_to_branches.items()
+            }
+
+            item["hidden_metadata"]["branch_files"] = {}
+            for branch_name, snapshot_id in label_to_snapshot.items():
+                if snapshot_id in self.snapshots_to_path:
+                    item["child_files"].append(self.snapshots_to_path[snapshot_id])
+                    item["hidden_metadata"]["branch_files"][
+                        self.snapshots_to_path[snapshot_id]
+                    ] = branch_name
+
     def _get_schema_info(self, meta_file: str):
         try:
             metadata = get_json_metadata_from_path(meta_file)
 
             refs = metadata.get("refs", {})
+            branches = {
+                branch_name: attrs["snapshot-id"]
+                for branch_name, attrs in refs.items()
+                if branch_name != MAIN_BRANCH_ICEBERG_TABLE_NAME
+                and attrs.get("type") == "branch"
+            }
             refs_str = ",".join(
                 f"{key}: {' | '.join(f'{k}={v}' for k, v in attrs.items())}"
                 for key, attrs in refs.items()
             )
 
-            return (meta_file, metadata.get("current-schema-id"), refs_str)
-        except Exception:
-            return (meta_file, None, None)
+            return (
+                meta_file,
+                metadata.get("current-schema-id"),
+                refs_str,
+                branches,
+            )
+
+        except Exception as e:
+            with self.lock:
+                self.errors[meta_file] = f"Error when processing file {meta_file}: {e}"
+            return (meta_file, None, None, {})
 
     def _load_metadata_and_snapshots(self):
         metadata_df = (
@@ -123,7 +165,8 @@ class IcebergInventoryBuilder:
             schema_results = []
 
         schema_df = self.spark.createDataFrame(
-            schema_results, schema="file STRING, current_schema_id INT, refs STRING"
+            schema_results,
+            schema="file STRING, current_schema_id INT, refs STRING, branches MAP<STRING, LONG>",
         )
 
         metadata_df = metadata_df.join(schema_df, on="file", how="left")
@@ -214,7 +257,9 @@ class IcebergInventoryBuilder:
                             else []
                         ),
                         "hidden_metadata": {
-                            "color_append": 1 - index / (1.5 * number_of_metadata_files)
+                            "color_append": 1
+                            - index / (1.5 * number_of_metadata_files),
+                            "branches": row_dict.get("branches"),
                         },
                     }
                 )
@@ -222,7 +267,7 @@ class IcebergInventoryBuilder:
                 self.errors[meta_file] = f"Metadata Read Error: {str(e)}"
 
         if snap_id and row_dict.get("manifest_list"):
-            manifest_list_path = row_dict["manifest_list"]
+            snapshot_path = row_dict["manifest_list"]
             summary = row_dict.get("summary", {})
             summary_repr = ",".join(
                 [
@@ -237,11 +282,12 @@ class IcebergInventoryBuilder:
 
             try:
                 manifests = self.manifest_cache.get(snap_id, [])
+                self.snapshots_to_path[snap_id] = snapshot_path
 
                 self.inventory.append(
                     {
                         "type": FileType.SNAPSHOT.value,
-                        "file_path": manifest_list_path,
+                        "file_path": snapshot_path,
                         "timestamp": str(row_dict.get("snapshot_timestamp")),
                         "snapshot_id": snap_id,
                         "parent_id": row_dict.get("parent_id"),
@@ -252,7 +298,7 @@ class IcebergInventoryBuilder:
                 )
                 self._process_manifests(manifests)
             except Exception as e:
-                self.errors[manifest_list_path] = f"Snapshot SQL Error: {str(e)}"
+                self.errors[snapshot_path] = f"Snapshot SQL Error: {str(e)}"
 
     def _process_manifests(self, manifests):
         with ThreadPoolExecutor(max_workers=PARALLEL_SPARK_SQL) as executor:

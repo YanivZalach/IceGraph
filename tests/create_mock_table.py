@@ -93,3 +93,95 @@ print("   (Hour 11 remains untouched)\n")
 
 print("📋 Final table contents:")
 spark.table("default.events").show(1000, False)
+# ─────────────────────────────────────────────
+# 5. Create 2 branches from the current snapshot
+# ─────────────────────────────────────────────
+spark.sql("ALTER TABLE default.events CREATE BRANCH audit_branch")
+spark.sql("ALTER TABLE default.events CREATE BRANCH audit_branch2")
+print(
+    "✅ Created branch 'audit_branch' and branch 'audit_branch2' from current snapshot"
+)
+
+# Write some data to main that won't appear on the branch
+experimental_data = [
+    (200, "experiment", "2025-06-15 12:00:00", "test"),
+]
+df_exp = spark.createDataFrame(
+    experimental_data, ["event_id", "event_type", "event_ts_str", "event_source"]
+)
+df_exp = df_exp.withColumn("event_ts", F.to_timestamp("event_ts_str")).drop(
+    "event_ts_str"
+)
+df_exp.writeTo("default.events").overwritePartitions()
+print("✅ Overwrote hour 12 partition on main (after branching)")
+
+# ─────────────────────────────────────────────
+# 6. Write data to the branch
+# ─────────────────────────────────────────────
+branch_data = [
+    (300, "audit_fix", "2025-06-15 13:15:00", "audit"),
+    (301, "audit_review", "2025-06-15 13:45:00", "audit"),
+]
+df_branch = spark.createDataFrame(
+    branch_data, ["event_id", "event_type", "event_ts_str", "event_source"]
+)
+df_branch = df_branch.withColumn("event_ts", F.to_timestamp("event_ts_str")).drop(
+    "event_ts_str"
+)
+df_branch.writeTo("default.events.branch_audit_branch").overwritePartitions()
+print("✅ Overwrote hour 13 partition on audit_branch")
+
+# ─────────────────────────────────────────────
+# 7. Compare main vs branch
+# ─────────────────────────────────────────────
+print("\n📋 Main branch:")
+spark.table("default.events").show(1000, False)
+
+print("📋 audit_branch:")
+spark.read.option("branch", "audit_branch").table("default.events").show(1000, False)
+
+# ─────────────────────────────────────────────
+# 8. Create a second branch from current main
+# ─────────────────────────────────────────────
+spark.sql("ALTER TABLE default.events CREATE BRANCH feature_branch")
+print("✅ Created branch 'feature_branch' from current main snapshot")
+
+# Write data to feature_branch
+feature_data = [
+    (400, "feature_test", "2025-06-15 14:10:00", "staging"),
+    (401, "feature_rollout", "2025-06-15 14:30:00", "staging"),
+    (402, "feature_flag", "2025-06-15 14:55:00", "staging"),
+]
+df_feature = spark.createDataFrame(
+    feature_data, ["event_id", "event_type", "event_ts_str", "event_source"]
+)
+df_feature = df_feature.withColumn("event_ts", F.to_timestamp("event_ts_str")).drop(
+    "event_ts_str"
+)
+df_feature.writeTo("default.events.branch_feature_branch").overwritePartitions()
+print("✅ Overwrote hour 14 partition on feature_branch")
+
+# Write more data to main so branches diverge further
+main_extra = [
+    (500, "main_only_event", "2025-06-15 15:00:00", "production"),
+]
+df_main_extra = spark.createDataFrame(
+    main_extra, ["event_id", "event_type", "event_ts_str", "event_source"]
+)
+df_main_extra = df_main_extra.withColumn(
+    "event_ts", F.to_timestamp("event_ts_str")
+).drop("event_ts_str")
+df_main_extra.writeTo("default.events").overwritePartitions()
+print("✅ Overwrote hour 15 partition on main (after feature_branch)")
+
+# ─────────────────────────────────────────────
+# 9. Compare all three: main vs audit vs feature
+# ─────────────────────────────────────────────
+print("\n📋 Main branch:")
+spark.table("default.events").show(1000, False)
+
+print("📋 audit_branch:")
+spark.read.option("branch", "audit_branch").table("default.events").show(1000, False)
+
+print("📋 feature_branch:")
+spark.read.option("branch", "feature_branch").table("default.events").show(1000, False)

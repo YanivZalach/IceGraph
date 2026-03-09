@@ -49,6 +49,7 @@ uv sync
 Create mock if needed:
 ```bash
 uv run python tests/create_mock_table.py
+uv run python tests/create_mock_table_no_branches.py
 ```
 
 ### 3. Setup your Envs

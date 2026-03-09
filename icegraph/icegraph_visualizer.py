@@ -10,6 +10,7 @@ from constants import (
     NODE_STYLE_MAP,
     VISUALIZATION_OPTIONS,
     DELETED_DATA_FILE_CONNECTION_COLOR,
+    BRANCH_CONNECTION_COLOR,
 )
 from utils import format_node_info
 
@@ -51,12 +52,24 @@ class IceGraphVisualizer:
             parent = item.get("file_path")
             children = item.get("child_files", [])
             deleted_children = set(item.get("deleted_child_files", []))
+            branch_children = item.get("hidden_metadata", {}).get("branch_files", {})
+            signal_branches = set()
+
             for child in children:
                 if parent in added_nodes and child in added_nodes:
                     edge_options = {}
                     if child in deleted_children:
                         edge_options["color"] = DELETED_DATA_FILE_CONNECTION_COLOR
                         edge_options["title"] = "deleted"
+                    elif (
+                        child in branch_children
+                        and branch_children[child] not in signal_branches
+                    ):
+                        edge_options["dashes"] = [15, 20, 5, 20]
+                        edge_options["color"] = BRANCH_CONNECTION_COLOR
+                        edge_options["title"] = branch_children[child]
+                        signal_branches.add(branch_children[child])
+
                     net.add_edge(parent, child, **edge_options)
 
         net.set_options(json.dumps(VISUALIZATION_OPTIONS))
