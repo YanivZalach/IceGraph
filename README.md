@@ -14,10 +14,11 @@
 * 🔒 **Read-Only**: The application is read-only and does not modify the table.
 * 🕰 **Time-Travel**: View the physical state of your table as of any `datetime`.
 * 🎯 **Lineage Focus**: Click a node to isolate its specific upstream and downstream path.
-* 🔒 **Inspect Mode**: Toggle the **Lock View** to explore file metadata in the side panel without shifting the graph's visibility.
+* 🔎 **Inspect Mode**: Toggle the **Lock View** to explore file metadata in the side panel without shifting the graph's visibility.
 * 📋 **Metadata Inspector**: A sticky side panel displaying record counts, stats, and file paths.
 * 🌳 **Directed Layout**: Left-to-Right (LR) flow representing the Metadata ➔ Data hierarchy.
 * 🔴 **MOR Awareness**: Visual tracking of Equality and Position delete files.
+* 🌴 **Branches**: View all the branches of the table, even when detached from the main branch.
 
 ## 🚦 Quick Start
 
