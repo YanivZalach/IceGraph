@@ -3,6 +3,14 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, List, Dict, Any, Set
 
 from pyspark.sql import SparkSession, functions as F
+from pyspark.sql.types import (
+    StructType,
+    StructField,
+    StringType,
+    IntegerType,
+    LongType,
+    MapType,
+)
 
 from constants import (
     FileType,
@@ -177,9 +185,20 @@ class IcebergInventoryBuilder:
         else:
             schema_results = []
 
+        schema = StructType(
+            [
+                StructField("file", StringType(), True),
+                StructField("format_version", IntegerType(), True),
+                StructField("default_sort_order_id", IntegerType(), True),
+                StructField("current_schema_id", IntegerType(), True),
+                StructField("refs", StringType(), True),
+                StructField("branches", MapType(StringType(), LongType()), True),
+                StructField("properties", StringType(), True),
+            ]
+        )
         schema_df = self.spark.createDataFrame(
             schema_results,
-            schema="file STRING, format_version INT, default_sort_order_id INT, current_schema_id INT, refs STRING, branches MAP<STRING, LONG>, properties STRING",
+            schema=schema,
         )
 
         metadata_df = metadata_df.join(schema_df, on="file", how="left")
