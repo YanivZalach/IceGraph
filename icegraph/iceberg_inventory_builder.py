@@ -196,10 +196,7 @@ class IcebergInventoryBuilder:
                 StructField("properties", StringType(), True),
             ]
         )
-        schema_df = self.spark.createDataFrame(
-            schema_results,
-            schema=schema,
-        )
+        schema_df = self.spark.createDataFrame(schema_results, schema=schema)
 
         metadata_df = metadata_df.join(schema_df, on="file", how="left")
 
