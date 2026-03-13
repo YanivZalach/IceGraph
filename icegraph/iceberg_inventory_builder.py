@@ -4,7 +4,12 @@ from typing import Optional, List, Dict, Any, Set
 
 from pyspark.sql import SparkSession, functions as F
 
-from constants import FileType, PARALLEL_SPARK_SQL, MAIN_BRANCH_ICEBERG_TABLE_NAME
+from constants import (
+    FileType,
+    PARALLEL_SPARK_SQL,
+    MAIN_BRANCH_ICEBERG_TABLE_NAME,
+    UI_NEWLINE,
+)
 from icegraph_logger import logger
 from utils import (
     to_spark_timestamp,
@@ -128,7 +133,7 @@ class IcebergInventoryBuilder:
                 if branch_name != MAIN_BRANCH_ICEBERG_TABLE_NAME
                 and attrs.get("type") == "branch"
             }
-            refs_str = ",".join(
+            refs_str = UI_NEWLINE.join(
                 f"{key}: {' | '.join(f'{k}={v}' for k, v in attrs.items())}"
                 for key, attrs in refs.items()
             )
@@ -269,7 +274,7 @@ class IcebergInventoryBuilder:
         if snap_id and row_dict.get("manifest_list"):
             snapshot_path = row_dict["manifest_list"]
             summary = row_dict.get("summary", {})
-            summary_repr = ",".join(
+            summary_repr = UI_NEWLINE.join(
                 [
                     (
                         f"{k}: {(int(v) / (1024**3)):.5f} GB"
@@ -336,7 +341,7 @@ class IcebergInventoryBuilder:
                     child_data_paths_status["existing"].append(f_path)
 
                 total_rows += f["record_count"]
-                partition_repr = "|".join(
+                partition_repr = " | ".join(
                     f"'{key}'='{value}'" for key, value in f_partition.items()
                 )
                 all_partitions.add(partition_repr)
@@ -371,7 +376,9 @@ class IcebergInventoryBuilder:
                             "partition": partition_repr,
                             "sort_order_id": f.sort_order_id,
                             "columns": column_metrics,
-                            "split_offsets": ",".join(map(str, f.split_offsets or [])),
+                            "split_offsets": UI_NEWLINE.join(
+                                map(str, f.split_offsets or [])
+                            ),
                             "key_metadata": f.key_metadata,
                             "equality_ids": f.equality_ids,
                         }
@@ -391,7 +398,7 @@ class IcebergInventoryBuilder:
                         "type": FileType.MANIFEST.value,
                         "file_path": m_path,
                         "added_snapshot_id": m_row["added_snapshot_id"],
-                        "partitions": ",".join(all_partitions),
+                        "partitions": UI_NEWLINE.join(all_partitions),
                         "total_rows": total_rows,
                         "existing_child_files": child_data_paths_status["existing"],
                         "deleted_child_files": child_data_paths_status["deleted"],

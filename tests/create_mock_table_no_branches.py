@@ -87,7 +87,10 @@ df_hour10_new = spark.createDataFrame(
 df_hour10_new = df_hour10_new.withColumn(
     "event_ts", F.to_timestamp("event_ts_str")
 ).drop("event_ts_str")
-df_hour10_new.writeTo("default.logging").overwritePartitions()
+df_hour10_new.writeTo("default.logging").option(
+    "snapshot-property.my_custom_key",
+    "If you have found me, you are searching through IceGraph and doing a great job!",
+).overwritePartitions()
 print("✅ Overwrote hour 10 partition with corrected data")
 print("   (Hour 11 remains untouched)\n")
 

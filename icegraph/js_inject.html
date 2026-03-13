@@ -556,7 +556,8 @@
         panel.style.borderLeftColor = nodeData.color;
 
         let rawTitle = nodeData.title || "";
-        let lines = rawTitle.split(/\\n|\n/).map(line => line.replace(/,/g, '\n'));
+        const UI_NEWLINE = '\x00';
+        let lines = rawTitle.split(/\\n|\n/).map(line => line.replace(new RegExp(UI_NEWLINE, 'g'), '\n'));
 
         let contentHtml = `<div class="meta-header">${lines[0]}</div>`;
 
