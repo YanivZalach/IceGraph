@@ -1,4 +1,5 @@
 from typing import List
+import json
 import os
 from contextlib import suppress
 from datetime import datetime
@@ -7,6 +8,7 @@ from typing import Any, Dict
 import arrow
 from pyspark.errors import AnalysisException
 from pyspark.sql import SparkSession
+from pyspark.sql.types import Row
 
 from constants import UI_NEWLINE, UI_SECTION_NEWLINE
 
@@ -33,6 +35,37 @@ def to_spark_timestamp(date_str: str) -> datetime:
         .to(spark.conf.get("spark.sql.session.timeZone"))
         .datetime
     )
+
+
+def format_partition(partition_row: Row) -> str:
+    if not partition_row:
+        return "Root"
+
+    partitions_repr = []
+    for key, value in partition_row.asDict(recursive=True).items():
+        if key.endswith("_hour") and isinstance(value, int):
+            with suppress(Exception):
+                repr_value = arrow.Arrow.utcfromtimestamp(value * 3600).format(
+                    "YYYY-MM-DD HH"
+                )
+                value = f"{repr_value} ({value})"
+
+        partitions_repr.append(f"{key} = {value}")
+
+    return ", ".join(partitions_repr)
+
+
+def format_schemas_to_full_dict(schemas: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    formatted_schemas = []
+    for schema in schemas:
+        formatted_schema = schema.copy()
+        for field in formatted_schema["fields"]:
+            with suppress(Exception):
+                field["type"] = json.loads(field["type"])
+
+        formatted_schemas.append(formatted_schema)
+
+    return formatted_schemas
 
 
 def format_node_info(file_info: Dict[str, Any]) -> str:

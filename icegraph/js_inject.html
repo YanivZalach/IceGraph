@@ -259,6 +259,10 @@
         letter-spacing: 0.05em;
     }
 
+    #raw-metadata-header {
+        margin-top: 15px;
+    }
+
     #metadata-raw {
         font-family: 'JetBrains Mono', 'Fira Code', monospace;
         font-size: 0.85rem;
@@ -465,7 +469,7 @@
                 </div>
                 <pre class="spec-code" id="detail-content"></pre>
             </div>
-            <div class="panel-header" style="margin-top: 15px;">Raw Metadata JSON</div>
+            <div class="panel-header" id="raw-metadata-header">Raw Metadata JSON</div>
             <pre id="metadata-raw"></pre>
         </div>
     </div>
@@ -558,7 +562,7 @@
         let rawTitle = nodeData.title || "";
         const UI_SECTION_NEWLINE = '\x00';
         const UI_NEWLINE = '\n';
-        
+
         let splitToken = UI_SECTION_NEWLINE === '\n' ? /\\n|\n/ : UI_SECTION_NEWLINE;
         let lines = rawTitle.split(splitToken).map(line => line.replace(new RegExp(UI_NEWLINE, 'g'), '\n'));
 

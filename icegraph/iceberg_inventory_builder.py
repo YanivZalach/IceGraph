@@ -23,6 +23,8 @@ from utils import (
     to_spark_timestamp,
     get_json_metadata_from_path,
     _update_col_metric,
+    format_partition,
+    format_schemas_to_full_dict,
 )
 
 
@@ -93,7 +95,9 @@ class IcebergInventoryBuilder:
                 "current-schema-id": self.metadata_file_content.get(
                     "current-schema-id"
                 ),
-                "schemas": self.metadata_file_content.get("schemas"),
+                "schemas": format_schemas_to_full_dict(
+                    self.metadata_file_content.get("schemas")
+                ),
                 "default-spec-id": self.metadata_file_content.get("default-spec-id"),
                 "partition-specs": self.metadata_file_content.get("partition-specs"),
                 "default-sort-order-id": self.metadata_file_content.get(
@@ -359,7 +363,6 @@ class IcebergInventoryBuilder:
             for entry in entries:
                 f = entry["data_file"]
                 f_path = f["file_path"]
-                f_partition = f.partition.asDict() if f.partition else {"Root": "Root"}
                 f_status = entry["status"]
 
                 if f_status == 2:
@@ -368,9 +371,7 @@ class IcebergInventoryBuilder:
                     child_data_paths_status["existing"].append(f_path)
 
                 total_rows += f["record_count"]
-                partition_repr = " | ".join(
-                    f"'{key}'='{value}'" for key, value in f_partition.items()
-                )
+                partition_repr = format_partition(f.partition)
                 all_partitions.add(partition_repr)
 
                 if f.content == 0:
