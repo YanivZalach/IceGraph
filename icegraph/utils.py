@@ -8,7 +8,7 @@ import arrow
 from pyspark.errors import AnalysisException
 from pyspark.sql import SparkSession
 
-from constants import UI_NEWLINE
+from constants import UI_NEWLINE, UI_SECTION_NEWLINE
 
 
 def verify_iceberg_table(table_name: str) -> bool:
@@ -37,7 +37,7 @@ def to_spark_timestamp(date_str: str) -> datetime:
 
 def format_node_info(file_info: Dict[str, Any]) -> str:
     formatted_info = file_info["type"].upper()
-    formatted_info += "\n" + "\n".join(
+    formatted_info += UI_SECTION_NEWLINE + UI_SECTION_NEWLINE.join(
         f"{key}: {value}"
         for key, value in file_info.items()
         if key
@@ -51,7 +51,7 @@ def format_node_info(file_info: Dict[str, Any]) -> str:
         ]
     )
 
-    if "columns" in file_info and file_info["columns"]:
+    if file_info.get("columns") is not None:
         all_stats_keys = set()
         for col_stats in file_info["columns"].values():
             all_stats_keys.update(col_stats.keys())
@@ -59,7 +59,10 @@ def format_node_info(file_info: Dict[str, Any]) -> str:
         sorted_keys = sorted(list(all_stats_keys))
 
         header_cols = [_format_cell(k) for k in sorted_keys]
-        header = f"\ncolumns: {_format_cell('Column ID')} | " + " | ".join(header_cols)
+        header = (
+            f"{UI_SECTION_NEWLINE}columns: {_format_cell('Column ID')} | "
+            + " | ".join(header_cols)
+        )
 
         separator = "-" * len(header)
         formatted_info += f"{header}{UI_NEWLINE}{separator}"
@@ -71,23 +74,19 @@ def format_node_info(file_info: Dict[str, Any]) -> str:
             row_str = f"{UI_NEWLINE}{row_name} | " + " | ".join(row_values)
             formatted_info += row_str
 
-    if (
-        "existing_child_files" in file_info
-        and file_info["existing_child_files"] is not None
-    ):
-        formatted_info += "\nexisting_child_files:" + _format_list_for_ui(
-            file_info["existing_child_files"]
+    if file_info.get("existing_child_files") is not None:
+        formatted_info += (
+            f"{UI_SECTION_NEWLINE}existing_child_files:"
+            + _format_list_for_ui(file_info["existing_child_files"])
         )
-    if (
-        "deleted_child_files" in file_info
-        and file_info["deleted_child_files"] is not None
-    ):
-        formatted_info += "\ndeleted_child_files:" + _format_list_for_ui(
-            file_info["deleted_child_files"]
+    if file_info.get("deleted_child_files") is not None:
+        formatted_info += (
+            f"{UI_SECTION_NEWLINE}deleted_child_files:"
+            + _format_list_for_ui(file_info["deleted_child_files"])
         )
 
-    if "child_files" in file_info and file_info["child_files"] is not None:
-        formatted_info += "\nchild_files:" + _format_list_for_ui(
+    if file_info.get("child_files") is not None:
+        formatted_info += f"{UI_SECTION_NEWLINE}child_files:" + _format_list_for_ui(
             file_info["child_files"]
         )
 

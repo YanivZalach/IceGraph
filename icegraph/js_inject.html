@@ -556,8 +556,11 @@
         panel.style.borderLeftColor = nodeData.color;
 
         let rawTitle = nodeData.title || "";
-        const UI_NEWLINE = '\x00';
-        let lines = rawTitle.split(/\\n|\n/).map(line => line.replace(new RegExp(UI_NEWLINE, 'g'), '\n'));
+        const UI_SECTION_NEWLINE = '\x00';
+        const UI_NEWLINE = '\n';
+        
+        let splitToken = UI_SECTION_NEWLINE === '\n' ? /\\n|\n/ : UI_SECTION_NEWLINE;
+        let lines = rawTitle.split(splitToken).map(line => line.replace(new RegExp(UI_NEWLINE, 'g'), '\n'));
 
         let contentHtml = `<div class="meta-header">${lines[0]}</div>`;
 
