@@ -138,17 +138,25 @@ class IcebergInventoryBuilder:
                 for key, attrs in refs.items()
             )
 
+            properties = metadata.get("properties", {})
+            properties_str = UI_NEWLINE.join(
+                f'"{k}": "{v}"' for k, v in properties.items()
+            )
+
             return (
                 meta_file,
+                metadata.get("format-version"),
+                metadata.get("default-sort-order-id"),
                 metadata.get("current-schema-id"),
                 refs_str,
                 branches,
+                properties_str,
             )
 
         except Exception as e:
             with self.lock:
                 self.errors[meta_file] = f"Error when processing file {meta_file}: {e}"
-            return (meta_file, None, None, {})
+            return (meta_file, None, None, None, None, {}, {})
 
     def _load_metadata_and_snapshots(self):
         metadata_df = (
@@ -171,7 +179,7 @@ class IcebergInventoryBuilder:
 
         schema_df = self.spark.createDataFrame(
             schema_results,
-            schema="file STRING, current_schema_id INT, refs STRING, branches MAP<STRING, LONG>",
+            schema="file STRING, format_version INT, default_sort_order_id INT, current_schema_id INT, refs STRING, branches MAP<STRING, LONG>, properties STRING",
         )
 
         metadata_df = metadata_df.join(schema_df, on="file", how="left")
@@ -248,14 +256,17 @@ class IcebergInventoryBuilder:
                         ),
                         "file_path": meta_file,
                         "timestamp": str(row_dict.get("meta_log_timestamp")),
+                        "table_format_version": row_dict.get("format_version"),
                         "snapshot_id": snap_id,
                         "previous_metadata_file": previous_metadata_file,
                         "current_schema_id": row_dict.get("current_schema_id"),
                         "latest_writen_schema_id": row_dict.get("latest_schema_id"),
+                        "default_sort_order_id": row_dict.get("default_sort_order_id"),
                         "latest_sequence_number": row_dict.get(
                             "latest_sequence_number"
                         ),
                         "refs": row_dict.get("refs"),
+                        "properties": row_dict.get("properties"),
                         "child_files": (
                             [row_dict.get("manifest_list")]
                             if row_dict.get("manifest_list")
