@@ -90,21 +90,13 @@ class IcebergInventoryBuilder:
         }
 
         if self.metadata_file_content:
-            result["metadata_specs"] = {
-                "table-name": self.table_name,
-                "current-schema-id": self.metadata_file_content.get(
-                    "current-schema-id"
-                ),
-                "schemas": format_schemas_to_full_dict(
-                    self.metadata_file_content.get("schemas")
-                ),
-                "default-spec-id": self.metadata_file_content.get("default-spec-id"),
-                "partition-specs": self.metadata_file_content.get("partition-specs"),
-                "default-sort-order-id": self.metadata_file_content.get(
-                    "default-sort-order-id"
-                ),
-                "sort-orders": self.metadata_file_content.get("sort-orders"),
-            }
+            self.metadata_file_content["schemas"] = format_schemas_to_full_dict(
+                self.metadata_file_content.get("schemas")
+            )
+            self.metadata_file_content["table-name"] = self.table_name
+            result["metadata_specs"] = self.metadata_file_content
+        else:
+            result["metadata_specs"] = {"table-name": self.table_name}
 
         return result
 
