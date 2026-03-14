@@ -13,12 +13,10 @@ from constants import APPLICATION_PORT
 from iceberg_inventory_builder import IcebergInventoryBuilder
 from icegraph_logger import logger
 from icegraph_visualizer import IceGraphVisualizer
-from spark_connect import open_spark_connect_session
 from utils import verify_iceberg_table
 
 load_dotenv()
 app = Flask(__name__, static_url_path="/static")
-spark = open_spark_connect_session()
 
 
 @app.route("/lib/<path:path>")

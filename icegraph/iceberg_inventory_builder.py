@@ -2,7 +2,8 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, List, Dict, Any, Set
 
-from pyspark.sql import SparkSession, functions as F
+from spark_connect import open_spark_connect_session
+from pyspark.sql import functions as F
 from pyspark.sql.types import (
     StructType,
     StructField,
@@ -30,7 +31,7 @@ from utils import (
 
 class IcebergInventoryBuilder:
     def __init__(self, full_table_name: str, date_to_view: Optional[str] = None):
-        self.spark = SparkSession.builder.getOrCreate()
+        self.spark = open_spark_connect_session()
         self.table_name = full_table_name
         self.date_to_view = date_to_view
 
