@@ -1,0 +1,16 @@
+.env
+.git
+.gitignore
+.python-version
+.venv/
+tests/
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+README.md
+LICENSE
+.github/
