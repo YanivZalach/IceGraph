@@ -127,9 +127,32 @@
         z-index: 9999;
     }
 
+    .top-buttons-row {
+        display: flex;
+        gap: 8px;
+        width: 220px;
+    }
+
+    #home-btn {
+        font-family: 'Segoe UI Semibold', Tahoma, Geneva, Verdana, sans-serif;
+        padding: 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1.2rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        transition: transform 0.2s, background 0.2s, color 0.2s;
+        background: #ffffff;
+        color: #2E86C1;
+        border: 2px solid #2E86C1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+    }
+
     #reset-btn {
         font-family: 'Segoe UI Semibold', Tahoma, Geneva, Verdana, sans-serif;
-        padding: 12px 18px;
+        padding: 12px 10px;
         border-radius: 8px;
         cursor: pointer;
         font-weight: bold;
@@ -138,7 +161,10 @@
         letter-spacing: 0.03em;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         transition: all 0.2s ease;
-        width: 220px;
+        flex: 1 1 auto;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     #details-btn.partial {
@@ -450,7 +476,10 @@
 </div>
 
 <div id="controls-container">
-    <button id="reset-btn" class="full" onclick="resetView()">Reset Full View</button>
+    <div class="top-buttons-row">
+        <button id="home-btn" onclick="window.location.href='/'">🏠</button>
+        <button id="reset-btn" class="full" onclick="resetView()">Reset Full View</button>
+    </div>
     <button id="inspect-btn" onclick="toggleInspectMode()">
         <span id="inspect-icon">🔍</span>
         <span id="inspect-text">Mode: Lineage Traversal</span>
