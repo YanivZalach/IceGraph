@@ -20,6 +20,8 @@
 * 🔴 **MOR Awareness**: Visual tracking of Equality and Position delete files.
 * 🌴 **Branches**: View all the branches of the table, even when detached from the main branch.
 
+> **Recommended**: In production, use a user with read-only permissions for the Spark Connect server, for extra peace of mind.
+
 ## Quick Start Using Docker
 
 ```bash
@@ -43,8 +45,6 @@ Start your Spark Connect server (example via Docker):
 ```bash
 cd tests/spark_connect_docker && docker-compose up -d
 ```
-
-**Recommended**: In production, use a user with read-only permissions for the Spark Connect server, for extra peace of mind.
 
 ### 2. Setup & Mock Data
 
