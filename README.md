@@ -20,13 +20,19 @@
 * 🔴 **MOR Awareness**: Visual tracking of Equality and Position delete files.
 * 🌴 **Branches**: View all the branches of the table, even when detached from the main branch.
 
-## 🚦 Quick Start
+## Quick Start Using Docker
+
+```bash
+docker run -e SPARK_REMOTE=sc://<spark-connect-ip>:15002 -e TIMEZONE=my/timezone -p 5000:5000 yanivzalach/icegraph:latest
+```
+
+## Quick Start Using Source Code
+
 
 ![IceGraph Visualization](images/example2.png)
 
 ### Prerequisites
 
-- Docker
 - UV (python)
 - Python 3.9
 
@@ -58,9 +64,8 @@ uv run python tests/create_mock_table_no_branches.py
 We will create an `.env` file in the root directory of icegraph:
 
 ```bash
-TIMEZONE=My timezone
-SPARK_REMOTE=sc://localhost:15002 # Our local testing spark
-APPLICATION_PORT=5000
+TIMEZONE=my/timezone
+SPARK_REMOTE=sc://localhost:15002 # Our local testing spark, If you use docker, change it to your ip.
 ```
 
 ### 4. Run

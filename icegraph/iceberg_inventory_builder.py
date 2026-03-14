@@ -150,6 +150,7 @@ class IcebergInventoryBuilder:
             return (
                 meta_file,
                 metadata.get("format-version"),
+                metadata.get("default-spec-id"),
                 metadata.get("default-sort-order-id"),
                 metadata.get("current-schema-id"),
                 refs_str,
@@ -160,7 +161,7 @@ class IcebergInventoryBuilder:
         except Exception as e:
             with self.lock:
                 self.errors[meta_file] = f"Error when processing file {meta_file}: {e}"
-            return (meta_file, None, None, None, None, {}, {})
+            return (meta_file, None, None, None, None, None, {}, {})
 
     def _load_metadata_and_snapshots(self):
         metadata_df = (
@@ -185,6 +186,7 @@ class IcebergInventoryBuilder:
             [
                 StructField("file", StringType(), True),
                 StructField("format_version", IntegerType(), True),
+                StructField("default_spec_id", IntegerType(), True),
                 StructField("default_sort_order_id", IntegerType(), True),
                 StructField("current_schema_id", IntegerType(), True),
                 StructField("refs", StringType(), True),
@@ -271,9 +273,10 @@ class IcebergInventoryBuilder:
                         "table_format_version": row_dict.get("format_version"),
                         "snapshot_id": snap_id,
                         "previous_metadata_file": previous_metadata_file,
+                        "partition_spec_id": row_dict.get("default_spec_id"),
                         "current_schema_id": row_dict.get("current_schema_id"),
                         "latest_writen_schema_id": row_dict.get("latest_schema_id"),
-                        "default_sort_order_id": row_dict.get("default_sort_order_id"),
+                        "sort_order_id": row_dict.get("default_sort_order_id"),
                         "latest_sequence_number": row_dict.get(
                             "latest_sequence_number"
                         ),

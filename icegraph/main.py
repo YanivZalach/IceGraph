@@ -1,5 +1,3 @@
-import os
-
 from dotenv import load_dotenv
 from flask import (
     Flask,
@@ -11,6 +9,7 @@ from flask import (
 )
 from pyspark.errors import AnalysisException
 
+from constants import APPLICATION_PORT
 from iceberg_inventory_builder import IcebergInventoryBuilder
 from icegraph_logger import logger
 from icegraph_visualizer import IceGraphVisualizer
@@ -52,4 +51,4 @@ def generate():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ["APPLICATION_PORT"]))
+    app.run(host="0.0.0.0", port=APPLICATION_PORT)
