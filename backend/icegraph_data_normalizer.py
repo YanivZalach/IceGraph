@@ -5,10 +5,6 @@ from utils import format_node_info
 
 
 def normalize_graph_data(table_data: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Normalizes raw Iceberg inventory data into a format suitable for graph visualization.
-    This separates the data processing from any specific frontend visual logic.
-    """
     inventory = table_data.get("inventory", [])
     metadata_specs = table_data.get("metadata_specs", {})
     errors = table_data.get("errors", {})
