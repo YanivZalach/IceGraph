@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 from flask import (
     Flask,
+    jsonify,
     request,
     Response,
     redirect,
@@ -11,16 +12,11 @@ from pyspark.errors import AnalysisException
 from constants import APPLICATION_PORT
 from iceberg_inventory_builder import IcebergInventoryBuilder
 from icegraph_logger import logger
-from icegraph_visualizer import IceGraphVisualizer
+from icegraph_data_normalizer import normalize_graph_data
 from utils import verify_iceberg_table
 
 load_dotenv()
 app = Flask(__name__, static_url_path="/static")
-
-
-@app.route("/lib/<path:path>")
-def send_lib(path):
-    return send_from_directory("lib", path)
 
 
 @app.route("/", methods=["GET"])
@@ -28,21 +24,21 @@ def react_app():
     return send_from_directory("static/react", "index.html")
 
 
-@app.route("/generate", methods=["POST"])
-def generate():
+@app.route("/api/v1/graph-data", methods=["POST"])
+def graph_data():
     table_name = request.form.get("table_name")
     date_value = request.form.get("date")
 
     try:
         verify_iceberg_table(table_name)
         table_data = IcebergInventoryBuilder(table_name, date_value).collect()
-        html = IceGraphVisualizer(table_data).generate()
+        data = normalize_graph_data(table_data)
 
-        return Response(html, mimetype="text/html")
+        return jsonify(data)
 
     except AnalysisException as e:
         logger.error(f"Spark Error: {e}")
-        return redirect("/"), 302
+        return jsonify({"error": str(e)}), 400
 
 
 if __name__ == "__main__":

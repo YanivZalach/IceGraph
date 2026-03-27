@@ -1,39 +1,16 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 export default function HomePage() {
   const [tableName, setTableName] = useState('')
   const [date, setDate] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
+  const navigate = useNavigate()
 
-  async function handleSubmit(e) {
+  function handleSubmit(e) {
     e.preventDefault()
-    setLoading(true)
-    setError(null)
-    try {
-      const body = new URLSearchParams({ table_name: tableName, date })
-      const res = await fetch('/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: body.toString(),
-        redirect: 'manual',
-      })
-      if (res.type === 'opaqueredirect' || res.status === 302 || res.url?.includes('error=')) {
-        setError('Table not found or not an Iceberg table.')
-        return
-      }
-      // Replace the current page in-place so the URL stays as a normal
-      // http:// address and relative links inside the graph page resolve
-      // correctly (blob: URLs break relative navigation).
-      const html = await res.text()
-      document.open()
-      document.write(html)
-      document.close()
-    } catch (err) {
-      setError('An unexpected error occurred.')
-    } finally {
-      setLoading(false)
-    }
+    const params = new URLSearchParams({ table: tableName })
+    if (date) params.set('date', date)
+    navigate(`/graph?${params.toString()}`)
   }
 
   return (
@@ -49,12 +26,6 @@ export default function HomePage() {
         <div className="bg-white rounded-2xl shadow-xl p-10 w-full max-w-lg border border-slate-100">
           <h2 className="text-xl font-bold text-[#1e293b] mb-1">Visualize a Table</h2>
           <p className="text-slate-500 text-sm mb-6">Enter your Iceberg table name to explore its metadata graph.</p>
-
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 mb-5 text-sm">
-              {error}
-            </div>
-          )}
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <div>
@@ -83,10 +54,9 @@ export default function HomePage() {
             </div>
             <button
               type="submit"
-              disabled={loading}
-              className="bg-[#2E86C1] hover:bg-[#2471a3] text-white font-bold py-3 rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed text-sm uppercase tracking-wider"
+              className="bg-[#2E86C1] hover:bg-[#2471a3] text-white font-bold py-3 rounded-lg transition text-sm uppercase tracking-wider"
             >
-              {loading ? 'Generating…' : 'Generate Graph'}
+              Generate Graph
             </button>
           </form>
         </div>

@@ -9,12 +9,11 @@ export default defineConfig({
   // The React dev server runs on :5173; Flask runs on :5000.
   server: {
     proxy: {
-      '/generate': 'http://localhost:5000',
-      '/lib':      'http://localhost:5000',
+      '/api': 'http://localhost:5000',
     },
   },
   build: {
-    outDir: '../static/react',
+    outDir: '../backend/static/react',
     emptyOutDir: true,
   },
 })
