@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+from pathlib import Path
 from flask import (
     Flask,
     jsonify,
@@ -19,9 +20,16 @@ load_dotenv()
 app = Flask(__name__, static_url_path="/static")
 
 
-@app.route("/", methods=["GET"])
-def react_app():
-    return send_from_directory("static/react", "index.html")
+@app.route("/", defaults={"path": ""})
+@app.route("/<path:path>")
+def serve(path):
+    static_path = Path(app.static_folder).resolve()
+    requested_path = (static_path / path).resolve()
+
+    if requested_path.is_file():
+        return send_from_directory(static_path, path)
+
+    return send_from_directory(static_path, "index.html")
 
 
 @app.route("/api/v1/graph-data", methods=["POST"])
