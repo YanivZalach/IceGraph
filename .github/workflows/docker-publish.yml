@@ -30,7 +30,7 @@ jobs:
         with:
           images: ${{ secrets.DOCKERHUB_USERNAME }}/icegraph
           tags: |
-            type=sha
+            type=ref,event=tag
             type=raw,value=latest
 
       - name: Build and push Docker image

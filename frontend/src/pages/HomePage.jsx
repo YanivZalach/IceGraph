@@ -3,7 +3,13 @@ import { useNavigate } from 'react-router-dom'
 
 export default function HomePage() {
   const [tableName, setTableName] = useState('')
-  const [date, setDate] = useState('')
+  const [date, setDate] = useState(() => {
+    const now = new Date()
+    const offsetDate = new Date(now.getTime() - 2 * 60 * 60 * 1000)
+    return new Date(offsetDate.getTime() - offsetDate.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16)
+  })
   const navigate = useNavigate()
 
   function handleSubmit(e) {
@@ -30,7 +36,7 @@ export default function HomePage() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                Table Name *
+                Table Name
               </label>
               <input
                 type="text"
@@ -43,10 +49,10 @@ export default function HomePage() {
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                As-Of Date <span className="text-slate-400 font-normal">(optional)</span>
+                As-Of Date
               </label>
               <input
-                type="date"
+                type="datetime-local"
                 value={date}
                 onChange={e => setDate(e.target.value)}
                 className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm text-[#1e293b] focus:outline-none focus:ring-2 focus:ring-[#2E86C1] focus:border-transparent transition"
