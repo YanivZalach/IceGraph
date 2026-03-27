@@ -28,17 +28,18 @@
 docker run -e SPARK_REMOTE=sc://<spark-connect-ip>:15002 -e TIMEZONE=my/timezone -p 5000:5000 yanivzalach/icegraph:latest
 ```
 
-## Quick Start Using Source Code
+## Start Using Source Code
 
 
 ![IceGraph Visualization](images/example2.png)
 
 ### Prerequisites
 
+- npm
 - UV (python)
 - Python 3.9
 
-### 1. Backend
+### 1. Spark Connect Backend
 
 Start your Spark Connect server (example via Docker):
 
@@ -46,14 +47,23 @@ Start your Spark Connect server (example via Docker):
 cd tests/spark_connect_docker && docker-compose up -d
 ```
 
-### 2. Setup & Mock Data
+### 2. Setup
 
-Sync the environment:
+Sync the environments:
+
 ```bash
+cd backend
 uv sync
 ```
 
-Create mock if needed:
+```bash
+cd frontend
+npm i
+```
+
+### 3. Create Mock Data
+
+Create mock if needed for testing, from within the backend directory:
 ```bash
 uv run python tests/create_mock_table.py
 uv run python tests/create_mock_table_no_branches.py
@@ -61,20 +71,27 @@ uv run python tests/create_mock_table_no_branches.py
 
 ### 3. Setup your Envs
 
-We will create an `.env` file in the root directory of icegraph:
+We will create an `.env` file in the root of the backend directory:
 
 ```bash
-TIMEZONE=my/timezone
+TIMEZONE=my/timezone # Put your local timezone name
 SPARK_REMOTE=sc://localhost:15002 # Our local testing spark, If you use docker, change it to your ip.
 ```
 
 ### 4. Run
 
+Open one terminal in the backend directory and run:
+
 ```bash
-uv run python icegraph/main.py
+uv run python main.py
 ```
 
-Go to `http://localhost:5000` and explore your mock tables.
+Open a second terminal in the front end directory and run:
+```bash
+npm run dev
+```
+
+Go to `http://localhost:3000` and explore your mock tables.
 
 ## 📊 Node Legend
 

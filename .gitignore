@@ -10,3 +10,4 @@ tests/jars
 dist/
 build/
 *.egg-info/
+frontend/node_modules
