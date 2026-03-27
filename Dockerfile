@@ -1,4 +1,14 @@
-# Stage 1: Build the virtual environment using uv
+# Stage 1: Build the React frontend
+FROM node:20-slim AS frontend-builder
+WORKDIR /build
+# Install deps first for better layer caching
+COPY icegraph/frontend/package*.json ./
+RUN npm ci
+COPY icegraph/frontend ./
+# vite outDir is '../static/react' relative to frontend/, so output lands at /static/react
+RUN npm run build
+
+# Stage 2: Build the virtual environment using uv
 FROM python:3.9-slim AS builder
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
@@ -28,6 +38,9 @@ COPY icegraph ./icegraph
 COPY images ./images
 
 EXPOSE 5000
+
+# Inject the pre-built React bundle (compiled in Stage 1)
+COPY --from=frontend-builder /static/react ./icegraph/static/react
 
 # Run the application
 CMD ["python", "icegraph/main.py"]

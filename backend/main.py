@@ -2,7 +2,6 @@ from dotenv import load_dotenv
 from flask import (
     Flask,
     request,
-    render_template,
     Response,
     redirect,
     send_from_directory,
@@ -25,10 +24,8 @@ def send_lib(path):
 
 
 @app.route("/", methods=["GET"])
-def home():
-    error_flag = request.args.get("error")
-
-    return render_template("index.html", error=error_flag)
+def react_app():
+    return send_from_directory("static/react", "index.html")
 
 
 @app.route("/generate", methods=["POST"])
@@ -45,7 +42,7 @@ def generate():
 
     except AnalysisException as e:
         logger.error(f"Spark Error: {e}")
-        return redirect("/?error=table_not_found")
+        return redirect("/"), 302
 
 
 if __name__ == "__main__":

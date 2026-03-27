@@ -12,8 +12,8 @@ from constants import (
 )
 from utils import format_node_info
 
-_VIS_JS_CDN = "/lib/vis-9.1.2/vis-network.min.js"
-_VIS_CSS_CDN = "/lib/vis-9.1.2/vis-network.css"
+_VIS_JS_CDN = "https://unpkg.com/vis-network@9.1.2/standalone/umd/vis-network.min.js"
+_VIS_CSS_CDN = "https://unpkg.com/vis-network@9.1.2/styles/vis-network.min.css"
 
 
 class IceGraphVisualizer:
@@ -117,6 +117,14 @@ class IceGraphVisualizer:
 
     network.once('afterDrawing', function() {{
         network.fit();
+    }});
+
+    // The graph page is served via document.write() from /app, so the home
+    // button's hardcoded '/' would go to the old Flask template. Override it
+    // to return to the React app instead.
+    document.addEventListener('DOMContentLoaded', function() {{
+        var btn = document.getElementById('home-btn');
+        if (btn) btn.onclick = function() {{ window.location.href = '/'; }};
     }});
 </script>
 </body>
