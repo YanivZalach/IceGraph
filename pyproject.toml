@@ -14,5 +14,4 @@ dependencies = [
     "pyarrow>=21.0.0",
     "pyspark[connect]==3.5.4",
     "python-dotenv==1.2.1",
-    "pyvis==0.3.2",
 ]

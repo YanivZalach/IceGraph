@@ -4,8 +4,6 @@ import re
 from pathlib import Path
 from typing import Dict, Any
 
-from pyvis.network import Network
-
 from constants import (
     NODE_STYLE_MAP,
     VISUALIZATION_OPTIONS,
@@ -13,6 +11,9 @@ from constants import (
     BRANCH_CONNECTION_COLOR,
 )
 from utils import format_node_info
+
+_VIS_JS_CDN = "/lib/vis-9.1.2/vis-network.min.js"
+_VIS_CSS_CDN = "/lib/vis-9.1.2/vis-network.css"
 
 
 class IceGraphVisualizer:
@@ -22,13 +23,8 @@ class IceGraphVisualizer:
         self.errors = table_data["errors"]
 
     def generate(self) -> str:
-        net = Network(
-            height="100vh",
-            width="100%",
-            directed=True,
-            cdn_resources="local",
-        )
-
+        nodes_data = []
+        edges_data = []
         added_nodes = set()
 
         for item in self.inventory:
@@ -38,13 +34,15 @@ class IceGraphVisualizer:
             rgb_colors = ",".join([str(val) for val in style["rgb"]])
             color_shift = item.get("hidden_metadata", {}).get("color_append", 1)
 
-            net.add_node(
-                path,
-                label=os.path.basename(path),
-                title=format_node_info(item),
-                shape="box",
-                color=f"rgba({rgb_colors} ,{color_shift})",
-                level=style["level"],
+            nodes_data.append(
+                {
+                    "id": path,
+                    "label": os.path.basename(path),
+                    "details": format_node_info(item),
+                    "shape": "box",
+                    "color": f"rgba({rgb_colors},{color_shift})",
+                    "level": style["level"],
+                }
             )
             added_nodes.add(path)
 
@@ -57,31 +55,72 @@ class IceGraphVisualizer:
 
             for child in children:
                 if parent in added_nodes and child in added_nodes:
-                    edge_options = {}
+                    edge = {
+                        "from": parent,
+                        "to": child,
+                    }
                     if child in deleted_children:
-                        edge_options["color"] = DELETED_DATA_FILE_CONNECTION_COLOR
-                        edge_options["title"] = "deleted"
+                        edge["color"] = DELETED_DATA_FILE_CONNECTION_COLOR
+                        edge["title"] = "deleted"
                     elif (
                         child in branch_children
                         and branch_children[child] not in connected_branches
                     ):
                         branch_names = branch_children[child]
-                        edge_options["dashes"] = [15, 20, 5, 20]
-                        edge_options["color"] = BRANCH_CONNECTION_COLOR
-                        edge_options["title"] = branch_names
+                        edge["dashes"] = [15, 20, 5, 20]
+                        edge["color"] = BRANCH_CONNECTION_COLOR
+                        edge["title"] = branch_names
                         connected_branches.add(branch_names)
 
-                    net.add_edge(parent, child, **edge_options)
+                    edges_data.append(edge)
 
-        net.set_options(json.dumps(VISUALIZATION_OPTIONS))
+        nodes_json = json.dumps(nodes_data)
+        edges_json = json.dumps(edges_data)
+        options_json = json.dumps(VISUALIZATION_OPTIONS)
 
-        html = net.generate_html()
+        html = self._build_vis_network_html(nodes_json, edges_json, options_json)
         html = self._create_html_with_inject_errors(html)
         html = self._create_html_with_inject_metadata(html)
         html = self._create_html_with_reroute_libs(html)
         html = self._create_html_with_custom_ui(html)
 
         return html
+
+    def _build_vis_network_html(
+        self, nodes_json: str, edges_json: str, options_json: str
+    ) -> str:
+        return f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>IceGraph</title>
+    <link rel="stylesheet" href="{_VIS_CSS_CDN}">
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{ background: #f8fafc; overflow: hidden; width: 100vw; height: 100vh; }}
+        #mynetwork {{ width: 100%; height: 100vh; }}
+    </style>
+</head>
+<body>
+<div id="mynetwork"></div>
+<script src="{_VIS_JS_CDN}"></script>
+<script>
+    const nodes_json = {nodes_json};
+    const edges_json = {edges_json};
+    const nodes = new vis.DataSet(nodes_json);
+    const edges = new vis.DataSet(edges_json);
+    const network = new vis.Network(
+        document.getElementById('mynetwork'),
+        {{ nodes: nodes, edges: edges }},
+        {options_json}
+    );
+
+    network.once('afterDrawing', function() {{
+        network.fit();
+    }});
+</script>
+</body>
+</html>"""
 
     def _create_html_with_inject_metadata(self, html: str) -> str:
         specs_json = json.dumps(self.metadata_specs)
@@ -96,6 +135,9 @@ class IceGraphVisualizer:
         return html.replace("</body>", f"{inject_errors}</body>")
 
     def _create_html_with_reroute_libs(self, html: str) -> str:
+        # vis-network is loaded from CDN (standalone UMD build) so vis.DataSet
+        # and vis.Network are available on the vis global — do not reroute it.
+
         html = re.sub(
             r'<link[^>]+href="https?://[^"]+/bootstrap\.min\.css"[^>]*>',
             '<link rel="stylesheet" href="/lib/bootstrap/bootstrap.min.css">',
@@ -105,17 +147,6 @@ class IceGraphVisualizer:
         html = re.sub(
             r'<script[^>]+src="https?://[^"]+/bootstrap\.bundle\.min\.js"[^>]*></script>',
             '<script src="/lib/bootstrap/bootstrap.bundle.min.js"></script>',
-            html,
-        )
-
-        html = re.sub(
-            r'<link[^>]+href="https?://[^"]+/vis-network(?:\.min)?\.css"[^>]*>',
-            '<link rel="stylesheet" href="/lib/vis-9.1.2/vis-network.css">',
-            html,
-        )
-        html = re.sub(
-            r'<script[^>]+src="https?://[^"]+/vis-network(?:\.min)?\.js"[^>]*></script>',
-            '<script src="/lib/vis-9.1.2/vis-network.min.js"></script>',
             html,
         )
 

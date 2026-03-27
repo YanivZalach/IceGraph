@@ -39,6 +39,7 @@ class IcebergInventoryBuilder:
         self.inventory: List[Dict[str, Any]] = []
         self.processed_data_files: Set[str] = set()
         self.processed_manifests: Set[str] = set()
+        self.processed_snapshots_id: Set[int] = set()
         self.manifests_to_ignore: Set[str] = set()
         self.snapshots_to_path: Dict[str, int] = {}
 
@@ -298,7 +299,11 @@ class IcebergInventoryBuilder:
             except Exception as e:
                 self.errors[meta_file] = f"Metadata Read Error: {str(e)}"
 
-        if snap_id and row_dict.get("manifest_list"):
+        if (
+            snap_id
+            and row_dict.get("manifest_list")
+            and snap_id not in self.processed_snapshots_id
+        ):
             snapshot_path = row_dict["manifest_list"]
             summary = row_dict.get("summary", {})
             summary_repr = UI_NEWLINE.join(
@@ -329,6 +334,7 @@ class IcebergInventoryBuilder:
                     }
                 )
                 self._process_manifests(manifests)
+                self.processed_snapshots_id.add(snap_id)
             except Exception as e:
                 self.errors[snapshot_path] = f"Snapshot SQL Error: {str(e)}"
 
