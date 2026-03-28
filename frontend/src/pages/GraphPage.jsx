@@ -1,111 +1,45 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
-import { DataSet, Network } from 'vis-network/standalone'
-import MetadataStructured from '../components/MetadataStructured'
+import { useOutletContext } from 'react-router-dom'
+import { Network } from 'vis-network/standalone'
 import {
-  BRANCH_CONNECTION_COLOR,
-  DELETED_DATA_FILE_CONNECTION_COLOR,
-  NODE_STYLE_MAP,
   UI_NEWLINE,
   UI_SECTION_NEWLINE,
   VISUALIZATION_OPTIONS,
 } from '../graphConstants'
 
 export default function GraphPage() {
-  const [searchParams] = useSearchParams()
-  const navigate = useNavigate()
-
-  const tableName = searchParams.get('table') || ''
-  const date = searchParams.get('date') || ''
+  const { nodes, edges, metadata, errors } = useOutletContext()
 
   const networkContainerRef = useRef(null)
   const networkRef = useRef(null)
-  const nodesRef = useRef(null)
-  const edgesRef = useRef(null)
-
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [metadata, setMetadata] = useState(null)
-  const [errors, setErrors] = useState({})
 
   const [isInspectMode, setIsInspectMode] = useState(false)
   const [isFullView, setIsFullView] = useState(true)
   const [stickyNode, setStickyNode] = useState(null)
-  const [detailsOpen, setDetailsOpen] = useState(false)
-  const [selectionDetail, setSelectionDetail] = useState(null)
 
   const isInspectModeRef = useRef(isInspectMode)
   useEffect(() => {
     isInspectModeRef.current = isInspectMode
   }, [isInspectMode])
+
   useEffect(() => {
-    if (!tableName) {
-      setError('No table name provided.')
-      setLoading(false)
-      return
+    if (Object.keys(errors).length > 0) {
+      const summary = Object.entries(errors)
+        .map(([file, err]) => `• ${file.split('/').pop()}: ${err}`)
+        .join('\n')
+      alert(`⚠️ IceGraph: ${Object.keys(errors).length} Errors Detected\n\n${summary}`)
     }
-
-    const body = new URLSearchParams({ table_name: tableName, date })
-
-    fetch('/api/v1/graph-data', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: body.toString(),
-    })
-      .then(async (res) => {
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.error || 'Request failed')
-        return data
-      })
-      .then((data) => {
-        const styledNodes = data.nodes.map((node) => {
-          const style = NODE_STYLE_MAP[node.type] || { rgb: [100, 100, 100], level: 0 }
-          const [r, g, b] = style.rgb
-          return {
-            ...node,
-            shape: 'box',
-            color: `rgba(${r},${g},${b},${node.color_shift || 1})`,
-            level: style.level,
-          }
-        })
-
-        const styledEdges = data.edges.map((edge) => {
-          const newEdge = { ...edge }
-          if (edge.is_deleted) {
-            newEdge.color = DELETED_DATA_FILE_CONNECTION_COLOR
-            newEdge.title = 'deleted'
-          } else if (edge.branch_names) {
-            newEdge.dashes = [15, 20, 5, 20]
-            newEdge.color = BRANCH_CONNECTION_COLOR
-            newEdge.title = edge.branch_names
-          }
-          return newEdge
-        })
-
-        nodesRef.current = new DataSet(styledNodes)
-        edgesRef.current = new DataSet(styledEdges)
-        setMetadata(data.metadata)
-        setErrors(data.errors || {})
-        setLoading(false)
-      })
-      .catch((err) => {
-        setError(err.message || 'An unexpected error occurred.')
-        setLoading(false)
-      })
-  }, [tableName, date])
+  }, [errors])
 
   useEffect(() => {
-    if (loading || error || !nodesRef.current) return
-
     const network = new Network(
       networkContainerRef.current,
-      { nodes: nodesRef.current, edges: edgesRef.current },
+      { nodes, edges },
       VISUALIZATION_OPTIONS
     )
     networkRef.current = network
 
     network.once('afterDrawing', () => network.fit())
-
     network.on('zoom', () => setIsFullView(false))
     network.on('dragEnd', () => setIsFullView(false))
 
@@ -113,7 +47,6 @@ export default function GraphPage() {
       if (params.nodes.length === 0) return
 
       const selectedNodeId = params.nodes[0]
-
       const liveNodes = network.body.data.nodes
       const liveEdges = network.body.data.edges
       const nodeData = liveNodes.get(selectedNodeId)
@@ -137,21 +70,16 @@ export default function GraphPage() {
         traverse(selectedNodeId, 'to')
         traverse(selectedNodeId, 'from')
 
-        liveNodes.update(
-          liveNodes.get().map((n) => ({
-            ...n,
-            hidden: !relatedNodes.has(String(n.id))
-          }))
-        )
+        liveNodes.update(liveNodes.get().map(n => ({
+          ...n,
+          hidden: !relatedNodes.has(String(n.id)),
+        })))
+        liveEdges.update(liveEdges.get().map(e => ({
+          ...e,
+          hidden: !(relatedNodes.has(String(e.from)) && relatedNodes.has(String(e.to))),
+        })))
 
-        liveEdges.update(
-          liveEdges.get().map((e) => ({
-            ...e,
-            hidden: !(relatedNodes.has(String(e.from)) && relatedNodes.has(String(e.to)))
-          }))
-        )
-
-        requestAnimationFrame(() => network.fit());
+        requestAnimationFrame(() => network.fit())
         setIsFullView(false)
       }
 
@@ -159,45 +87,31 @@ export default function GraphPage() {
     })
 
     return () => network.destroy()
-  }, [loading, error])
-
-
-
-  useEffect(() => {
-    if (Object.keys(errors).length > 0) {
-      const summary = Object.entries(errors)
-        .map(([file, err]) => `• ${file.split('/').pop()}: ${err}`)
-        .join('\n')
-      alert(`⚠️ IceGraph: ${Object.keys(errors).length} Errors Detected\n\n${summary}`)
-    }
-  }, [errors])
+  }, [nodes, edges])
 
   const resetView = useCallback(() => {
-    const network = networkRef.current;
-    if (!network) return;
+    const network = networkRef.current
+    if (!network) return
 
-    const liveNodes = network.body.data.nodes;
-    const liveEdges = network.body.data.edges;
+    const liveNodes = network.body.data.nodes
+    const liveEdges = network.body.data.edges
 
-    const allNodes = liveNodes.get({ filter: () => true });
-    const allEdges = liveEdges.get({ filter: () => true });
+    liveNodes.update(liveNodes.get().map(n => ({ ...n, hidden: false })))
+    liveEdges.update(liveEdges.get().map(e => ({ ...e, hidden: false })))
 
-    liveNodes.update(allNodes.map(n => ({ ...n, hidden: false })));
-    liveEdges.update(allEdges.map(e => ({ ...e, hidden: false })));
-
-    setStickyNode(null);
-    setIsFullView(true);
+    setStickyNode(null)
+    setIsFullView(true)
 
     requestAnimationFrame(() => {
-      network.redraw();
-      network.fit();
-    });
-  }, []);
+      network.redraw()
+      network.fit()
+    })
+  }, [])
 
   const parseStickyDetails = (details) => {
     if (!details) return { title: '', rows: [] }
     const splitToken = UI_SECTION_NEWLINE === '\n' ? /\\n|\n/ : UI_SECTION_NEWLINE
-    const lines = details.split(splitToken).map((l) => l.replace(new RegExp(UI_NEWLINE, 'g'), '\n'))
+    const lines = details.split(splitToken).map(l => l.replace(new RegExp(UI_NEWLINE, 'g'), '\n'))
     const title = lines[0] || ''
     const rows = []
     for (let i = 1; i < lines.length; i++) {
@@ -209,174 +123,88 @@ export default function GraphPage() {
     return { title, rows }
   }
 
-  const showDetail = (type, id) => {
-    if (!metadata) return
-    let data = null
-    let label = ''
-    if (type === 'schema') {
-      data = metadata.schemas?.find((s) => s['schema-id'] === id)
-      label = `Schema ID: ${id}`
-    } else if (type === 'spec') {
-      data = metadata['partition-specs']?.find((s) => s['spec-id'] === id)
-      label = `Spec ID: ${id}`
-    } else if (type === 'order') {
-      data = metadata['sort-orders']?.find((s) => s['order-id'] === id)
-      label = `Order ID: ${id}`
-    }
-    if (data) setSelectionDetail({ label, data })
-  }
-
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen bg-slate-50 font-sans">
-        <div className="w-10 h-10 border-4 border-slate-200 border-t-[#2E86C1] rounded-full animate-spin mb-4" />
-        <p className="text-slate-500 text-sm">Generating graph for <strong>{tableName}</strong>…</p>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen bg-slate-50 font-sans">
-        <div className="bg-red-50 border border-red-200 text-red-700 px-8 py-6 rounded-xl text-center max-w-sm">
-          <p>{error}</p>
-          <button
-            className="mt-3 px-5 py-2.5 rounded-lg border-2 border-[#2E86C1] bg-[#2E86C1] text-white font-bold text-sm cursor-pointer"
-            onClick={() => navigate('/')}
-          >
-            ← Back to Home
-          </button>
-        </div>
-      </div>
-    )
-  }
-
   const sticky = stickyNode ? parseStickyDetails(stickyNode.details) : null
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-slate-50">
-      <div ref={networkContainerRef} className="w-full h-screen" />
+    <div
+      className="relative w-full flex-1 overflow-hidden"
+      style={{
+        backgroundColor: '#0d1117',
+        backgroundImage: 'radial-gradient(circle, #2d3748 1px, transparent 1px)',
+        backgroundSize: '24px 24px',
+      }}
+    >
+      <div ref={networkContainerRef} className="absolute inset-0" />
 
-      <div className="fixed top-5 left-5 flex flex-col gap-2 z-[9999] font-sans">
-        <div className="flex gap-2 w-[220px]">
-          <button
-            className="p-3 rounded-lg cursor-pointer text-xl shadow-lg bg-white text-[#2E86C1] border-2 border-[#2E86C1] flex items-center justify-center hover:bg-slate-50 transition"
-            onClick={() => navigate('/')}
-            title="Home"
-          >
-            🏠
-          </button>
-          <button
-            className={`flex-1 px-2.5 py-3 rounded-lg cursor-pointer font-bold text-xs uppercase tracking-wide shadow-lg transition whitespace-nowrap
-              ${isFullView
-                ? 'bg-[#2E86C1] text-white border-none'
-                : 'bg-white text-[#2E86C1] border-2 border-[#2E86C1]'
-              }`}
-            onClick={resetView}
-          >
-            Reset Full View
-          </button>
-        </div>
+      <div className="absolute top-4 left-4 flex flex-col gap-2 z-[9999] font-sans w-[200px]">
+        <button
+          className={`w-full py-2.5 rounded-lg cursor-pointer font-bold text-xs uppercase tracking-wide shadow-md transition
+            ${isFullView
+              ? 'bg-[#2E86C1] text-white hover:bg-[#2471a3]'
+              : 'bg-[#1a202c] text-[#2E86C1] border border-[#2E86C1] hover:bg-[#2d3748]'
+            }`}
+          onClick={resetView}
+        >
+          Reset Full View
+        </button>
 
         <button
-          className={`flex overflow-hidden w-[220px] rounded-lg cursor-pointer font-bold text-xs uppercase tracking-wide shadow-lg p-0 transition
+          className={`w-full flex overflow-hidden rounded-lg cursor-pointer font-bold text-xs uppercase tracking-wide shadow-md transition
             ${isInspectMode
-              ? 'bg-[#2E86C1] text-white border-2 border-[#2E86C1]'
-              : 'bg-white text-[#2E86C1] border-2 border-[#2E86C1]'
+              ? 'bg-[#2E86C1] text-white border border-[#2E86C1] hover:bg-[#2471a3]'
+              : 'bg-[#1a202c] text-[#2E86C1] border border-[#2E86C1] hover:bg-[#2d3748]'
             }`}
-          onClick={() => setIsInspectMode((p) => !p)}
+          onClick={() => setIsInspectMode(p => !p)}
         >
-          <span className="w-[30%] flex items-center justify-center text-2xl bg-black/5">
+          <span className="w-9 flex items-center justify-center text-lg bg-black/5 shrink-0 py-2.5">
             {isInspectMode ? '🔒' : '🔍'}
           </span>
-          <span className="w-[70%] flex items-center justify-center p-3">
-            {isInspectMode ? 'Mode: Inspect (Locked)' : 'Mode: Lineage Traversal'}
+          <span className="flex-1 flex items-center justify-center py-2.5 px-2 leading-tight">
+            {isInspectMode ? 'Inspect (Locked)' : 'Lineage Traversal'}
           </span>
         </button>
 
-        <div className="flex flex-col gap-1.5">
-          <button
-            className={`truncate px-4.5 py-3 rounded-lg cursor-pointer font-bold text-xs uppercase tracking-wide shadow-md text-center w-[220px] transition
-              ${detailsOpen
-                ? 'bg-[#2E86C1] text-white border-none'
-                : 'bg-white text-[#2E86C1] border-2 border-[#2E86C1]'
-              }`}
-            onClick={() => setDetailsOpen((p) => !p)}
-          >
-            {metadata?.['table-name'] || 'Table Specs'}
-          </button>
-
-          {detailsOpen && metadata && (
-            <div className="w-[25vw] min-w-[280px] bg-white rounded-lg shadow-lg border border-slate-200 p-3 max-h-[67vh] overflow-y-auto">
-              <div className="font-extrabold text-slate-600 text-[0.65rem] uppercase mb-1 tracking-wide">
-                Table Specification
-              </div>
-              <MetadataStructured
-                metadata={metadata}
-                onSelect={showDetail}
-                selectedId={selectionDetail?.label}
-              />
-
-              {selectionDetail && (
-                <div className="mt-4 p-2.5 bg-slate-100 rounded-lg border border-slate-200">
-                  <div className="text-[0.7rem] font-extrabold text-slate-600 uppercase mb-2 flex justify-between items-center">
-                    <span>{selectionDetail.label}</span>
-                    <span
-                      className="cursor-pointer text-slate-400 text-lg"
-                      onClick={() => setSelectionDetail(null)}
-                    >
-                      ×
-                    </span>
-                  </div>
-                  <pre className="font-mono text-sm bg-[#1e293b] text-slate-50 p-3 rounded-md overflow-auto whitespace-pre break-normal max-h-[400px]">
-                    {JSON.stringify(selectionDetail.data, null, 2)}
-                  </pre>
-                </div>
-              )}
-
-              <div className="font-extrabold text-slate-600 text-[0.65rem] uppercase mb-1 tracking-wide mt-4">
-                Raw Metadata JSON
-              </div>
-              <pre className="font-mono text-sm text-[#2E86C1] m-0 whitespace-pre break-normal overflow-auto max-h-[400px] p-2.5">
-                {JSON.stringify(metadata, null, 2)}
-              </pre>
-            </div>
-          )}
-        </div>
+        <button
+          className="w-full py-2.5 rounded-lg cursor-pointer font-bold text-xs uppercase tracking-wide shadow-md transition bg-[#1a202c] text-[#2E86C1] border border-[#2E86C1] hover:bg-[#2d3748]"
+          onClick={() => networkRef.current?.fit()}
+        >
+          Center Graph
+        </button>
       </div>
 
       {sticky && (
         <div
-          className="fixed top-5 right-5 w-[420px] max-h-[85vh] overflow-y-auto bg-white/[0.98] border-l-[12px] rounded-xl p-6 z-[1000] shadow-[-10px_10px_30px_rgba(0,0,0,0.1)] backdrop-blur-sm"
+          className="absolute top-4 right-4 w-[400px] max-h-[88vh] overflow-y-auto bg-[#1a202c] border-l-4 rounded-xl z-[1000] shadow-xl"
           style={{ borderLeftColor: stickyNode.color }}
         >
-          <button
-            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 text-slate-500 border-none flex items-center justify-center text-lg cursor-pointer hover:bg-slate-200 transition"
-            onClick={() => setStickyNode(null)}
-          >
-            ✕
-          </button>
-          <div className="font-extrabold text-xl text-slate-900 mb-4 pb-3 border-b-2 border-slate-100">
-            {sticky.title}
+          <div className="flex items-start justify-between px-5 pt-5 pb-4 border-b border-[#2d3748]">
+            <div className="font-bold text-base text-[#e2e8f0] pr-6 leading-snug">{sticky.title}</div>
+            <button
+              className="w-7 h-7 rounded-full bg-[#2d3748] text-slate-400 flex items-center justify-center text-base cursor-pointer hover:bg-[#3d4a5c] hover:text-slate-200 transition shrink-0"
+              onClick={() => setStickyNode(null)}
+            >
+              ✕
+            </button>
           </div>
-          {isInspectMode && (
-            <div className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded text-[0.65rem] font-extrabold mb-4">
-              LOCKED VIEW
-            </div>
-          )}
-          {sticky.rows.map((r, i) => (
-            <div key={i} className="mb-3.5">
-              <span className="block font-bold text-slate-500 text-[0.7rem] uppercase mb-1">
-                {r.label}
+          <div className="px-5 py-4 flex flex-col gap-3">
+            {isInspectMode && (
+              <span className="inline-flex items-center gap-1.5 bg-[#2E86C1]/10 text-[#2E86C1] px-2.5 py-1 rounded-md text-[0.65rem] font-bold uppercase tracking-wide w-fit">
+                🔒 Locked View
               </span>
-              <span className="block font-mono bg-[#1e293b] text-white px-3.5 py-2.5 rounded-lg text-sm shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)] whitespace-pre overflow-x-auto break-normal">
-                {r.value}
-              </span>
-            </div>
-          ))}
+            )}
+            {sticky.rows.map((r, i) => (
+              <div key={i}>
+                <span className="block font-bold text-slate-500 text-[0.65rem] uppercase tracking-wider mb-1">
+                  {r.label}
+                </span>
+                <span className="block font-mono bg-[#0d1117] text-slate-200 px-3 py-2 rounded-lg text-xs whitespace-pre overflow-x-auto break-normal">
+                  {r.value}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
   )
 }
-

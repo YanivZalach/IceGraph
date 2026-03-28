@@ -1,4 +1,8 @@
-# 🧊 IceGraph
+<p align="center">
+  <img src="images/icegraph.png" alt="IceGraph" width="200">
+</p>
+
+# <p align="center">IceGraph</p>
 
 **IceGraph** provides an interactive, hierarchical view of **Apache Iceberg** metadata. It maps the DNA of your tables—from root metadata down to individual data and delete files.
 
@@ -7,17 +11,12 @@
 > **Table Version**: Currently IceGraph officially supports Table Version 2.
 
 
-![IceGraph Visualization](images/example1.png)
 
 ## 🛠 Features
 
 * 🔒 **Read-Only**: The application is read-only and does not modify the table.
 * 🕰 **Time-Travel**: View the physical state of your table as of any `datetime`.
-* 🎯 **Lineage Focus**: Click a node to isolate its specific upstream and downstream path.
-* 🔎 **Inspect Mode**: Toggle the **Lock View** to explore file metadata in the side panel without shifting the graph's visibility.
-* 📋 **Metadata Inspector**: A sticky side panel displaying record counts, stats, and file paths.
-* 🌳 **Directed Layout**: Left-to-Right (LR) flow representing the Metadata ➔ Data hierarchy.
-* 🔴 **MOR Awareness**: Visual tracking of Equality and Position delete files.
+* 📋 **Metadata Inspector**: Displaying record counts, stats, and file paths.
 * 🌴 **Branches**: View all the branches of the table, even when detached from the main branch.
 
 > **Recommended**: In production, use a user with read-only permissions for the Spark Connect server, for extra peace of mind.
@@ -29,9 +28,6 @@ docker run -e SPARK_REMOTE=sc://<spark-connect-ip>:15002 -e TIMEZONE=my/timezone
 ```
 
 ## Start Using Source Code
-
-
-![IceGraph Visualization](images/example2.png)
 
 ### Prerequisites
 
@@ -92,20 +88,3 @@ npm run dev
 ```
 
 Go to `http://localhost:3000` and explore your mock tables.
-
-## 📊 Node Legend
-
-| Color | Type | Role |
-| --- | --- | --- |
-| 🟣 | **Metadata** | The root JSON source. The **Pink** node is the current state; others fade with age. |
-| 🔵 | **Snapshot** | The Manifest List representing a specific table version. |
-| 🟠 | **Manifest** | Groupings of physical data files (Avro). |
-| 🟢 | **Data** | Parquet/Avro files containing actual records. |
-| 🔴 | **Deletes** | MOR markers (Equality or Position delete files). |
-
-## 🎮 UI Controls
-
-* **Reset Full View**: Clears all filters and returns the graph to its full hierarchical state.
-* **Mode: Lineage Traversal**: Default mode. Clicking a node hides everything except its direct parents and children.
-* **Mode: Inspect (Locked)**: Keeps the current graph layout static. Clicking nodes updates the **Metadata Inspector** without changing visibility.
-* **Table Info**: Pop-up panel showing Schema and Partition spec info of the table.
