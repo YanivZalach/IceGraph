@@ -77,6 +77,14 @@ function shortFileName(filePath) {
   return base
 }
 
+function formatDuration(tsA, tsB) {
+  const diff = Math.abs(new Date(tsA) - new Date(tsB))
+  if (diff >= 86400000) return `${Math.round(diff / 86400000)}d`
+  if (diff >= 3600000) return `${Math.round(diff / 3600000)}h`
+  if (diff >= 60000) return `${Math.round(diff / 60000)}m`
+  return `${Math.round(diff / 1000)}s`
+}
+
 function colorFor(type) {
   if (type === 'A') return COLOR_A
   if (type === 'B') return COLOR_B
@@ -192,14 +200,19 @@ export default function TimelinePage() {
             return (
               <div key={i} className="flex items-center">
                 {i > 0 && (
-                  <div className="flex items-center shrink-0">
-                    <div style={{
-                      width: 0, height: 0,
-                      borderTop: '4px solid transparent',
-                      borderBottom: '4px solid transparent',
-                      borderRight: '7px solid #2d3748',
-                    }} />
-                    <div className="w-14 h-px bg-[#2d3748]" />
+                  <div className="flex flex-col items-center shrink-0">
+                    <div className="text-[0.6rem] text-slate-500 mb-1">
+                      {formatDuration(events[i - 1].details.timestamp, events[i].details.timestamp)}
+                    </div>
+                    <div className="flex items-center">
+                      <div style={{
+                        width: 0, height: 0,
+                        borderTop: '4px solid transparent',
+                        borderBottom: '4px solid transparent',
+                        borderRight: '7px solid #2d3748',
+                      }} />
+                      <div className="w-14 h-px bg-[#2d3748]" />
+                    </div>
                   </div>
                 )}
                 <div
