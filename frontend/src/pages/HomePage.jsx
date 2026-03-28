@@ -16,17 +16,11 @@ export default function HomePage() {
     e.preventDefault()
     const params = new URLSearchParams({ table: tableName })
     if (date) params.set('date', date)
-    navigate(`/graph?${params.toString()}`)
+    navigate(`/table/graph?${params.toString()}`)
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col">
-      {/* Header */}
-      <header className="bg-[#1a202c] text-white py-4 px-8 shadow-lg">
-        <h1 className="text-2xl font-bold tracking-tight">🧊 IceGraph</h1>
-        <p className="text-slate-400 text-sm mt-1">Apache Iceberg Table Visualizer</p>
-      </header>
-
+    <div className="flex-1 flex flex-col">
       {/* Card */}
       <main className="flex-1 flex items-center justify-center p-8">
         <div className="bg-white rounded-2xl shadow-xl p-10 w-full max-w-lg border border-slate-100">
