@@ -188,14 +188,6 @@ export default function TableLayout() {
                 </div>
               )}
 
-              <div>
-                <div className="text-[0.65rem] font-bold text-slate-400 uppercase tracking-wider mb-2">
-                  Raw Metadata JSON
-                </div>
-                <pre className="font-mono text-xs text-[#2E86C1] whitespace-pre break-normal overflow-auto max-h-[300px] bg-slate-50 rounded-lg p-4 border border-slate-100">
-                  {JSON.stringify(metadata, null, 2)}
-                </pre>
-              </div>
             </div>
           </div>
         </div>

@@ -1,4 +1,8 @@
-# 🧊 IceGraph
+<p align="center">
+  <img src="images/icegraph.png" alt="IceGraph" width="200">
+</p>
+
+# <p align="center">IceGraph</p>
 
 **IceGraph** provides an interactive, hierarchical view of **Apache Iceberg** metadata. It maps the DNA of your tables—from root metadata down to individual data and delete files.
 
@@ -7,7 +11,6 @@
 > **Table Version**: Currently IceGraph officially supports Table Version 2.
 
 
-![IceGraph Visualization](images/example1.png)
 
 ## 🛠 Features
 
@@ -29,9 +32,6 @@ docker run -e SPARK_REMOTE=sc://<spark-connect-ip>:15002 -e TIMEZONE=my/timezone
 ```
 
 ## Start Using Source Code
-
-
-![IceGraph Visualization](images/example2.png)
 
 ### Prerequisites
 

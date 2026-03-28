@@ -1,5 +1,6 @@
 import { NavLink, useLocation, useMatch, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTableSpecs } from '../context/TableSpecsContext'
+import logo from '../assets/icegraph.png'
 
 export default function NavBar() {
   const location = useLocation()
@@ -12,15 +13,17 @@ export default function NavBar() {
   const tabSearch = location.search
 
   const tabClass = ({ isActive }) =>
-    `text-sm font-medium px-1 py-0.5 border-b-2 transition ${
-      isActive
-        ? 'border-[#2E86C1] text-white'
-        : 'border-transparent text-slate-400 hover:text-white hover:border-slate-500'
+    `text-sm font-medium px-1 py-0.5 border-b-2 transition ${isActive
+      ? 'border-[#2E86C1] text-white'
+      : 'border-transparent text-slate-400 hover:text-white hover:border-slate-500'
     }`
 
   return (
     <nav className="bg-[#1a202c] text-white px-8 py-3 flex items-center gap-6 shadow-lg shrink-0 sticky top-0 z-50">
-      <span className="text-lg font-bold tracking-tight select-none">🧊 IceGraph</span>
+      <div className="flex items-center gap-2 select-none">
+        <img src={logo} alt="IceGraph" className="h-10 w-10 object-contain" />
+        <span className="text-lg font-bold tracking-tight">IceGraph</span>
+      </div>
 
       {!isTablePage && (
         <NavLink to="/" end className={tabClass}>
@@ -32,11 +35,10 @@ export default function NavBar() {
         <>
           {tableName && (
             <button
-              className={`text-sm font-mono px-3 py-1 rounded-md border transition ${
-                detailsOpen
+              className={`text-sm font-mono px-3 py-1 rounded-md border transition ${detailsOpen
                   ? 'bg-[#2E86C1] border-[#2E86C1] text-white'
                   : 'bg-transparent border-slate-600 text-slate-300 hover:border-slate-400 hover:text-white'
-              }`}
+                }`}
               onClick={() => setDetailsOpen(p => !p)}
             >
               {tableName}

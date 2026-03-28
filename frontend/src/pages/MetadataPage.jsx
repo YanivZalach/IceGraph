@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 
 function Section({ title, children }) {
@@ -58,8 +59,15 @@ function FieldRow({ field }) {
 
 export default function MetadataPage() {
   const { metadata } = useOutletContext()
+  const [copied, setCopied] = useState(false)
 
   if (!metadata) return null
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(JSON.stringify(metadata, null, 2))
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   const currentSchema = metadata.schemas?.find(s => s['schema-id'] === metadata['current-schema-id'])
   const defaultSpec = metadata['partition-specs']?.find(s => s['spec-id'] === metadata['default-spec-id'])
@@ -74,6 +82,31 @@ export default function MetadataPage() {
   return (
     <div className="flex-1 overflow-y-auto bg-[#f8fafc]">
       <div className="max-w-4xl mx-auto px-8 py-8 flex flex-col gap-6">
+
+        {/* Copy button */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleCopy}
+            className="text-sm font-medium px-4 py-2 rounded-lg border border-slate-200 bg-white text-[#1e293b] hover:border-[#2E86C1] hover:text-[#2E86C1] transition shadow-sm"
+          >
+            {copied ? '✓ Copied!' : 'Copy Metadata JSON'}
+          </button>
+          <div className="group relative">
+            <div className="w-4 h-4 rounded-full bg-[#2E86C1] text-white text-[10px] font-black flex items-center justify-center cursor-help hover:bg-[#2471a3] transition select-none">
+              i
+            </div>
+            <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-72 bg-[#1a202c] text-slate-300 text-[0.7rem] p-3 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 leading-relaxed">
+              <strong className="text-[#2E86C1] block mb-1 uppercase tracking-wide text-[0.65rem]">Partial Metadata</strong>
+              The following fields are stripped by the backend due to size:
+              <ul className="mt-1.5 flex flex-col gap-0.5">
+                {['metadata-log', 'snapshot-log', 'snapshots', 'statistics'].map(f => (
+                  <li key={f} className="font-mono text-[#2E86C1]">· {f}</li>
+                ))}
+              </ul>
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-8 border-transparent border-b-[#1a202c]" />
+            </div>
+          </div>
+        </div>
 
         {/* Overview */}
         <Section title="Overview">
