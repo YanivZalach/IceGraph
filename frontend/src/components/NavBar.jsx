@@ -53,6 +53,9 @@ export default function NavBar() {
           <NavLink to={`/table/metadata${tabSearch}`} className={tabClass}>
             Metadata
           </NavLink>
+          <NavLink to={`/table/timeline${tabSearch}`} className={tabClass}>
+            Timeline
+          </NavLink>
 
           <button
             className="ml-auto text-sm font-medium text-slate-400 hover:text-white border border-slate-600 hover:border-slate-400 px-3 py-1 rounded-md transition"

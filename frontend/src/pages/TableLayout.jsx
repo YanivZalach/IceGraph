@@ -15,6 +15,14 @@ export default function TableLayout() {
   const { detailsOpen, setDetailsOpen, selectionDetail, setSelectionDetail } = useTableSpecs()
   const detailPanelRef = useRef(null)
 
+  useEffect(() => {
+    const handleKey = (e) => {
+      if (e.key === 'Escape') { setDetailsOpen(false); setSelectionDetail(null) }
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [setDetailsOpen, setSelectionDetail])
+
   const tableName = searchParams.get('table') || ''
   const date = searchParams.get('date') || ''
 
