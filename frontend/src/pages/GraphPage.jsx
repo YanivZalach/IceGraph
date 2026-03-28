@@ -126,15 +126,22 @@ export default function GraphPage() {
   const sticky = stickyNode ? parseStickyDetails(stickyNode.details) : null
 
   return (
-    <div className="relative w-full flex-1 overflow-hidden bg-slate-50">
+    <div
+      className="relative w-full flex-1 overflow-hidden"
+      style={{
+        backgroundColor: '#f8fafc',
+        backgroundImage: 'radial-gradient(circle, #dde3ec 1px, transparent 1px)',
+        backgroundSize: '24px 24px',
+      }}
+    >
       <div ref={networkContainerRef} className="absolute inset-0" />
 
       <div className="absolute top-4 left-4 flex flex-col gap-2 z-[9999] font-sans w-[200px]">
         <button
           className={`w-full py-2.5 rounded-lg cursor-pointer font-bold text-xs uppercase tracking-wide shadow-md transition
             ${isFullView
-              ? 'bg-[#2E86C1] text-white'
-              : 'bg-white text-[#2E86C1] border border-[#2E86C1]'
+              ? 'bg-[#2E86C1] text-white hover:bg-[#2471a3]'
+              : 'bg-white text-[#2E86C1] border border-[#2E86C1] hover:bg-blue-50'
             }`}
           onClick={resetView}
         >
@@ -144,8 +151,8 @@ export default function GraphPage() {
         <button
           className={`w-full flex overflow-hidden rounded-lg cursor-pointer font-bold text-xs uppercase tracking-wide shadow-md transition
             ${isInspectMode
-              ? 'bg-[#2E86C1] text-white border border-[#2E86C1]'
-              : 'bg-white text-[#2E86C1] border border-[#2E86C1]'
+              ? 'bg-[#2E86C1] text-white border border-[#2E86C1] hover:bg-[#2471a3]'
+              : 'bg-white text-[#2E86C1] border border-[#2E86C1] hover:bg-blue-50'
             }`}
           onClick={() => setIsInspectMode(p => !p)}
         >
@@ -155,6 +162,13 @@ export default function GraphPage() {
           <span className="flex-1 flex items-center justify-center py-2.5 px-2 leading-tight">
             {isInspectMode ? 'Inspect (Locked)' : 'Lineage Traversal'}
           </span>
+        </button>
+
+        <button
+          className="w-full py-2.5 rounded-lg cursor-pointer font-bold text-xs uppercase tracking-wide shadow-md transition bg-white text-[#2E86C1] border border-[#2E86C1] hover:bg-blue-50"
+          onClick={() => networkRef.current?.fit()}
+        >
+          Center Graph
         </button>
       </div>
 

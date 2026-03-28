@@ -51,7 +51,7 @@ export const VISUALIZATION_OPTIONS = {
   },
   interaction: {
     hover: true,
-    navigationButtons: true,
+    navigationButtons: false,
     multiselect: true,
     tooltipDelay: 100,
     hideEdgesOnDrag: true,
