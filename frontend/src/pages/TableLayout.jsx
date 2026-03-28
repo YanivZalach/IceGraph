@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Outlet, useNavigate, useSearchParams } from 'react-router-dom'
 import { DataSet } from 'vis-network/standalone'
 import MetadataStructured from '../components/MetadataStructured'
@@ -13,6 +13,7 @@ export default function TableLayout() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const { detailsOpen, setDetailsOpen, selectionDetail, setSelectionDetail } = useTableSpecs()
+  const detailPanelRef = useRef(null)
 
   const tableName = searchParams.get('table') || ''
   const date = searchParams.get('date') || ''
@@ -20,6 +21,12 @@ export default function TableLayout() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [graphData, setGraphData] = useState(null)
+
+  useEffect(() => {
+    if (selectionDetail && detailPanelRef.current) {
+      detailPanelRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+  }, [selectionDetail])
 
   useEffect(() => {
     if (!tableName) {
@@ -136,44 +143,60 @@ export default function TableLayout() {
       {detailsOpen && metadata && (
         <div
           className="absolute inset-0 z-[9999] bg-black/50 flex items-center justify-center font-sans"
-          onClick={() => setDetailsOpen(false)}
+          onClick={() => { setDetailsOpen(false); setSelectionDetail(null) }}
         >
           <div
-            className="w-[50vw] min-w-[340px] max-w-[720px] bg-white rounded-xl shadow-2xl border border-slate-200 p-5 max-h-[80vh] overflow-y-auto"
+            className="w-[50vw] min-w-[340px] max-w-[720px] bg-white rounded-xl shadow-2xl border border-slate-100 max-h-[80vh] flex flex-col"
             onClick={e => e.stopPropagation()}
           >
-            <div className="font-extrabold text-slate-600 text-[0.65rem] uppercase mb-1 tracking-wide">
-              Table Specification
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
+              <div>
+                <div className="font-bold text-[#1e293b] text-sm">Table Specification</div>
+                <div className="text-xs text-slate-400 font-mono mt-0.5">{metadata?.['table-name']}</div>
+              </div>
+              <button
+                className="w-7 h-7 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-base cursor-pointer hover:bg-slate-200 hover:text-slate-600 transition"
+                onClick={() => { setDetailsOpen(false); setSelectionDetail(null) }}
+              >
+                ✕
+              </button>
             </div>
-            <MetadataStructured
-              metadata={metadata}
-              onSelect={showDetail}
-              selectedId={selectionDetail?.label}
-            />
 
-            {selectionDetail && (
-              <div className="mt-4 p-2.5 bg-slate-100 rounded-lg border border-slate-200">
-                <div className="text-[0.7rem] font-extrabold text-slate-600 uppercase mb-2 flex justify-between items-center">
-                  <span>{selectionDetail.label}</span>
-                  <span
-                    className="cursor-pointer text-slate-400 text-lg"
-                    onClick={() => setSelectionDetail(null)}
-                  >
-                    ×
-                  </span>
+            {/* Modal body */}
+            <div className="overflow-y-auto px-6 py-5 flex flex-col gap-4">
+              <MetadataStructured
+                metadata={metadata}
+                onSelect={showDetail}
+                selectedId={selectionDetail?.label}
+              />
+
+              {selectionDetail && (
+                <div ref={detailPanelRef} className="rounded-lg border-2 border-[#2E86C1]">
+                  <div className="flex items-center justify-between px-4 py-2 bg-[#2E86C1]">
+                    <span className="text-sm font-bold text-white">{selectionDetail.label}</span>
+                    <button
+                      className="text-white/70 hover:text-white text-xl leading-none cursor-pointer transition"
+                      onClick={() => setSelectionDetail(null)}
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <pre style={{ margin: 0, padding: '1rem', background: '#f8fafc', color: '#1e293b', fontSize: '0.8rem', fontFamily: 'monospace', whiteSpace: 'pre', overflowX: 'auto', maxHeight: '300px', display: 'block' }}>
+                    {JSON.stringify(selectionDetail.data, null, 2)}
+                  </pre>
                 </div>
-                <pre className="font-mono text-sm bg-[#1e293b] text-slate-50 p-3 rounded-md overflow-auto whitespace-pre break-normal max-h-[400px]">
-                  {JSON.stringify(selectionDetail.data, null, 2)}
+              )}
+
+              <div>
+                <div className="text-[0.65rem] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  Raw Metadata JSON
+                </div>
+                <pre className="font-mono text-xs text-[#2E86C1] whitespace-pre break-normal overflow-auto max-h-[300px] bg-slate-50 rounded-lg p-4 border border-slate-100">
+                  {JSON.stringify(metadata, null, 2)}
                 </pre>
               </div>
-            )}
-
-            <div className="font-extrabold text-slate-600 text-[0.65rem] uppercase mb-1 tracking-wide mt-4">
-              Raw Metadata JSON
             </div>
-            <pre className="font-mono text-sm text-[#2E86C1] m-0 whitespace-pre break-normal overflow-auto max-h-[400px] p-2.5">
-              {JSON.stringify(metadata, null, 2)}
-            </pre>
           </div>
         </div>
       )}
