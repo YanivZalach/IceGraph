@@ -19,7 +19,7 @@ export default function NavBar() {
     }`
 
   return (
-    <nav className="bg-[#1a202c] text-white px-8 py-3 flex items-center gap-6 shadow-lg shrink-0">
+    <nav className="bg-[#1a202c] text-white px-8 py-3 flex items-center gap-6 shadow-lg shrink-0 sticky top-0 z-50">
       <span className="text-lg font-bold tracking-tight select-none">🧊 IceGraph</span>
 
       {!isTablePage && (
@@ -48,8 +48,8 @@ export default function NavBar() {
           <NavLink to={`/table/graph${tabSearch}`} className={tabClass}>
             Graph
           </NavLink>
-          <NavLink to={`/table/timeline${tabSearch}`} className={tabClass}>
-            Timeline
+          <NavLink to={`/table/metadata${tabSearch}`} className={tabClass}>
+            Metadata
           </NavLink>
 
           <button

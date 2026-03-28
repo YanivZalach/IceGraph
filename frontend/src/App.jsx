@@ -1,7 +1,7 @@
 import { Route, Routes } from 'react-router-dom'
 import HomePage from './pages/HomePage'
 import GraphPage from './pages/GraphPage'
-import TimelinePage from './pages/TimelinePage'
+import MetadataPage from './pages/MetadataPage'
 import TableLayout from './pages/TableLayout'
 import NavBar from './components/NavBar'
 import { TableSpecsProvider } from './context/TableSpecsContext'
@@ -29,7 +29,7 @@ export default function App() {
         }
       >
         <Route path="graph" element={<GraphPage />} />
-        <Route path="timeline" element={<TimelinePage />} />
+        <Route path="metadata" element={<MetadataPage />} />
       </Route>
     </Routes>
     </TableSpecsProvider>

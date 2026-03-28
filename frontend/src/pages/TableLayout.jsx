@@ -142,7 +142,7 @@ export default function TableLayout() {
 
       {detailsOpen && metadata && (
         <div
-          className="absolute inset-0 z-[9999] bg-black/50 flex items-center justify-center font-sans"
+          className="fixed inset-0 z-[9999] bg-black/50 flex items-center justify-center font-sans"
           onClick={() => { setDetailsOpen(false); setSelectionDetail(null) }}
         >
           <div
