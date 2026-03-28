@@ -1,5 +1,5 @@
 export const DELETED_DATA_FILE_CONNECTION_COLOR = '#FF0000'
-export const BRANCH_CONNECTION_COLOR = '#0000FF'
+export const BRANCH_CONNECTION_COLOR = '#38BDF8'
 
 export const FileType = {
   MAIN_METADATA: 'main_metadata',

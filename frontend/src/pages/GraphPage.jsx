@@ -23,6 +23,12 @@ export default function GraphPage() {
   }, [isInspectMode])
 
   useEffect(() => {
+    const handleKey = (e) => { if (e.key === 'Escape') setStickyNode(null) }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [])
+
+  useEffect(() => {
     if (Object.keys(errors).length > 0) {
       const summary = Object.entries(errors)
         .map(([file, err]) => `• ${file.split('/').pop()}: ${err}`)

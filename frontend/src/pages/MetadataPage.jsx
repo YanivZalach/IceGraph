@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
+import { FileType, UI_SECTION_NEWLINE } from '../graphConstants'
 
 function Section({ title, children }) {
   return (
@@ -58,10 +59,23 @@ function FieldRow({ field }) {
 }
 
 export default function MetadataPage() {
-  const { metadata } = useOutletContext()
+  const { metadata, nodes } = useOutletContext()
   const [copied, setCopied] = useState(false)
 
   if (!metadata) return null
+
+  const mainMetadataPath = (() => {
+    const node = nodes.get().find(n => n.type === FileType.MAIN_METADATA)
+    if (!node?.details) return null
+    const sections = node.details.split(UI_SECTION_NEWLINE)
+    for (let i = 1; i < sections.length; i++) {
+      const idx = sections[i].indexOf(':')
+      if (idx === -1) continue
+      if (sections[i].substring(0, idx).trim() === 'file_path')
+        return sections[i].substring(idx + 1).trim()
+    }
+    return null
+  })()
 
   const handleCopy = () => {
     navigator.clipboard.writeText(JSON.stringify(metadata, null, 2))
@@ -83,8 +97,7 @@ export default function MetadataPage() {
     <div className="flex-1 overflow-y-auto bg-[#0d1117]">
       <div className="max-w-4xl mx-auto px-8 py-8 flex flex-col gap-6">
 
-        {/* Copy button */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={handleCopy}
             className="text-sm font-medium px-4 py-2 rounded-lg border border-[#2d3748] bg-[#1a202c] text-[#e2e8f0] hover:border-[#2E86C1] hover:text-[#2E86C1] transition shadow-sm"
@@ -106,9 +119,14 @@ export default function MetadataPage() {
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-8 border-transparent border-b-[#1a202c]" />
             </div>
           </div>
+          {mainMetadataPath && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#1a202c] border border-[#2d3748]">
+              <span className="text-[0.65rem] font-bold text-slate-500 uppercase tracking-wider shrink-0">Path</span>
+              <span className="text-xs font-mono text-slate-300 break-all">{mainMetadataPath}</span>
+            </div>
+          )}
         </div>
 
-        {/* Overview */}
         <Section title="Overview">
           <div className="grid grid-cols-2 gap-x-8">
             <KV label="Table Name" value={metadata['table-name']} mono />
@@ -120,7 +138,6 @@ export default function MetadataPage() {
           </div>
         </Section>
 
-        {/* Current Schema */}
         {currentSchema && (
           <Section title={`Current Schema — ID ${currentSchema['schema-id']}`}>
             {currentSchema.fields?.length > 0 ? (
@@ -138,7 +155,6 @@ export default function MetadataPage() {
           </Section>
         )}
 
-        {/* Partition Spec */}
         {defaultSpec && (
           <Section title={`Partition Spec — ID ${defaultSpec['spec-id']}`}>
             {defaultSpec.fields?.length > 0 ? (
@@ -162,7 +178,6 @@ export default function MetadataPage() {
           </Section>
         )}
 
-        {/* Sort Order */}
         {defaultOrder && (
           <Section title={`Sort Order — ID ${defaultOrder['order-id']}`}>
             {defaultOrder.fields?.length > 0 ? (
@@ -186,7 +201,6 @@ export default function MetadataPage() {
           </Section>
         )}
 
-        {/* Refs */}
         {refs.length > 0 && (
           <Section title="Refs">
             <div className="flex flex-col">
@@ -201,7 +215,6 @@ export default function MetadataPage() {
           </Section>
         )}
 
-        {/* Properties */}
         {properties.length > 0 && (
           <Section title="Properties">
             <div className="flex flex-col">
