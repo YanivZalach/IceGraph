@@ -17,6 +17,7 @@
 * 🔒 **Read-Only**: The application is read-only and does not modify the table.
 * 🕰 **Time-Travel**: View the physical state of your table as of any `datetime`.
 * 📋 **Metadata Inspector**: Displaying record counts, stats, and file paths.
+* 🔄 **Table History**: Trace every metadata evolution, from schema changes to snapshot writes, across the full lifetime of the table.
 * 🌴 **Branches**: View all the branches of the table, even when detached from the main branch.
 
 > **Recommended**: In production, use a user with read-only permissions for the Spark Connect server, for extra peace of mind.

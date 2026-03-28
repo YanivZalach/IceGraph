@@ -157,7 +157,6 @@ export default function TableLayout() {
             className="w-[50vw] min-w-[340px] max-w-[720px] bg-[#1a202c] rounded-xl shadow-2xl border border-[#2d3748] max-h-[80vh] flex flex-col"
             onClick={e => e.stopPropagation()}
           >
-            {/* Modal header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#2d3748] shrink-0">
               <div>
                 <div className="font-bold text-[#e2e8f0] text-sm">Table Specification</div>
@@ -171,7 +170,6 @@ export default function TableLayout() {
               </button>
             </div>
 
-            {/* Modal body */}
             <div className="overflow-y-auto px-6 py-5 flex flex-col gap-4">
               <MetadataStructured
                 metadata={metadata}

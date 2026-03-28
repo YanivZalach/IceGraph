@@ -149,7 +149,6 @@ export default function TimelinePage() {
       })
 
     const timeline = metaNodes.map(({ details }, i) => {
-      // array is newest-first, so the chronologically previous state is at i+1
       const prev = i < metaNodes.length - 1 ? metaNodes[i + 1].details : null
       const type = !prev
         ? 'init'
@@ -247,7 +246,6 @@ export default function TimelinePage() {
         </div>
       </div>
 
-      {/* Modal */}
       {selected && (
         <div
           className="fixed inset-0 z-[9999] bg-black/60 flex items-center justify-center font-sans"
@@ -258,7 +256,6 @@ export default function TimelinePage() {
             style={{ borderLeft: `4px solid ${colorFor(selected.type)}` }}
             onClick={e => e.stopPropagation()}
           >
-            {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#2d3748] shrink-0">
               <div className="min-w-0 pr-4">
                 <div className="font-bold text-sm" style={{ color: colorFor(selected.type) }}>
@@ -281,7 +278,6 @@ export default function TimelinePage() {
               </button>
             </div>
 
-            {/* Body */}
             <div className="overflow-y-auto px-6 py-5 flex flex-col gap-5">
 
               {selected.type === 'A' && (
