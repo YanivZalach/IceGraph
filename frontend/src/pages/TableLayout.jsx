@@ -1,3 +1,4 @@
+import JSONbig from 'json-bigint'
 import { useEffect, useRef, useState } from 'react'
 import { Outlet, useNavigate, useSearchParams } from 'react-router-dom'
 import { DataSet } from 'vis-network/standalone'
@@ -51,7 +52,8 @@ export default function TableLayout() {
       body: body.toString(),
     })
       .then(async (res) => {
-        const data = await res.json()
+        const text = await res.text()
+        const data = JSONbig({ storeAsString: true }).parse(text)
         if (!res.ok) throw new Error(data.error || 'Request failed')
         return data
       })

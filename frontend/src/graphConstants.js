@@ -28,7 +28,6 @@ export const VISUALIZATION_OPTIONS = {
     font: {
       color: '#ffffff',
       size: 16,
-      bold: true,
       strokeWidth: 1,
       strokeColor: 'rgba(0,0,0,0.6)',
     },
