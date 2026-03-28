@@ -92,9 +92,9 @@ export default function TableLayout() {
 
   if (loading) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-slate-50">
-        <div className="w-10 h-10 border-4 border-slate-200 border-t-[#2E86C1] rounded-full animate-spin mb-4" />
-        <p className="text-slate-500 text-sm">
+      <div className="flex-1 flex flex-col items-center justify-center bg-[#0d1117]">
+        <div className="w-10 h-10 border-4 border-[#2d3748] border-t-[#2E86C1] rounded-full animate-spin mb-4" />
+        <p className="text-slate-400 text-sm">
           Loading data for <strong>{tableName}</strong>…
         </p>
       </div>
@@ -103,8 +103,8 @@ export default function TableLayout() {
 
   if (error) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-slate-50">
-        <div className="bg-red-50 border border-red-200 text-red-700 px-8 py-6 rounded-xl text-center max-w-sm">
+      <div className="flex-1 flex flex-col items-center justify-center bg-[#0d1117]">
+        <div className="bg-red-950/50 border border-red-800 text-red-400 px-8 py-6 rounded-xl text-center max-w-sm">
           <p>{error}</p>
           <button
             className="mt-3 px-5 py-2.5 rounded-lg border-2 border-[#2E86C1] bg-[#2E86C1] text-white font-bold text-sm cursor-pointer"
@@ -146,17 +146,17 @@ export default function TableLayout() {
           onClick={() => { setDetailsOpen(false); setSelectionDetail(null) }}
         >
           <div
-            className="w-[50vw] min-w-[340px] max-w-[720px] bg-white rounded-xl shadow-2xl border border-slate-100 max-h-[80vh] flex flex-col"
+            className="w-[50vw] min-w-[340px] max-w-[720px] bg-[#1a202c] rounded-xl shadow-2xl border border-[#2d3748] max-h-[80vh] flex flex-col"
             onClick={e => e.stopPropagation()}
           >
             {/* Modal header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#2d3748] shrink-0">
               <div>
-                <div className="font-bold text-[#1e293b] text-sm">Table Specification</div>
+                <div className="font-bold text-[#e2e8f0] text-sm">Table Specification</div>
                 <div className="text-xs text-slate-400 font-mono mt-0.5">{metadata?.['table-name']}</div>
               </div>
               <button
-                className="w-7 h-7 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-base cursor-pointer hover:bg-slate-200 hover:text-slate-600 transition"
+                className="w-7 h-7 rounded-full bg-[#2d3748] text-slate-400 flex items-center justify-center text-base cursor-pointer hover:bg-[#3d4a5c] hover:text-slate-200 transition"
                 onClick={() => { setDetailsOpen(false); setSelectionDetail(null) }}
               >
                 ✕
@@ -182,7 +182,7 @@ export default function TableLayout() {
                       ×
                     </button>
                   </div>
-                  <pre style={{ margin: 0, padding: '1rem', background: '#f8fafc', color: '#1e293b', fontSize: '0.8rem', fontFamily: 'monospace', whiteSpace: 'pre', overflowX: 'auto', maxHeight: '300px', display: 'block' }}>
+                  <pre style={{ margin: 0, padding: '1rem', background: '#0d1117', color: '#e2e8f0', fontSize: '0.8rem', fontFamily: 'monospace', whiteSpace: 'pre', overflowX: 'auto', maxHeight: '300px', display: 'block' }}>
                     {JSON.stringify(selectionDetail.data, null, 2)}
                   </pre>
                 </div>

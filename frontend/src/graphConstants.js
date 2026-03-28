@@ -12,18 +12,27 @@ export const FileType = {
 }
 
 export const NODE_STYLE_MAP = {
-  [FileType.MAIN_METADATA]: { rgb: [250, 112, 181], level: -1 },
-  [FileType.METADATA]: { rgb: [191, 90, 242], level: -1 },
-  [FileType.SNAPSHOT]: { rgb: [58, 190, 249], level: 0 },
-  [FileType.MANIFEST]: { rgb: [243, 156, 18], level: 1 },
-  [FileType.DATA]: { rgb: [46, 204, 113], level: 2 },
-  [FileType.POSITION_DELETE]: { rgb: [231, 76, 60], level: 2 },
-  [FileType.EQUALITY_DELETE]: { rgb: [231, 76, 60], level: 2 },
+  [FileType.MAIN_METADATA]: { rgb: [195, 60, 130], level: -1 },
+  [FileType.METADATA]: { rgb: [100, 55, 210], level: -1 },
+  [FileType.SNAPSHOT]: { rgb: [25, 100, 185], level: 0 },
+  [FileType.MANIFEST]: { rgb: [25, 145, 185], level: 1 },
+  [FileType.DATA]: { rgb: [25, 150, 115], level: 2 },
+  [FileType.POSITION_DELETE]: { rgb: [185, 35, 60], level: 2 },
+  [FileType.EQUALITY_DELETE]: { rgb: [185, 35, 60], level: 2 },
 }
 export const UI_SECTION_NEWLINE = '\x00'
 export const UI_NEWLINE = '\n'
 
 export const VISUALIZATION_OPTIONS = {
+  nodes: {
+    font: {
+      color: '#ffffff',
+      size: 16,
+      bold: true,
+      strokeWidth: 1,
+      strokeColor: 'rgba(0,0,0,0.6)',
+    },
+  },
   layout: {
     hierarchical: {
       enabled: true,

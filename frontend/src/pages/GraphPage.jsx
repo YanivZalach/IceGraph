@@ -129,8 +129,8 @@ export default function GraphPage() {
     <div
       className="relative w-full flex-1 overflow-hidden"
       style={{
-        backgroundColor: '#f8fafc',
-        backgroundImage: 'radial-gradient(circle, #dde3ec 1px, transparent 1px)',
+        backgroundColor: '#0d1117',
+        backgroundImage: 'radial-gradient(circle, #2d3748 1px, transparent 1px)',
         backgroundSize: '24px 24px',
       }}
     >
@@ -141,7 +141,7 @@ export default function GraphPage() {
           className={`w-full py-2.5 rounded-lg cursor-pointer font-bold text-xs uppercase tracking-wide shadow-md transition
             ${isFullView
               ? 'bg-[#2E86C1] text-white hover:bg-[#2471a3]'
-              : 'bg-white text-[#2E86C1] border border-[#2E86C1] hover:bg-blue-50'
+              : 'bg-[#1a202c] text-[#2E86C1] border border-[#2E86C1] hover:bg-[#2d3748]'
             }`}
           onClick={resetView}
         >
@@ -152,7 +152,7 @@ export default function GraphPage() {
           className={`w-full flex overflow-hidden rounded-lg cursor-pointer font-bold text-xs uppercase tracking-wide shadow-md transition
             ${isInspectMode
               ? 'bg-[#2E86C1] text-white border border-[#2E86C1] hover:bg-[#2471a3]'
-              : 'bg-white text-[#2E86C1] border border-[#2E86C1] hover:bg-blue-50'
+              : 'bg-[#1a202c] text-[#2E86C1] border border-[#2E86C1] hover:bg-[#2d3748]'
             }`}
           onClick={() => setIsInspectMode(p => !p)}
         >
@@ -165,7 +165,7 @@ export default function GraphPage() {
         </button>
 
         <button
-          className="w-full py-2.5 rounded-lg cursor-pointer font-bold text-xs uppercase tracking-wide shadow-md transition bg-white text-[#2E86C1] border border-[#2E86C1] hover:bg-blue-50"
+          className="w-full py-2.5 rounded-lg cursor-pointer font-bold text-xs uppercase tracking-wide shadow-md transition bg-[#1a202c] text-[#2E86C1] border border-[#2E86C1] hover:bg-[#2d3748]"
           onClick={() => networkRef.current?.fit()}
         >
           Center Graph
@@ -174,13 +174,13 @@ export default function GraphPage() {
 
       {sticky && (
         <div
-          className="absolute top-4 right-4 w-[400px] max-h-[88vh] overflow-y-auto bg-white border-l-4 rounded-xl z-[1000] shadow-xl"
+          className="absolute top-4 right-4 w-[400px] max-h-[88vh] overflow-y-auto bg-[#1a202c] border-l-4 rounded-xl z-[1000] shadow-xl"
           style={{ borderLeftColor: stickyNode.color }}
         >
-          <div className="flex items-start justify-between px-5 pt-5 pb-4 border-b border-slate-100">
-            <div className="font-bold text-base text-slate-900 pr-6 leading-snug">{sticky.title}</div>
+          <div className="flex items-start justify-between px-5 pt-5 pb-4 border-b border-[#2d3748]">
+            <div className="font-bold text-base text-[#e2e8f0] pr-6 leading-snug">{sticky.title}</div>
             <button
-              className="w-7 h-7 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-base cursor-pointer hover:bg-slate-200 hover:text-slate-600 transition shrink-0"
+              className="w-7 h-7 rounded-full bg-[#2d3748] text-slate-400 flex items-center justify-center text-base cursor-pointer hover:bg-[#3d4a5c] hover:text-slate-200 transition shrink-0"
               onClick={() => setStickyNode(null)}
             >
               ✕
@@ -194,10 +194,10 @@ export default function GraphPage() {
             )}
             {sticky.rows.map((r, i) => (
               <div key={i}>
-                <span className="block font-bold text-slate-400 text-[0.65rem] uppercase tracking-wider mb-1">
+                <span className="block font-bold text-slate-500 text-[0.65rem] uppercase tracking-wider mb-1">
                   {r.label}
                 </span>
-                <span className="block font-mono bg-[#1a202c] text-slate-200 px-3 py-2 rounded-lg text-xs whitespace-pre overflow-x-auto break-normal">
+                <span className="block font-mono bg-[#0d1117] text-slate-200 px-3 py-2 rounded-lg text-xs whitespace-pre overflow-x-auto break-normal">
                   {r.value}
                 </span>
               </div>

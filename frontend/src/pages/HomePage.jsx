@@ -23,20 +23,20 @@ export default function HomePage() {
   return (
     <div className="flex-1 flex flex-col">
       <main className="flex-1 flex items-center justify-center p-8">
-        <div className="bg-white rounded-2xl shadow-xl p-10 w-full max-w-lg border border-slate-100">
+        <div className="bg-[#1a202c] rounded-2xl shadow-xl p-10 w-full max-w-lg border border-[#2d3748]">
           <div className="flex flex-col items-center mb-6">
             <img src={logo} alt="IceGraph" className="h-20 w-20 object-contain mb-3" />
-            <h1 className="text-2xl font-bold text-[#1e293b]">IceGraph</h1>
+            <h1 className="text-2xl font-bold text-[#e2e8f0]">IceGraph</h1>
           </div>
 
-          <h2 className="text-xl font-bold text-[#1e293b] mb-1">Visualize a Table</h2>
-          <p className="text-slate-500 text-sm mb-7">
+          <h2 className="text-xl font-bold text-[#e2e8f0] mb-1">Visualize a Table</h2>
+          <p className="text-slate-400 text-sm mb-7">
             Enter an Iceberg table name to explore its metadata graph.
           </p>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">
                 Table Name
               </label>
               <input
@@ -45,13 +45,13 @@ export default function HomePage() {
                 value={tableName}
                 onChange={e => setTableName(e.target.value)}
                 placeholder="default.my_table"
-                className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm text-[#1e293b] placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-[#2E86C1]/40 focus:border-[#2E86C1] transition"
+                className="w-full border border-[#2d3748] bg-[#2d3748] rounded-lg px-4 py-2.5 text-sm text-[#e2e8f0] placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#2E86C1]/40 focus:border-[#2E86C1] transition"
               />
             </div>
 
             <div>
               <div className="flex items-center gap-1.5 mb-1.5">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">
                   As-Of Date
                 </label>
                 <div className="group relative ml-1">
@@ -72,7 +72,7 @@ export default function HomePage() {
                 type="datetime-local"
                 value={date}
                 onChange={e => setDate(e.target.value)}
-                className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm text-[#1e293b] focus:outline-none focus:ring-2 focus:ring-[#2E86C1]/40 focus:border-[#2E86C1] transition"
+                className="w-full border border-[#2d3748] bg-[#2d3748] rounded-lg px-4 py-2.5 text-sm text-[#e2e8f0] focus:outline-none focus:ring-2 focus:ring-[#2E86C1]/40 focus:border-[#2E86C1] transition"
               />
             </div>
 
@@ -86,7 +86,7 @@ export default function HomePage() {
         </div>
       </main>
 
-      <footer className="text-center text-xs text-slate-400 py-4">
+      <footer className="text-center text-xs text-slate-500 py-4">
         IceGraph — Apache Iceberg Metadata Visualizer
       </footer>
     </div>

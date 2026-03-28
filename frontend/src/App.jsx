@@ -8,7 +8,7 @@ import { TableSpecsProvider } from './context/TableSpecsContext'
 
 function Layout({ children }) {
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col">
+    <div className="min-h-screen bg-[#0d1117] flex flex-col">
       <NavBar />
       {children}
     </div>
