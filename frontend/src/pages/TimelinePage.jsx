@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { FileType, UI_NEWLINE, UI_SECTION_NEWLINE } from '../graphConstants'
 
@@ -179,6 +179,40 @@ export default function TimelinePage() {
 
   const selectedSnap = selected ? snapshotMap[selected.snapshotId] : null
 
+  const scrollRef = useRef(null)
+  const targetScrollRef = useRef(0)
+  const rafRef = useRef(null)
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    targetScrollRef.current = el.scrollLeft
+    const onWheel = (e) => {
+      if (e.deltaY === 0) return
+      e.preventDefault()
+      targetScrollRef.current = Math.max(
+        0,
+        Math.min(targetScrollRef.current + e.deltaY, el.scrollWidth - el.clientWidth)
+      )
+      if (rafRef.current) return
+      const animate = () => {
+        const diff = targetScrollRef.current - el.scrollLeft
+        if (Math.abs(diff) < 0.5) {
+          el.scrollLeft = targetScrollRef.current
+          rafRef.current = null
+          return
+        }
+        el.scrollLeft += diff * 0.12
+        rafRef.current = requestAnimationFrame(animate)
+      }
+      rafRef.current = requestAnimationFrame(animate)
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => {
+      el.removeEventListener('wheel', onWheel)
+      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    }
+  }, [])
+
   return (
     <div className="flex-1 flex flex-col bg-[#0d1117] overflow-hidden">
 
@@ -191,7 +225,7 @@ export default function TimelinePage() {
         ))}
       </div>
 
-      <div className="flex-1 flex items-center overflow-x-auto">
+      <div ref={scrollRef} className="flex-1 flex items-center overflow-x-auto">
         <div className="flex items-start min-w-max px-16 py-12">
           {events.map((event, i) => {
             const ts = formatTs(event.details.timestamp)
