@@ -1,0 +1,110 @@
+version: "3.8"
+
+# ─────────────────────────────────────────────────────────────────
+# IceGraph demo stack
+# Using HADOOP Catalog
+# After all services are healthy (can take a couple of minutes), open http://localhost:5000
+# Creating 2 tables: default.logging, default.events
+# ─────────────────────────────────────────────────────────────────
+
+services:
+  spark-master:
+    image: apache/spark:3.5.1
+    hostname: spark-master
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    environment:
+      - SPARK_MASTER_HOST=spark-master
+      - SPARK_MASTER_PORT=7077
+      - SPARK_MASTER_WEBUI_PORT=8080
+    entrypoint:
+      - "bash"
+      - "-c"
+      - "/opt/spark/sbin/start-master.sh && tail -f /dev/null"
+    volumes:
+      - ./data:/opt/spark/work-dir/spark-warehouse/data:rw
+
+  spark-connect:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM apache/spark:3.5.1
+        USER root
+        RUN curl -fL -o /opt/spark/jars/iceberg-spark-runtime-3.5_2.12-1.4.2.jar \
+              "https://repo1.maven.org/maven2/org/apache/iceberg/iceberg-spark-runtime-3.5_2.12/1.4.2/iceberg-spark-runtime-3.5_2.12-1.4.2.jar" \
+            && curl -fL -o /opt/spark/jars/spark-avro_2.12-3.5.1.jar \
+              "https://repo1.maven.org/maven2/org/apache/spark/spark-avro_2.12/3.5.1/spark-avro_2.12-3.5.1.jar"
+    hostname: spark-connect
+    user: root
+    ports:
+      - "4040:4040"
+      - "15002:15002"
+    depends_on:
+      - spark-master
+    volumes:
+      - ./data:/warehouse:rw
+    entrypoint: ["/opt/spark/bin/spark-submit"]
+    command:
+      - "--packages"
+      - "org.apache.spark:spark-connect_2.12:3.5.1"
+      - "--conf"
+      - "spark.connect.grpc.binding.address=0.0.0.0"
+      - "--conf"
+      - "spark.sql.extensions=org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions"
+      - "--conf"
+      - "spark.sql.catalog.spark_catalog=org.apache.iceberg.spark.SparkSessionCatalog"
+      - "--conf"
+      - "spark.sql.catalog.spark_catalog.type=hadoop"
+      - "--conf"
+      - "spark.sql.catalog.spark_catalog.warehouse=/warehouse"
+      - "--class"
+      - "org.apache.spark.sql.connect.service.SparkConnectServer"
+      - "spark-internal"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "bash",
+          "-c",
+          "cat /proc/net/tcp6 | awk '{print $2}' | grep -qi '3A9A'",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  spark-worker:
+    image: apache/spark:3.5.1
+    hostname: spark-worker
+    depends_on:
+      - spark-master
+    entrypoint:
+      - "bash"
+      - "-c"
+      - "/opt/spark/sbin/start-worker.sh spark://spark-master:7077 && tail -f /dev/null"
+    volumes:
+      - ./data:/opt/spark/work-dir/spark-warehouse/data:rw
+
+  mock-creator:
+    build: .
+    restart: "no"
+    depends_on:
+      spark-connect:
+        condition: service_healthy
+    environment:
+      - SPARK_REMOTE=sc://spark-connect:15002
+
+  icegraph:
+    image: yanivzalach/icegraph:latest
+    ports:
+      - "5000:5000"
+    depends_on:
+      spark-connect:
+        condition: service_healthy
+    environment:
+      - SPARK_REMOTE=sc://spark-connect:15002
+      - TIMEZONE=Asia/Jerusalem
+
+volumes:
+  warehouse:

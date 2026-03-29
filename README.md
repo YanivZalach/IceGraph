@@ -22,6 +22,20 @@
 
 > **Recommended**: In production, use a user with read-only permissions for the Spark Connect server, for extra peace of mind.
 
+## Mock Data Example Using Docker
+
+Clone the repo, and in it, go to:
+```
+cd docker_demo
+```
+
+Run the docker compose:
+```
+docker compose up
+```
+
+Go to `http://localhost:5000` and explore table `default.events` and table `default.logging`.
+
 ## Quick Start Using Docker
 
 [DockerHub](https://hub.docker.com/r/yanivzalach/icegraph)
@@ -38,15 +52,7 @@ docker run -e SPARK_REMOTE=sc://<spark-connect-ip>:15002 -e TIMEZONE=my/timezone
 - UV (python)
 - Python 3.9
 
-### 1. Spark Connect Backend
-
-Start your Spark Connect server (example via Docker):
-
-```bash
-cd tests/spark_connect_docker && docker-compose up -d
-```
-
-### 2. Setup
+### 1. Setup
 
 Sync the environments:
 
@@ -60,15 +66,7 @@ cd frontend
 npm i
 ```
 
-### 3. Create Mock Data
-
-Create mock if needed for testing, from within the backend directory:
-```bash
-uv run python tests/create_mock_table.py
-uv run python tests/create_mock_table_no_branches.py
-```
-
-### 3. Setup your Envs
+### 2. Setup your Envs
 
 We will create an `.env` file in the root of the backend directory:
 
@@ -77,7 +75,7 @@ TIMEZONE=my/timezone # Put your local timezone name
 SPARK_REMOTE=sc://localhost:15002 # Our local testing spark, If you use docker, change it to your ip.
 ```
 
-### 4. Run
+### 3. Run
 
 Open one terminal in the backend directory and run:
 
@@ -90,4 +88,4 @@ Open a second terminal in the front end directory and run:
 npm run dev
 ```
 
-Go to `http://localhost:3000` and explore your mock tables.
+Go to `http://localhost:3000` and explore your tables.

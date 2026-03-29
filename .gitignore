@@ -12,3 +12,4 @@ build/
 *.egg-info/
 frontend/node_modules
 frontend/.vite
+docker_demo/data
