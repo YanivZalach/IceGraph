@@ -36,6 +36,8 @@ docker compose up
 
 Go to `http://localhost:5000` and explore table `default.events` and table `default.logging`.
 
+Recommended: Change the `TIMEZONE` variable in the docker compose to your timezone name.
+
 ## Quick Start Using Docker
 
 [DockerHub](https://hub.docker.com/r/yanivzalach/icegraph)

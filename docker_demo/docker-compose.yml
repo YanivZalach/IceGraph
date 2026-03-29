@@ -1,10 +1,10 @@
 version: "3.8"
 
 # ─────────────────────────────────────────────────────────────────
-# IceGraph demo stack
-# Using HADOOP Catalog
-# After all services are healthy (can take a couple of minutes), open http://localhost:5000
-# Creating 2 tables: default.logging, default.events
+# IceGraph demo stack, time is set to UTC.
+# Using HADOOP Catalog.
+# After all services are healthy (can take a couple of minutes), open http://localhost:5000 .
+# Creating 2 tables: default.logging, default.events .
 # ─────────────────────────────────────────────────────────────────
 
 services:
@@ -104,7 +104,7 @@ services:
         condition: service_healthy
     environment:
       - SPARK_REMOTE=sc://spark-connect:15002
-      - TIMEZONE=Asia/Jerusalem
+      - TIMEZONE=UTC
 
 volumes:
   warehouse:
