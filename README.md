@@ -6,6 +6,8 @@
 
 **IceGraph** provides an interactive, hierarchical view of **Apache Iceberg** metadata. It maps the DNA of your tables—from root metadata down to individual data and delete files.
 
+Look at Live Demo! [https://yanivzalach.github.io/IceGraph/](https://yanivzalach.github.io/IceGraph/)
+
 > **Opinionated Design**: IceGraph is built exclusively for **Spark Connect** backends.
 
 > **Table Version**: Currently IceGraph officially supports Table Version 2.
