@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import HomePage from './pages/HomePage'
 import GraphPage from './pages/GraphPage'
 import MetadataPage from './pages/MetadataPage'
@@ -20,7 +20,14 @@ export default function App() {
   return (
     <TableSpecsProvider>
     <Routes>
-      <Route path="/" element={<Layout><HomePage /></Layout>} />
+      <Route
+        path="/"
+        element={
+          import.meta.env.VITE_USE_MSW === 'true'
+            ? <Navigate to="/table/graph?table=default.events" replace />
+            : <Layout><HomePage /></Layout>
+        }
+      />
       <Route
         path="/table"
         element={
