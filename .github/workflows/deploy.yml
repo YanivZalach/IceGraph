@@ -40,9 +40,6 @@ jobs:
           VITE_OUT_DIR: "dist"
         run: npm run build
 
-      - name: Delete gh-pages branch
-        run: git push origin --delete gh-pages || true
-
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
