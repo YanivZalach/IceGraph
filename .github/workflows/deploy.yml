@@ -40,6 +40,9 @@ jobs:
           VITE_OUT_DIR: "dist"
         run: npm run build
 
+      - name: Add 404 fallback for SPA routing
+        run: cp frontend/dist/index.html frontend/dist/404.html
+
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:

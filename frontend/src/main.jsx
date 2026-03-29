@@ -16,7 +16,7 @@ async function enableMocking() {
 enableMocking().then(() => {
   ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
-      <BrowserRouter basename="/IceGraph/">
+      <BrowserRouter basename={import.meta.env.VITE_USE_MSW === 'true' ? '/IceGraph/' : '/'}>
         <App />
       </BrowserRouter>
     </React.StrictMode>
