@@ -36,6 +36,7 @@ jobs:
         working-directory: frontend
         env:
           VITE_USE_MSW: "true"
+          VITE_BASE: "/IceGraph/"
           VITE_OUT_DIR: "dist"
         run: npm run build
 
