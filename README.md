@@ -44,7 +44,7 @@ Recommended: Change the `TIMEZONE` variable in the docker compose to your timezo
 
 The easiest way to run IceGraph is via [DockerHub](https://hub.docker.com/r/yanivzalach/icegraph)
 
-### Spark connect 3.5.1
+### Spark connect 3.5.4
 
 ```bash
 docker run -e SPARK_REMOTE=sc://<spark-connect-ip>:15002 -e TIMEZONE=my/timezone -p 5000:5000 yanivzalach/icegraph:latest
