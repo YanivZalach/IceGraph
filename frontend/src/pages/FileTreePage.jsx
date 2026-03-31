@@ -19,26 +19,76 @@ function parseDetails(details) {
 
 const FILE_TYPES = new Set([FileType.DATA, FileType.POSITION_DELETE, FileType.EQUALITY_DELETE])
 
+function Dropdown({ triggerLabel, isOpen, onToggle, dropdownRef, children }) {
+  return (
+    <div ref={dropdownRef} className="relative">
+      <button
+        onClick={onToggle}
+        className={`flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg border transition cursor-pointer select-none ${
+          isOpen
+            ? 'bg-[#1e2a3a] border-[#2E86C1] text-white'
+            : 'bg-[#1a202c] border-[#2d3748] text-[#e2e8f0] hover:border-[#3d4a5c]'
+        }`}
+      >
+        <span className="font-medium">{triggerLabel}</span>
+        <svg
+          className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2"
+        >
+          <path d="M4 6l4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-1 z-50 bg-[#1a202c] border border-[#2d3748] rounded-xl shadow-2xl overflow-hidden min-w-[160px] max-h-60 overflow-y-auto">
+          {children}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function DropdownItem({ label, badge, active, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center justify-between px-4 py-2 text-sm transition cursor-pointer ${
+        active ? 'bg-[#1e3a5f] text-white' : 'text-slate-300 hover:bg-[#252d3d] hover:text-white'
+      }`}
+    >
+      <span>{label}</span>
+      {badge && <span className="text-[0.6rem] font-bold uppercase tracking-wider text-[#2E86C1] ml-3">{badge}</span>}
+    </button>
+  )
+}
+
 export default function FileTreePage() {
-  const { nodes, edges } = useOutletContext()
+  const { nodes, edges, metadata } = useOutletContext()
   const [search, setSearch] = useState('')
+  const [selectedBranch, setSelectedBranch] = useState(null) // null = all
   const [selectedIdx, setSelectedIdx] = useState(null)
   const [collapsed, setCollapsed] = useState({})
   const [checkedFiles, setCheckedFiles] = useState(new Set())
   const [copied, setCopied] = useState(false)
-  const [dropdownOpen, setDropdownOpen] = useState(false)
-  const dropdownRef = useRef(null)
+  const [branchDropdownOpen, setBranchDropdownOpen] = useState(false)
+  const [snapshotDropdownOpen, setSnapshotDropdownOpen] = useState(false)
+  const branchDropdownRef = useRef(null)
+  const snapshotDropdownRef = useRef(null)
 
   useEffect(() => {
-    if (!dropdownOpen) return
-    const handleClick = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setDropdownOpen(false)
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [dropdownOpen])
+    if (!branchDropdownOpen) return
+    const handler = (e) => { if (branchDropdownRef.current && !branchDropdownRef.current.contains(e.target)) setBranchDropdownOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [branchDropdownOpen])
 
-  const { snapshots, adjacency, nodeById } = useMemo(() => {
+  useEffect(() => {
+    if (!snapshotDropdownOpen) return
+    const handler = (e) => { if (snapshotDropdownRef.current && !snapshotDropdownRef.current.contains(e.target)) setSnapshotDropdownOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [snapshotDropdownOpen])
+
+  const { snapshots, adjacency, nodeById, snapshotById } = useMemo(() => {
     const allNodes = nodes.get()
     const allEdges = edges.get()
 
@@ -48,11 +98,12 @@ export default function FileTreePage() {
     const snaps = allNodes
       .filter(n => n.type === FileType.SNAPSHOT)
       .map(n => ({ ...n, parsedDetails: parseDetails(n.details) }))
-      .sort((a, b) => {
-        const ta = new Date(a.parsedDetails.timestamp || 0).getTime()
-        const tb = new Date(b.parsedDetails.timestamp || 0).getTime()
-        return ta - tb
-      })
+      .sort((a, b) => new Date(a.parsedDetails.timestamp || 0) - new Date(b.parsedDetails.timestamp || 0))
+
+    const snapById = {}
+    for (const s of snaps) {
+      if (s.parsedDetails.snapshot_id) snapById[s.parsedDetails.snapshot_id] = s
+    }
 
     const adj = {}
     for (const e of allEdges) {
@@ -60,14 +111,41 @@ export default function FileTreePage() {
       adj[e.from].push({ to: e.to, is_deleted: !!e.is_deleted })
     }
 
-    return { snapshots: snaps, adjacency: adj, nodeById: byId }
+    return { snapshots: snaps, adjacency: adj, nodeById: byId, snapshotById: snapById }
   }, [nodes, edges])
 
-  const effectiveIdx = selectedIdx !== null ? selectedIdx : snapshots.length - 1
+  const branches = useMemo(() => {
+    if (!metadata?.refs) return []
+    return Object.entries(metadata.refs)
+      .filter(([, ref]) => ref.type === 'branch')
+      .map(([name, ref]) => ({ name, headSnapshotId: String(ref['snapshot-id']) }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [metadata])
+
+  const displayedSnapshots = useMemo(() => {
+    if (!selectedBranch) return snapshots
+    const branch = branches.find(b => b.name === selectedBranch)
+    if (!branch) return snapshots
+
+    // Trace parent_id chain from branch HEAD to collect all ancestor snapshots
+    const result = []
+    const visited = new Set()
+    let currentId = branch.headSnapshotId
+    while (currentId && !visited.has(currentId)) {
+      visited.add(currentId)
+      const node = snapshotById[currentId]
+      if (!node) break
+      result.push(node)
+      currentId = node.parsedDetails.parent_id
+    }
+    return result.reverse() // oldest first
+  }, [selectedBranch, branches, snapshots, snapshotById])
+
+  const effectiveIdx = selectedIdx !== null ? selectedIdx : displayedSnapshots.length - 1
 
   const partitionMap = useMemo(() => {
-    if (snapshots.length === 0) return {}
-    const snapshot = snapshots[effectiveIdx]
+    if (displayedSnapshots.length === 0) return {}
+    const snapshot = displayedSnapshots[effectiveIdx]
     if (!snapshot) return {}
 
     const visited = new Set()
@@ -98,18 +176,19 @@ export default function FileTreePage() {
       partMap[partition].push(f.id)
     }
     return partMap
-  }, [snapshots, effectiveIdx, adjacency, nodeById])
+  }, [displayedSnapshots, effectiveIdx, adjacency, nodeById])
 
   const filteredPartitions = useMemo(() => {
     const q = search.trim().toLowerCase()
-    const entries = Object.entries(partitionMap)
+    return Object.entries(partitionMap)
       .filter(([part]) => !q || part.toLowerCase().includes(q))
       .sort(([a], [b]) => b.localeCompare(a))
-    return entries
   }, [partitionMap, search])
 
   const totalPartitions = filteredPartitions.length
   const totalFiles = filteredPartitions.reduce((sum, [, f]) => sum + f.length, 0)
+
+  const resetSelection = () => { setSelectedIdx(null); setCollapsed({}); setCheckedFiles(new Set()) }
 
   const toggleCollapse = (partition) =>
     setCollapsed(prev => ({ ...prev, [partition]: !prev[partition] }))
@@ -144,55 +223,72 @@ export default function FileTreePage() {
     )
   }
 
+  const currentSnapshot = displayedSnapshots[effectiveIdx]
+
   return (
     <div className="flex-1 flex flex-col bg-[#0d1117] overflow-hidden">
       <div className="shrink-0 px-8 pt-5 pb-3 flex items-center gap-4 border-b border-[#2d3748]">
         <div className="flex items-center gap-2">
-          <div ref={dropdownRef} className="relative">
-            <button
-              onClick={() => setDropdownOpen(p => !p)}
-              className={`flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg border transition cursor-pointer select-none ${
-                dropdownOpen
-                  ? 'bg-[#1e2a3a] border-[#2E86C1] text-white'
-                  : 'bg-[#1a202c] border-[#2d3748] text-[#e2e8f0] hover:border-[#3d4a5c]'
-              }`}
-            >
-              <span className="font-medium">
+
+          {/* Branch selector */}
+          {branches.length > 0 && (
+            <>
+              <Dropdown
+                dropdownRef={branchDropdownRef}
+                isOpen={branchDropdownOpen}
+                onToggle={() => setBranchDropdownOpen(p => !p)}
+                triggerLabel={
+                  selectedBranch
+                    ? <>{selectedBranch}</>
+                    : <span className="text-slate-400">All branches</span>
+                }
+              >
+                <DropdownItem
+                  label="All branches"
+                  active={selectedBranch === null}
+                  onClick={() => { setSelectedBranch(null); resetSelection(); setBranchDropdownOpen(false) }}
+                />
+                <div className="h-px bg-[#2d3748] mx-2" />
+                {branches.map(b => (
+                  <DropdownItem
+                    key={b.name}
+                    label={b.name}
+                    active={selectedBranch === b.name}
+                    onClick={() => { setSelectedBranch(b.name); resetSelection(); setBranchDropdownOpen(false) }}
+                  />
+                ))}
+              </Dropdown>
+
+              <div className="w-px h-4 bg-slate-700" />
+            </>
+          )}
+
+          {/* Snapshot selector */}
+          <Dropdown
+            dropdownRef={snapshotDropdownRef}
+            isOpen={snapshotDropdownOpen}
+            onToggle={() => setSnapshotDropdownOpen(p => !p)}
+            triggerLabel={
+              <>
                 Snapshot {effectiveIdx + 1}
-                {effectiveIdx === snapshots.length - 1 && (
+                {effectiveIdx === displayedSnapshots.length - 1 && (
                   <span className="ml-1.5 text-[0.6rem] font-bold uppercase tracking-wider text-[#2E86C1]">latest</span>
                 )}
-              </span>
-              <svg
-                className={`w-3.5 h-3.5 text-slate-400 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`}
-                viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2"
-              >
-                <path d="M4 6l4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
+              </>
+            }
+          >
+            {displayedSnapshots.map((snap, i) => (
+              <DropdownItem
+                key={snap.id}
+                label={`Snapshot ${i + 1}`}
+                badge={i === displayedSnapshots.length - 1 ? 'latest' : null}
+                active={i === effectiveIdx}
+                onClick={() => { setSelectedIdx(i); setCollapsed({}); setCheckedFiles(new Set()); setSnapshotDropdownOpen(false) }}
+              />
+            ))}
+          </Dropdown>
 
-            {dropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 z-50 bg-[#1a202c] border border-[#2d3748] rounded-xl shadow-2xl overflow-hidden min-w-[160px] max-h-60 overflow-y-auto">
-                {snapshots.map((snap, i) => (
-                  <button
-                    key={snap.id}
-                    onClick={() => { setSelectedIdx(i); setCollapsed({}); setCheckedFiles(new Set()); setDropdownOpen(false) }}
-                    className={`w-full flex items-center justify-between px-4 py-2 text-sm transition cursor-pointer ${
-                      i === effectiveIdx
-                        ? 'bg-[#1e3a5f] text-white'
-                        : 'text-slate-300 hover:bg-[#252d3d] hover:text-white'
-                    }`}
-                  >
-                    <span>Snapshot {i + 1}</span>
-                    {i === snapshots.length - 1 && (
-                      <span className="text-[0.6rem] font-bold uppercase tracking-wider text-[#2E86C1] ml-3">latest</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
+          {/* Info tooltip */}
           <div className="group relative">
             <div className="w-4 h-4 rounded-full bg-[#2E86C1] text-white text-[10px] font-black flex items-center justify-center cursor-help hover:bg-[#2471a3] transition select-none">
               i
@@ -203,11 +299,12 @@ export default function FileTreePage() {
             </div>
           </div>
 
-          {snapshots[effectiveIdx] && (
+          {/* Snapshot ID badge */}
+          {currentSnapshot && (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#1a202c] border border-[#2d3748]">
               <span className="text-[0.65rem] font-bold text-slate-500 uppercase tracking-wider shrink-0">Snapshot ID</span>
               <span className="text-xs font-mono text-slate-300">
-                {snapshots[effectiveIdx].parsedDetails.snapshot_id ?? '—'}
+                {currentSnapshot.parsedDetails.snapshot_id ?? '—'}
               </span>
             </div>
           )}
@@ -223,14 +320,8 @@ export default function FileTreePage() {
 
         <div className="ml-auto flex items-center gap-3">
           <div className="flex gap-5 text-xs text-slate-400">
-            <span>
-              <span className="font-semibold text-slate-300">{totalPartitions}</span>
-              {' '}partition{totalPartitions !== 1 ? 's' : ''}
-            </span>
-            <span>
-              <span className="font-semibold text-slate-300">{totalFiles}</span>
-              {' '}file{totalFiles !== 1 ? 's' : ''}
-            </span>
+            <span><span className="font-semibold text-slate-300">{totalPartitions}</span> partition{totalPartitions !== 1 ? 's' : ''}</span>
+            <span><span className="font-semibold text-slate-300">{totalFiles}</span> file{totalFiles !== 1 ? 's' : ''}</span>
           </div>
 
           <div className="w-px h-4 bg-slate-700" />
