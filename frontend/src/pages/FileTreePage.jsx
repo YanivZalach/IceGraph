@@ -24,6 +24,8 @@ export default function FileTreePage() {
   const [search, setSearch] = useState('')
   const [selectedIdx, setSelectedIdx] = useState(null)
   const [collapsed, setCollapsed] = useState({})
+  const [checkedFiles, setCheckedFiles] = useState(new Set())
+  const [copied, setCopied] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef(null)
 
@@ -112,6 +114,28 @@ export default function FileTreePage() {
   const toggleCollapse = (partition) =>
     setCollapsed(prev => ({ ...prev, [partition]: !prev[partition] }))
 
+  const toggleFile = (path) =>
+    setCheckedFiles(prev => {
+      const next = new Set(prev)
+      next.has(path) ? next.delete(path) : next.add(path)
+      return next
+    })
+
+  const togglePartition = (files) => {
+    const allChecked = files.every(f => checkedFiles.has(f))
+    setCheckedFiles(prev => {
+      const next = new Set(prev)
+      files.forEach(f => allChecked ? next.delete(f) : next.add(f))
+      return next
+    })
+  }
+
+  const copyPaths = () => {
+    navigator.clipboard.writeText([...checkedFiles].join('\n'))
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
   if (snapshots.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center bg-[#0d1117]">
@@ -152,7 +176,7 @@ export default function FileTreePage() {
                 {snapshots.map((snap, i) => (
                   <button
                     key={snap.id}
-                    onClick={() => { setSelectedIdx(i); setCollapsed({}); setDropdownOpen(false) }}
+                    onClick={() => { setSelectedIdx(i); setCollapsed({}); setCheckedFiles(new Set()); setDropdownOpen(false) }}
                     className={`w-full flex items-center justify-between px-4 py-2 text-sm transition cursor-pointer ${
                       i === effectiveIdx
                         ? 'bg-[#1e3a5f] text-white'
@@ -197,15 +221,65 @@ export default function FileTreePage() {
           className="flex-1 max-w-xs text-sm bg-[#1a202c] border border-[#2d3748] text-[#e2e8f0] rounded-lg px-3 py-1.5 placeholder-slate-500 focus:outline-none focus:border-[#2E86C1]"
         />
 
-        <div className="ml-auto flex gap-5 text-xs text-slate-400">
-          <span>
-            <span className="font-semibold text-slate-300">{totalPartitions}</span>
-            {' '}partition{totalPartitions !== 1 ? 's' : ''}
-          </span>
-          <span>
-            <span className="font-semibold text-slate-300">{totalFiles}</span>
-            {' '}file{totalFiles !== 1 ? 's' : ''}
-          </span>
+        <div className="ml-auto flex items-center gap-3">
+          <div className="flex gap-5 text-xs text-slate-400">
+            <span>
+              <span className="font-semibold text-slate-300">{totalPartitions}</span>
+              {' '}partition{totalPartitions !== 1 ? 's' : ''}
+            </span>
+            <span>
+              <span className="font-semibold text-slate-300">{totalFiles}</span>
+              {' '}file{totalFiles !== 1 ? 's' : ''}
+            </span>
+          </div>
+
+          <div className="w-px h-4 bg-slate-700" />
+
+          <button
+            onClick={() => setCheckedFiles(new Set(Object.values(partitionMap).flat()))}
+            disabled={totalFiles === 0}
+            className="text-sm px-3 py-1.5 rounded-lg border border-[#2d3748] text-slate-400 hover:border-slate-500 hover:text-slate-200 transition disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+          >
+            Select all
+          </button>
+          <button
+            onClick={() => setCheckedFiles(new Set())}
+            disabled={checkedFiles.size === 0}
+            className="text-sm px-3 py-1.5 rounded-lg border border-[#2d3748] text-slate-400 hover:border-slate-500 hover:text-slate-200 transition disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+          >
+            Clear
+          </button>
+
+          <div className="w-px h-4 bg-slate-700" />
+
+          <button
+            onClick={copyPaths}
+            disabled={checkedFiles.size === 0}
+            className={`flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg border transition ${
+              checkedFiles.size === 0
+                ? 'border-[#2d3748] text-slate-600 cursor-not-allowed'
+                : copied
+                  ? 'border-green-600 bg-green-900/30 text-green-400'
+                  : 'border-[#2E86C1] text-[#2E86C1] hover:bg-[#1e3a5f] cursor-pointer'
+            }`}
+          >
+            {copied ? (
+              <>
+                <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 8l3.5 3.5L13 4" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Copied!
+              </>
+            ) : (
+              <>
+                <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <rect x="5" y="5" width="8" height="9" rx="1.5" />
+                  <path d="M11 5V4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h1" strokeLinecap="round" />
+                </svg>
+                Copy paths {checkedFiles.size > 0 && <span className="text-xs font-bold">({checkedFiles.size})</span>}
+              </>
+            )}
+          </button>
         </div>
       </div>
 
@@ -215,39 +289,73 @@ export default function FileTreePage() {
             {search ? 'No partitions match the search.' : 'No data files found for this snapshot.'}
           </p>
         )}
-        {filteredPartitions.map(([partition, files]) => (
-          <div key={partition} className="bg-[#1a202c] rounded-lg border border-[#2d3748] overflow-hidden">
-            <button
-              className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#252d3d] transition text-left"
-              onClick={() => toggleCollapse(partition)}
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <svg
-                  className={`w-3.5 h-3.5 text-[#2E86C1] shrink-0 transition-transform ${collapsed[partition] ? '-rotate-90' : ''}`}
-                  viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5"
+        {filteredPartitions.map(([partition, files]) => {
+          const allChecked = files.every(f => checkedFiles.has(f))
+          const someChecked = !allChecked && files.some(f => checkedFiles.has(f))
+          return (
+            <div key={partition} className="bg-[#1a202c] rounded-lg border border-[#2d3748] overflow-hidden">
+              <div className="flex items-center px-4 py-2.5 hover:bg-[#252d3d] transition">
+                <button
+                  className="flex items-center gap-3 min-w-0 flex-1 text-left"
+                  onClick={() => toggleCollapse(partition)}
                 >
-                  <path d="M4 6l4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                <span className="text-sm font-mono text-[#e2e8f0] truncate">{partition}</span>
-              </div>
-              <span className="ml-4 shrink-0 text-[0.65rem] font-bold bg-[#2d3748] text-slate-400 px-2 py-0.5 rounded-full">
-                {files.length}
-              </span>
-            </button>
-            {!collapsed[partition] && (
-              <div className="border-t border-[#2d3748]">
-                {files.map((filePath, i) => (
-                  <div
-                    key={filePath}
-                    className={`px-8 py-1.5 text-xs font-mono text-slate-400 ${i % 2 === 0 ? 'bg-[#0d1117]' : 'bg-[#111820]'}`}
+                  <svg
+                    className={`w-3.5 h-3.5 text-[#2E86C1] shrink-0 transition-transform ${collapsed[partition] ? '-rotate-90' : ''}`}
+                    viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5"
                   >
-                    {filePath.split('/').pop()}
-                  </div>
-                ))}
+                    <path d="M4 6l4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <span className="text-sm font-mono text-[#e2e8f0] truncate">{partition}</span>
+                </button>
+                <div className="flex items-center gap-3 ml-4 shrink-0">
+                  <span className="text-[0.65rem] font-bold bg-[#2d3748] text-slate-400 px-2 py-0.5 rounded-full">
+                    {files.length}
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={allChecked}
+                    ref={el => { if (el) el.indeterminate = someChecked }}
+                    onChange={() => togglePartition(files)}
+                    className="w-3.5 h-3.5 rounded accent-[#2E86C1] cursor-pointer"
+                    title="Select all in partition"
+                  />
+                </div>
               </div>
-            )}
-          </div>
-        ))}
+              {!collapsed[partition] && (
+                <div className="border-t border-[#2d3748] px-4 py-2 flex flex-col gap-1">
+                  {files.map((filePath) => (
+                    <div
+                      key={filePath}
+                      onClick={() => toggleFile(filePath)}
+                      className={`flex items-center gap-2.5 px-3 py-2 rounded-md border transition cursor-pointer group ${
+                        checkedFiles.has(filePath)
+                          ? 'bg-[#1e3a5f] border-[#2E86C1]/40'
+                          : 'bg-[#0d1117] border-transparent hover:bg-[#131c2b] hover:border-[#2d3748]'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checkedFiles.has(filePath)}
+                        onChange={() => toggleFile(filePath)}
+                        onClick={e => e.stopPropagation()}
+                        className="w-3.5 h-3.5 rounded accent-[#2E86C1] cursor-pointer shrink-0"
+                      />
+                      <span
+                        className={`text-xs font-mono transition-colors overflow-hidden whitespace-nowrap ${
+                          checkedFiles.has(filePath) ? 'text-slate-200' : 'text-slate-400 group-hover:text-slate-200'
+                        }`}
+                        style={{ direction: 'rtl', textOverflow: 'ellipsis' }}
+                        title={filePath}
+                      >
+                        {filePath}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
     </div>
   )
