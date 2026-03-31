@@ -63,6 +63,9 @@ export default function NavBar() {
             <NavLink to={`/table/timeline${tabSearch}`} className={tabClass}>
               Timeline
             </NavLink>
+            <NavLink to={`/table/filetree${tabSearch}`} className={tabClass}>
+              FileTree
+            </NavLink>
 
             <button
               className={`text-sm font-medium px-3 py-1 rounded-md border transition ${detailsOpen

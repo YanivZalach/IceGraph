@@ -3,6 +3,7 @@ import HomePage from './pages/HomePage'
 import GraphPage from './pages/GraphPage'
 import MetadataPage from './pages/MetadataPage'
 import TimelinePage from './pages/TimelinePage'
+import FileTreePage from './pages/FileTreePage'
 import TableLayout from './pages/TableLayout'
 import NavBar from './components/NavBar'
 import { TableSpecsProvider } from './context/TableSpecsContext'
@@ -39,6 +40,7 @@ export default function App() {
         <Route path="graph" element={<GraphPage />} />
         <Route path="metadata" element={<MetadataPage />} />
         <Route path="timeline" element={<TimelinePage />} />
+        <Route path="filetree" element={<FileTreePage />} />
       </Route>
     </Routes>
     </TableSpecsProvider>
