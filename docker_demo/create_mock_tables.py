@@ -20,26 +20,25 @@ spark.sql(
         'write.update.mode' = 'merge-on-read',
         'write.merge.mode' = 'merge-on-read'
     )
-"""
+    """
 )
 print("✅ Created table `default.events`, partitioned by hour(event_ts)\n")
 
 # ─────────────────────────────────────────────
-# 2. Insert data for Hour 10 (10:00–10:59)
+# 2. Insert data for Hours 10 and 11
 # ─────────────────────────────────────────────
-hour10_data = [
+hours_data = [
     (1, "login", "2025-06-15 10:05:00"),
-    (2, "click", "2025-06-15 10:20:00"),
+    (2, "click", "2025-06-15 11:20:00"),
     (3, "purchase", "2025-06-15 10:45:00"),
 ]
-df_hour10 = spark.createDataFrame(
-    hour10_data, ["event_id", "event_name", "event_ts_str"]
-)
-df_hour10 = df_hour10.withColumn("event_ts", F.to_timestamp("event_ts_str")).drop(
+df_hours = spark.createDataFrame(hours_data, ["event_id", "event_name", "event_ts_str"])
+df_hours = df_hours.withColumn("event_ts", F.to_timestamp("event_ts_str")).drop(
     "event_ts_str"
 )
-df_hour10.writeTo("default.events").overwritePartitions()
-print("✅ Inserted 3 rows into hour 10 partition")
+df_hours.writeTo("default.events").overwritePartitions()
+df_hours.writeTo("default.events").append()
+print("✅ Inserted 3 rows into hours 10 and 11 partition")
 spark.table("default.events").show(1000, False)
 
 # ─────────────────────────────────────────────
@@ -72,6 +71,7 @@ df_hour11 = spark.createDataFrame(
 df_hour11 = df_hour11.withColumn("event_ts", F.to_timestamp("event_ts_str")).drop(
     "event_ts_str"
 )
+df_hour11.writeTo("default.events").append()
 df_hour11.writeTo("default.events").append()
 print("✅ Inserted 2 rows into hour 11 partition (with new columns)")
 spark.table("default.events").show(1000, False)
@@ -108,6 +108,17 @@ print(
 # Write some data to main that won't appear on the branch
 experimental_data = [
     (200, "experiment", "2025-06-15 12:00:00", "test"),
+    (200, "experiment", "2025-06-15 12:00:00", "test"),
+    (200, "experiment1", "2025-06-15 12:00:00", "test"),
+    (200, "experiment", "2025-06-15 12:00:00", "test"),
+    (200, "experiment", "2025-06-15 12:00:00", "test"),
+    (200, "experiment", "2025-06-15 12:03:00", "test"),
+    (200, "experiment", "2025-06-15 12:30:00", "test"),
+    (200, "experiment", "2025-06-15 12:00:00", "test"),
+    (200, "experiment2", "2025-06-15 12:10:00", "test"),
+    (200, "experiment", "2025-06-15 12:00:00", "test"),
+    (200, "experiment", "2025-06-15 12:00:00", "test"),
+    (200, "experiment", "2025-06-15 12:01:00", "test"),
 ]
 df_exp = spark.createDataFrame(
     experimental_data, ["event_id", "event_type", "event_ts_str", "event_source"]
@@ -115,7 +126,7 @@ df_exp = spark.createDataFrame(
 df_exp = df_exp.withColumn("event_ts", F.to_timestamp("event_ts_str")).drop(
     "event_ts_str"
 )
-df_exp.writeTo("default.events").overwritePartitions()
+df_exp.repartition(2).writeTo("default.events").overwritePartitions()
 print("✅ Overwrote hour 12 partition on main (after branching)")
 
 # ─────────────────────────────────────────────
@@ -123,6 +134,7 @@ print("✅ Overwrote hour 12 partition on main (after branching)")
 # ─────────────────────────────────────────────
 branch_data = [
     (300, "audit_fix", "2025-06-15 13:15:00", "audit"),
+    (301, "audit_review", "2025-06-15 13:45:00", "audit"),
     (301, "audit_review", "2025-06-15 13:45:00", "audit"),
 ]
 df_branch = spark.createDataFrame(
@@ -174,7 +186,10 @@ df_main_extra = spark.createDataFrame(
 df_main_extra = df_main_extra.withColumn(
     "event_ts", F.to_timestamp("event_ts_str")
 ).drop("event_ts_str")
-df_main_extra.writeTo("default.events").overwritePartitions()
+df_main_extra.writeTo("default.events").option(
+    "snapshot-property.my_custom_key",
+    "If you have found me, you are searching through IceGraph and doing a great job!",
+).overwritePartitions()
 print("✅ Overwrote hour 15 partition on main (after feature_branch)")
 
 # ─────────────────────────────────────────────
@@ -205,7 +220,7 @@ spark.sql(
         'write.update.mode' = 'merge-on-read',
         'write.merge.mode' = 'merge-on-read'
     )
-"""
+    """
 )
 print("✅ Created table `default.logging`, partitioned by hour(event_ts)\n")
 
@@ -275,10 +290,7 @@ df_hour10_new = spark.createDataFrame(
 df_hour10_new = df_hour10_new.withColumn(
     "event_ts", F.to_timestamp("event_ts_str")
 ).drop("event_ts_str")
-df_hour10_new.writeTo("default.logging").option(
-    "snapshot-property.my_custom_key",
-    "If you have found me, you are searching through IceGraph and doing a great job!",
-).overwritePartitions()
+df_hour10_new.writeTo("default.logging").overwritePartitions()
 print("✅ Overwrote hour 10 partition with corrected data")
 print("   (Hour 11 remains untouched)\n")
 

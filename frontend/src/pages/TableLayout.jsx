@@ -70,6 +70,9 @@ export default function TableLayout() {
       if (cached) {
         setGraphData(buildGraphData(JSONbig({ storeAsString: true }).parse(cached)))
         setLoading(false)
+        const cleanUrl = new URL(window.location.href)
+        cleanUrl.searchParams.delete('dup')
+        history.replaceState(history.state, '', cleanUrl.toString())
         return
       }
     }
