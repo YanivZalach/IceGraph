@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useOutletContext } from 'react-router-dom'
+import { useLocation, useOutletContext } from 'react-router-dom'
 import { Network } from 'vis-network/standalone'
 import {
   UI_NEWLINE,
@@ -36,8 +36,13 @@ function applySelection(network, nodeId) {
 export default function GraphPage() {
   const { nodes, edges, metadata, errors } = useOutletContext()
 
+  const location = useLocation()
   const networkContainerRef = useRef(null)
   const networkRef = useRef(null)
+  const initialSelectRef = useRef(location.state?.selectNodeId || null)
+  const restoreSelectRef = useRef(
+    !location.state?.selectNodeId ? (history.state?.graphSelection || null) : null
+  )
 
   const [isInspectMode, setIsInspectMode] = useState(false)
   const [isFullView, setIsFullView] = useState(true)
@@ -67,7 +72,9 @@ export default function GraphPage() {
   }, [])
 
   useEffect(() => {
-    history.replaceState({ graphSelection: null }, '')
+    if (!history.state || !('graphSelection' in history.state)) {
+      history.replaceState({ graphSelection: null }, '')
+    }
 
     const handlePopState = (e) => {
       if (!e.state || !('graphSelection' in e.state)) return
@@ -104,7 +111,22 @@ export default function GraphPage() {
     )
     networkRef.current = network
 
-    network.once('afterDrawing', () => network.fit())
+    network.once('afterDrawing', () => {
+      const fromFileTree = initialSelectRef.current
+      const fromHistory = restoreSelectRef.current
+      initialSelectRef.current = null
+      restoreSelectRef.current = null
+
+      const nodeId = fromFileTree || fromHistory
+      if (nodeId) {
+        applySelection(network, nodeId)
+        const nodeData = network.body.data.nodes.get(nodeId)
+        if (nodeData) { setStickyNode(nodeData); setIsFullView(false) }
+        if (fromFileTree) history.replaceState({ graphSelection: nodeId }, '')
+      } else {
+        network.fit()
+      }
+    })
     network.on('zoom', () => setIsFullView(false))
     network.on('dragEnd', () => setIsFullView(false))
 

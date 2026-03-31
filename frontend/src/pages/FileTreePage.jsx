@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useOutletContext } from 'react-router-dom'
+import { useLocation, useNavigate, useOutletContext } from 'react-router-dom'
 import { FileType, UI_NEWLINE, UI_SECTION_NEWLINE } from '../graphConstants'
 
 function parseDetails(details) {
@@ -24,11 +24,10 @@ function Dropdown({ triggerLabel, isOpen, onToggle, dropdownRef, children }) {
     <div ref={dropdownRef} className="relative">
       <button
         onClick={onToggle}
-        className={`flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg border transition cursor-pointer select-none ${
-          isOpen
+        className={`flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg border transition cursor-pointer select-none ${isOpen
             ? 'bg-[#1e2a3a] border-[#2E86C1] text-white'
             : 'bg-[#1a202c] border-[#2d3748] text-[#e2e8f0] hover:border-[#3d4a5c]'
-        }`}
+          }`}
       >
         <span className="font-medium">{triggerLabel}</span>
         <svg
@@ -51,9 +50,8 @@ function DropdownItem({ label, badge, active, onClick }) {
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center justify-between px-4 py-2 text-sm transition cursor-pointer ${
-        active ? 'bg-[#1e3a5f] text-white' : 'text-slate-300 hover:bg-[#252d3d] hover:text-white'
-      }`}
+      className={`w-full flex items-center justify-between px-4 py-2 text-sm transition cursor-pointer ${active ? 'bg-[#1e3a5f] text-white' : 'text-slate-300 hover:bg-[#252d3d] hover:text-white'
+        }`}
     >
       <span>{label}</span>
       {badge && <span className="text-[0.6rem] font-bold uppercase tracking-wider text-[#2E86C1] ml-3">{badge}</span>}
@@ -63,6 +61,8 @@ function DropdownItem({ label, badge, active, onClick }) {
 
 export default function FileTreePage() {
   const { nodes, edges, metadata } = useOutletContext()
+  const navigate = useNavigate()
+  const { search: tabSearch } = useLocation()
   const [search, setSearch] = useState('')
   const [selectedBranch, setSelectedBranch] = useState(null) // null = all
   const [selectedIdx, setSelectedIdx] = useState(null)
@@ -138,7 +138,7 @@ export default function FileTreePage() {
       result.push(node)
       currentId = node.parsedDetails.parent_id
     }
-    return result.reverse() // oldest first
+    return result.reverse()
   }, [selectedBranch, branches, snapshots, snapshotById])
 
   const effectiveIdx = selectedIdx !== null ? selectedIdx : displayedSnapshots.length - 1
@@ -230,7 +230,6 @@ export default function FileTreePage() {
       <div className="shrink-0 px-8 pt-5 pb-3 flex items-center gap-4 border-b border-[#2d3748]">
         <div className="flex items-center gap-2">
 
-          {/* Branch selector */}
           {branches.length > 0 && (
             <>
               <Dropdown
@@ -263,7 +262,6 @@ export default function FileTreePage() {
             </>
           )}
 
-          {/* Snapshot selector */}
           <Dropdown
             dropdownRef={snapshotDropdownRef}
             isOpen={snapshotDropdownOpen}
@@ -288,7 +286,6 @@ export default function FileTreePage() {
             ))}
           </Dropdown>
 
-          {/* Info tooltip */}
           <div className="group relative">
             <div className="w-4 h-4 rounded-full bg-[#2E86C1] text-white text-[10px] font-black flex items-center justify-center cursor-help hover:bg-[#2471a3] transition select-none">
               i
@@ -299,7 +296,6 @@ export default function FileTreePage() {
             </div>
           </div>
 
-          {/* Snapshot ID badge */}
           {currentSnapshot && (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#1a202c] border border-[#2d3748]">
               <span className="text-[0.65rem] font-bold text-slate-500 uppercase tracking-wider shrink-0">Snapshot ID</span>
@@ -346,13 +342,12 @@ export default function FileTreePage() {
           <button
             onClick={copyPaths}
             disabled={checkedFiles.size === 0}
-            className={`flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg border transition ${
-              checkedFiles.size === 0
+            className={`flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg border transition ${checkedFiles.size === 0
                 ? 'border-[#2d3748] text-slate-600 cursor-not-allowed'
                 : copied
                   ? 'border-green-600 bg-green-900/30 text-green-400'
                   : 'border-[#2E86C1] text-[#2E86C1] hover:bg-[#1e3a5f] cursor-pointer'
-            }`}
+              }`}
           >
             {copied ? (
               <>
@@ -418,11 +413,10 @@ export default function FileTreePage() {
                     <div
                       key={filePath}
                       onClick={() => toggleFile(filePath)}
-                      className={`flex items-center gap-2.5 px-3 py-2 rounded-md border transition cursor-pointer group ${
-                        checkedFiles.has(filePath)
+                      className={`flex items-center gap-2.5 px-3 py-2 rounded-md border transition cursor-pointer group ${checkedFiles.has(filePath)
                           ? 'bg-[#1e3a5f] border-[#2E86C1]/40'
                           : 'bg-[#0d1117] border-transparent hover:bg-[#131c2b] hover:border-[#2d3748]'
-                      }`}
+                        }`}
                     >
                       <input
                         type="checkbox"
@@ -432,14 +426,25 @@ export default function FileTreePage() {
                         className="w-3.5 h-3.5 rounded accent-[#2E86C1] cursor-pointer shrink-0"
                       />
                       <span
-                        className={`text-xs font-mono transition-colors overflow-hidden whitespace-nowrap ${
-                          checkedFiles.has(filePath) ? 'text-slate-200' : 'text-slate-400 group-hover:text-slate-200'
-                        }`}
+                        className={`text-xs font-mono transition-colors overflow-hidden whitespace-nowrap flex-1 ${checkedFiles.has(filePath) ? 'text-slate-200' : 'text-slate-400 group-hover:text-slate-200'
+                          }`}
                         style={{ direction: 'rtl', textOverflow: 'ellipsis' }}
                         title={filePath}
                       >
                         {filePath}
                       </span>
+                      <button
+                        onClick={e => { e.stopPropagation(); navigate(`/table/graph${tabSearch}`, { state: { selectNodeId: filePath } }) }}
+                        title="View in graph"
+                        className="shrink-0 ml-2 p-1 rounded text-slate-500 hover:text-[#2E86C1] hover:bg-[#1e3a5f] transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
+                          <circle cx="4" cy="8" r="2" />
+                          <circle cx="12" cy="4" r="2" />
+                          <circle cx="12" cy="12" r="2" />
+                          <path d="M6 7.2L10 4.8M6 8.8L10 11.2" strokeLinecap="round" />
+                        </svg>
+                      </button>
                     </div>
                   ))}
                 </div>
