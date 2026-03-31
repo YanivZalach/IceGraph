@@ -77,12 +77,28 @@ export default function NavBar() {
               Specs
             </button>
 
-            <button
-              className="ml-auto text-sm font-medium text-slate-400 hover:text-white border border-slate-600 hover:border-slate-400 px-3 py-1 rounded-md transition"
-              onClick={() => navigate('/')}
-            >
-              ← Home
-            </button>
+            <div className="ml-auto flex items-center gap-3">
+              <button
+                className="text-sm font-medium text-slate-400 hover:text-white border border-slate-600 hover:border-slate-400 px-3 py-1 rounded-md transition"
+                title="Opens this view in a new tab using cached data, no backend request is made"
+                onClick={() => {
+                  const url = new URL(window.location.href)
+                  url.searchParams.set('dup', '1')
+                  window.open(url.toString(), '_blank')
+                }}
+              >
+                Duplicate tab
+              </button>
+
+              <div className="w-px h-4 bg-slate-700" />
+
+              <button
+                className="text-sm font-medium text-slate-400 hover:text-white border border-slate-600 hover:border-slate-400 px-3 py-1 rounded-md transition"
+                onClick={() => navigate('/')}
+              >
+                ← Home
+              </button>
+            </div>
           </>
         )}
       </nav>
