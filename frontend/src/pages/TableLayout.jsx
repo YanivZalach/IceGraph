@@ -26,6 +26,8 @@ export default function TableLayout() {
 
   const tableName = searchParams.get('table') || ''
   const date = searchParams.get('date') || ''
+  const isDup = searchParams.get('dup') === '1'
+  const cacheKey = `graphData_${tableName}_${date}`
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -37,11 +39,42 @@ export default function TableLayout() {
     }
   }, [selectionDetail])
 
+  const buildGraphData = (data) => {
+    const styledNodes = new DataSet(
+      data.nodes.map((node) => {
+        const style = NODE_STYLE_MAP[node.type] || { rgb: [100, 100, 100], level: 0 }
+        const [r, g, b] = style.rgb
+        return { ...node, shape: 'box', color: `rgba(${r},${g},${b},${node.color_shift || 1})`, level: style.level }
+      })
+    )
+    const styledEdges = new DataSet(
+      data.edges.map((edge) => {
+        const newEdge = { ...edge }
+        if (edge.is_deleted) { newEdge.color = DELETED_DATA_FILE_CONNECTION_COLOR; newEdge.title = 'deleted' }
+        else if (edge.branch_names) { newEdge.dashes = [15, 20, 5, 20]; newEdge.color = BRANCH_CONNECTION_COLOR; newEdge.title = edge.branch_names }
+        return newEdge
+      })
+    )
+    return { nodes: styledNodes, edges: styledEdges, metadata: data.metadata, errors: data.errors || {} }
+  }
+
   useEffect(() => {
     if (!tableName) {
       setError('No table name provided.')
       setLoading(false)
       return
+    }
+
+    if (isDup) {
+      const cached = sessionStorage.getItem(cacheKey)
+      if (cached) {
+        setGraphData(buildGraphData(JSONbig({ storeAsString: true }).parse(cached)))
+        setLoading(false)
+        const cleanUrl = new URL(window.location.href)
+        cleanUrl.searchParams.delete('dup')
+        history.replaceState(history.state, '', cleanUrl.toString())
+        return
+      }
     }
 
     const body = new URLSearchParams({ table_name: tableName, date })
@@ -55,43 +88,11 @@ export default function TableLayout() {
         const text = await res.text()
         const data = JSONbig({ storeAsString: true }).parse(text)
         if (!res.ok) throw new Error(data.error || 'Request failed')
+        sessionStorage.setItem(cacheKey, text)
         return data
       })
       .then((data) => {
-        const styledNodes = new DataSet(
-          data.nodes.map((node) => {
-            const style = NODE_STYLE_MAP[node.type] || { rgb: [100, 100, 100], level: 0 }
-            const [r, g, b] = style.rgb
-            return {
-              ...node,
-              shape: 'box',
-              color: `rgba(${r},${g},${b},${node.color_shift || 1})`,
-              level: style.level,
-            }
-          })
-        )
-
-        const styledEdges = new DataSet(
-          data.edges.map((edge) => {
-            const newEdge = { ...edge }
-            if (edge.is_deleted) {
-              newEdge.color = DELETED_DATA_FILE_CONNECTION_COLOR
-              newEdge.title = 'deleted'
-            } else if (edge.branch_names) {
-              newEdge.dashes = [15, 20, 5, 20]
-              newEdge.color = BRANCH_CONNECTION_COLOR
-              newEdge.title = edge.branch_names
-            }
-            return newEdge
-          })
-        )
-
-        setGraphData({
-          nodes: styledNodes,
-          edges: styledEdges,
-          metadata: data.metadata,
-          errors: data.errors || {},
-        })
+        setGraphData(buildGraphData(data))
         setLoading(false)
       })
       .catch((err) => {

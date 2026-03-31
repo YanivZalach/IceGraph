@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useOutletContext } from 'react-router-dom'
+import { useLocation, useOutletContext } from 'react-router-dom'
 import { Network } from 'vis-network/standalone'
 import {
   UI_NEWLINE,
@@ -7,11 +7,42 @@ import {
   VISUALIZATION_OPTIONS,
 } from '../graphConstants'
 
+function applySelection(network, nodeId) {
+  const liveNodes = network.body.data.nodes
+  const liveEdges = network.body.data.edges
+
+  liveNodes.update(liveNodes.get().map(n => ({ ...n, hidden: false })))
+  liveEdges.update(liveEdges.get().map(e => ({ ...e, hidden: false })))
+
+  const relatedNodes = new Set([String(nodeId)])
+  const traverse = (id, direction) => {
+    network.getConnectedNodes(id, direction).forEach(connId => {
+      const s = String(connId)
+      if (!relatedNodes.has(s)) { relatedNodes.add(s); traverse(connId, direction) }
+    })
+  }
+  traverse(nodeId, 'to')
+  traverse(nodeId, 'from')
+
+  liveNodes.update(liveNodes.get().map(n => ({ ...n, hidden: !relatedNodes.has(String(n.id)) })))
+  liveEdges.update(liveEdges.get().map(e => ({
+    ...e,
+    hidden: !(relatedNodes.has(String(e.from)) && relatedNodes.has(String(e.to))),
+  })))
+
+  requestAnimationFrame(() => network.fit())
+}
+
 export default function GraphPage() {
   const { nodes, edges, metadata, errors } = useOutletContext()
 
+  const location = useLocation()
   const networkContainerRef = useRef(null)
   const networkRef = useRef(null)
+  const initialSelectRef = useRef(location.state?.selectNodeId || null)
+  const restoreSelectRef = useRef(
+    !location.state?.selectNodeId ? (history.state?.graphSelection || null) : null
+  )
 
   const [isInspectMode, setIsInspectMode] = useState(false)
   const [isFullView, setIsFullView] = useState(true)
@@ -27,6 +58,41 @@ export default function GraphPage() {
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
   }, [])
+
+  const resetView = useCallback(() => {
+    const network = networkRef.current
+    if (!network) return
+    const liveNodes = network.body.data.nodes
+    const liveEdges = network.body.data.edges
+    liveNodes.update(liveNodes.get().map(n => ({ ...n, hidden: false })))
+    liveEdges.update(liveEdges.get().map(e => ({ ...e, hidden: false })))
+    setStickyNode(null)
+    setIsFullView(true)
+    requestAnimationFrame(() => { network.redraw(); network.fit() })
+  }, [])
+
+  useEffect(() => {
+    if (!history.state || !('graphSelection' in history.state)) {
+      history.replaceState({ graphSelection: null }, '')
+    }
+
+    const handlePopState = (e) => {
+      if (!e.state || !('graphSelection' in e.state)) return
+      const nodeId = e.state.graphSelection
+      const network = networkRef.current
+      if (!network) return
+      if (nodeId === null) {
+        resetView()
+        return
+      }
+      applySelection(network, nodeId)
+      const nodeData = network.body.data.nodes.get(nodeId)
+      if (nodeData) { setStickyNode(nodeData); setIsFullView(false) }
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [resetView])
 
   useEffect(() => {
     if (Object.keys(errors).length > 0) {
@@ -45,7 +111,22 @@ export default function GraphPage() {
     )
     networkRef.current = network
 
-    network.once('afterDrawing', () => network.fit())
+    network.once('afterDrawing', () => {
+      const fromFileTree = initialSelectRef.current
+      const fromHistory = restoreSelectRef.current
+      initialSelectRef.current = null
+      restoreSelectRef.current = null
+
+      const nodeId = fromFileTree || fromHistory
+      if (nodeId) {
+        applySelection(network, nodeId)
+        const nodeData = network.body.data.nodes.get(nodeId)
+        if (nodeData) { setStickyNode(nodeData); setIsFullView(false) }
+        if (fromFileTree) history.replaceState({ graphSelection: nodeId }, '')
+      } else {
+        network.fit()
+      }
+    })
     network.on('zoom', () => setIsFullView(false))
     network.on('dragEnd', () => setIsFullView(false))
 
@@ -53,66 +134,19 @@ export default function GraphPage() {
       if (params.nodes.length === 0) return
 
       const selectedNodeId = params.nodes[0]
-      const liveNodes = network.body.data.nodes
-      const liveEdges = network.body.data.edges
-      const nodeData = liveNodes.get(selectedNodeId)
+      const nodeData = network.body.data.nodes.get(selectedNodeId)
 
       if (!isInspectModeRef.current) {
-        liveNodes.update(liveNodes.get().map(n => ({ ...n, hidden: false })))
-        liveEdges.update(liveEdges.get().map(e => ({ ...e, hidden: false })))
-
-        const relatedNodes = new Set([String(selectedNodeId)])
-
-        const traverse = (nodeId, direction) => {
-          network.getConnectedNodes(nodeId, direction).forEach(id => {
-            const idStr = String(id)
-            if (!relatedNodes.has(idStr)) {
-              relatedNodes.add(idStr)
-              traverse(id, direction)
-            }
-          })
-        }
-
-        traverse(selectedNodeId, 'to')
-        traverse(selectedNodeId, 'from')
-
-        liveNodes.update(liveNodes.get().map(n => ({
-          ...n,
-          hidden: !relatedNodes.has(String(n.id)),
-        })))
-        liveEdges.update(liveEdges.get().map(e => ({
-          ...e,
-          hidden: !(relatedNodes.has(String(e.from)) && relatedNodes.has(String(e.to))),
-        })))
-
-        requestAnimationFrame(() => network.fit())
+        applySelection(network, selectedNodeId)
         setIsFullView(false)
       }
 
+      history.pushState({ graphSelection: selectedNodeId }, '')
       setStickyNode(nodeData)
     })
 
     return () => network.destroy()
   }, [nodes, edges])
-
-  const resetView = useCallback(() => {
-    const network = networkRef.current
-    if (!network) return
-
-    const liveNodes = network.body.data.nodes
-    const liveEdges = network.body.data.edges
-
-    liveNodes.update(liveNodes.get().map(n => ({ ...n, hidden: false })))
-    liveEdges.update(liveEdges.get().map(e => ({ ...e, hidden: false })))
-
-    setStickyNode(null)
-    setIsFullView(true)
-
-    requestAnimationFrame(() => {
-      network.redraw()
-      network.fit()
-    })
-  }, [])
 
   const parseStickyDetails = (details) => {
     if (!details) return { title: '', rows: [] }
