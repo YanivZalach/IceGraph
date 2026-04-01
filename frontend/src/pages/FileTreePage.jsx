@@ -227,8 +227,8 @@ export default function FileTreePage() {
 
   return (
     <div className="flex-1 flex flex-col bg-[#0d1117] overflow-hidden">
-      <div className="shrink-0 px-8 pt-5 pb-3 flex items-center gap-4 border-b border-[#2d3748]">
-        <div className="flex items-center gap-2">
+      <div className="shrink-0 px-4 sm:px-8 pt-5 pb-3 flex items-center flex-wrap gap-x-4 gap-y-2 border-b border-[#2d3748]">
+        <div className="flex items-center flex-wrap gap-2">
 
           {branches.length > 0 && (
             <>
@@ -369,7 +369,7 @@ export default function FileTreePage() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-8 py-4 flex flex-col gap-2">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-4 flex flex-col gap-2">
         {totalPartitions === 0 && (
           <p className="text-slate-500 text-sm italic mt-4">
             {search ? 'No partitions match the search.' : 'No data files found for this snapshot.'}
