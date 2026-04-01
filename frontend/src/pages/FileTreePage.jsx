@@ -136,20 +136,39 @@ function FileRow({ filePath, checkedFiles, toggleFile, navigate, tabSearch }) {
   )
 }
 
-function TreeNode({ label, node, path, checkedFiles, toggleFile, toggleBulk, navigate, tabSearch, collapsed, toggleCollapse }) {
+function TreeNode({ label, node, path, checkedFiles, toggleFile, toggleBulk, navigate, tabSearch, collapsed, toggleCollapse, setCollapsed }) {
   const allFiles = getAllFilesFromNode(node)
   const allChecked = allFiles.length > 0 && allFiles.every(f => checkedFiles.has(f))
   const someChecked = !allChecked && allFiles.some(f => checkedFiles.has(f))
   const isCollapsed = collapsed[path]
   const sortedChildren = Object.entries(node.children).sort(([a], [b]) => b.localeCompare(a))
+  const hasChildFolders = sortedChildren.length > 0
+
+  const expandInner = (e) => {
+    e.stopPropagation()
+    const subPaths = getAllTreePaths(node, path)
+    setCollapsed(prev => {
+      const next = { ...prev }
+      delete next[path] // open this folder too if it was closed
+      for (const p of subPaths) delete next[p]
+      return next
+    })
+  }
+
+  const collapseInner = (e) => {
+    e.stopPropagation()
+    const subPaths = getAllTreePaths(node, path)
+    setCollapsed(prev => ({
+      ...prev,
+      [path]: true,
+      ...Object.fromEntries(subPaths.map(p => [p, true])),
+    }))
+  }
 
   return (
     <div className="bg-[#1a202c] rounded-lg border border-[#2d3748] overflow-hidden">
-      <div className="flex items-center px-4 py-2.5 hover:bg-[#252d3d] transition">
-        <button
-          className="flex items-center gap-3 min-w-0 flex-1 text-left"
-          onClick={() => toggleCollapse(path)}
-        >
+      <div className="flex items-center px-4 py-2.5 hover:bg-[#252d3d] transition cursor-pointer" onClick={() => toggleCollapse(path)}>
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           <svg
             className={`w-3.5 h-3.5 text-[#2E86C1] shrink-0 transition-transform ${isCollapsed ? '-rotate-90' : ''}`}
             viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5"
@@ -160,16 +179,41 @@ function TreeNode({ label, node, path, checkedFiles, toggleFile, toggleBulk, nav
             <path d="M2 6a2 2 0 012-2h4l2 2h6a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
           </svg>
           <span className="text-sm font-mono text-[#e2e8f0] truncate">{label}</span>
-        </button>
-        <div className="flex items-center gap-3 ml-4 shrink-0">
+        </div>
+        <div className="flex items-center gap-2 ml-4 shrink-0">
           <span className="text-[0.65rem] font-bold bg-[#2d3748] text-slate-400 px-2 py-0.5 rounded-full">
             {allFiles.length}
           </span>
+          {hasChildFolders && (
+            <>
+              <button
+                onClick={expandInner}
+                title="Expand inner folders"
+                className="p-1 rounded text-slate-600 hover:text-slate-300 hover:bg-[#2d3748] transition-colors cursor-pointer"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path d="M4 5l4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M4 9l4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <button
+                onClick={collapseInner}
+                title="Collapse inner folders"
+                className="p-1 rounded text-slate-600 hover:text-slate-300 hover:bg-[#2d3748] transition-colors cursor-pointer"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path d="M4 11l4-4 4 4" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M4 7l4-4 4 4" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </>
+          )}
           <input
             type="checkbox"
             checked={allChecked}
             ref={el => { if (el) el.indeterminate = someChecked }}
             onChange={() => toggleBulk(allFiles)}
+            onClick={e => e.stopPropagation()}
             className="w-3.5 h-3.5 rounded accent-[#2E86C1] cursor-pointer"
             title="Select all in folder"
           />
@@ -191,6 +235,7 @@ function TreeNode({ label, node, path, checkedFiles, toggleFile, toggleBulk, nav
               tabSearch={tabSearch}
               collapsed={collapsed}
               toggleCollapse={toggleCollapse}
+              setCollapsed={setCollapsed}
             />
           ))}
           {node.files.length > 0 && (
@@ -641,11 +686,8 @@ export default function FileTreePage() {
           const someChecked = !allChecked && files.some(f => checkedFiles.has(f))
           return (
             <div key={partition} className="bg-[#1a202c] rounded-lg border border-[#2d3748] overflow-hidden">
-              <div className="flex items-center px-4 py-2.5 hover:bg-[#252d3d] transition">
-                <button
-                  className="flex items-center gap-3 min-w-0 flex-1 text-left"
-                  onClick={() => toggleCollapse(partition)}
-                >
+              <div className="flex items-center px-4 py-2.5 hover:bg-[#252d3d] transition cursor-pointer" onClick={() => toggleCollapse(partition)}>
+                <div className="flex items-center gap-3 min-w-0 flex-1">
                   <svg
                     className={`w-3.5 h-3.5 text-[#2E86C1] shrink-0 transition-transform ${collapsed[partition] ? '-rotate-90' : ''}`}
                     viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5"
@@ -653,7 +695,7 @@ export default function FileTreePage() {
                     <path d="M4 6l4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                   <span className="text-sm font-mono text-[#e2e8f0] truncate">{partition}</span>
-                </button>
+                </div>
                 <div className="flex items-center gap-3 ml-4 shrink-0">
                   <span className="text-[0.65rem] font-bold bg-[#2d3748] text-slate-400 px-2 py-0.5 rounded-full">
                     {files.length}
@@ -663,6 +705,7 @@ export default function FileTreePage() {
                     checked={allChecked}
                     ref={el => { if (el) el.indeterminate = someChecked }}
                     onChange={() => toggleBulk(files)}
+                    onClick={e => e.stopPropagation()}
                     className="w-3.5 h-3.5 rounded accent-[#2E86C1] cursor-pointer"
                     title="Select all in partition"
                   />
@@ -718,6 +761,7 @@ export default function FileTreePage() {
                   tabSearch={tabSearch}
                   collapsed={collapsed}
                   toggleCollapse={toggleCollapse}
+                  setCollapsed={setCollapsed}
                 />
               ))}
           </>
