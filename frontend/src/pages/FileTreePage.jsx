@@ -226,6 +226,7 @@ export default function FileTreePage() {
   const [collapsed, setCollapsed] = useState({})
   const [checkedFiles, setCheckedFiles] = useState(new Set())
   const [copied, setCopied] = useState(false)
+  const [copiedSnapshotId, setCopiedSnapshotId] = useState(false)
   const [branchDropdownOpen, setBranchDropdownOpen] = useState(false)
   const [snapshotDropdownOpen, setSnapshotDropdownOpen] = useState(false)
   const [viewMode, setViewMode] = useState('tree') // 'flat' | 'tree'
@@ -405,9 +406,10 @@ export default function FileTreePage() {
 
   return (
     <div className="flex-1 flex flex-col bg-[#0d1117] overflow-hidden">
-      <div className="shrink-0 px-4 sm:px-8 pt-5 pb-3 flex items-center flex-wrap gap-x-4 gap-y-2 border-b border-[#2d3748]">
-        <div className="flex items-center flex-wrap gap-2">
+      <div className="shrink-0 px-4 sm:px-6 py-3 flex items-center flex-wrap gap-x-3 gap-y-2 border-b border-[#2d3748]">
 
+        {/* Navigation: branch + snapshot */}
+        <div className="flex items-center gap-2">
           {branches.length > 0 && (
             <>
               <Dropdown
@@ -435,7 +437,6 @@ export default function FileTreePage() {
                   />
                 ))}
               </Dropdown>
-
               <div className="w-px h-4 bg-slate-700" />
             </>
           )}
@@ -445,12 +446,42 @@ export default function FileTreePage() {
             isOpen={snapshotDropdownOpen}
             onToggle={() => setSnapshotDropdownOpen(p => !p)}
             triggerLabel={
-              <>
-                Snapshot {effectiveIdx + 1}
-                {effectiveIdx === displayedSnapshots.length - 1 && (
-                  <span className="ml-1.5 text-[0.6rem] font-bold uppercase tracking-wider text-[#2E86C1]">latest</span>
+              <span className="flex flex-col items-start leading-none gap-1">
+                <span className="flex items-center gap-1.5 text-[0.65rem] text-slate-400">
+                  Snapshot {effectiveIdx + 1}
+                  {effectiveIdx === displayedSnapshots.length - 1 && (
+                    <span className="text-[0.6rem] font-bold uppercase tracking-wider text-[#2E86C1]">latest</span>
+                  )}
+                </span>
+                {currentSnapshot?.parsedDetails.snapshot_id && (
+                  <span className="flex items-center gap-1">
+                    <span className="text-xs font-mono text-slate-300">
+                      {currentSnapshot.parsedDetails.snapshot_id}
+                    </span>
+                    <button
+                      onClick={e => {
+                        e.stopPropagation()
+                        navigator.clipboard.writeText(currentSnapshot.parsedDetails.snapshot_id)
+                        setCopiedSnapshotId(true)
+                        setTimeout(() => setCopiedSnapshotId(false), 2000)
+                      }}
+                      title="Copy snapshot ID"
+                      className="p-0.5 rounded text-slate-600 hover:text-slate-300 transition-colors cursor-pointer"
+                    >
+                      {copiedSnapshotId ? (
+                        <svg className="w-3.5 h-3.5 text-green-400" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <path d="M3 8l3.5 3.5L13 4" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      ) : (
+                        <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
+                          <rect x="5" y="5" width="8" height="9" rx="1.5" />
+                          <path d="M11 5V4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h1" strokeLinecap="round" />
+                        </svg>
+                      )}
+                    </button>
+                  </span>
                 )}
-              </>
+              </span>
             }
           >
             {displayedSnapshots.map((snap, i) => (
@@ -473,77 +504,76 @@ export default function FileTreePage() {
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-8 border-transparent border-b-[#1a202c]" />
             </div>
           </div>
-
-          {currentSnapshot && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#1a202c] border border-[#2d3748]">
-              <span className="text-[0.65rem] font-bold text-slate-500 uppercase tracking-wider shrink-0">Snapshot ID</span>
-              <span className="text-xs font-mono text-slate-300">
-                {currentSnapshot.parsedDetails.snapshot_id ?? '—'}
-              </span>
-            </div>
-          )}
         </div>
 
+        {/* Search */}
         <input
           type="text"
           placeholder="Search partitions…"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="flex-1 max-w-xs text-sm bg-[#1a202c] border border-[#2d3748] text-[#e2e8f0] rounded-lg px-3 py-1.5 placeholder-slate-500 focus:outline-none focus:border-[#2E86C1]"
+          className="flex-1 min-w-[120px] max-w-xs text-sm bg-[#1a202c] border border-[#2d3748] text-[#e2e8f0] rounded-lg px-3 py-1.5 placeholder-slate-500 focus:outline-none focus:border-[#2E86C1]"
         />
 
-        {/* View mode toggle */}
-        <div className="flex items-center rounded-lg border border-[#2d3748] overflow-hidden">
-          <button
-            className={`flex items-center gap-1.5 text-sm px-3 py-1.5 transition cursor-pointer ${viewMode === 'flat' ? 'bg-[#2E86C1] text-white' : 'text-slate-400 hover:text-slate-200 hover:bg-[#252d3d]'}`}
-            onClick={() => setViewMode('flat')}
-            title="Flat list view"
-          >
-            <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <path d="M2 4h12M2 8h12M2 12h12" strokeLinecap="round" />
-            </svg>
-            Flat
-          </button>
-          <div className="w-px h-5 bg-[#2d3748]" />
-          <button
-            className={`flex items-center gap-1.5 text-sm px-3 py-1.5 transition cursor-pointer ${viewMode === 'tree' ? 'bg-[#2E86C1] text-white' : 'text-slate-400 hover:text-slate-200 hover:bg-[#252d3d]'}`}
-            onClick={() => setViewMode('tree')}
-            title="Nested tree view"
-          >
-            <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <path d="M2 3h4M2 8h4M2 13h4" strokeLinecap="round" />
-              <path d="M8 3h6M8 8h6M8 13h6" strokeLinecap="round" />
-              <path d="M4 3v10" strokeLinecap="round" strokeDasharray="1 2" />
-            </svg>
-            Tree
-          </button>
-        </div>
+        {/* Right controls */}
+        <div className="ml-auto flex items-center gap-2">
 
-        <div className="ml-auto flex items-center gap-3">
-          <div className="flex gap-5 text-xs text-slate-400">
-            <span><span className="font-semibold text-slate-300">{totalPartitions}</span> partition{totalPartitions !== 1 ? 's' : ''}</span>
-            <span><span className="font-semibold text-slate-300">{totalFiles}</span> file{totalFiles !== 1 ? 's' : ''}</span>
+          {/* View toggle */}
+          <div className="flex items-center rounded-lg border border-[#2d3748] overflow-hidden">
+            <button
+              className={`flex items-center gap-1.5 text-sm px-3 py-1.5 transition cursor-pointer ${viewMode === 'flat' ? 'bg-[#2E86C1] text-white' : 'text-slate-400 hover:text-slate-200 hover:bg-[#252d3d]'}`}
+              onClick={() => setViewMode('flat')}
+              title="Flat list view"
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path d="M2 4h12M2 8h12M2 12h12" strokeLinecap="round" />
+              </svg>
+              Flat
+            </button>
+            <div className="w-px h-full bg-[#2d3748]" />
+            <button
+              className={`flex items-center gap-1.5 text-sm px-3 py-1.5 transition cursor-pointer ${viewMode === 'tree' ? 'bg-[#2E86C1] text-white' : 'text-slate-400 hover:text-slate-200 hover:bg-[#252d3d]'}`}
+              onClick={() => setViewMode('tree')}
+              title="Nested tree view"
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path d="M2 3h4M2 8h4M2 13h4" strokeLinecap="round" />
+                <path d="M8 3h6M8 8h6M8 13h6" strokeLinecap="round" />
+                <path d="M4 3v10" strokeLinecap="round" strokeDasharray="1 2" />
+              </svg>
+              Tree
+            </button>
           </div>
 
           <div className="w-px h-4 bg-slate-700" />
 
+          {/* Expand / Collapse icon buttons */}
           <button
             onClick={expandAll}
             disabled={totalPartitions === 0}
-            className="text-sm px-3 py-1.5 rounded-lg border border-[#2d3748] text-slate-400 hover:border-slate-500 hover:text-slate-200 transition disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+            title="Expand all"
+            className="p-1.5 rounded border border-[#2d3748] text-slate-400 hover:text-slate-200 hover:border-slate-500 transition disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
           >
-            Expand all
+            <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <path d="M4 5l4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M4 9l4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </button>
           <button
             onClick={collapseAll}
             disabled={totalPartitions === 0}
-            className="text-sm px-3 py-1.5 rounded-lg border border-[#2d3748] text-slate-400 hover:border-slate-500 hover:text-slate-200 transition disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+            title="Collapse all"
+            className="p-1.5 rounded border border-[#2d3748] text-slate-400 hover:text-slate-200 hover:border-slate-500 transition disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
           >
-            Collapse all
+            <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <path d="M4 11l4-4 4 4" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M4 7l4-4 4 4" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </button>
 
           <div className="w-px h-4 bg-slate-700" />
 
+          {/* File selection */}
           <button
             onClick={() => setCheckedFiles(new Set(Object.values(partitionMap).flat()))}
             disabled={totalFiles === 0}
@@ -588,6 +618,23 @@ export default function FileTreePage() {
               </>
             )}
           </button>
+
+          <div className="group relative pl-1">
+            <span className="text-xs text-slate-400 select-none whitespace-nowrap cursor-default">
+              {totalPartitions} / {totalFiles}
+            </span>
+            <div className="absolute top-full right-0 mt-2 hidden group-hover:flex flex-col gap-1 bg-[#1a202c] border border-[#2d3748] rounded-lg shadow-xl px-3 py-2 text-xs text-slate-300 whitespace-nowrap z-50">
+              <div className="absolute bottom-full right-3 border-8 border-transparent border-b-[#2d3748]" />
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-slate-500">Partitions</span>
+                <span className="font-semibold text-white">{totalPartitions}</span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-slate-500">Files</span>
+                <span className="font-semibold text-white">{totalFiles}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
