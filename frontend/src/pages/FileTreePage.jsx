@@ -67,6 +67,16 @@ function getAllFilesFromNode(node) {
   return result
 }
 
+function getAllTreePaths(node, prefix) {
+  const paths = []
+  for (const [label, child] of Object.entries(node.children)) {
+    const path = prefix ? `${prefix}/${label}` : label
+    paths.push(path)
+    paths.push(...getAllTreePaths(child, path))
+  }
+  return paths
+}
+
 function buildTree(partitions) {
   const root = { children: {}, files: [] }
   for (const [partitionStr, files] of partitions) {
@@ -337,7 +347,16 @@ export default function FileTreePage() {
   const totalPartitions = filteredPartitions.length
   const totalFiles = filteredPartitions.reduce((sum, [, f]) => sum + f.length, 0)
 
-  const resetSelection = () => { setSelectedIdx(null); setCollapsed({}); setCheckedFiles(new Set()) }
+  useEffect(() => {
+    if (viewMode === 'flat') {
+      setCollapsed(Object.fromEntries(Object.keys(partitionMap).map(p => [p, true])))
+    } else {
+      const fullTree = buildTree(Object.entries(partitionMap))
+      setCollapsed(Object.fromEntries(getAllTreePaths(fullTree, '').map(p => [p, true])))
+    }
+  }, [partitionMap, viewMode])
+
+  const resetSelection = () => { setSelectedIdx(null); setCheckedFiles(new Set()) }
 
   const toggleCollapse = (key) =>
     setCollapsed(prev => ({ ...prev, [key]: !prev[key] }))
@@ -357,6 +376,16 @@ export default function FileTreePage() {
       return next
     })
   }
+
+  const collapseAll = () => {
+    if (viewMode === 'flat') {
+      setCollapsed(Object.fromEntries(filteredPartitions.map(([p]) => [p, true])))
+    } else {
+      setCollapsed(Object.fromEntries(getAllTreePaths(treeData, '').map(p => [p, true])))
+    }
+  }
+
+  const expandAll = () => setCollapsed({})
 
   const copyPaths = () => {
     navigator.clipboard.writeText([...checkedFiles].join('\n'))
@@ -495,6 +524,23 @@ export default function FileTreePage() {
             <span><span className="font-semibold text-slate-300">{totalPartitions}</span> partition{totalPartitions !== 1 ? 's' : ''}</span>
             <span><span className="font-semibold text-slate-300">{totalFiles}</span> file{totalFiles !== 1 ? 's' : ''}</span>
           </div>
+
+          <div className="w-px h-4 bg-slate-700" />
+
+          <button
+            onClick={expandAll}
+            disabled={totalPartitions === 0}
+            className="text-sm px-3 py-1.5 rounded-lg border border-[#2d3748] text-slate-400 hover:border-slate-500 hover:text-slate-200 transition disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+          >
+            Expand all
+          </button>
+          <button
+            onClick={collapseAll}
+            disabled={totalPartitions === 0}
+            className="text-sm px-3 py-1.5 rounded-lg border border-[#2d3748] text-slate-400 hover:border-slate-500 hover:text-slate-200 transition disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+          >
+            Collapse all
+          </button>
 
           <div className="w-px h-4 bg-slate-700" />
 
