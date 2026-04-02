@@ -87,6 +87,9 @@ export default function TableLayout() {
       .then(async (res) => {
         const text = await res.text()
         const data = JSONbig({ storeAsString: true }).parse(text)
+
+        console.log(data)
+
         if (!res.ok) throw new Error(data.error || 'Request failed')
         sessionStorage.setItem(cacheKey, text)
         return data
