@@ -1,5 +1,6 @@
 from typing import List
 import json
+from pyspark.sql import functions as F
 import os
 from contextlib import suppress
 from datetime import datetime
@@ -10,7 +11,7 @@ from pyspark.errors import AnalysisException
 from pyspark.sql import SparkSession
 from pyspark.sql.types import Row
 
-from constants import UI_NEWLINE, UI_SECTION_NEWLINE
+from constants import UI_NEWLINE, UI_SECTION_NEWLINE, FileType
 
 
 def verify_iceberg_table(table_name: str) -> bool:
@@ -124,6 +125,80 @@ def format_node_info(file_info: Dict[str, Any]) -> str:
         )
 
     return formatted_info
+
+
+def format_metadata_file(
+    metadata_file: Row,
+    is_main_metadata_file: bool,
+    index: int,
+    number_of_metadata_files: int,
+) -> Dict[str, Any]:
+    refs = json.loads(metadata_file.refs) if metadata_file.refs else {}
+    properties = (
+        json.loads(metadata_file.properties) if metadata_file.properties else {}
+    )
+    schemas = json.loads(metadata_file.schemas) if metadata_file.schemas else []
+    partition_specs = (
+        json.loads(metadata_file["partition-specs"])
+        if metadata_file["partition-specs"]
+        else []
+    )
+    sort_orders = (
+        json.loads(metadata_file["sort-orders"]) if metadata_file["sort-orders"] else []
+    )
+
+    return {
+        "type": (
+            FileType.MAIN_METADATA.value
+            if is_main_metadata_file
+            else FileType.METADATA.value
+        ),
+        "file_path": metadata_file.file,
+        "timestamp": str(metadata_file.metadata_timestamp),
+        "table_format_version": metadata_file["format-version"],
+        "snapshot_id": metadata_file["current-snapshot-id"],
+        "partition_spec_id": metadata_file["default-spec-id"],
+        "current_schema_id": metadata_file["current-schema-id"],
+        "sort_order_id": metadata_file["default-sort-order-id"],
+        "refs": refs,
+        "properties": properties,
+        "schemas": schemas,
+        "partition_specs": partition_specs,
+        "sort_orders": sort_orders,
+        "hidden_metadata": {
+            "color_append": 1 - index / (1.5 * number_of_metadata_files),
+        },
+    }
+
+
+def get_metadata_row_df_from_path(metadata_path: str):
+    spark = SparkSession.builder.getOrCreate()
+    df = spark.read.option("multiLine", True).json(metadata_path)
+    existing = set(df.columns)
+
+    scalar_cols = [
+        "current-schema-id",
+        "current-snapshot-id",
+        "default-sort-order-id",
+        "default-spec-id",
+        "format-version",
+        "last-column-id",
+        "last-partition-id",
+        "last-sequence-number",
+        "last-updated-ms",
+        "location",
+        "table-uuid",
+    ]
+    json_cols = ["partition-specs", "properties", "refs", "schemas", "sort-orders"]
+
+    return df.select(
+        *[F.col(column) for column in scalar_cols if column in existing],
+        *[
+            F.to_json(F.col(column)).alias(column)
+            for column in json_cols
+            if column in existing
+        ],
+    )
 
 
 def get_json_metadata_from_path(metadata_path: str) -> Dict[str, Any]:
