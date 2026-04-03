@@ -13,12 +13,12 @@ from constants import FileType, UI_NEWLINE, MAIN_BRANCH_ICEBERG_TABLE_NAME
 from utils import (
     to_spark_timestamp,
     get_metadata_row_slim_df_from_path,
-    get_metadata_row_df_from_path,
     get_json_metadata_from_path,
-    _update_col_metric,
+    update_col_metric,
     format_partition,
     format_schemas_to_full_dict,
 )
+
 
 class IcebergInventoryBuilder:
     def __init__(self, full_table_name: str, date_to_view: Optional[str] = None):
@@ -27,12 +27,12 @@ class IcebergInventoryBuilder:
         self._date_to_view = to_spark_timestamp(date_to_view) if date_to_view else None
 
         self._errors: Dict[str, str] = {}
+        self._snapshots_lock = threading.Lock()
 
         self._snapshot_cutoff = None
         self._metadata_cutoff = None
         self._manifests_to_ignore_df = None
 
-        self._snapshots_lock = threading.Lock()
         self._metadata_files = None
         self._main_metadata_file = None
         self._snapshot_rows = None
@@ -98,12 +98,11 @@ class IcebergInventoryBuilder:
         if self._main_metadata_file:
             main_meta_path = self._main_metadata_file["file"]
             try:
-                content = get_json_metadata_from_path(main_meta_path)
-                content["schemas"] = format_schemas_to_full_dict(
-                    content.get("schemas", [])
+                self._main_metadata_file["schemas"] = format_schemas_to_full_dict(
+                    self._main_metadata_file.get("schemas", [])
                 )
-                content["table-name"] = self._table_name
-                metadata_specs = content
+                self._main_metadata_file["table-name"] = self._table_name
+                metadata_specs = self._main_metadata_file
             except Exception as e:
                 self._errors[main_meta_path] = f"Metadata specs error: {e}"
 
@@ -204,11 +203,7 @@ class IcebergInventoryBuilder:
             is_main_metadata_file = index == 0
             if is_main_metadata_file:
                 try:
-                    self._main_metadata_file = (
-                        get_metadata_row_df_from_path(row.file)
-                        .collect()[0]
-                        .asDict(recursive=True)
-                    )
+                    self._main_metadata_file = get_json_metadata_from_path(row.file)
                     self._main_metadata_file["file"] = row.file
                 except Exception as e:
                     self._errors[row.file] = f"Main metadata file read error: {e}"
@@ -446,12 +441,12 @@ class IcebergInventoryBuilder:
             f_type = FileType.EQUALITY_DELETE.value
 
         column_metrics = {}
-        _update_col_metric(f.lower_bounds, "lower_bound", column_metrics)
-        _update_col_metric(f.upper_bounds, "upper_bound", column_metrics)
-        _update_col_metric(f.column_sizes, "size_bytes", column_metrics)
-        _update_col_metric(f.null_value_counts, "null_count", column_metrics)
-        _update_col_metric(f.nan_value_counts, "not_a_number_count", column_metrics)
-        _update_col_metric(f.value_counts, "total_values", column_metrics)
+        update_col_metric(f.lower_bounds, "lower_bound", column_metrics)
+        update_col_metric(f.upper_bounds, "upper_bound", column_metrics)
+        update_col_metric(f.column_sizes, "size_bytes", column_metrics)
+        update_col_metric(f.null_value_counts, "null_count", column_metrics)
+        update_col_metric(f.nan_value_counts, "not_a_number_count", column_metrics)
+        update_col_metric(f.value_counts, "total_values", column_metrics)
 
         return {
             "type": f_type,
