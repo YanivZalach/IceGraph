@@ -323,6 +323,12 @@ export default function FileTreePage() {
       .sort((a, b) => a.name.localeCompare(b.name))
   }, [metadata])
 
+  useEffect(() => {
+    if (selectedBranch !== null) return
+    const mainBranch = branches.find(b => b.name === 'main')
+    if (mainBranch) setSelectedBranch('main')
+  }, [branches])
+
   const displayedSnapshots = useMemo(() => {
     if (!selectedBranch) return snapshots
     const branch = branches.find(b => b.name === selectedBranch)

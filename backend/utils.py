@@ -11,7 +11,7 @@ from pyspark.errors import AnalysisException
 from pyspark.sql import SparkSession
 from pyspark.sql.types import Row
 
-from constants import UI_NEWLINE, UI_SECTION_NEWLINE, FileType
+from constants import UI_NEWLINE, UI_SECTION_NEWLINE
 
 
 def verify_iceberg_table(table_name: str) -> bool:
