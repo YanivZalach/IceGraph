@@ -171,12 +171,40 @@ def format_metadata_file(
     }
 
 
-def get_metadata_row_df_from_path(metadata_path: str):
+def get_metadata_row_slim_df_from_path(metadata_path: str):
     spark = SparkSession.builder.getOrCreate()
     df = spark.read.option("multiLine", True).json(metadata_path)
     existing = set(df.columns)
 
     scalar_cols = [
+        "current-schema-id",
+        "current-snapshot-id",
+        "default-sort-order-id",
+        "default-spec-id",
+        "last-column-id",
+        "last-partition-id",
+        "last-sequence-number",
+        "last-updated-ms",
+        "location",
+        "table-uuid",
+    ]
+    json_cols = ["properties", "refs"]
+
+    return df.select(
+        *[F.col(column) for column in scalar_cols if column in existing],
+        *[
+            F.to_json(F.col(column)).alias(column)
+            for column in json_cols
+            if column in existing
+        ],
+    )
+
+
+def get_metadata_row_df_from_path(metadata_path: str):
+    spark = SparkSession.builder.getOrCreate()
+    df = spark.read.option("multiLine", True).json(metadata_path)
+
+    return df.select(
         "current-schema-id",
         "current-snapshot-id",
         "default-sort-order-id",
@@ -188,16 +216,11 @@ def get_metadata_row_df_from_path(metadata_path: str):
         "last-updated-ms",
         "location",
         "table-uuid",
-    ]
-    json_cols = ["partition-specs", "properties", "refs", "schemas", "sort-orders"]
-
-    return df.select(
-        *[F.col(column) for column in scalar_cols if column in existing],
-        *[
-            F.to_json(F.col(column)).alias(column)
-            for column in json_cols
-            if column in existing
-        ],
+        "partition-specs",
+        "properties",
+        "refs",
+        "schemas",
+        "sort-orders",
     )
 
 

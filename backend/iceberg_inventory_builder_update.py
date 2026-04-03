@@ -1,5 +1,6 @@
 import arrow
 import json
+import threading
 import time
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
@@ -11,6 +12,7 @@ from icegraph_logger import logger
 from constants import FileType, UI_NEWLINE, MAIN_BRANCH_ICEBERG_TABLE_NAME
 from utils import (
     to_spark_timestamp,
+    get_metadata_row_slim_df_from_path,
     get_metadata_row_df_from_path,
     get_json_metadata_from_path,
     _update_col_metric,
@@ -22,6 +24,7 @@ from utils import (
 # See if you get the undeterministic graph in react, i think its the JS, because the timestamp was good.
 # Verify the build an no errors.
 # Next version, give the ui the logs on what you do.
+
 
 class IcebergInventoryBuilder:
     def __init__(self, full_table_name: str, date_to_view: Optional[str] = None):
@@ -35,6 +38,7 @@ class IcebergInventoryBuilder:
         self._timestamp_cutoff = None
         self._manifests_to_ignore_df = None
 
+        self._snapshots_lock = threading.Lock()
         self._metadata_files = None
         self._main_metadata_file = None
         self._snapshot_rows = None
@@ -47,19 +51,18 @@ class IcebergInventoryBuilder:
 
         self._timed("find_search_cutoff", self._find_search_cutoff)
 
-        # metadata files and snapshots are independent — run in parallel
+        self._timed("collect_snapshots", self._collect_snapshots)
+
+        # metadata files and manifests are independent once snapshots are ready — run in parallel
         with ThreadPoolExecutor(max_workers=2) as executor:
             meta_future = executor.submit(
                 self._timed, "collect_metadata_files", self._collect_metadata_files
             )
-            snap_future = executor.submit(
-                self._timed, "collect_snapshots", self._collect_snapshots
+            manifests_future = executor.submit(
+                self._timed, "collect_manifests", self._collect_manifests
             )
             meta_future.result()
-            snap_future.result()
-
-        self._timed("link_metadata_to_snapshots", self._link_metadata_to_snapshots)
-        self._timed("collect_manifests", self._collect_manifests)
+            manifests_future.result()
         self._clean_cache()
 
         logger.info(
@@ -156,7 +159,7 @@ class IcebergInventoryBuilder:
         metadata_files_df = None
         for file, timestamp in metadata_files.items():
             df = (
-                get_metadata_row_df_from_path(file)
+                get_metadata_row_slim_df_from_path(file)
                 .withColumn("metadata_timestamp", F.lit(timestamp))
                 .withColumn("file", F.lit(file))
             )
@@ -171,55 +174,32 @@ class IcebergInventoryBuilder:
 
         rows = metadata_files_df.orderBy(F.desc("metadata_timestamp")).collect()
         n = len(rows)
+        with self._snapshots_lock:
+            snap_id_to_path = {
+                s["snapshot_id"]: s["file_path"] for s in (self._snapshots or [])
+            }
         self._metadata_files = []
         for index, row in enumerate(rows):
             is_main_metadata_file = index == 0
             if is_main_metadata_file:
-                self._main_metadata_file = row.asDict(recursive=True)
+                self._main_metadata_file = (
+                    get_metadata_row_df_from_path(row.file)
+                    .collect()[0]
+                    .asDict(recursive=True)
+                )
+                self._main_metadata_file["file"] = row.file
 
-            self._metadata_files.append(
-                {
-                    "type": (
-                        FileType.MAIN_METADATA.value
-                        if is_main_metadata_file
-                        else FileType.METADATA.value
-                    ),
-                    "file_path": row.file,
-                    "timestamp": str(row.metadata_timestamp),
-                    "table_format_version": row["format-version"],
-                    "snapshot_id": row["current-snapshot-id"],
-                    "partition_spec_id": row["default-spec-id"],
-                    "current_schema_id": row["current-schema-id"],
-                    "sort_order_id": row["default-sort-order-id"],
-                    "refs": json.loads(row.refs) if row.refs else {},
-                    "properties": json.loads(row.properties) if row.properties else {},
-                    "hidden_metadata": {
-                        "color_append": 1 - index / (1.5 * n),
-                    },
-                }
-            )
+            refs = json.loads(row.refs) if row.refs else {}
 
-    def _link_metadata_to_snapshots(self):
-        snap_id_to_path = {
-            s["snapshot_id"]: s["file_path"] for s in (self._snapshots or [])
-        }
-
-        for meta in self._metadata_files or []:
-            refs = meta.get("refs", {})
-
-            # Main connection: current snapshot
-            current_snap_path = snap_id_to_path.get(meta["snapshot_id"])
+            current_snap_path = snap_id_to_path.get(row["current-snapshot-id"])
             child_files = [current_snap_path] if current_snap_path else []
 
-            # Branch connections: all refs of type "branch" except the main branch
             branches = {
                 name: attrs["snapshot-id"]
                 for name, attrs in refs.items()
                 if attrs.get("type") == "branch"
                 and name != MAIN_BRANCH_ICEBERG_TABLE_NAME
             }
-
-            # Group branch names by snapshot_id (multiple branches can share one snapshot)
             snapshot_to_branches = defaultdict(list)
             for branch_name, snap_id in branches.items():
                 snapshot_to_branches[snap_id].append(branch_name)
@@ -231,8 +211,28 @@ class IcebergInventoryBuilder:
                     child_files.append(snap_path)
                 branch_files[snap_path] = ", ".join(branch_names)
 
-            meta["child_files"] = child_files
-            meta["hidden_metadata"]["branch_files"] = branch_files
+            self._metadata_files.append(
+                {
+                    "type": (
+                        FileType.MAIN_METADATA.value
+                        if is_main_metadata_file
+                        else FileType.METADATA.value
+                    ),
+                    "file_path": row.file,
+                    "timestamp": str(row.metadata_timestamp),
+                    "snapshot_id": row["current-snapshot-id"],
+                    "partition_spec_id": row["default-spec-id"],
+                    "current_schema_id": row["current-schema-id"],
+                    "sort_order_id": row["default-sort-order-id"],
+                    "refs": refs,
+                    "properties": json.loads(row.properties) if row.properties else {},
+                    "child_files": child_files,
+                    "hidden_metadata": {
+                        "color_append": 1 - index / (1.5 * n),
+                        "branch_files": branch_files,
+                    },
+                }
+            )
 
     def _collect_snapshots(self):
         snapshots_df = self._spark.sql(
@@ -322,13 +322,19 @@ class IcebergInventoryBuilder:
         return result
 
     def _fill_snapshot_child_files(self, manifest_rows):
-        snap_id_to_snapshot = {s["snapshot_id"]: s for s in self._snapshots}
+        snap_id_to_paths = defaultdict(list)
         seen_per_snap = defaultdict(set)
         for m in manifest_rows:
-            snap = snap_id_to_snapshot.get(m._snap_id)
-            if snap and m.path not in seen_per_snap[m._snap_id]:
-                snap["child_files"].append(m.path)
+            if m.path not in seen_per_snap[m._snap_id]:
+                snap_id_to_paths[m._snap_id].append(m.path)
                 seen_per_snap[m._snap_id].add(m.path)
+
+        with self._snapshots_lock:
+            snap_id_to_snapshot = {s["snapshot_id"]: s for s in self._snapshots}
+            for snap_id, paths in snap_id_to_paths.items():
+                snap = snap_id_to_snapshot.get(snap_id)
+                if snap:
+                    snap["child_files"].extend(paths)
 
     def _collect_avro_entries(self, manifest_rows):
         avro_df = None
