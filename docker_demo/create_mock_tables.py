@@ -9,8 +9,7 @@ spark = SparkSession.builder.remote(os.environ["SPARK_REMOTE"]).getOrCreate()
 # ─────────────────────────────────────────────
 
 spark.sql("DROP TABLE IF EXISTS default.events")
-spark.sql(
-    """
+spark.sql("""
     CREATE TABLE default.events (
         event_id    INT,
         event_name  STRING,
@@ -24,8 +23,7 @@ spark.sql(
         'write.update.mode' = 'merge-on-read',
         'write.merge.mode' = 'merge-on-read'
     )
-    """
-)
+    """)
 print("✅ Created table `default.events`, partitioned by hour(event_ts)\n")
 
 # ─────────────────────────────────────────────
@@ -175,8 +173,7 @@ spark.read.option("branch", "my_test_branch").table("default.events").show(1000,
 # ─────────────────────────────────────────────
 
 spark.sql("DROP TABLE IF EXISTS default.logging")
-spark.sql(
-    """
+spark.sql("""
     CREATE TABLE default.logging (
         event_id    INT,
         event_name  STRING,
@@ -190,8 +187,7 @@ spark.sql(
         'write.update.mode' = 'merge-on-read',
         'write.merge.mode' = 'merge-on-read'
     )
-    """
-)
+    """)
 print("✅ Created table `default.logging`, partitioned by hour(event_ts)\n")
 
 # ─────────────────────────────────────────────

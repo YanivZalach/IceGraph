@@ -68,6 +68,7 @@ export default function GraphPage() {
     liveEdges.update(liveEdges.get().map(e => ({ ...e, hidden: false })))
     setStickyNode(null)
     setIsFullView(true)
+    history.replaceState({ graphSelection: null }, '')
     requestAnimationFrame(() => { network.redraw(); network.fit() })
   }, [])
 
@@ -232,16 +233,31 @@ export default function GraphPage() {
                 🔒 Locked View
               </span>
             )}
-            {sticky.rows.map((r, i) => (
-              <div key={i}>
-                <span className="block font-bold text-slate-500 text-[0.65rem] uppercase tracking-wider mb-1">
-                  {r.label}
-                </span>
-                <span className="block font-mono bg-[#0d1117] text-slate-200 px-3 py-2 rounded-lg text-xs whitespace-pre overflow-x-auto break-normal">
-                  {r.value}
-                </span>
-              </div>
-            ))}
+            {sticky.rows.map((r, i) => {
+              let displayValue = r.value
+              const tryParseJson = (str) => {
+                try { return JSON.parse(str) } catch { return undefined }
+              }
+              const asPythonToJson = (str) => str
+                .replace(/'/g, '"')
+                .replace(/\bTrue\b/g, 'true')
+                .replace(/\bFalse\b/g, 'false')
+                .replace(/\bNone\b/g, 'null')
+              const parsed = tryParseJson(r.value) ?? tryParseJson(asPythonToJson(r.value))
+              if (parsed !== undefined && typeof parsed === 'object' && parsed !== null) {
+                displayValue = JSON.stringify(parsed, null, 2)
+              }
+              return (
+                <div key={i}>
+                  <span className="block font-bold text-slate-500 text-[0.65rem] uppercase tracking-wider mb-1">
+                    {r.label}
+                  </span>
+                  <span className="block font-mono bg-[#0d1117] text-slate-200 px-3 py-2 rounded-lg text-xs whitespace-pre overflow-x-auto break-normal">
+                    {displayValue}
+                  </span>
+                </div>
+              )
+            })}
           </div>
         </div>
       )}

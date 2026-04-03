@@ -1,11 +1,11 @@
+import threading
+import traceback
 from dotenv import load_dotenv
 from pathlib import Path
 from flask import (
     Flask,
     jsonify,
     request,
-    Response,
-    redirect,
     send_from_directory,
 )
 from pyspark.errors import AnalysisException
@@ -18,6 +18,9 @@ from utils import verify_iceberg_table
 
 load_dotenv()
 app = Flask(__name__, static_url_path="/static")
+
+_in_flight_lock = threading.Lock()
+_in_flight: dict = {}
 
 
 @app.route("/", defaults={"path": ""})
@@ -36,17 +39,44 @@ def serve(path):
 def graph_data():
     table_name = request.form.get("table_name")
     date_value = request.form.get("date")
+    key = (table_name, date_value)
+
+    with _in_flight_lock:
+        if key in _in_flight:
+            state = _in_flight[key]
+            is_leader = False
+        else:
+            state = {"event": threading.Event(), "result": None, "error": None}
+            _in_flight[key] = state
+            is_leader = True
+
+    if not is_leader:
+        logger.info(f"Duplicate request for {key}, waiting for in-flight result")
+        state["event"].wait()
+        if state["error"]:
+            return jsonify({"error": state["error"]}), 400
+        return jsonify(state["result"])
 
     try:
         verify_iceberg_table(table_name)
         table_data = IcebergInventoryBuilder(table_name, date_value).collect()
-        data = normalize_graph_data(table_data)
-
-        return jsonify(data)
+        state["result"] = normalize_graph_data(table_data)
+        return jsonify(state["result"])
 
     except AnalysisException as e:
-        logger.error(f"Spark Error: {e}")
+        logger.error(f"Spark Error: {e}\n{traceback.format_exc()}")
+        state["error"] = str(e)
         return jsonify({"error": str(e)}), 400
+
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}\n{traceback.format_exc()}")
+        state["error"] = str(e)
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        state["event"].set()
+        with _in_flight_lock:
+            _in_flight.pop(key, None)
 
 
 if __name__ == "__main__":

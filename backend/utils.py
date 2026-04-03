@@ -1,5 +1,6 @@
 from typing import List
 import json
+from pyspark.sql import functions as F
 import os
 from contextlib import suppress
 from datetime import datetime
@@ -126,6 +127,35 @@ def format_node_info(file_info: Dict[str, Any]) -> str:
     return formatted_info
 
 
+def get_metadata_row_slim_df_from_path(metadata_path: str):
+    spark = SparkSession.builder.getOrCreate()
+    df = spark.read.option("multiLine", True).json(metadata_path)
+    existing = set(df.columns)
+
+    scalar_cols = [
+        "current-schema-id",
+        "current-snapshot-id",
+        "default-sort-order-id",
+        "default-spec-id",
+        "last-column-id",
+        "last-partition-id",
+        "last-sequence-number",
+        "last-updated-ms",
+        "location",
+        "table-uuid",
+    ]
+    json_cols = ["properties", "refs"]
+
+    return df.select(
+        *[F.col(column) for column in scalar_cols if column in existing],
+        *[
+            F.to_json(F.col(column)).alias(column)
+            for column in json_cols
+            if column in existing
+        ],
+    )
+
+
 def get_json_metadata_from_path(metadata_path: str) -> Dict[str, Any]:
     spark = SparkSession.builder.getOrCreate()
 
@@ -142,7 +172,7 @@ def get_json_metadata_from_path(metadata_path: str) -> Dict[str, Any]:
     return row.asDict(recursive=True)
 
 
-def _update_col_metric(source_list, metric_name, column_metrics):
+def update_col_metric(source_list, metric_name, column_metrics):
     for row in source_list:
         col_id = row.key
         if col_id not in column_metrics:

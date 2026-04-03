@@ -1,29 +1,20 @@
+import arrow
+import json
 import threading
+import time
+from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
-from typing import Optional, List, Dict, Any, Set
-
-from spark_connect import open_spark_connect_session
+from pyspark.sql.types import StructType, StructField, StringType
 from pyspark.sql import functions as F
-from pyspark.sql.types import (
-    StructType,
-    StructField,
-    StringType,
-    IntegerType,
-    LongType,
-    MapType,
-)
-
-from constants import (
-    FileType,
-    PARALLEL_SPARK_SQL,
-    MAIN_BRANCH_ICEBERG_TABLE_NAME,
-    UI_NEWLINE,
-)
+from typing import Optional, Dict, Any
+from spark_connect import open_spark_connect_session
 from icegraph_logger import logger
+from constants import FileType, UI_NEWLINE, MAIN_BRANCH_ICEBERG_TABLE_NAME
 from utils import (
     to_spark_timestamp,
+    get_metadata_row_slim_df_from_path,
     get_json_metadata_from_path,
-    _update_col_metric,
+    update_col_metric,
     format_partition,
     format_schemas_to_full_dict,
 )
@@ -31,413 +22,442 @@ from utils import (
 
 class IcebergInventoryBuilder:
     def __init__(self, full_table_name: str, date_to_view: Optional[str] = None):
-        self.spark = open_spark_connect_session()
-        self.table_name = full_table_name
-        self.date_to_view = date_to_view
+        self._spark = open_spark_connect_session()
+        self._table_name = full_table_name
+        self._date_to_view = to_spark_timestamp(date_to_view) if date_to_view else None
 
-        self.metadata_file_content = None
-        self.inventory: List[Dict[str, Any]] = []
-        self.processed_data_files: Set[str] = set()
-        self.processed_manifests: Set[str] = set()
-        self.processed_snapshots_id: Set[int] = set()
-        self.manifests_to_ignore: Set[str] = set()
-        self.snapshots_to_path: Dict[str, int] = {}
+        self._errors: Dict[str, str] = {}
+        self._snapshots_lock = threading.Lock()
 
-        self.timestamp_cutoff = (
-            to_spark_timestamp(date_to_view) if date_to_view else None
-        )
-        self.lock = threading.Lock()
-        self.errors = {}
-        self.manifest_cache: Dict[int, List[Dict[str, Any]]] = {}
+        self._snapshot_cutoff = None
+        self._metadata_cutoff = None
+        self._manifests_to_ignore_df = None
+
+        self._metadata_files = None
+        self._main_metadata_file = None
+        self._snapshot_rows = None
+        self._snapshots = None
+        self._manifests = None
+        self._data_files = None
 
     def collect(self) -> Dict[str, Any]:
-        logger.info(f"Analyzing Table {self.table_name}")
+        total_start = time.time()
 
         try:
-            self.manifests_to_ignore = self._discover_baseline_manifests()
-            df = self._load_metadata_and_snapshots()
-
-            if self.timestamp_cutoff:
-                df = df.filter(
-                    F.coalesce(F.col("snapshot_timestamp"), F.col("meta_log_timestamp"))
-                    >= F.lit(str(self.timestamp_cutoff)).cast("timestamp")
-                )
-
-            rows = df.sort(F.desc("meta_log_timestamp")).collect()
-
-            self._prefetch_all_manifests(rows)
-
-            for index, row in enumerate(rows):
-                is_main_metadata_file = index == 0
-                previous_metadata_file = None
-                if index + 1 < len(rows):
-                    previous_metadata_file = rows[index + 1].asDict().get("file")
-
-                self._process_row(
-                    row, is_main_metadata_file, previous_metadata_file, index, len(rows)
-                )
-
+            self._timed("find_search_cutoff", self._find_search_cutoff)
         except Exception as e:
-            self.errors[self.table_name] = f"Critical Table Error: {str(e)}"
+            logger.error(f"[{self._table_name}] find_search_cutoff failed: {e}")
+            self._errors["find_search_cutoff"] = str(e)
+            self._set_full_history_cutoff()
 
-        for file, msg in self.errors.items():
-            logger.error(f"Error when processing file {file} - {msg}")
+        try:
+            self._timed("collect_snapshots", self._collect_snapshots)
+        except Exception as e:
+            logger.error(f"[{self._table_name}] collect_snapshots failed: {e}")
+            self._errors["collect_snapshots"] = str(e)
 
-        self._connect_metadata_branches()
-
-        result = {
-            "inventory": self.inventory,
-            "errors": self.errors,
-            "metadata_specs": {},
-        }
-
-        if self.metadata_file_content:
-            self.metadata_file_content["schemas"] = format_schemas_to_full_dict(
-                self.metadata_file_content.get("schemas")
+        # metadata files and manifests are independent once snapshots are ready — run in parallel
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            meta_future = executor.submit(
+                self._timed, "collect_metadata_files", self._collect_metadata_files
             )
-            self.metadata_file_content["table-name"] = self.table_name
-            result["metadata_specs"] = self.metadata_file_content
-        else:
-            result["metadata_specs"] = {"table-name": self.table_name}
+            manifests_future = executor.submit(
+                self._timed, "collect_manifests", self._collect_manifests
+            )
+            for name, future in [
+                ("collect_metadata_files", meta_future),
+                ("collect_manifests", manifests_future),
+            ]:
+                try:
+                    future.result()
+                except Exception as e:
+                    logger.error(f"[{self._table_name}] {name} failed: {e}")
+                    self._errors[name] = str(e)
+        self._clean_cache()
 
+        logger.info(
+            f"[{self._table_name}] total collect took {time.time() - total_start:.2f}s"
+        )
+        return self._build_result()
+
+    def _timed(self, name: str, fn):
+        start = time.time()
+        result = fn()
+        logger.info(f"[{self._table_name}] {name} took {time.time() - start:.2f}s")
         return result
 
-    def _connect_metadata_branches(self):
-        for item in self.inventory:
-            if item["type"] not in [
-                FileType.METADATA.value,
-                FileType.MAIN_METADATA.value,
-            ]:
-                continue
-
-            branches = item["hidden_metadata"].get("branches", {})
-            snapshot_to_branches = {}
-            for branch_name, snapshot_id in branches.items():
-                snapshot_to_branches.setdefault(snapshot_id, []).append(branch_name)
-
-            label_to_snapshot = {
-                ", ".join(names): snapshot_id
-                for snapshot_id, names in snapshot_to_branches.items()
-            }
-
-            item["hidden_metadata"]["branch_files"] = {}
-            for branch_names, snapshot_id in label_to_snapshot.items():
-                if snapshot_id in self.snapshots_to_path:
-                    item["child_files"].append(self.snapshots_to_path[snapshot_id])
-                    item["hidden_metadata"]["branch_files"][
-                        self.snapshots_to_path[snapshot_id]
-                    ] = branch_names
-
-    def _get_schema_info(self, meta_file: str):
-        try:
-            metadata = get_json_metadata_from_path(meta_file)
-
-            refs = metadata.get("refs", {})
-            branches = {
-                branch_name: attrs["snapshot-id"]
-                for branch_name, attrs in refs.items()
-                if branch_name != MAIN_BRANCH_ICEBERG_TABLE_NAME
-                and attrs.get("type") == "branch"
-            }
-            refs_str = UI_NEWLINE.join(
-                f"{key}: {' | '.join(f'{k}={v}' for k, v in attrs.items())}"
-                for key, attrs in refs.items()
-            )
-
-            properties = metadata.get("properties", {})
-            properties_str = UI_NEWLINE.join(
-                f'"{k}": "{v}"' for k, v in properties.items()
-            )
-
-            return (
-                meta_file,
-                metadata.get("format-version"),
-                metadata.get("default-spec-id"),
-                metadata.get("default-sort-order-id"),
-                metadata.get("current-schema-id"),
-                refs_str,
-                branches,
-                properties_str,
-            )
-
-        except Exception as e:
-            with self.lock:
-                self.errors[meta_file] = f"Error when processing file {meta_file}: {e}"
-            return (meta_file, None, None, None, None, None, {}, {})
-
-    def _load_metadata_and_snapshots(self):
-        metadata_df = (
-            self.spark.sql(f"SELECT * FROM {self.table_name}.metadata_log_entries")
-            .withColumnRenamed("latest_snapshot_id", "snapshot_id")
-            .withColumnRenamed("timestamp", "meta_log_timestamp")
+    def _build_result(self) -> Dict[str, Any]:
+        inventory = (
+            (self._metadata_files or [])
+            + (self._snapshots or [])
+            + (self._manifests or [])
+            + (self._data_files or [])
         )
 
-        metadata_files = [
-            row["file"] for row in metadata_df.select("file").distinct().collect()
-        ]
-
-        if metadata_files:
-            with ThreadPoolExecutor(max_workers=PARALLEL_SPARK_SQL) as executor:
-                schema_results = list(
-                    executor.map(self._get_schema_info, metadata_files)
+        metadata_specs = {"table-name": self._table_name}
+        if self._main_metadata_file:
+            main_meta_path = self._main_metadata_file["file"]
+            try:
+                self._main_metadata_file["schemas"] = format_schemas_to_full_dict(
+                    self._main_metadata_file.get("schemas", [])
                 )
-        else:
-            schema_results = []
+                self._main_metadata_file["table-name"] = self._table_name
+                metadata_specs = self._main_metadata_file
+            except Exception as e:
+                self._errors[main_meta_path] = f"Metadata specs error: {e}"
 
-        schema = StructType(
-            [
-                StructField("file", StringType(), True),
-                StructField("format_version", IntegerType(), True),
-                StructField("default_spec_id", IntegerType(), True),
-                StructField("default_sort_order_id", IntegerType(), True),
-                StructField("current_schema_id", IntegerType(), True),
-                StructField("refs", StringType(), True),
-                StructField("branches", MapType(StringType(), LongType()), True),
-                StructField("properties", StringType(), True),
-            ]
-        )
-        schema_df = self.spark.createDataFrame(schema_results, schema=schema)
+        return {
+            "inventory": inventory,
+            "errors": self._errors,
+            "metadata_specs": metadata_specs,
+        }
 
-        metadata_df = metadata_df.join(schema_df, on="file", how="left")
+    def _clean_cache(self):
+        if self._manifests_to_ignore_df is not None:
+            self._manifests_to_ignore_df.unpersist()
 
-        snapshots_df = self.spark.sql(
-            f"SELECT * FROM {self.table_name}.snapshots"
-        ).withColumnRenamed("committed_at", "snapshot_timestamp")
+    def _find_search_cutoff(self):
+        if not self._date_to_view:
+            self._set_full_history_cutoff()
+            return
 
-        return metadata_df.join(snapshots_df, on="snapshot_id", how="full")
-
-    def _discover_baseline_manifests(self) -> Set[str]:
-        if not self.timestamp_cutoff:
-            return set()
-
-        baseline_snap_row = self.spark.sql(
-            f"SELECT snapshot_id FROM {self.table_name}.snapshots WHERE committed_at < '{self.timestamp_cutoff}' ORDER BY committed_at DESC LIMIT 1"
+        baseline_snap_row = self._spark.sql(
+            f"SELECT snapshot_id, committed_at FROM {self._table_name}.snapshots"
+            f" WHERE committed_at < '{self._date_to_view}' ORDER BY committed_at DESC LIMIT 1"
         ).collect()
 
         if not baseline_snap_row:
-            return set()
+            self._set_full_history_cutoff()
+            return
+        baseline_snap_row = baseline_snap_row[0]
 
-        base_id = baseline_snap_row[0]["snapshot_id"]
-        old_manifests = self.spark.sql(
-            f"SELECT path FROM {self.table_name}.manifests VERSION AS OF {base_id}"
-        ).collect()
-        return {m["path"] for m in old_manifests}
+        base_id = baseline_snap_row.snapshot_id
+        self._snapshot_cutoff = to_spark_timestamp(baseline_snap_row.committed_at)
 
-    def _prefetch_all_manifests(self, rows: List[Any]):
-        snap_ids = {
-            row.asDict()["snapshot_id"]
-            for row in rows
-            if row.asDict().get("snapshot_id")
+        metadata_cutoff_row = self._spark.sql(f"""
+            SELECT MAX(timestamp) as metadata_timestamp
+            FROM {self._table_name}.metadata_log_entries
+            WHERE `latest_snapshot_id` = {base_id}
+        """).collect()
+        raw_ts = (
+            metadata_cutoff_row[0].metadata_timestamp if metadata_cutoff_row else None
+        )
+        self._metadata_cutoff = (
+            to_spark_timestamp(raw_ts) if raw_ts else self._snapshot_cutoff
+        )
+
+        self._manifests_to_ignore_df = self._spark.sql(
+            f"SELECT path FROM {self._table_name}.manifests VERSION AS OF {base_id}"
+        )
+        self._manifests_to_ignore_df.cache()
+
+    def _set_full_history_cutoff(self):
+        self._snapshot_cutoff = arrow.Arrow.min
+        self._metadata_cutoff = arrow.Arrow.min
+        self._manifests_to_ignore_df = self._spark.createDataFrame(
+            [], StructType([StructField("path", StringType())])
+        )
+
+    def _collect_metadata_files(self):
+        metadata_df = (
+            self._spark.sql(f"SELECT * FROM {self._table_name}.metadata_log_entries")
+            .withColumnRenamed("timestamp", "metadata_timestamp")
+            .select("file", "metadata_timestamp")
+        )
+        if self._metadata_cutoff:
+            metadata_df = metadata_df.filter(
+                F.col("metadata_timestamp") > F.lit(str(self._metadata_cutoff))
+            )
+
+        metadata_files = {
+            row.file: row.metadata_timestamp for row in metadata_df.collect()
         }
 
-        with ThreadPoolExecutor(max_workers=PARALLEL_SPARK_SQL) as executor:
-            results = executor.map(self._fetch_snapshot_manifests, snap_ids)
-            for snap_id, manifests in results:
-                self.manifest_cache[snap_id] = manifests
-
-    def _fetch_snapshot_manifests(self, snap_id: int):
-        try:
-            manifests = self.spark.sql(
-                f"SELECT * FROM {self.table_name}.manifests VERSION AS OF {snap_id}"
-            ).collect()
-            return snap_id, manifests
-        except Exception as e:
-            with self.lock:
-                self.errors[f"snap_{snap_id}"] = f"Pre-fetch SQL Error: {str(e)}"
-            return snap_id, []
-
-    def _process_row(
-        self,
-        row,
-        is_main_metadata_file,
-        previous_metadata_file,
-        index,
-        number_of_metadata_files,
-    ):
-        row_dict = row.asDict()
-        snap_id = row_dict.get("snapshot_id")
-        meta_file = row_dict.get("file")
-
-        if meta_file:
+        metadata_files_df = None
+        for file, timestamp in metadata_files.items():
             try:
-                if is_main_metadata_file:
-                    self.metadata_file_content = get_json_metadata_from_path(meta_file)
-
-                self.inventory.append(
-                    {
-                        "type": (
-                            FileType.MAIN_METADATA.value
-                            if is_main_metadata_file
-                            else FileType.METADATA.value
-                        ),
-                        "file_path": meta_file,
-                        "timestamp": str(row_dict.get("meta_log_timestamp")),
-                        "table_format_version": row_dict.get("format_version"),
-                        "snapshot_id": snap_id,
-                        "previous_metadata_file": previous_metadata_file,
-                        "partition_spec_id": row_dict.get("default_spec_id"),
-                        "current_schema_id": row_dict.get("current_schema_id"),
-                        "latest_writen_schema_id": row_dict.get("latest_schema_id"),
-                        "sort_order_id": row_dict.get("default_sort_order_id"),
-                        "latest_sequence_number": row_dict.get(
-                            "latest_sequence_number"
-                        ),
-                        "refs": row_dict.get("refs"),
-                        "properties": row_dict.get("properties"),
-                        "child_files": (
-                            [row_dict.get("manifest_list")]
-                            if row_dict.get("manifest_list")
-                            else []
-                        ),
-                        "hidden_metadata": {
-                            "color_append": 1
-                            - index / (1.5 * number_of_metadata_files),
-                            "branches": row_dict.get("branches"),
-                        },
-                    }
+                df = (
+                    get_metadata_row_slim_df_from_path(file)
+                    .withColumn("metadata_timestamp", F.lit(timestamp))
+                    .withColumn("file", F.lit(file))
+                )
+                metadata_files_df = (
+                    df
+                    if metadata_files_df is None
+                    else metadata_files_df.unionByName(df, allowMissingColumns=True)
                 )
             except Exception as e:
-                self.errors[meta_file] = f"Metadata Read Error: {str(e)}"
+                self._errors[file] = f"Metadata file read error: {e}"
 
-        if (
-            snap_id
-            and row_dict.get("manifest_list")
-            and snap_id not in self.processed_snapshots_id
-        ):
-            snapshot_path = row_dict["manifest_list"]
-            summary = row_dict.get("summary", {})
-            summary_repr = UI_NEWLINE.join(
-                [
-                    (
-                        f"{k}: {(int(v) / (1024**3)):.5f} GB"
-                        if k.endswith("files-size")
-                        else f"{k}: {v}"
-                    )
-                    for k, v in summary.items()
-                ]
-            )
-
-            try:
-                manifests = self.manifest_cache.get(snap_id, [])
-                self.snapshots_to_path[snap_id] = snapshot_path
-
-                self.inventory.append(
-                    {
-                        "type": FileType.SNAPSHOT.value,
-                        "file_path": snapshot_path,
-                        "timestamp": str(row_dict.get("snapshot_timestamp")),
-                        "snapshot_id": snap_id,
-                        "parent_id": row_dict.get("parent_id"),
-                        "operation": row_dict["operation"],
-                        "summary": summary_repr,
-                        "child_files": [m["path"] for m in manifests],
-                    }
-                )
-                self._process_manifests(manifests)
-                self.processed_snapshots_id.add(snap_id)
-            except Exception as e:
-                self.errors[snapshot_path] = f"Snapshot SQL Error: {str(e)}"
-
-    def _process_manifests(self, manifests):
-        with ThreadPoolExecutor(max_workers=PARALLEL_SPARK_SQL) as executor:
-            executor.map(self._process_single_manifest, manifests)
-
-    def _process_single_manifest(self, m_row):
-        m_path = m_row["path"]
-
-        # Quick check without lock for speed; we'll re-check inside the lock
-        if m_path in self.manifests_to_ignore or m_path in self.processed_manifests:
+        if metadata_files_df is None:
             return
 
-        try:
-            entries = (
-                self.spark.read.format("avro")
-                .load(m_path)
-                .select("status", "data_file")
-                .collect()
+        rows = metadata_files_df.orderBy(F.desc("metadata_timestamp")).collect()
+        n = len(rows)
+        with self._snapshots_lock:
+            snap_id_to_path = {
+                s["snapshot_id"]: s["file_path"] for s in (self._snapshots or [])
+            }
+        self._metadata_files = []
+        for index, row in enumerate(rows):
+            is_main_metadata_file = index == 0
+            if is_main_metadata_file:
+                try:
+                    self._main_metadata_file = get_json_metadata_from_path(row.file)
+                    self._main_metadata_file["file"] = row.file
+                except Exception as e:
+                    self._errors[row.file] = f"Main metadata file read error: {e}"
+
+            refs = json.loads(row.refs) if row.refs else {}
+
+            current_snap_path = snap_id_to_path.get(row["current-snapshot-id"])
+            child_files = [current_snap_path] if current_snap_path else []
+
+            branches = {
+                name: attrs["snapshot-id"]
+                for name, attrs in refs.items()
+                if attrs.get("type") == "branch"
+                and name != MAIN_BRANCH_ICEBERG_TABLE_NAME
+            }
+            snapshot_to_branches = defaultdict(list)
+            for branch_name, snap_id in branches.items():
+                snapshot_to_branches[snap_id].append(branch_name)
+
+            branch_files = {}
+            for snap_id, branch_names in snapshot_to_branches.items():
+                snap_path = snap_id_to_path.get(snap_id)
+                if snap_path and snap_path not in child_files:
+                    child_files.append(snap_path)
+                branch_files[snap_path] = ", ".join(branch_names)
+
+            previous_file = rows[index + 1].file if index + 1 < n else None
+
+            self._metadata_files.append(
+                {
+                    "type": (
+                        FileType.MAIN_METADATA.value
+                        if is_main_metadata_file
+                        else FileType.METADATA.value
+                    ),
+                    "file_path": row.file,
+                    "timestamp": str(row.metadata_timestamp),
+                    "snapshot_id": row["current-snapshot-id"],
+                    "previous_file": previous_file,
+                    "last_sequence_number": (
+                        row["last-sequence-number"]
+                        if "last-sequence-number" in row
+                        else None
+                    ),
+                    "partition_spec_id": row["default-spec-id"],
+                    "current_schema_id": row["current-schema-id"],
+                    "sort_order_id": row["default-sort-order-id"],
+                    "refs": refs,
+                    "properties": json.loads(row.properties) if row.properties else {},
+                    "child_files": child_files,
+                    "hidden_metadata": {
+                        "color_append": 1 - index / (1.5 * n),
+                        "branch_files": branch_files,
+                    },
+                }
             )
 
-            child_data_paths_status = {"existing": [], "deleted": []}
-            total_rows = 0
-            all_partitions = set()
-            local_new_data_files = []
+    def _collect_snapshots(self):
+        snapshots_df = self._spark.sql(
+            f"SELECT * FROM {self._table_name}.snapshots ORDER BY committed_at DESC"
+        )
+        if self._snapshot_cutoff:
+            snapshots_df = snapshots_df.filter(
+                F.col("committed_at") > F.lit(str(self._snapshot_cutoff))
+            )
+        self._snapshot_rows = snapshots_df.collect()
 
-            for entry in entries:
-                f = entry["data_file"]
-                f_path = f["file_path"]
-                f_status = entry["status"]
-
-                if f_status == 2:
-                    child_data_paths_status["deleted"].append(f_path)
-                else:
-                    child_data_paths_status["existing"].append(f_path)
-
-                total_rows += f["record_count"]
-                partition_repr = format_partition(f.partition)
-                all_partitions.add(partition_repr)
-
-                if f.content == 0:
-                    f_type = FileType.DATA.value
-                elif f.content == 1:
-                    f_type = FileType.POSITION_DELETE.value
-                else:
-                    f_type = FileType.EQUALITY_DELETE.value
-
-                if f_path not in self.processed_data_files:
-                    column_metrics = {}
-                    _update_col_metric(f.lower_bounds, "lower_bound", column_metrics)
-                    _update_col_metric(f.upper_bounds, "upper_bound", column_metrics)
-                    _update_col_metric(f.column_sizes, "size_bytes", column_metrics)
-                    _update_col_metric(
-                        f.null_value_counts, "null_count", column_metrics
-                    )
-                    _update_col_metric(
-                        f.nan_value_counts, "not_a_number_count", column_metrics
-                    )
-                    _update_col_metric(f.value_counts, "total_values", column_metrics)
-
-                    local_new_data_files.append(
-                        {
-                            "type": f_type,
-                            "file_path": f_path,
-                            "format": f.file_format,
-                            "size_gb": f"{(f.file_size_in_bytes / 1024 ** 3):.10f}",
-                            "row_count": f.record_count,
-                            "partition": partition_repr,
-                            "sort_order_id": f.sort_order_id,
-                            "columns": column_metrics,
-                            "split_offsets": UI_NEWLINE.join(
-                                map(str, f.split_offsets or [])
-                            ),
-                            "key_metadata": f.key_metadata,
-                            "equality_ids": f.equality_ids,
-                        }
-                    )
-
-            with self.lock:
-                if m_path in self.processed_manifests:
-                    return
-
-                for data_file in local_new_data_files:
-                    if data_file["file_path"] not in self.processed_data_files:
-                        self.inventory.append(data_file)
-                        self.processed_data_files.add(data_file["file_path"])
-
-                self.inventory.append(
-                    {
-                        "type": FileType.MANIFEST.value,
-                        "file_path": m_path,
-                        "added_snapshot_id": m_row["added_snapshot_id"],
-                        "partitions": UI_NEWLINE.join(all_partitions),
-                        "total_rows": total_rows,
-                        "existing_child_files": child_data_paths_status["existing"],
-                        "deleted_child_files": child_data_paths_status["deleted"],
-                        "child_files": child_data_paths_status["existing"]
-                        + child_data_paths_status["deleted"],
-                    }
+        self._snapshots = []
+        for snapshot in self._snapshot_rows:
+            summary = snapshot.summary or {}
+            summary_repr = UI_NEWLINE.join(
+                (
+                    f"{k}: {(int(v) / (1024**3)):.5f} GB"
+                    if k.endswith("files-size")
+                    else f"{k}: {v}"
                 )
-                self.processed_manifests.add(m_path)
+                for k, v in summary.items()
+            )
+            self._snapshots.append(
+                {
+                    "type": FileType.SNAPSHOT.value,
+                    "file_path": snapshot.manifest_list,
+                    "timestamp": str(snapshot.committed_at),
+                    "snapshot_id": snapshot.snapshot_id,
+                    "parent_id": snapshot.parent_id,
+                    "operation": snapshot.operation,
+                    "summary": summary_repr,
+                    "child_files": [],  # filled in _collect_manifests
+                }
+            )
 
-        except Exception as e:
-            with self.lock:
-                self.errors[m_path] = f"Manifest Processing Error: {str(e)}"
+    def _collect_manifests(self):
+        if not self._snapshot_rows:
+            self._manifests = []
+            self._data_files = []
+            return
+
+        all_manifests_df = self._union_snapshot_manifests_df()
+        if all_manifests_df is None:
+            self._manifests = []
+            self._data_files = []
+            return
+
+        manifest_rows = self._timed(
+            "collect_manifest_rows",
+            lambda: all_manifests_df.join(
+                self._manifests_to_ignore_df, on="path", how="left_anti"
+            ).collect(),
+        )
+        if not manifest_rows:
+            self._manifests = []
+            self._data_files = []
+            return
+
+        self._fill_snapshot_child_files(manifest_rows)
+
+        seen_paths = set()
+        deduped_manifest_rows = []
+        for m in manifest_rows:
+            if m.path not in seen_paths:
+                seen_paths.add(m.path)
+                deduped_manifest_rows.append(m)
+
+        avro_entries = self._timed(
+            "collect_avro_entries",
+            lambda: self._collect_avro_entries(deduped_manifest_rows),
+        )
+        self._process_avro_entries(avro_entries, deduped_manifest_rows)
+
+    def _union_snapshot_manifests_df(self):
+        result = None
+        for snapshot in self._snapshot_rows:
+            snap_id = snapshot.snapshot_id
+            df = self._spark.sql(
+                f"SELECT *, {snap_id} as _snap_id"
+                f" FROM {self._table_name}.manifests VERSION AS OF {snap_id}"
+            )
+            result = (
+                df
+                if result is None
+                else result.unionByName(df, allowMissingColumns=True)
+            )
+        return result
+
+    def _fill_snapshot_child_files(self, manifest_rows):
+        snap_id_to_paths = defaultdict(list)
+        seen_per_snap = defaultdict(set)
+        for m in manifest_rows:
+            if m.path not in seen_per_snap[m._snap_id]:
+                snap_id_to_paths[m._snap_id].append(m.path)
+                seen_per_snap[m._snap_id].add(m.path)
+
+        with self._snapshots_lock:
+            snap_id_to_snapshot = {s["snapshot_id"]: s for s in self._snapshots}
+            for snap_id, paths in snap_id_to_paths.items():
+                snap = snap_id_to_snapshot.get(snap_id)
+                if snap:
+                    snap["child_files"].extend(paths)
+
+    def _collect_avro_entries(self, manifest_rows):
+        avro_df = None
+        for m_row in manifest_rows:
+            try:
+                df = (
+                    self._spark.read.format("avro")
+                    .load(m_row.path)
+                    .select("status", "data_file")
+                    .withColumn("_manifest_path", F.lit(m_row.path))
+                )
+                avro_df = (
+                    df
+                    if avro_df is None
+                    else avro_df.unionByName(df, allowMissingColumns=True)
+                )
+            except Exception as e:
+                self._errors[m_row.path] = f"Avro read error: {e}"
+        return avro_df.collect() if avro_df is not None else []
+
+    def _process_avro_entries(self, avro_entries, manifest_rows):
+        entries_by_manifest = defaultdict(list)
+        for entry in avro_entries:
+            entries_by_manifest[entry._manifest_path].append(entry)
+
+        manifest_info = {m.path: m for m in manifest_rows}
+        self._manifests = []
+        self._data_files = []
+        processed_data_files = set()
+
+        for m_path, entries in entries_by_manifest.items():
+            self._process_manifest(
+                m_path, entries, manifest_info[m_path], processed_data_files
+            )
+
+    def _process_manifest(self, m_path, entries, m_row, processed_data_files):
+        child_data_paths_status = {"existing": [], "deleted": []}
+        total_rows = 0
+        all_partitions = set()
+
+        for entry in entries:
+            f = entry["data_file"]
+            f_path = f["file_path"]
+
+            if entry["status"] == 2:
+                child_data_paths_status["deleted"].append(f_path)
+            else:
+                child_data_paths_status["existing"].append(f_path)
+
+            total_rows += f["record_count"]
+            all_partitions.add(format_partition(f.partition))
+
+            if f_path not in processed_data_files:
+                self._data_files.append(self._format_data_file(f))
+                processed_data_files.add(f_path)
+
+        self._manifests.append(
+            {
+                "type": FileType.MANIFEST.value,
+                "file_path": m_path,
+                "added_snapshot_id": m_row.added_snapshot_id,
+                "partitions": UI_NEWLINE.join(all_partitions),
+                "total_rows": total_rows,
+                "existing_child_files": child_data_paths_status["existing"],
+                "deleted_child_files": child_data_paths_status["deleted"],
+                "child_files": child_data_paths_status["existing"]
+                + child_data_paths_status["deleted"],
+            }
+        )
+
+    def _format_data_file(self, f):
+        if f.content == 0:
+            f_type = FileType.DATA.value
+        elif f.content == 1:
+            f_type = FileType.POSITION_DELETE.value
+        else:
+            f_type = FileType.EQUALITY_DELETE.value
+
+        column_metrics = {}
+        update_col_metric(f.lower_bounds, "lower_bound", column_metrics)
+        update_col_metric(f.upper_bounds, "upper_bound", column_metrics)
+        update_col_metric(f.column_sizes, "size_bytes", column_metrics)
+        update_col_metric(f.null_value_counts, "null_count", column_metrics)
+        update_col_metric(f.nan_value_counts, "not_a_number_count", column_metrics)
+        update_col_metric(f.value_counts, "total_values", column_metrics)
+
+        return {
+            "type": f_type,
+            "file_path": f["file_path"],
+            "format": f.file_format,
+            "size_gb": f"{(f.file_size_in_bytes / 1024 ** 3):.10f}",
+            "row_count": f.record_count,
+            "partition": format_partition(f.partition),
+            "sort_order_id": f.sort_order_id,
+            "columns": column_metrics,
+            "split_offsets": UI_NEWLINE.join(map(str, f.split_offsets or [])),
+            "key_metadata": f.key_metadata,
+            "equality_ids": f.equality_ids,
+        }
