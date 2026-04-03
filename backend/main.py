@@ -11,7 +11,7 @@ from flask import (
 from pyspark.errors import AnalysisException
 
 from constants import APPLICATION_PORT
-from iceberg_inventory_builder_update import IcebergInventoryBuilder
+from iceberg_inventory_builder import IcebergInventoryBuilder
 from icegraph_logger import logger
 from icegraph_data_normalizer import normalize_graph_data
 from utils import verify_iceberg_table
@@ -20,7 +20,7 @@ load_dotenv()
 app = Flask(__name__, static_url_path="/static")
 
 _in_flight_lock = threading.Lock()
-_in_flight: dict = {}  # key -> {"event": Event, "result": Any}
+_in_flight: dict = {}
 
 
 @app.route("/", defaults={"path": ""})
