@@ -21,8 +21,7 @@ from utils import (
 )
 
 # Make the new build return more ganular data, and the normilizer will fix it.
-# Verify the build and no errors.
-# Attempt to build the graph even if getting nodes/edges errors - nodes in the inventory, edges in the normelizer
+# Seperate to classes
 # Make the jsons in the ui afear nicer
 # Next version, give the ui the logs on what you do.
 
@@ -35,7 +34,8 @@ class IcebergInventoryBuilder:
 
         self._errors: Dict[str, str] = {}
 
-        self._timestamp_cutoff = None
+        self._snapshot_cutoff = None
+        self._metadata_cutoff = None
         self._manifests_to_ignore_df = None
 
         self._snapshots_lock = threading.Lock()
@@ -49,9 +49,18 @@ class IcebergInventoryBuilder:
     def collect(self) -> Dict[str, Any]:
         total_start = time.time()
 
-        self._timed("find_search_cutoff", self._find_search_cutoff)
+        try:
+            self._timed("find_search_cutoff", self._find_search_cutoff)
+        except Exception as e:
+            logger.error(f"[{self._table_name}] find_search_cutoff failed: {e}")
+            self._errors["find_search_cutoff"] = str(e)
+            self._set_full_history_cutoff()
 
-        self._timed("collect_snapshots", self._collect_snapshots)
+        try:
+            self._timed("collect_snapshots", self._collect_snapshots)
+        except Exception as e:
+            logger.error(f"[{self._table_name}] collect_snapshots failed: {e}")
+            self._errors["collect_snapshots"] = str(e)
 
         # metadata files and manifests are independent once snapshots are ready — run in parallel
         with ThreadPoolExecutor(max_workers=2) as executor:
@@ -61,8 +70,15 @@ class IcebergInventoryBuilder:
             manifests_future = executor.submit(
                 self._timed, "collect_manifests", self._collect_manifests
             )
-            meta_future.result()
-            manifests_future.result()
+            for name, future in [
+                ("collect_metadata_files", meta_future),
+                ("collect_manifests", manifests_future),
+            ]:
+                try:
+                    future.result()
+                except Exception as e:
+                    logger.error(f"[{self._table_name}] {name} failed: {e}")
+                    self._errors[name] = str(e)
         self._clean_cache()
 
         logger.info(
@@ -123,14 +139,28 @@ class IcebergInventoryBuilder:
         baseline_snap_row = baseline_snap_row[0]
 
         base_id = baseline_snap_row.snapshot_id
-        self._timestamp_cutoff = baseline_snap_row.committed_at
+        self._snapshot_cutoff = to_spark_timestamp(baseline_snap_row.committed_at)
+
+        metadata_cutoff_row = self._spark.sql(f"""
+            SELECT MAX(timestamp) as metadata_timestamp
+            FROM {self._table_name}.metadata_log_entries
+            WHERE `latest_snapshot_id` = {base_id}
+        """).collect()
+        raw_ts = (
+            metadata_cutoff_row[0].metadata_timestamp if metadata_cutoff_row else None
+        )
+        self._metadata_cutoff = (
+            to_spark_timestamp(raw_ts) if raw_ts else self._snapshot_cutoff
+        )
+
         self._manifests_to_ignore_df = self._spark.sql(
             f"SELECT path FROM {self._table_name}.manifests VERSION AS OF {base_id}"
         )
         self._manifests_to_ignore_df.cache()
 
     def _set_full_history_cutoff(self):
-        self._timestamp_cutoff = arrow.Arrow.min
+        self._snapshot_cutoff = arrow.Arrow.min
+        self._metadata_cutoff = arrow.Arrow.min
         self._manifests_to_ignore_df = self._spark.createDataFrame(
             [], StructType([StructField("path", StringType())])
         )
@@ -141,9 +171,9 @@ class IcebergInventoryBuilder:
             .withColumnRenamed("timestamp", "metadata_timestamp")
             .select("file", "metadata_timestamp")
         )
-        if self._timestamp_cutoff:
+        if self._metadata_cutoff:
             metadata_df = metadata_df.filter(
-                F.col("metadata_timestamp") > F.lit(str(self._timestamp_cutoff))
+                F.col("metadata_timestamp") > F.lit(str(self._metadata_cutoff))
             )
 
         metadata_files = {
@@ -152,16 +182,19 @@ class IcebergInventoryBuilder:
 
         metadata_files_df = None
         for file, timestamp in metadata_files.items():
-            df = (
-                get_metadata_row_slim_df_from_path(file)
-                .withColumn("metadata_timestamp", F.lit(timestamp))
-                .withColumn("file", F.lit(file))
-            )
-            metadata_files_df = (
-                df
-                if metadata_files_df is None
-                else metadata_files_df.unionByName(df, allowMissingColumns=True)
-            )
+            try:
+                df = (
+                    get_metadata_row_slim_df_from_path(file)
+                    .withColumn("metadata_timestamp", F.lit(timestamp))
+                    .withColumn("file", F.lit(file))
+                )
+                metadata_files_df = (
+                    df
+                    if metadata_files_df is None
+                    else metadata_files_df.unionByName(df, allowMissingColumns=True)
+                )
+            except Exception as e:
+                self._errors[file] = f"Metadata file read error: {e}"
 
         if metadata_files_df is None:
             return
@@ -176,12 +209,15 @@ class IcebergInventoryBuilder:
         for index, row in enumerate(rows):
             is_main_metadata_file = index == 0
             if is_main_metadata_file:
-                self._main_metadata_file = (
-                    get_metadata_row_df_from_path(row.file)
-                    .collect()[0]
-                    .asDict(recursive=True)
-                )
-                self._main_metadata_file["file"] = row.file
+                try:
+                    self._main_metadata_file = (
+                        get_metadata_row_df_from_path(row.file)
+                        .collect()[0]
+                        .asDict(recursive=True)
+                    )
+                    self._main_metadata_file["file"] = row.file
+                except Exception as e:
+                    self._errors[row.file] = f"Main metadata file read error: {e}"
 
             refs = json.loads(row.refs) if row.refs else {}
 
@@ -205,6 +241,8 @@ class IcebergInventoryBuilder:
                     child_files.append(snap_path)
                 branch_files[snap_path] = ", ".join(branch_names)
 
+            previous_file = rows[index + 1].file if index + 1 < n else None
+
             self._metadata_files.append(
                 {
                     "type": (
@@ -215,6 +253,12 @@ class IcebergInventoryBuilder:
                     "file_path": row.file,
                     "timestamp": str(row.metadata_timestamp),
                     "snapshot_id": row["current-snapshot-id"],
+                    "previous_file": previous_file,
+                    "last_sequence_number": (
+                        row["last-sequence-number"]
+                        if "last-sequence-number" in row
+                        else None
+                    ),
                     "partition_spec_id": row["default-spec-id"],
                     "current_schema_id": row["current-schema-id"],
                     "sort_order_id": row["default-sort-order-id"],
@@ -232,9 +276,9 @@ class IcebergInventoryBuilder:
         snapshots_df = self._spark.sql(
             f"SELECT * FROM {self._table_name}.snapshots ORDER BY committed_at DESC"
         )
-        if self._timestamp_cutoff:
+        if self._snapshot_cutoff:
             snapshots_df = snapshots_df.filter(
-                F.col("committed_at") > F.lit(str(self._timestamp_cutoff))
+                F.col("committed_at") > F.lit(str(self._snapshot_cutoff))
             )
         self._snapshot_rows = snapshots_df.collect()
 
@@ -333,18 +377,21 @@ class IcebergInventoryBuilder:
     def _collect_avro_entries(self, manifest_rows):
         avro_df = None
         for m_row in manifest_rows:
-            df = (
-                self._spark.read.format("avro")
-                .load(m_row.path)
-                .select("status", "data_file")
-                .withColumn("_manifest_path", F.lit(m_row.path))
-            )
-            avro_df = (
-                df
-                if avro_df is None
-                else avro_df.unionByName(df, allowMissingColumns=True)
-            )
-        return avro_df.collect()
+            try:
+                df = (
+                    self._spark.read.format("avro")
+                    .load(m_row.path)
+                    .select("status", "data_file")
+                    .withColumn("_manifest_path", F.lit(m_row.path))
+                )
+                avro_df = (
+                    df
+                    if avro_df is None
+                    else avro_df.unionByName(df, allowMissingColumns=True)
+                )
+            except Exception as e:
+                self._errors[m_row.path] = f"Avro read error: {e}"
+        return avro_df.collect() if avro_df is not None else []
 
     def _process_avro_entries(self, avro_entries, manifest_rows):
         entries_by_manifest = defaultdict(list)
