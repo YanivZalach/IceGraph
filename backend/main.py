@@ -1,4 +1,5 @@
 import threading
+import traceback
 from dotenv import load_dotenv
 from pathlib import Path
 from flask import (
@@ -63,12 +64,12 @@ def graph_data():
         return jsonify(state["result"])
 
     except AnalysisException as e:
-        logger.error(f"Spark Error: {e}")
+        logger.error(f"Spark Error: {e}\n{traceback.format_exc()}")
         state["error"] = str(e)
         return jsonify({"error": str(e)}), 400
 
     except Exception as e:
-        logger.error(f"Unexpected error: {e}")
+        logger.error(f"Unexpected error: {e}\n{traceback.format_exc()}")
         state["error"] = str(e)
         return jsonify({"error": str(e)}), 500
 

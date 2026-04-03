@@ -78,11 +78,13 @@ export default function TableLayout() {
     }
 
     const body = new URLSearchParams({ table_name: tableName, date })
+    const controller = new AbortController()
 
     fetch('/api/v1/graph-data', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: body.toString(),
+      signal: controller.signal,
     })
       .then(async (res) => {
         const text = await res.text()
@@ -99,9 +101,12 @@ export default function TableLayout() {
         setLoading(false)
       })
       .catch((err) => {
+        if (err.name === 'AbortError') return
         setError(err.message || 'An unexpected error occurred.')
         setLoading(false)
       })
+
+    return () => controller.abort()
   }, [tableName, date])
 
   if (loading) {

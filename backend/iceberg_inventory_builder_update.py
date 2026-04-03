@@ -21,8 +21,9 @@ from utils import (
 )
 
 # Make the new build return more ganular data, and the normilizer will fix it.
-# See if you get the undeterministic graph in react, i think its the JS, because the timestamp was good.
-# Verify the build an no errors.
+# Verify the build and no errors.
+# Attempt to build the graph even if getting nodes/edges errors - nodes in the inventory, edges in the normelizer
+# Make the jsons in the ui afear nicer
 # Next version, give the ui the logs on what you do.
 
 
@@ -32,7 +33,6 @@ class IcebergInventoryBuilder:
         self._table_name = full_table_name
         self._date_to_view = to_spark_timestamp(date_to_view) if date_to_view else None
 
-        self._cached_dfs = []
         self._errors: Dict[str, str] = {}
 
         self._timestamp_cutoff = None
@@ -103,18 +103,13 @@ class IcebergInventoryBuilder:
             "metadata_specs": metadata_specs,
         }
 
-    def _cache_df(self, df):
-        df.cache()
-        self._cached_dfs.append(df)
-
     def _clean_cache(self):
-        for df in self._cached_dfs:
-            df.unpersist()
-        self._cached_dfs = []
+        if self._manifests_to_ignore_df is not None:
+            self._manifests_to_ignore_df.unpersist()
 
     def _find_search_cutoff(self):
         if not self._date_to_view:
-            self._set_no_cutoff()
+            self._set_full_history_cutoff()
             return
 
         baseline_snap_row = self._spark.sql(
@@ -123,7 +118,7 @@ class IcebergInventoryBuilder:
         ).collect()
 
         if not baseline_snap_row:
-            self._set_no_cutoff()
+            self._set_full_history_cutoff()
             return
         baseline_snap_row = baseline_snap_row[0]
 
@@ -132,9 +127,9 @@ class IcebergInventoryBuilder:
         self._manifests_to_ignore_df = self._spark.sql(
             f"SELECT path FROM {self._table_name}.manifests VERSION AS OF {base_id}"
         )
-        self._cache_df(self._manifests_to_ignore_df)
+        self._manifests_to_ignore_df.cache()
 
-    def _set_no_cutoff(self):
+    def _set_full_history_cutoff(self):
         self._timestamp_cutoff = arrow.Arrow.min
         self._manifests_to_ignore_df = self._spark.createDataFrame(
             [], StructType([StructField("path", StringType())])
@@ -150,7 +145,6 @@ class IcebergInventoryBuilder:
             metadata_df = metadata_df.filter(
                 F.col("metadata_timestamp") > F.lit(str(self._timestamp_cutoff))
             )
-        self._cache_df(metadata_df)
 
         metadata_files = {
             row.file: row.metadata_timestamp for row in metadata_df.collect()

@@ -68,6 +68,7 @@ export default function GraphPage() {
     liveEdges.update(liveEdges.get().map(e => ({ ...e, hidden: false })))
     setStickyNode(null)
     setIsFullView(true)
+    history.replaceState({ graphSelection: null }, '')
     requestAnimationFrame(() => { network.redraw(); network.fit() })
   }, [])
 
