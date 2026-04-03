@@ -226,9 +226,9 @@ class IcebergInventoryBuilder:
             branch_files = {}
             for snap_id, branch_names in snapshot_to_branches.items():
                 snap_path = snap_id_to_path.get(snap_id)
-                if snap_path and snap_path not in child_files:
+                if snap_path:
                     child_files.append(snap_path)
-                branch_files[snap_path] = ", ".join(branch_names)
+                    branch_files[snap_path] = ", ".join(branch_names)
 
             previous_file = rows[index + 1].file if index + 1 < n else None
 
