@@ -11,6 +11,7 @@ from spark_connect import open_spark_connect_session
 from icegraph_logger import logger
 from constants import FileType, UI_NEWLINE, MAIN_BRANCH_ICEBERG_TABLE_NAME
 from utils import (
+    to_arrow_tz,
     get_metadata_row_slim_df_from_path,
     get_json_metadata_from_path,
     update_col_metric,
@@ -31,6 +32,7 @@ class IcebergInventoryBuilder:
         self._start_snapshot_id = start_snapshot_id
         self._end_snapshot_id = end_snapshot_id
 
+        self._spark_tz = self._spark.conf.get("spark.sql.session.timeZone")
         self._errors: Dict[str, str] = {}
         self._snapshots_lock = threading.Lock()
 
@@ -145,7 +147,7 @@ class IcebergInventoryBuilder:
 
     def _set_start_cutoffs(self):
         row = self._spark.sql(f"""
-            SELECT committed_at, parent_id
+            SELECT date_format(committed_at, "yyyy-MM-dd'T'HH:mm:ss.SSS") AS committed_at, parent_id
             FROM {self._table_name}.snapshots
             WHERE snapshot_id = {self._start_snapshot_id}
         """).first()
@@ -156,16 +158,18 @@ class IcebergInventoryBuilder:
             self._manifests_to_ignore_df = self._create_empty_manifests_to_ignore_df()
             return
 
-        self._start_snapshot_cutoff = row.committed_at
+        self._start_snapshot_cutoff = to_arrow_tz(row.committed_at, self._spark_tz)
 
         meta_row = self._spark.sql(f"""
-            SELECT MAX(timestamp) AS ts
+            SELECT date_format(MAX(timestamp), "yyyy-MM-dd'T'HH:mm:ss.SSS") AS ts
             FROM {self._table_name}.metadata_log_entries
             WHERE latest_snapshot_id = {self._start_snapshot_id}
         """).first()
 
         self._start_metadata_cutoff = (
-            meta_row.ts if meta_row and meta_row.ts else self._start_snapshot_cutoff
+            to_arrow_tz(meta_row.ts, self._spark_tz)
+            if meta_row and meta_row.ts
+            else self._start_snapshot_cutoff
         )
 
         parent_id = row.parent_id
@@ -186,7 +190,7 @@ class IcebergInventoryBuilder:
 
     def _set_end_cutoffs(self):
         row = self._spark.sql(f"""
-            SELECT committed_at
+            SELECT date_format(committed_at, "yyyy-MM-dd'T'HH:mm:ss.SSS") AS committed_at
             FROM {self._table_name}.snapshots
             WHERE snapshot_id = {self._end_snapshot_id}
         """).first()
@@ -196,16 +200,18 @@ class IcebergInventoryBuilder:
             self._end_metadata_cutoff = arrow.Arrow.max
             return
 
-        self._end_snapshot_cutoff = row.committed_at
+        self._end_snapshot_cutoff = to_arrow_tz(row.committed_at, self._spark_tz)
 
         meta_row = self._spark.sql(f"""
-            SELECT MAX(timestamp) AS ts
+            SELECT date_format(MAX(timestamp), "yyyy-MM-dd'T'HH:mm:ss.SSS") AS ts
             FROM {self._table_name}.metadata_log_entries
             WHERE latest_snapshot_id = {self._end_snapshot_id}
         """).first()
 
         self._end_metadata_cutoff = (
-            meta_row.ts if meta_row and meta_row.ts else self._end_snapshot_cutoff
+            to_arrow_tz(meta_row.ts, self._spark_tz)
+            if meta_row and meta_row.ts
+            else self._end_snapshot_cutoff
         )
 
     def _create_empty_manifests_to_ignore_df(self):
@@ -232,7 +238,11 @@ class IcebergInventoryBuilder:
         )
         if self._start_metadata_cutoff:
             metadata_df = metadata_df.filter(
-                F.col("metadata_timestamp") > F.lit(str(self._start_metadata_cutoff))
+                F.col("metadata_timestamp") >= F.lit(str(self._start_metadata_cutoff))
+            )
+        if self._end_metadata_cutoff:
+            metadata_df = metadata_df.filter(
+                F.col("metadata_timestamp") <= F.lit(str(self._end_metadata_cutoff))
             )
 
         metadata_files = {
@@ -333,8 +343,13 @@ class IcebergInventoryBuilder:
         )
         if self._start_snapshot_cutoff:
             snapshots_df = snapshots_df.filter(
-                F.col("committed_at") > F.lit(str(self._start_snapshot_cutoff))
+                F.col("committed_at") >= F.lit(str(self._start_snapshot_cutoff))
             )
+        if self._end_snapshot_cutoff:
+            snapshots_df = snapshots_df.filter(
+                F.col("committed_at") <= F.lit(str(self._end_snapshot_cutoff))
+            )
+
         self._snapshot_rows = snapshots_df.collect()
 
         self._snapshots = []

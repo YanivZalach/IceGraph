@@ -58,7 +58,11 @@ def snapshot_map(table_name):
 def graph_data():
     table_name = request.form.get("table_name")
     start_snapshot_id = request.form.get("start_snapshot_id")
+    if start_snapshot_id:
+        start_snapshot_id = int(start_snapshot_id)
     end_snapshot_id = request.form.get("end_snapshot_id")
+    if end_snapshot_id:
+        end_snapshot_id = int(end_snapshot_id)
     key = (table_name, start_snapshot_id, end_snapshot_id)
 
     with _in_flight_lock:
@@ -79,7 +83,7 @@ def graph_data():
 
     try:
         verify_iceberg_table(table_name)
-        table_data = IcebergInventoryBuilder(table_name, date_value).collect()
+        table_data = IcebergInventoryBuilder(*key).collect()
         state["result"] = normalize_graph_data(table_data)
         return jsonify(state["result"])
 
