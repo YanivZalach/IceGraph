@@ -28,16 +28,6 @@ def verify_iceberg_table(table_name: str) -> bool:
     raise AnalysisException(f"Table '{table_name}' is not an Iceberg table.")
 
 
-def to_spark_timestamp(date_str: str) -> datetime:
-    spark = SparkSession.builder.getOrCreate()
-    return (
-        arrow.get(date_str)
-        .replace(tzinfo=os.environ["TIMEZONE"])
-        .to(spark.conf.get("spark.sql.session.timeZone"))
-        .datetime
-    )
-
-
 def format_partition(partition_row: Row) -> str:
     if not partition_row:
         return "Root"

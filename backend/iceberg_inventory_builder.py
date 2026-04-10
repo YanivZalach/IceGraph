@@ -11,7 +11,6 @@ from spark_connect import open_spark_connect_session
 from icegraph_logger import logger
 from constants import FileType, UI_NEWLINE, MAIN_BRANCH_ICEBERG_TABLE_NAME
 from utils import (
-    to_spark_timestamp,
     get_metadata_row_slim_df_from_path,
     get_json_metadata_from_path,
     update_col_metric,
@@ -21,16 +20,24 @@ from utils import (
 
 
 class IcebergInventoryBuilder:
-    def __init__(self, full_table_name: str, date_to_view: Optional[str] = None):
+    def __init__(
+        self,
+        full_table_name: str,
+        start_snapshot_id: Optional[int] = None,
+        end_snapshot_id: Optional[int] = None,
+    ):
         self._spark = open_spark_connect_session()
         self._table_name = full_table_name
-        self._date_to_view = to_spark_timestamp(date_to_view) if date_to_view else None
+        self._start_snapshot_id = start_snapshot_id
+        self._end_snapshot_id = end_snapshot_id
 
         self._errors: Dict[str, str] = {}
         self._snapshots_lock = threading.Lock()
 
-        self._snapshot_cutoff = None
-        self._metadata_cutoff = None
+        self._start_snapshot_cutoff = None
+        self._end_snapshot_cutoff = None
+        self._start_metadata_cutoff = None
+        self._end_metadata_cutoff = None
         self._manifests_to_ignore_df = None
 
         self._metadata_files = None
@@ -117,43 +124,102 @@ class IcebergInventoryBuilder:
             self._manifests_to_ignore_df.unpersist()
 
     def _find_search_cutoff(self):
-        if not self._date_to_view:
-            self._set_full_history_cutoff()
+        if not self._start_snapshot_id and not self._end_snapshot_id:
+            return self._set_full_history_cutoff()
+
+        if self._start_snapshot_id:
+            self._set_start_cutoffs()
+        else:
+            self._start_snapshot_cutoff = arrow.Arrow.min
+            self._start_metadata_cutoff = arrow.Arrow.min
+            self._manifests_to_ignore_df = self._create_empty_manifests_to_ignore_df()
+
+        if self._end_snapshot_id:
+            self._set_end_cutoffs()
+        else:
+            self._end_snapshot_cutoff = arrow.Arrow.max
+            self._end_metadata_cutoff = arrow.Arrow.max
+
+        if self._start_snapshot_cutoff > self._end_snapshot_cutoff:
+            raise ValueError("Start snapshot is after end snapshot")
+
+    def _set_start_cutoffs(self):
+        row = self._spark.sql(f"""
+            SELECT committed_at, parent_id
+            FROM {self._table_name}.snapshots
+            WHERE snapshot_id = {self._start_snapshot_id}
+        """).first()
+
+        if not row:
+            self._start_snapshot_cutoff = arrow.Arrow.min
+            self._start_metadata_cutoff = arrow.Arrow.min
+            self._manifests_to_ignore_df = self._create_empty_manifests_to_ignore_df()
             return
 
-        baseline_snap_row = self._spark.sql(
-            f"SELECT snapshot_id, committed_at FROM {self._table_name}.snapshots"
-            f" WHERE committed_at < '{self._date_to_view}' ORDER BY committed_at DESC LIMIT 1"
-        ).collect()
+        self._start_snapshot_cutoff = row.committed_at
 
-        if not baseline_snap_row:
-            self._set_full_history_cutoff()
-            return
-        baseline_snap_row = baseline_snap_row[0]
-
-        base_id = baseline_snap_row.snapshot_id
-        self._snapshot_cutoff = to_spark_timestamp(baseline_snap_row.committed_at)
-
-        metadata_cutoff_row = self._spark.sql(f"""
-            SELECT MAX(timestamp) as metadata_timestamp
+        meta_row = self._spark.sql(f"""
+            SELECT MAX(timestamp) AS ts
             FROM {self._table_name}.metadata_log_entries
-            WHERE `latest_snapshot_id` = {base_id}
-        """).collect()
-        raw_ts = (
-            metadata_cutoff_row[0].metadata_timestamp if metadata_cutoff_row else None
-        )
-        self._metadata_cutoff = (
-            to_spark_timestamp(raw_ts) if raw_ts else self._snapshot_cutoff
+            WHERE latest_snapshot_id = {self._start_snapshot_id}
+        """).first()
+
+        self._start_metadata_cutoff = (
+            meta_row.ts if meta_row and meta_row.ts else self._start_snapshot_cutoff
         )
 
-        self._manifests_to_ignore_df = self._spark.sql(
-            f"SELECT path FROM {self._table_name}.manifests VERSION AS OF {base_id}"
+        parent_id = row.parent_id
+
+        if parent_id is None:
+            self._manifests_to_ignore_df = self._create_empty_manifests_to_ignore_df()
+        else:
+            try:
+                self._manifests_to_ignore_df = self._spark.sql(f"""
+                    SELECT path
+                    FROM {self._table_name}.manifests
+                    VERSION AS OF {parent_id}
+                """)
+            except Exception:
+                self._manifests_to_ignore_df = (
+                    self._create_empty_manifests_to_ignore_df()
+                )
+
+    def _set_end_cutoffs(self):
+        row = self._spark.sql(f"""
+            SELECT committed_at
+            FROM {self._table_name}.snapshots
+            WHERE snapshot_id = {self._end_snapshot_id}
+        """).first()
+
+        if not row:
+            self._end_snapshot_cutoff = arrow.Arrow.max
+            self._end_metadata_cutoff = arrow.Arrow.max
+            return
+
+        self._end_snapshot_cutoff = row.committed_at
+
+        meta_row = self._spark.sql(f"""
+            SELECT MAX(timestamp) AS ts
+            FROM {self._table_name}.metadata_log_entries
+            WHERE latest_snapshot_id = {self._end_snapshot_id}
+        """).first()
+
+        self._end_metadata_cutoff = (
+            meta_row.ts if meta_row and meta_row.ts else self._end_snapshot_cutoff
         )
-        self._manifests_to_ignore_df.cache()
+
+    def _create_empty_manifests_to_ignore_df(self):
+        return self._spark.createDataFrame(
+            [], StructType([StructField("path", StringType())])
+        )
 
     def _set_full_history_cutoff(self):
-        self._snapshot_cutoff = arrow.Arrow.min
-        self._metadata_cutoff = arrow.Arrow.min
+        self._start_snapshot_cutoff = arrow.Arrow.min
+        self._end_snapshot_cutoff = arrow.Arrow.max
+
+        self._start_metadata_cutoff = arrow.Arrow.min
+        self._end_metadata_cutoff = arrow.Arrow.max
+
         self._manifests_to_ignore_df = self._spark.createDataFrame(
             [], StructType([StructField("path", StringType())])
         )
@@ -164,9 +230,9 @@ class IcebergInventoryBuilder:
             .withColumnRenamed("timestamp", "metadata_timestamp")
             .select("file", "metadata_timestamp")
         )
-        if self._metadata_cutoff:
+        if self._start_metadata_cutoff:
             metadata_df = metadata_df.filter(
-                F.col("metadata_timestamp") > F.lit(str(self._metadata_cutoff))
+                F.col("metadata_timestamp") > F.lit(str(self._start_metadata_cutoff))
             )
 
         metadata_files = {
@@ -265,9 +331,9 @@ class IcebergInventoryBuilder:
         snapshots_df = self._spark.sql(
             f"SELECT * FROM {self._table_name}.snapshots ORDER BY committed_at DESC"
         )
-        if self._snapshot_cutoff:
+        if self._start_snapshot_cutoff:
             snapshots_df = snapshots_df.filter(
-                F.col("committed_at") > F.lit(str(self._snapshot_cutoff))
+                F.col("committed_at") > F.lit(str(self._start_snapshot_cutoff))
             )
         self._snapshot_rows = snapshots_df.collect()
 
