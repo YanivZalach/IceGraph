@@ -294,7 +294,7 @@ class IcebergInventoryBuilder:
                 except Exception as e:
                     self._errors[row.file] = f"Main metadata file read error: {e}"
 
-            refs = json.loads(row.refs) if row.refs else {}
+            refs = json.loads(row.refs) if getattr(row, "refs", None) else {}
 
             current_snap_path = snap_id_to_path.get(row["current-snapshot-id"])
             child_files = [current_snap_path] if current_snap_path else []

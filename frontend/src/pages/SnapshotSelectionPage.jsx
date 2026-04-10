@@ -38,7 +38,11 @@ export default function SnapshotSelectionPage() {
                 return data
             })
             .then((data) => {
-                if (Object.keys(data).length === 0) throw new Error('No snapshots found')
+                if (Object.keys(data).length === 0) {
+                    setSnapshots({});
+                    setLoading(false);
+                    return;
+                }
                 setSnapshots(data)
                 const sorted = Object.entries(data).sort((a, b) => b[0].localeCompare(a[0]))
                 setStartSnapshot(sorted[Math.min(sorted.length - 1, 4)][1])
@@ -98,7 +102,15 @@ export default function SnapshotSelectionPage() {
         )
     }
 
-    const entries = Object.entries(snapshots).sort((a, b) => b[0].localeCompare(a[0]))
+    const entries = Object.entries(snapshots)
+        .sort((a, b) => b[0].localeCompare(a[0]))
+        .map(([ts, id]) => {
+            const dateObj = new Date(ts);
+            const readableTs = !isNaN(dateObj.getTime())
+                ? dateObj.toLocaleString(undefined, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+                : ts;
+            return [readableTs, id];
+        });
 
     return (
         <div className="flex-1 flex items-center justify-center p-8">
