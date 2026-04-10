@@ -121,7 +121,7 @@ export default function SnapshotSelectionPage() {
 
     return (
         <div className="flex-1 flex items-center justify-center p-8">
-            <div className="bg-[#1a202c] rounded-2xl shadow-xl p-10 w-full max-w-lg border border-[#2d3748]">
+            <div className="bg-[#1a202c] rounded-2xl shadow-xl p-10 w-full max-w-5xl border border-[#2d3748]">
 
                 <h2 className="text-xl font-bold text-[#e2e8f0] mb-4">
                     Select Snapshots
@@ -133,40 +133,54 @@ export default function SnapshotSelectionPage() {
 
                 <form onSubmit={handleSubmit} className="flex flex-col gap-5">
 
-                    <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5">
-                            Start Snapshot
-                        </label>
-                        <select
-                            value={startSnapshot}
-                            onChange={e => setStartSnapshot(e.target.value)}
-                            className="w-full bg-[#2d3748] text-white rounded-lg px-3 py-2"
-                        >
-                            <option value="">-- None (Full History) --</option>
-                            {entries.map(([ts, id]) => (
-                                <option key={id} value={id}>
-                                    {ts} ({id})
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                    <div className="flex gap-6">
 
-                    <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5">
-                            End Snapshot
-                        </label>
-                        <select
-                            value={endSnapshot}
-                            onChange={e => setEndSnapshot(e.target.value)}
-                            className="w-full bg-[#2d3748] text-white rounded-lg px-3 py-2"
-                        >
-                            <option value="">-- Latest --</option>
-                            {entries.map(([ts, id]) => (
-                                <option key={id} value={id}>
-                                    {ts} ({id})
-                                </option>
-                            ))}
-                        </select>
+                        <div className="flex-1">
+                            <label className="block text-xs font-bold text-slate-400 uppercase mb-2">
+                                Start Snapshot
+                            </label>
+
+                            <div className="h-72 overflow-y-auto bg-[#2d3748] rounded-xl p-2 space-y-2">
+                                {entries.map(([ts, id]) => (
+                                    <div
+                                        key={id}
+                                        onClick={() => setStartSnapshot(id)}
+                                        className={`p-3 rounded-lg cursor-pointer border transition
+                                                ${startSnapshot === id
+                                                ? 'bg-[#2E86C1] border-[#2E86C1]'
+                                                : 'bg-[#1a202c] border-[#2d3748] hover:border-[#2E86C1]/50'}
+                                                `}
+                                    >
+                                        <div className="text-xs text-slate-300">{ts}</div>
+                                        <div className="text-[10px] text-slate-500">{id}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="flex-1">
+                            <label className="block text-xs font-bold text-slate-400 uppercase mb-2">
+                                End Snapshot
+                            </label>
+
+                            <div className="h-72 overflow-y-auto bg-[#2d3748] rounded-xl p-2 space-y-2">
+                                {entries.map(([ts, id]) => (
+                                    <div
+                                        key={id}
+                                        onClick={() => setEndSnapshot(id)}
+                                        className={`p-3 rounded-lg cursor-pointer border transition
+                                                ${endSnapshot === id
+                                                ? 'bg-[#2E86C1] border-[#2E86C1]'
+                                                : 'bg-[#1a202c] border-[#2d3748] hover:border-[#2E86C1]/50'}
+                                                `}
+                                    >
+                                        <div className="text-xs text-slate-300">{ts}</div>
+                                        <div className="text-[10px] text-slate-500">{id}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
                     </div>
 
                     <button
