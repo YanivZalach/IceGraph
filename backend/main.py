@@ -12,6 +12,7 @@ from pyspark.errors import AnalysisException
 
 from constants import APPLICATION_PORT
 from iceberg_inventory_builder import IcebergInventoryBuilder
+from iceberg_metadata_snapshot_map import collect_snapshot_map
 from icegraph_logger import logger
 from icegraph_data_normalizer import normalize_graph_data
 from utils import verify_iceberg_table
@@ -35,11 +36,34 @@ def serve(path):
     return send_from_directory(static_path, "index.html")
 
 
+@app.route("/api/v1/snapshot-map/<path:table_name>", methods=["GET"])
+def snapshot_map(table_name):
+    try:
+        verify_iceberg_table(table_name)
+
+        result = collect_snapshot_map(table_name)
+
+        return jsonify(result)
+
+    except AnalysisException as e:
+        logger.error(f"Spark Error: {e}\n{traceback.format_exc()}")
+        return jsonify({"error": str(e)}), 400
+
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}\n{traceback.format_exc()}")
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/v1/graph-data", methods=["POST"])
 def graph_data():
     table_name = request.form.get("table_name")
-    date_value = request.form.get("date")
-    key = (table_name, date_value)
+    start_snapshot_id = request.form.get("start_snapshot_id")
+    if start_snapshot_id:
+        start_snapshot_id = int(start_snapshot_id)
+    end_snapshot_id = request.form.get("end_snapshot_id")
+    if end_snapshot_id:
+        end_snapshot_id = int(end_snapshot_id)
+    key = (table_name, start_snapshot_id, end_snapshot_id)
 
     with _in_flight_lock:
         if key in _in_flight:
@@ -59,7 +83,7 @@ def graph_data():
 
     try:
         verify_iceberg_table(table_name)
-        table_data = IcebergInventoryBuilder(table_name, date_value).collect()
+        table_data = IcebergInventoryBuilder(*key).collect()
         state["result"] = normalize_graph_data(table_data)
         return jsonify(state["result"])
 

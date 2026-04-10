@@ -39,8 +39,6 @@ docker compose up
 
 Go to `http://localhost:5000` and explore table `default.events` and table `default.logging`.
 
-Recommended: Change the `TIMEZONE` variable in the docker compose to your timezone name.
-
 ## Quick Start Using Docker
 
 The easiest way to run IceGraph is via [DockerHub](https://hub.docker.com/r/yanivzalach/icegraph)
@@ -48,7 +46,7 @@ The easiest way to run IceGraph is via [DockerHub](https://hub.docker.com/r/yani
 ### Spark connect 3.5.4
 
 ```bash
-docker run -e SPARK_REMOTE=sc://<spark-connect-ip>:15002 -e TIMEZONE=my/timezone -p 5000:5000 yanivzalach/icegraph:latest
+docker run -e SPARK_REMOTE=sc://<spark-connect-ip>:15002 -e -p 5000:5000 yanivzalach/icegraph:latest
 ```
 
 ### Other Spark Connect versions
@@ -60,7 +58,7 @@ docker build -t icegraph .
 
 Then run with the same command:
 ```bash
-docker run -e SPARK_REMOTE=sc://<spark-connect-ip>:15002 -e TIMEZONE=my/timezone -p 5000:5000 icegraph
+docker run -e SPARK_REMOTE=sc://<spark-connect-ip>:15002 -e -p 5000:5000 icegraph
 ```
 
 ## Start Using Source Code
@@ -90,7 +88,6 @@ npm i
 We will create an `.env` file in the root of the backend directory:
 
 ```bash
-TIMEZONE=my/timezone # Put your local timezone name
 SPARK_REMOTE=sc://localhost:15002 # Our local testing spark, If you use docker, change it to your ip.
 ```
 

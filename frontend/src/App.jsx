@@ -7,6 +7,7 @@ import FileTreePage from './pages/FileTreePage'
 import TableLayout from './pages/TableLayout'
 import NavBar from './components/NavBar'
 import { TableSpecsProvider } from './context/TableSpecsContext'
+import SnapshotSelectionPage from './pages/SnapshotSelectionPage'
 
 function Layout({ children }) {
   return (
@@ -20,29 +21,34 @@ function Layout({ children }) {
 export default function App() {
   return (
     <TableSpecsProvider>
-    <Routes>
-      <Route
-        path="/"
-        element={
+      <Routes>
+        <Route
+          path="/"
+          element={
+            import.meta.env.VITE_USE_MSW === 'true'
+              ? <Navigate to="/table/graph?table=default.events" replace />
+              : <Layout><HomePage /></Layout>
+          }
+        />
+        <Route path="snapshots-selection" element={
           import.meta.env.VITE_USE_MSW === 'true'
             ? <Navigate to="/table/graph?table=default.events" replace />
-            : <Layout><HomePage /></Layout>
-        }
-      />
-      <Route
-        path="/table"
-        element={
-          <Layout>
-            <TableLayout />
-          </Layout>
-        }
-      >
-        <Route path="graph" element={<GraphPage />} />
-        <Route path="metadata" element={<MetadataPage />} />
-        <Route path="timeline" element={<TimelinePage />} />
-        <Route path="filetree" element={<FileTreePage />} />
-      </Route>
-    </Routes>
+            : <Layout><SnapshotSelectionPage /></Layout>
+        } />
+        <Route
+          path="/table"
+          element={
+            <Layout>
+              <TableLayout />
+            </Layout>
+          }
+        >
+          <Route path="graph" element={<GraphPage />} />
+          <Route path="metadata" element={<MetadataPage />} />
+          <Route path="timeline" element={<TimelinePage />} />
+          <Route path="filetree" element={<FileTreePage />} />
+        </Route>
+      </Routes>
     </TableSpecsProvider>
   )
 }
