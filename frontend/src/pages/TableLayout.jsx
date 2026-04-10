@@ -89,11 +89,11 @@ export default function TableLayout() {
     })
       .then(async (res) => {
         const text = await res.text()
-        const data = JSONbig({ storeAsString: true }).parse(text)
+        if (!res.ok) throw new Error("Request to backend failed")
 
+        const data = JSONbig({ storeAsString: true }).parse(text)
         console.log(data)
 
-        if (!res.ok) throw new Error(data.error || 'Request failed')
         sessionStorage.setItem(cacheKey, text)
         return data
       })
@@ -122,19 +122,37 @@ export default function TableLayout() {
   }
 
   if (error) {
+    let errorDisplay;
+    try {
+      const parsed = JSON.parse(error);
+      errorDisplay = (
+        <div className="text-left mt-4 text-xs font-mono space-y-1">
+          {Object.entries(parsed).map(([key, val]) => (
+            <div key={key} className="flex gap-2">
+              <span className="text-red-300 font-bold">{key}:</span>
+              <span className="text-slate-300 truncate">{String(val)}</span>
+            </div>
+          ))}
+        </div>
+      );
+    } catch {
+      errorDisplay = <p className="text-sm">{error}</p>;
+    }
+
     return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-[#0d1117]">
-        <div className="bg-red-950/50 border border-red-800 text-red-400 px-8 py-6 rounded-xl text-center max-w-sm">
-          <p>{error}</p>
+      <div className="flex-1 flex flex-col items-center justify-center bg-[#0d1117] p-6">
+        <div className="bg-red-950/50 border border-red-800 text-red-400 px-8 py-6 rounded-xl text-center max-w-lg w-full">
+          <h2 className="font-bold mb-2">Request Failed</h2>
+          {errorDisplay}
           <button
-            className="mt-3 px-5 py-2.5 rounded-lg border-2 border-[#2E86C1] bg-[#2E86C1] text-white font-bold text-sm cursor-pointer"
+            className="mt-6 px-5 py-2.5 rounded-lg border-2 border-[#2E86C1] bg-[#2E86C1] text-white font-bold text-sm cursor-pointer hover:bg-[#2471a3] transition"
             onClick={() => navigate('/')}
           >
             ← Back to Home
           </button>
         </div>
       </div>
-    )
+    );
   }
 
   const metadata = graphData.metadata
