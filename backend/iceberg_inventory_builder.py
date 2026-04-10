@@ -146,11 +146,13 @@ class IcebergInventoryBuilder:
             raise ValueError("Start snapshot is after end snapshot")
 
     def _set_start_cutoffs(self):
-        row = self._spark.sql(f"""
+        row = self._spark.sql(
+            f"""
             SELECT date_format(committed_at, "yyyy-MM-dd'T'HH:mm:ss.SSS") AS committed_at, parent_id
             FROM {self._table_name}.snapshots
             WHERE snapshot_id = {self._start_snapshot_id}
-        """).first()
+        """
+        ).first()
 
         if not row:
             self._start_snapshot_cutoff = arrow.Arrow.min
@@ -160,11 +162,13 @@ class IcebergInventoryBuilder:
 
         self._start_snapshot_cutoff = to_arrow_tz(row.committed_at, self._spark_tz)
 
-        meta_row = self._spark.sql(f"""
-            SELECT date_format(MAX(timestamp), "yyyy-MM-dd'T'HH:mm:ss.SSS") AS ts
+        meta_row = self._spark.sql(
+            f"""
+            SELECT date_format(MIN(timestamp), "yyyy-MM-dd'T'HH:mm:ss.SSS") AS ts
             FROM {self._table_name}.metadata_log_entries
             WHERE latest_snapshot_id = {self._start_snapshot_id}
-        """).first()
+        """
+        ).first()
 
         self._start_metadata_cutoff = (
             to_arrow_tz(meta_row.ts, self._spark_tz)
@@ -178,22 +182,26 @@ class IcebergInventoryBuilder:
             self._manifests_to_ignore_df = self._create_empty_manifests_to_ignore_df()
         else:
             try:
-                self._manifests_to_ignore_df = self._spark.sql(f"""
+                self._manifests_to_ignore_df = self._spark.sql(
+                    f"""
                     SELECT path
                     FROM {self._table_name}.manifests
                     VERSION AS OF {parent_id}
-                """)
+                """
+                )
             except Exception:
                 self._manifests_to_ignore_df = (
                     self._create_empty_manifests_to_ignore_df()
                 )
 
     def _set_end_cutoffs(self):
-        row = self._spark.sql(f"""
+        row = self._spark.sql(
+            f"""
             SELECT date_format(committed_at, "yyyy-MM-dd'T'HH:mm:ss.SSS") AS committed_at
             FROM {self._table_name}.snapshots
             WHERE snapshot_id = {self._end_snapshot_id}
-        """).first()
+        """
+        ).first()
 
         if not row:
             self._end_snapshot_cutoff = arrow.Arrow.max
@@ -202,11 +210,13 @@ class IcebergInventoryBuilder:
 
         self._end_snapshot_cutoff = to_arrow_tz(row.committed_at, self._spark_tz)
 
-        meta_row = self._spark.sql(f"""
+        meta_row = self._spark.sql(
+            f"""
             SELECT date_format(MAX(timestamp), "yyyy-MM-dd'T'HH:mm:ss.SSS") AS ts
             FROM {self._table_name}.metadata_log_entries
             WHERE latest_snapshot_id = {self._end_snapshot_id}
-        """).first()
+        """
+        ).first()
 
         self._end_metadata_cutoff = (
             to_arrow_tz(meta_row.ts, self._spark_tz)
