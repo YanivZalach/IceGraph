@@ -45,7 +45,7 @@ export default function HomePage() {
               type="submit"
               className="bg-[#2E86C1] hover:bg-[#2471a3] active:bg-[#1a5c8a] text-white font-bold py-2.5 rounded-lg transition text-sm tracking-wide mt-1"
             >
-              Generate Graph
+              Continue
             </button>
           </form>
         </div>

@@ -128,7 +128,7 @@ export default function SnapshotSelectionPage() {
                 </h2>
 
                 <p className="text-slate-400 text-sm mb-6">
-                    Choose a range of snapshots for <strong>{tableName}</strong>
+                    Choose a range of snapshots to view <strong>{tableName}</strong>
                 </p>
 
                 <form onSubmit={handleSubmit} className="flex flex-col gap-5">
@@ -173,7 +173,7 @@ export default function SnapshotSelectionPage() {
                         type="submit"
                         className="bg-[#2E86C1] hover:bg-[#2471a3] text-white font-bold py-2.5 rounded-lg"
                     >
-                        Continue to Graph
+                        Generate Graph
                     </button>
 
                 </form>
