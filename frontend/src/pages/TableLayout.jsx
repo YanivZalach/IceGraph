@@ -25,9 +25,10 @@ export default function TableLayout() {
   }, [setDetailsOpen, setSelectionDetail])
 
   const tableName = searchParams.get('table') || ''
-  const date = searchParams.get('date') || ''
+  const startSnapshot = searchParams.get('start_snapshot_id') || ''
+  const endSnapshot = searchParams.get('end_snapshot_id') || ''
   const isDup = searchParams.get('dup') === '1'
-  const cacheKey = `graphData_${tableName}_${date}`
+  const cacheKey = `graphData_${tableName}_${startSnapshot}_${endSnapshot}`
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -77,7 +78,7 @@ export default function TableLayout() {
       }
     }
 
-    const body = new URLSearchParams({ table_name: tableName, date })
+    const body = new URLSearchParams({ table_name: tableName, start_snapshot_id: startSnapshot, end_snapshot_id: endSnapshot })
     const controller = new AbortController()
 
     fetch('/api/v1/graph-data', {
@@ -107,7 +108,7 @@ export default function TableLayout() {
       })
 
     return () => controller.abort()
-  }, [tableName, date])
+  }, [tableName, startSnapshot, endSnapshot])
 
   if (loading) {
     return (

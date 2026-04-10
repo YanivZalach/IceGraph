@@ -4,20 +4,12 @@ import logo from '../assets/icegraph.png'
 
 export default function HomePage() {
   const [tableName, setTableName] = useState('')
-  const [date, setDate] = useState(() => {
-    const now = new Date()
-    const offsetDate = new Date(now.getTime() - 2 * 60 * 60 * 1000)
-    return new Date(offsetDate.getTime() - offsetDate.getTimezoneOffset() * 60000)
-      .toISOString()
-      .slice(0, 16)
-  })
   const navigate = useNavigate()
 
   function handleSubmit(e) {
     e.preventDefault()
     const params = new URLSearchParams({ table: tableName })
-    if (date) params.set('date', date)
-    navigate(`/table/graph?${params.toString()}`)
+    navigate(`/snapshots-selection?${params.toString()}`)
   }
 
   return (
@@ -46,33 +38,6 @@ export default function HomePage() {
                 onChange={e => setTableName(e.target.value)}
                 placeholder="default.my_table"
                 className="w-full border border-[#2d3748] bg-[#2d3748] rounded-lg px-4 py-2.5 text-sm text-[#e2e8f0] placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#2E86C1]/40 focus:border-[#2E86C1] transition"
-              />
-            </div>
-
-            <div>
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">
-                  As-Of Date
-                </label>
-                <div className="group relative ml-1">
-                  <div className="w-4 h-4 rounded-full bg-[#2E86C1] text-white text-[10px] font-black flex items-center justify-center cursor-help transition hover:bg-[#2471a3] select-none">
-                    i
-                  </div>
-                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 bg-[#1a202c] text-slate-300 text-[0.7rem] p-3 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 leading-relaxed">
-                    <strong className="text-[#2E86C1] block mb-1 uppercase tracking-wide text-[0.65rem]">
-                      Time Filter
-                    </strong>
-                    Filters by the timestamp of <strong className="text-white">snapshot files</strong>.
-                    IceGraph prunes metadata, manifests, and data files added after the selected time.
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-[#1a202c]" />
-                  </div>
-                </div>
-              </div>
-              <input
-                type="datetime-local"
-                value={date}
-                onChange={e => setDate(e.target.value)}
-                className="w-full border border-[#2d3748] bg-[#2d3748] rounded-lg px-4 py-2.5 text-sm text-[#e2e8f0] focus:outline-none focus:ring-2 focus:ring-[#2E86C1]/40 focus:border-[#2E86C1] transition"
               />
             </div>
 
