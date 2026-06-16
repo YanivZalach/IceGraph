@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { UI_DOCS_BODY_CLASS, UI_DOCS_NAV_TITLE_CLASS } from '../uiTypography'
+import { UI_BODY_MUTED_CLASS, UI_DOCS_BODY_CLASS, UI_DOCS_NAV_TITLE_CLASS, UI_FILTER_INPUT_CLASS } from '../uiTypography'
 
 function Key({ k }) {
   return (
@@ -366,21 +366,40 @@ const SECTIONS = [
 
 export default function DocsPage() {
   const [active, setActive] = useState(SECTIONS[0].id)
+  const [search, setSearch] = useState('')
   const contentRef = useRef(null)
 
   useEffect(() => {
     if (contentRef.current) contentRef.current.scrollTop = 0
   }, [active])
 
-  const activeSection = SECTIONS.find(s => s.id === active)
+  useEffect(() => {
+  if (
+    filteredSections.length > 0 &&
+    !filteredSections.some(s => s.id === active)
+  ) {
+    setActive(filteredSections[0].id)
+  }
+}, [search])
+
+  const filteredSections = SECTIONS.filter(section => section.title.toLowerCase().includes(search.toLowerCase()))
+
+const activeSection = filteredSections.find(s => s.id === active) ?? filteredSections[0]
 
   return (
     <div className="flex flex-1 overflow-hidden">
       <aside className="w-52 shrink-0 bg-[#151b26] border-r border-edge overflow-y-auto hidden sm:block">
         <div className="px-4 py-5">
           <p className={UI_DOCS_NAV_TITLE_CLASS}>Documentation</p>
+          <input
+            type="text"
+            placeholder="Search docs..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className={`${UI_FILTER_INPUT_CLASS} mb-3`}
+          />
           <nav className="flex flex-col gap-0.5">
-            {SECTIONS.map(s => (
+            {filteredSections.map(s => (
               <button
                 key={s.id}
                 onClick={() => setActive(s.id)}
@@ -403,17 +422,23 @@ export default function DocsPage() {
             onChange={e => setActive(e.target.value)}
             className="w-full bg-surface-hover text-white text-sm border border-edge rounded-md px-3 py-2"
           >
-            {SECTIONS.map(s => (
+            {filteredSections.map(s => (
               <option key={s.id} value={s.id}>{s.title}</option>
             ))}
           </select>
         </div>
 
         <div className="max-w-3xl mx-auto px-6 py-8">
-          <h1 className="text-2xl font-bold text-white mb-6">{activeSection.title}</h1>
-          <div className={UI_DOCS_BODY_CLASS}>
-            {activeSection.body}
-          </div>
+          {activeSection ? (
+            <>
+              <h1 className="text-2xl font-bold text-white mb-6">{activeSection.title}</h1>
+              <div className={UI_DOCS_BODY_CLASS}>
+                {activeSection.body}
+              </div>
+            </>
+          ) : (
+            <p className={UI_BODY_MUTED_CLASS}>No matching documentation sections found.</p>
+          )}
         </div>
       </div>
     </div>
