@@ -25,6 +25,27 @@ function ShortcutRow({ keys, desc }) {
   )
 }
 
+function highlightMatch(text, query) {
+  if (!query) return text
+
+  const regex = new RegExp(`(${query})`, 'gi')
+
+  return text.split(regex).map((part, index) => {
+    if (part.toLowerCase() === query.toLowerCase()) {
+      return (
+        <mark
+          key={index}
+          className="bg-yellow-400 text-black px-1 rounded"
+        >
+          {part}
+        </mark>
+      )
+    }
+
+    return part
+  })
+}
+
 const SECTIONS = [
   {
     id: 'overview',
@@ -364,33 +385,150 @@ const SECTIONS = [
   },
 ]
 
+function extractText(node) {
+  if (typeof node === 'string') return node
+
+  if (Array.isArray(node)) {
+    return node.map(extractText).join(' ')
+  }
+
+  if (node?.props?.children) {
+    return extractText(node.props.children)
+  }
+
+  return ''
+}
+
 export default function DocsPage() {
   const [active, setActive] = useState(SECTIONS[0].id)
   const [search, setSearch] = useState('')
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [query, setQuery] = useState('')
   const contentRef = useRef(null)
+  const searchResults = query
+    ? SECTIONS
+        .map(section => {
+          const content = extractText(section.body)
+
+          const fullText =
+            section.title + ' ' + content
+
+          const matchIndex = fullText
+            .toLowerCase()
+            .indexOf(query.toLowerCase())
+
+          if (matchIndex === -1) {
+            return null
+          }
+
+          const snippetStart = Math.max(0, matchIndex - 40)
+
+          const snippet = fullText.substring(
+            snippetStart,
+            snippetStart + 140
+          )
+
+          return {
+            section,
+            snippet,
+            matchIndex
+          }
+        })
+        .filter(Boolean)
+    : []
 
   useEffect(() => {
     if (contentRef.current) contentRef.current.scrollTop = 0
   }, [active])
 
   useEffect(() => {
-  if (
-    filteredSections.length > 0 &&
-    !filteredSections.some(s => s.id === active)
-  ) {
-    setActive(filteredSections[0].id)
-  }
-}, [search])
+    if (
+      filteredSections.length > 0 &&
+      !filteredSections.some(s => s.id === active)
+    ) {
+      setActive(filteredSections[0].id)
+    }
+  }, [search])
 
   const filteredSections = SECTIONS.filter(section => section.title.toLowerCase().includes(search.toLowerCase()))
 
-const activeSection = filteredSections.find(s => s.id === active) ?? filteredSections[0]
+  const activeSection = filteredSections.find(s => s.id === active) ?? filteredSections[0]
 
   return (
     <div className="flex flex-1 overflow-hidden">
+      {searchOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex justify-center pt-24"
+          onClick={() => {
+            setSearchOpen(false)
+            setQuery('')
+          }}
+        >
+          <div
+            className="w-full max-w-2xl bg-[#151b26] border border-[#2d3748] rounded-lg overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+
+            <input
+              autoFocus
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Escape') {
+                  setSearchOpen(false)
+                  setQuery('')
+                }
+              }}
+              placeholder="Search documentation..."
+              className="w-full px-4 py-3 bg-[#252d3d] text-white outline-none"
+            />
+
+            <div className="max-h-[400px] overflow-y-auto">
+              {searchResults.map(result => (
+                <button
+                  key={result.section.id}
+                  onClick={() => {
+                    setActive(result.section.id)
+                    setSearchOpen(false)
+                    setQuery('')
+                  }}
+                  className="w-full text-left p-4 border-b border-[#2d3748] hover:bg-[#252d3d]"
+                >
+                  <div className="text-white font-medium">
+                    {result.section.title}
+                  </div>
+
+                  <div className="text-sky-400 text-xs mt-1">
+                    Found in: {result.section.title}
+                  </div>
+
+                  <div className="text-slate-400 text-sm mt-2">
+                    {highlightMatch(result.snippet, query)}
+                  </div>
+                </button>
+              ))}
+
+              {query && searchResults.length === 0 && (
+                <div className="p-4 text-slate-400">
+                  No results found.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       <aside className="w-52 shrink-0 bg-[#151b26] border-r border-edge overflow-y-auto hidden sm:block">
         <div className="px-4 py-5">
-          <p className={UI_DOCS_NAV_TITLE_CLASS}>Documentation</p>
+          <div className="flex items-center justify-between mb-3">
+            <p className={UI_DOCS_NAV_TITLE_CLASS}>Documentation</p>
+
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="text-slate-400 hover:text-white text-sm"
+            >
+              Search
+            </button>
+          </div>
           <input
             type="text"
             placeholder="Search docs..."
