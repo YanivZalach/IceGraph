@@ -450,6 +450,25 @@ export default function DocsPage() {
     }
   }, [search])
 
+  useEffect(() => {
+    const handleKeyDown = e => {
+      const isCmdOrCtrl = e.metaKey || e.ctrlKey
+
+      if (isCmdOrCtrl && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setSearchOpen(true)
+      }
+
+      if (e.key === 'Escape') {
+        setSearchOpen(false)
+        setQuery('')
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
   const filteredSections = SECTIONS.filter(section => section.title.toLowerCase().includes(search.toLowerCase()))
 
   const activeSection = filteredSections.find(s => s.id === active) ?? filteredSections[0]
@@ -458,17 +477,16 @@ export default function DocsPage() {
     <div className="flex flex-1 overflow-hidden">
       {searchOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-50 flex justify-center pt-24"
+          className="fixed inset-0 bg-black/50 z-50 flex justify-center items-start pt-20 px-4"
           onClick={() => {
             setSearchOpen(false)
             setQuery('')
           }}
         >
           <div
-            className="w-full max-w-2xl bg-[#151b26] border border-[#2d3748] rounded-lg overflow-hidden"
+            className="w-full max-w-4xl h-[80vh] bg-[#151b26] border border-[#2d3748] rounded-lg shadow-xl flex flex-col"
             onClick={e => e.stopPropagation()}
           >
-
             <input
               autoFocus
               value={query}
@@ -480,53 +498,58 @@ export default function DocsPage() {
                 }
               }}
               placeholder="Search documentation..."
-              className="w-full px-4 py-3 bg-[#252d3d] text-white outline-none"
+              className="w-full px-4 py-3 bg-[#252d3d] text-white outline-none rounded-t-lg shrink-0"
             />
 
-            <div className="max-h-[400px] overflow-y-auto">
-              {searchResults.map(result => (
-                <button
-                  key={result.section.id}
-                  onClick={() => {
-                    setActive(result.section.id)
-                    setSearchOpen(false)
-                    setQuery('')
-                  }}
-                  className="w-full text-left p-4 border-b border-[#2d3748] hover:bg-[#252d3d]"
-                >
-                  <div className="text-white font-medium">
-                    {result.section.title}
-                  </div>
+            {query && (
+              <div className="border-t border-[#2d3748] flex-1 min-h-0">
+                {searchResults.length > 0 ? (
+                  <div className="h-full overflow-y-auto">
+                    {searchResults.map(result => (
+                      <button
+                        key={result.section.id}
+                        onClick={() => {
+                          setActive(result.section.id)
+                          setSearchOpen(false)
+                          setQuery('')
+                        }}
+                        className="w-full text-left p-4 border-b border-[#2d3748] hover:bg-[#252d3d]"
+                      >
+                        <div className="text-white font-semibold text-lg">
+                          {highlightMatch(result.section.title, query)}
+                        </div>
 
-                  <div className="text-sky-400 text-xs mt-1">
-                    Found in: {result.section.title}
-                  </div>
+                        <div className="text-sky-400 text-xs mt-1">
+                          Found in: {result.section.title}
+                        </div>
 
-                  <div className="text-slate-400 text-sm mt-2">
-                    {highlightMatch(result.snippet, query)}
+                        <div className="text-slate-400 text-sm mt-2 leading-relaxed">
+                          {highlightMatch(result.snippet, query)}
+                        </div>
+                      </button>
+                    ))}
                   </div>
-                </button>
-              ))}
-
-              {query && searchResults.length === 0 && (
-                <div className="p-4 text-slate-400">
-                  No results found.
-                </div>
-              )}
-            </div>
+                ) : (
+                  <div className="p-4 text-slate-400">No results found.</div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
       <aside className="w-52 shrink-0 bg-[#151b26] border-r border-edge overflow-y-auto hidden sm:block">
         <div className="px-4 py-5">
-          <div className="flex items-center justify-between mb-3">
+          <div className="mb-4">
             <p className={UI_DOCS_NAV_TITLE_CLASS}>Documentation</p>
 
             <button
               onClick={() => setSearchOpen(true)}
-              className="text-slate-400 hover:text-white text-sm"
+              className="w-full flex items-center justify-between rounded-md border border-[#2d3748] bg-[#1b2330] px-3 py-2 text-sm text-slate-400 hover:text-white hover:bg-[#252d3d] transition"
             >
-              Search
+              <span>Search docs...</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded border border-[#3a4658] text-slate-500">
+                Ctrl K
+              </span>
             </button>
           </div>
           <input
