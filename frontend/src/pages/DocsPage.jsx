@@ -537,6 +537,7 @@ export default function DocsPage() {
           </div>
         </div>
       )}
+
       <aside className="w-52 shrink-0 bg-[#151b26] border-r border-edge overflow-y-auto hidden sm:block">
         <div className="px-4 py-5">
           <div className="mb-4">
@@ -552,6 +553,7 @@ export default function DocsPage() {
               </span>
             </button>
           </div>
+
           <input
             type="text"
             placeholder="Search docs..."
