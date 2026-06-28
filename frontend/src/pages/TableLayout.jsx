@@ -6,6 +6,7 @@ import { IS_MOCK, MOCK_HOME_ROUTE } from '../appConstants'
 import { UI_BODY_MUTED_CLASS, UI_DIALOG_TITLE_CLASS, UI_MONO_MUTED_CLASS } from '../uiTypography'
 
 import MetadataStructured from '../components/MetadataStructured'
+import SchemaFieldList from '../components/SchemaFieldList'
 import { useTableSpecs } from '../context/TableSpecsContext'
 import {
   BRANCH_CONNECTION_COLOR,
@@ -78,6 +79,7 @@ export default function TableLayout() {
   const [graphData, setGraphData] = useState(null)
   const [jobId, setJobId] = useState(null)
   const [jobToken, setJobToken] = useState(null)
+  const [showDiff, setShowDiff] = useState(false)
 
   const pollIntervalRef = useRef(null)
 
@@ -88,6 +90,10 @@ export default function TableLayout() {
     }
   }
 
+
+  useEffect(() => {
+    setShowDiff(false)
+  }, [selectionDetail])
 
   useEffect(() => {
     if (selectionDetail && detailPanelRef.current) {
@@ -304,7 +310,7 @@ export default function TableLayout() {
       label = `Order ID: ${id}`
     }
 
-    if (data) setSelectionDetail({ label, data })
+    if (data) setSelectionDetail({ label, data, type, id })
   }
 
   return (
@@ -340,22 +346,120 @@ export default function TableLayout() {
                 selectedId={selectionDetail?.label}
               />
 
-              {selectionDetail && (
-                <div ref={detailPanelRef} className="rounded-lg border-2 border-accent">
-                  <div className="flex items-center justify-between px-4 py-2 bg-accent">
-                    <span className="text-sm font-bold text-white">{selectionDetail.label}</span>
-                    <button
-                      className="text-white/70 hover:text-white text-xl leading-none cursor-pointer transition"
-                      onClick={() => setSelectionDetail(null)}
-                    >
-                      ×
-                    </button>
+              {selectionDetail && (() => {
+                const isSchema = selectionDetail.type === 'schema'
+                const schemas = metadata?.schemas ?? []
+                const schemaIdx = isSchema ? schemas.findIndex(s => s['schema-id'] === selectionDetail.id) : -1
+                const prevSchema = schemaIdx > 0 ? schemas[schemaIdx - 1] : null
+                const hasPrev = prevSchema !== null
+
+                const schemaDiff = isSchema && showDiff && hasPrev ? (() => {
+                  const prevById = Object.fromEntries((prevSchema.fields ?? []).map(f => [f['field-id'] ?? f.id, f]))
+                  const currById = Object.fromEntries((selectionDetail.data.fields ?? []).map(f => [f['field-id'] ?? f.id, f]))
+                  const allIds = Array.from(new Set([...Object.keys(prevById), ...Object.keys(currById)]))
+                  return allIds.map(fid => {
+                    const prev = prevById[fid]
+                    const curr = currById[fid]
+                    if (!prev) return { status: 'added', field: curr }
+                    if (!curr) return { status: 'removed', field: prev }
+                    const typeChanged = JSON.stringify(prev.type) !== JSON.stringify(curr.type)
+                    const nameChanged = prev.name !== curr.name
+                    if (typeChanged || nameChanged) return { status: 'changed', prev, curr }
+                    return { status: 'unchanged', field: curr }
+                  })
+                })() : null
+
+                return (
+                  <div ref={detailPanelRef} className="rounded-lg border-2 border-accent">
+                    <div className="flex items-center justify-between px-4 py-2 bg-accent">
+                      <span className="text-sm font-bold text-white">{selectionDetail.label}</span>
+                      <div className="flex items-center gap-2">
+                        {isSchema && (
+                          <div className="flex items-center gap-0">
+                            <button
+                              className={`text-xs font-bold px-2 py-0.5 rounded-l-full border border-white/30 transition ${!showDiff ? 'bg-white text-accent' : 'bg-transparent text-white/70 hover:text-white'}`}
+                              onClick={() => setShowDiff(false)}
+                            >
+                              Full
+                            </button>
+                            <button
+                              disabled={!hasPrev}
+                              title={!hasPrev ? 'No previous schema' : 'Show diff to previous schema'}
+                              className={`text-xs font-bold px-2 py-0.5 rounded-r-full border border-white/30 transition ${showDiff ? 'bg-white text-accent' : !hasPrev ? 'bg-transparent text-white/30 cursor-not-allowed' : 'bg-transparent text-white/70 hover:text-white cursor-pointer'}`}
+                              onClick={() => hasPrev && setShowDiff(true)}
+                            >
+                              Diff
+                            </button>
+                          </div>
+                        )}
+                        <button
+                          className="text-white/70 hover:text-white text-xl leading-none cursor-pointer transition"
+                          onClick={() => setSelectionDetail(null)}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                    <div className="px-4 py-3 max-h-[300px] overflow-y-auto">
+                      {isSchema && !showDiff && (
+                        <SchemaFieldList schema={selectionDetail.data} />
+                      )}
+                      {isSchema && showDiff && schemaDiff && (
+                        <div>
+                          <div className="flex items-center gap-3 pb-1 mb-1 border-b border-edge">
+                            <span className="text-xs font-bold text-slate-500 uppercase w-6 text-right shrink-0">#</span>
+                            <span className="text-xs font-bold text-slate-500 uppercase min-w-30">Name</span>
+                            <span className="text-xs font-bold text-slate-500 uppercase">Type</span>
+                          </div>
+                          {schemaDiff.map((entry, i) => {
+                            if (entry.status === 'unchanged') return (
+                              <div key={i} className="py-2 border-b border-edge last:border-0 flex items-center gap-3 opacity-50">
+                                <span className="text-base font-mono text-slate-500 w-6 text-right shrink-0 tabular-nums">{entry.field['field-id'] ?? entry.field.id ?? '—'}</span>
+                                <span className="text-sm font-semibold text-ink min-w-30">{entry.field.name}</span>
+                                <span className="text-xs font-mono text-slate-400">{typeof entry.field.type === 'string' ? entry.field.type : JSON.stringify(entry.field.type)}</span>
+                              </div>
+                            )
+                            if (entry.status === 'added') return (
+                              <div key={i} className="py-2 border-b border-edge last:border-0 flex items-center gap-3 bg-green-900/20">
+                                <span className="text-xs font-bold text-green-400 w-6 text-right shrink-0">+</span>
+                                <span className="text-sm font-semibold text-green-300 min-w-30">{entry.field.name}</span>
+                                <span className="text-xs font-mono text-green-400">{typeof entry.field.type === 'string' ? entry.field.type : JSON.stringify(entry.field.type)}</span>
+                              </div>
+                            )
+                            if (entry.status === 'removed') return (
+                              <div key={i} className="py-2 border-b border-edge last:border-0 flex items-center gap-3 bg-red-900/20">
+                                <span className="text-xs font-bold text-red-400 w-6 text-right shrink-0">−</span>
+                                <span className="text-sm font-semibold text-red-300 line-through min-w-30">{entry.field.name}</span>
+                                <span className="text-xs font-mono text-red-400">{typeof entry.field.type === 'string' ? entry.field.type : JSON.stringify(entry.field.type)}</span>
+                              </div>
+                            )
+                            return (
+                              <div key={i} className="py-2 border-b border-edge last:border-0 flex flex-col gap-1 bg-amber-900/20">
+                                <div className="flex items-center gap-3">
+                                  <span className="text-xs font-bold text-amber-400 w-6 text-right shrink-0">~</span>
+                                  <span className="text-sm font-semibold text-amber-300 min-w-30">{entry.curr.name}{entry.prev.name !== entry.curr.name ? <span className="text-amber-600 line-through ml-2">{entry.prev.name}</span> : null}</span>
+                                </div>
+                                {JSON.stringify(entry.prev.type) !== JSON.stringify(entry.curr.type) && (
+                                  <div className="ml-9 flex items-center gap-2 text-xs font-mono">
+                                    <span className="text-red-400 line-through">{typeof entry.prev.type === 'string' ? entry.prev.type : JSON.stringify(entry.prev.type)}</span>
+                                    <span className="text-slate-500">→</span>
+                                    <span className="text-green-400">{typeof entry.curr.type === 'string' ? entry.curr.type : JSON.stringify(entry.curr.type)}</span>
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                      {!isSchema && (
+                        <pre className="text-xs font-mono text-slate-300 whitespace-pre overflow-x-auto">
+                          {JSON.stringify(selectionDetail.data, null, 2)}
+                        </pre>
+                      )}
+                    </div>
                   </div>
-                  <pre style={{ margin: 0, padding: '1rem', background: '#0d1117', color: '#e2e8f0', fontSize: '0.8rem', fontFamily: 'monospace', whiteSpace: 'pre', overflowX: 'auto', maxHeight: '300px', display: 'block' }}>
-                    {JSON.stringify(selectionDetail.data, null, 2)}
-                  </pre>
-                </div>
-              )}
+                )
+              })()}
 
             </div>
           </div>

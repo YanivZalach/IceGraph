@@ -3,6 +3,7 @@ import { useOutletContext } from 'react-router-dom'
 import JSONbig from 'json-bigint'
 import CopyableValue from '../components/CopyableValue'
 import { DEFAULT_COLLAPSE_LINES, PANEL_COLLAPSE_TOGGLE_CLASS } from '../components/PanelContent'
+import SchemaFieldList from '../components/SchemaFieldList'
 import { FileType } from '../graphConstants'
 import {
   UI_BODY_MUTED_CLASS,
@@ -383,6 +384,7 @@ export default function MetadataPage() {
             ) : (
               <p className={UI_BODY_MUTED_ITALIC_CLASS}>No fields defined.</p>
             )}
+            <SchemaFieldList schema={currentSchema} />
           </Section>
         )}
 
