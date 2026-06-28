@@ -538,10 +538,12 @@ export default function GraphPage() {
   }, [])
 
   const sticky = stickyNode ? {
-    rows: Object.entries(stickyNode.details).map(([label, value]) => ({
-      label,
-      value,
-    })),
+    rows: Object.entries(stickyNode.details)
+      .filter(([label]) => label !== 'type')
+      .map(([label, value]) => ({
+        label,
+        value,
+      })),
   } : null
 
   return (
