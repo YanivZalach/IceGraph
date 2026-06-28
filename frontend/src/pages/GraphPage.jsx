@@ -25,10 +25,9 @@ import {
   PANEL_WIDTH_RELAXED_REM,
   remToPx,
 } from '../layoutConstants'
-import { formatLocaleDateTime, parseUtcDate } from '../utils/dateUtils'
 import { bindMouseScrollHandoff } from '../utils/smoothScroll'
 
-const POPUP_KEYS = 'abdefgmnopqstuvwxyz'
+const POPUP_KEYS = 'abdegmnopqstuvwxyz'
 
 const LINK_CURVATURE = 0.1
 const DELETED_CONNECTION_LABLE = "deleted"
@@ -538,10 +537,12 @@ export default function GraphPage() {
   }, [])
 
   const sticky = stickyNode ? {
-    rows: Object.entries(stickyNode.details).map(([label, value]) => ({
-      label,
-      value,
-    })),
+    rows: Object.entries(stickyNode.details)
+      .filter(([label]) => label.toLowerCase() !== 'type')
+      .map(([label, value]) => ({
+        label,
+        value,
+      })),
   } : null
 
   return (

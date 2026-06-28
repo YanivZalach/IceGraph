@@ -284,7 +284,7 @@ function SnapSummary({ summary }) {
 }
 
 function DiffList({ diff }) {
-  const rows = diff.filter(({ key }) => key !== 'type')
+  const rows = diff.filter(({ key }) => key.toLowerCase() !== 'type')
   return rows.length > 0
     ? (
       <div className="flex flex-col gap-4">
