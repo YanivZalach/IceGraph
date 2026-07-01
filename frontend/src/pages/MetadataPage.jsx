@@ -249,14 +249,16 @@ export default function MetadataPage() {
             {defaultSpec.fields?.length > 0 ? (
               <div>
                 <div className="flex items-center gap-x-4 pb-1 mb-1 border-b border-edge">
-                  <span className="text-xs font-bold text-slate-500 uppercase w-10 text-right shrink-0">#</span>
+                  <span className="text-xs font-bold text-slate-500 uppercase w-10 text-right shrink-0">ID</span>
                   <span className="text-xs font-bold text-slate-500 uppercase min-w-30 shrink-0">Name</span>
+                  <span className="text-xs font-bold text-slate-500 uppercase min-w-20 shrink-0">Source ID</span>
                   <span className="text-xs font-bold text-slate-500 uppercase shrink-0">Transform</span>
                 </div>
                 {defaultSpec.fields.map((f, i) => (
                   <div key={i} className="flex items-center gap-x-4 py-2 border-b border-edge last:border-0">
                     <span className="text-base font-mono text-slate-500 w-10 text-right shrink-0 tabular-nums">{f['field-id'] ?? i}</span>
                     <span className="text-sm font-semibold text-ink min-w-30 shrink-0">{f.name}</span>
+                    <span className="text-base font-mono text-slate-500 min-w-20 shrink-0 tabular-nums">{f['source-id'] ?? '—'}</span>
                     <span className="text-xs font-mono text-accent bg-accent-muted px-2 py-0.5 rounded shrink-0">{f.transform}</span>
                   </div>
                 ))}
