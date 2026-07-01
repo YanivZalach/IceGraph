@@ -112,7 +112,7 @@ function FieldRow({ field }) {
   return (
     <div className="py-4 border-b border-edge last:border-0">
       <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 mb-3">
-        <span className="text-base font-mono text-slate-500 w-10 text-right shrink-0 tabular-nums">
+        <span className="text-base font-mono text-slate-500 w-10 shrink-0 tabular-nums">
           {field['field-id'] ?? field.id ?? '—'}
         </span>
         <span className="text-sm font-bold text-ink-bright min-w-0">{field.name}</span>
@@ -249,7 +249,7 @@ export default function MetadataPage() {
             {defaultSpec.fields?.length > 0 ? (
               <div>
                 <div className="flex items-center gap-x-4 pb-1 mb-1 border-b border-edge">
-                  <span className="text-xs font-bold text-slate-500 uppercase w-10 text-right shrink-0">ID</span>
+                  <span className="text-xs font-bold text-slate-500 uppercase w-10 shrink-0">ID</span>
                   <span className="text-xs font-bold text-slate-500 uppercase min-w-30 shrink-0">Name</span>
                   <span className="text-xs font-bold text-slate-500 uppercase min-w-20 shrink-0">Source ID</span>
                   <span className="text-xs font-bold text-slate-500 uppercase shrink-0">Transform</span>
@@ -324,7 +324,7 @@ export default function MetadataPage() {
             {currentSchema.fields?.length > 0 ? (
               <div>
                 <div className="flex items-center gap-3 pb-1 mb-1 border-b border-edge">
-                  <span className="text-xs font-bold text-slate-500 uppercase w-6 text-right shrink-0">#</span>
+                  <span className="text-xs font-bold text-slate-500 uppercase w-6 shrink-0">ID</span>
                   <span className="text-xs font-bold text-slate-500 uppercase min-w-30">Name</span>
                   <span className="text-xs font-bold text-slate-500 uppercase">Type</span>
                 </div>
