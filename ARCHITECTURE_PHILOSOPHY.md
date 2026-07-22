@@ -17,3 +17,7 @@ Introduce no service or infrastructure component unless the feature is impossibl
 ## 4. The process is disposable
 
 In-memory job state is a cache of a computation, not a record of one - process termination loses no data, since the source of truth is Iceberg's metadata, untouched. Recovery requires zero operator action: the next client request reconstructs the same result.
+
+## 5. UTC internally, local at the edge
+
+Spark is assumed to run in its own local timezone; the backend converts every timestamp to UTC before it leaves. The frontend converts to the user's local timezone at render time - timezone handling stays a single, isolated concern on the client.

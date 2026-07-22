@@ -37,7 +37,7 @@ function formatTs(tsStr) {
   try {
     const d = new Date(tsStr)
     const ms = String(d.getMilliseconds()).padStart(3, '0')
-    const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + `.${ms}`
+    const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) + `.${ms}`
     return {
       date: d.toLocaleDateString(),
       time,
