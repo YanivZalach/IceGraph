@@ -1,6 +1,6 @@
 # IceGraph Architecture Philosophy
 
-Four principles guiding IceGraph's design. Check new features, dependencies, and architectural changes against them.
+Principles guiding IceGraph's design.
 
 ## 1. Zero footprint on Spark/Iceberg
 
