@@ -65,7 +65,13 @@ Then run with the same command:
 docker run -e SPARK_REMOTE=sc://<spark-connect-ip>:15002 -p 5000:5000 icegraph
 ```
 
+### Deploying Multiple Pods
+
+Graph jobs are tracked in each pod's memory, so if you run more than one replica, your load balancer/ingress must route all requests from a given client to the same pod (session affinity / sticky sessions) for the duration of a job, otherwise the polling requests can land on a pod that never received it.
+
 ## Start Using Source Code (Contributor to IceGraph)
+
+Before contributing, read [ARCHITECTURE_PHILOSOPHY.md](ARCHITECTURE_PHILOSOPHY.md) — the design pillars IceGraph is built on.
 
 ### Prerequisites
 

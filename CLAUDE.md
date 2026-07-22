@@ -4,6 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Code Change Policy
 
+- Read [ARCHITECTURE_PHILOSOPHY.md](ARCHITECTURE_PHILOSOPHY.md) before proposing new dependencies, services, or persistent state — weigh every such change against its pillars.
 - Keep all changes as minimal as possible unless explicitly asked for more.
 - Never change behavior that was not explicitly requested.
 - Apply DRY principles where possible.
