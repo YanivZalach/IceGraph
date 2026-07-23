@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, cloneElement, Fragment } from 'react'
 import { UI_BODY_MUTED_CLASS, UI_DOCS_BODY_CLASS, UI_DOCS_NAV_TITLE_CLASS, UI_FILTER_INPUT_CLASS } from '../uiTypography'
 
 function Key({ k }) {
@@ -25,10 +25,30 @@ function ShortcutRow({ keys, desc }) {
   )
 }
 
+function escapeRegExp(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function findAllIndices(text, query) {
+  const indices = []
+  const lowerText = text.toLowerCase()
+  const lowerQuery = query.toLowerCase()
+
+  let from = 0
+  while (true) {
+    const index = lowerText.indexOf(lowerQuery, from)
+    if (index === -1) break
+    indices.push(index)
+    from = index + lowerQuery.length
+  }
+
+  return indices
+}
+
 function highlightMatch(text, query) {
   if (!query) return text
 
-  const regex = new RegExp(`(${query})`, 'gi')
+  const regex = new RegExp(`(${escapeRegExp(query)})`, 'gi')
 
   return text.split(regex).map((part, index) => {
     if (part.toLowerCase() === query.toLowerCase()) {
@@ -44,6 +64,60 @@ function highlightMatch(text, query) {
 
     return part
   })
+}
+
+// Walks a SECTIONS `body` tree in the same order as extractText, wrapping every
+// occurrence of `query` in a <mark>. The occurrence at `matchState.target` (an index
+// into that same order) gets `activeMarkRef` attached so it can be scrolled into view.
+function highlightTreeMatches(node, query, matchState, activeMarkRef) {
+  if (node == null || typeof node === 'boolean') return node
+
+  if (typeof node === 'string') {
+    if (!node.toLowerCase().includes(query.toLowerCase())) return node
+
+    const regex = new RegExp(`(${escapeRegExp(query)})`, 'gi')
+
+    return node.split(regex).map(part => {
+      if (part.toLowerCase() !== query.toLowerCase()) return part
+
+      const isActive = matchState.count === matchState.target
+      matchState.count += 1
+
+      return (
+        <mark
+          key={`match-${matchState.key++}`}
+          ref={isActive ? activeMarkRef : undefined}
+          className={
+            isActive
+              ? 'bg-accent text-white px-1 rounded ring-2 ring-white'
+              : 'bg-yellow-400 text-black px-1 rounded'
+          }
+        >
+          {part}
+        </mark>
+      )
+    })
+  }
+
+  if (Array.isArray(node)) {
+    return node.map((child, i) => (
+      <Fragment key={i}>{highlightTreeMatches(child, query, matchState, activeMarkRef)}</Fragment>
+    ))
+  }
+
+  if (node.type === ShortcutRow) {
+    return cloneElement(node, { desc: highlightTreeMatches(node.props.desc, query, matchState, activeMarkRef) })
+  }
+
+  if (node.type === Key) {
+    return cloneElement(node, { k: highlightTreeMatches(node.props.k, query, matchState, activeMarkRef) })
+  }
+
+  if (node.props?.children) {
+    return cloneElement(node, { children: highlightTreeMatches(node.props.children, query, matchState, activeMarkRef) })
+  }
+
+  return node
 }
 
 const SECTIONS = [
@@ -327,6 +401,12 @@ const SECTIONS = [
         </p>
 
         <div className="space-y-1">
+          <h3 className="text-white font-semibold mb-2">Docs Page</h3>
+          <ShortcutRow keys={['k']} desc="Open the documentation search overlay" />
+          <ShortcutRow keys={['Esc']} desc="Close the search overlay" />
+        </div>
+
+        <div className="space-y-1">
           <h3 className="text-white font-semibold mb-2">Graph View</h3>
           <ShortcutRow keys={['c']} desc="Center and zoom to fit the entire graph" />
           <ShortcutRow keys={['r']} desc="Reset view to initial state" />
@@ -392,6 +472,14 @@ function extractText(node) {
     return node.map(extractText).join(' ')
   }
 
+  if (node?.type === ShortcutRow) {
+    return node.props.desc
+  }
+
+  if (node?.type === Key) {
+    return node.props.k
+  }
+
   if (node?.props?.children) {
     return extractText(node.props.children)
   }
@@ -404,37 +492,34 @@ export default function DocsPage() {
   const [search, setSearch] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
   const [query, setQuery] = useState('')
+  const [highlight, setHighlight] = useState(null)
   const contentRef = useRef(null)
+  const activeMarkRef = useRef(null)
   const searchResults = query
-    ? SECTIONS
-        .map(section => {
-          const content = extractText(section.body)
+    ? SECTIONS.flatMap(section => {
+        const content = extractText(section.body)
+        const contentMatches = findAllIndices(content, query)
 
-          const fullText =
-            section.title + ' ' + content
+        if (contentMatches.length > 0) {
+          return contentMatches.map((matchIndex, occurrenceIndex) => {
+            const snippetStart = Math.max(0, matchIndex - 40)
+            const snippet = content.substring(snippetStart, snippetStart + 140)
 
-          const matchIndex = fullText
-            .toLowerCase()
-            .indexOf(query.toLowerCase())
+            return {
+              section,
+              snippet,
+              occurrenceIndex,
+              totalInSection: contentMatches.length
+            }
+          })
+        }
 
-          if (matchIndex === -1) {
-            return null
-          }
+        if (section.title.toLowerCase().includes(query.toLowerCase())) {
+          return [{ section, snippet: section.title, occurrenceIndex: null, totalInSection: 0 }]
+        }
 
-          const snippetStart = Math.max(0, matchIndex - 40)
-
-          const snippet = fullText.substring(
-            snippetStart,
-            snippetStart + 140
-          )
-
-          return {
-            section,
-            snippet,
-            matchIndex
-          }
-        })
-        .filter(Boolean)
+        return []
+      })
     : []
 
   useEffect(() => {
@@ -447,21 +532,29 @@ export default function DocsPage() {
       !filteredSections.some(s => s.id === active)
     ) {
       setActive(filteredSections[0].id)
+      setHighlight(null)
     }
   }, [search])
 
   useEffect(() => {
+    if (highlight?.index != null && activeMarkRef.current) {
+      activeMarkRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [highlight, active])
+
+  useEffect(() => {
     const handleKeyDown = e => {
-      const isCmdOrCtrl = e.metaKey || e.ctrlKey
-
-      if (isCmdOrCtrl && e.key.toLowerCase() === 'k') {
-        e.preventDefault()
-        setSearchOpen(true)
-      }
-
       if (e.key === 'Escape') {
         setSearchOpen(false)
         setQuery('')
+        return
+      }
+
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName) || e.target.isContentEditable) return
+
+      if (e.key === 'k') {
+        e.preventDefault()
+        setSearchOpen(true)
       }
     }
 
@@ -484,7 +577,7 @@ export default function DocsPage() {
           }}
         >
           <div
-            className="w-full max-w-4xl h-[80vh] bg-[#151b26] border border-[#2d3748] rounded-lg shadow-xl flex flex-col"
+            className="w-full max-w-4xl h-[80vh] bg-surface-deep border border-edge rounded-lg shadow-xl flex flex-col"
             onClick={e => e.stopPropagation()}
           >
             <input
@@ -498,29 +591,32 @@ export default function DocsPage() {
                 }
               }}
               placeholder="Search documentation..."
-              className="w-full px-4 py-3 bg-[#252d3d] text-white outline-none rounded-t-lg shrink-0"
+              className="w-full px-4 py-3 bg-surface-hover text-white outline-none rounded-t-lg shrink-0"
             />
 
             {query && (
-              <div className="border-t border-[#2d3748] flex-1 min-h-0">
+              <div className="border-t border-edge flex-1 min-h-0">
                 {searchResults.length > 0 ? (
                   <div className="h-full overflow-y-auto">
                     {searchResults.map(result => (
                       <button
-                        key={result.section.id}
+                        key={`${result.section.id}-${result.occurrenceIndex ?? 'title'}`}
                         onClick={() => {
                           setActive(result.section.id)
+                          setSearch('')
+                          setHighlight({ sectionId: result.section.id, term: query, index: result.occurrenceIndex })
                           setSearchOpen(false)
                           setQuery('')
                         }}
-                        className="w-full text-left p-4 border-b border-[#2d3748] hover:bg-[#252d3d]"
+                        className="w-full text-left p-4 border-b border-edge hover:bg-surface-hover"
                       >
                         <div className="text-white font-semibold text-lg">
                           {highlightMatch(result.section.title, query)}
                         </div>
 
-                        <div className="text-sky-400 text-xs mt-1">
+                        <div className="text-accent text-xs mt-1">
                           Found in: {result.section.title}
+                          {result.totalInSection > 1 && ` — match ${result.occurrenceIndex + 1} of ${result.totalInSection}`}
                         </div>
 
                         <div className="text-slate-400 text-sm mt-2 leading-relaxed">
@@ -545,12 +641,10 @@ export default function DocsPage() {
 
             <button
               onClick={() => setSearchOpen(true)}
-              className="w-full flex items-center justify-between rounded-md border border-[#2d3748] bg-[#1b2330] px-3 py-2 text-sm text-slate-400 hover:text-white hover:bg-[#252d3d] transition"
+              className="w-full flex items-center justify-between rounded-md border border-edge bg-surface px-3 py-2 text-sm text-slate-400 hover:text-white hover:bg-surface-hover transition"
             >
               <span>Search docs...</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded border border-[#3a4658] text-slate-500">
-                Ctrl K
-              </span>
+              <Key k="k" />
             </button>
           </div>
 
@@ -565,7 +659,7 @@ export default function DocsPage() {
             {filteredSections.map(s => (
               <button
                 key={s.id}
-                onClick={() => setActive(s.id)}
+                onClick={() => { setActive(s.id); setHighlight(null) }}
                 className={`text-left text-sm px-3 py-2 rounded-md transition ${active === s.id
                   ? 'bg-accent-muted text-white font-medium'
                   : 'text-slate-400 hover:text-white hover:bg-surface-hover'
@@ -582,7 +676,7 @@ export default function DocsPage() {
         <div className="sm:hidden px-4 pt-4 pb-2">
           <select
             value={active}
-            onChange={e => setActive(e.target.value)}
+            onChange={e => { setActive(e.target.value); setHighlight(null) }}
             className="w-full bg-surface-hover text-white text-sm border border-edge rounded-md px-3 py-2"
           >
             {filteredSections.map(s => (
@@ -596,7 +690,14 @@ export default function DocsPage() {
             <>
               <h1 className="text-2xl font-bold text-white mb-6">{activeSection.title}</h1>
               <div className={UI_DOCS_BODY_CLASS}>
-                {activeSection.body}
+                {highlight?.sectionId === activeSection.id
+                  ? highlightTreeMatches(
+                      activeSection.body,
+                      highlight.term,
+                      { count: 0, target: highlight.index, key: 0 },
+                      activeMarkRef
+                    )
+                  : activeSection.body}
               </div>
             </>
           ) : (
