@@ -228,7 +228,7 @@ if __name__ == "__main__":
 
             serve(app, host="0.0.0.0", port=APPLICATION_PORT, threads=wsgi_threads)
         else:
-            app.run(host="0.0.0.0", port=APPLICATION_PORT)
+            app.run(host="0.0.0.0", port=APPLICATION_PORT, debug=True)
 
     finally:
         watchdog = threading.Timer(max_graceful_shutdown_time_seconds, _force_exit)
