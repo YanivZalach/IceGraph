@@ -14,6 +14,7 @@ dependencies = [
     "pyspark[connect]==3.5.4",
     "python-dotenv==1.2.1",
     "setuptools>=75.0.0",
+    "waitress==3.0.2",
 ]
 [tool.black]
 line-length = 150
