@@ -1,8 +1,16 @@
 import os
+import warnings
 
 from pyspark.sql import SparkSession
 
 from icegraph_logger import logger
+
+warnings.filterwarnings(
+    "ignore",
+    message="WARN WindowExpression: No Partition Defined for Window operation.*",
+    category=UserWarning,
+    module="pyspark.sql.connect.expressions",
+)
 
 
 def open_spark_connect_session():
