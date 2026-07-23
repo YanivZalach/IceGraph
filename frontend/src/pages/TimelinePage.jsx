@@ -16,6 +16,7 @@ import {
 } from '../components/PanelContent'
 import {
   UI_BODY_MUTED_ITALIC_CLASS,
+  UI_HELPER_TEXT_CLASS,
   UI_TOOLBAR_BUTTON_DEFAULT,
   UI_ZOOM_INDICATOR_CLASS,
 } from '../uiTypography'
@@ -579,6 +580,15 @@ export default function TimelinePage() {
 
   return (
     <div className="flex-1 flex flex-col bg-canvas overflow-hidden relative">
+      <div className="shrink-0 px-8 pt-5 flex items-center gap-5">
+        {[['A', 'Write'], ['C', 'Branch Write'], ['B', 'Metadata Op'], ['init', 'Initial State']].map(([type, lbl]) => (
+          <div key={type} className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: colorFor(type) }} />
+            <span className={UI_HELPER_TEXT_CLASS}>{lbl}</span>
+          </div>
+        ))}
+      </div>
+
       <div
         ref={viewportRef}
         className={`flex-1 relative overflow-hidden ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
