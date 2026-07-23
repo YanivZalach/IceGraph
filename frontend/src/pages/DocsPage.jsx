@@ -403,6 +403,9 @@ const SECTIONS = [
         <div className="space-y-1">
           <h3 className="text-white font-semibold mb-2">Docs Page</h3>
           <ShortcutRow keys={['k']} desc="Open the documentation search overlay" />
+          <ShortcutRow keys={['Ctrl', 'n']} desc="Select the next search result" />
+          <ShortcutRow keys={['Ctrl', 'p']} desc="Select the previous search result" />
+          <ShortcutRow keys={['Enter']} desc="Open the selected search result" />
           <ShortcutRow keys={['Esc']} desc="Close the search overlay" />
         </div>
 
@@ -492,8 +495,11 @@ export default function DocsPage() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [highlight, setHighlight] = useState(null)
+  const [selectedResultIndex, setSelectedResultIndex] = useState(0)
   const contentRef = useRef(null)
   const activeMarkRef = useRef(null)
+  const resultsContainerRef = useRef(null)
+  const lastMousePos = useRef({ x: -1, y: -1 })
   const searchResults = query
     ? SECTIONS.flatMap(section => {
         const content = extractText(section.body)
@@ -530,6 +536,10 @@ export default function DocsPage() {
       activeMarkRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }
   }, [highlight, active])
+
+  useEffect(() => {
+    resultsContainerRef.current?.children[selectedResultIndex]?.scrollIntoView({ block: 'nearest' })
+  }, [selectedResultIndex])
 
   useEffect(() => {
     const handleKeyDown = e => {
@@ -570,9 +580,35 @@ export default function DocsPage() {
             <input
               autoFocus
               value={query}
-              onChange={e => setQuery(e.target.value)}
+              onChange={e => {
+                setQuery(e.target.value)
+                setSelectedResultIndex(0)
+              }}
               onKeyDown={e => {
                 if (e.key === 'Escape') {
+                  setSearchOpen(false)
+                  setQuery('')
+                  return
+                }
+
+                if (e.ctrlKey && e.key === 'n') {
+                  e.preventDefault()
+                  setSelectedResultIndex(i => Math.min(i + 1, searchResults.length - 1))
+                  return
+                }
+
+                if (e.ctrlKey && e.key === 'p') {
+                  e.preventDefault()
+                  setSelectedResultIndex(i => Math.max(i - 1, 0))
+                  return
+                }
+
+                if (e.key === 'Enter') {
+                  const result = searchResults[selectedResultIndex]
+                  if (!result) return
+                  e.preventDefault()
+                  setActive(result.section.id)
+                  setHighlight({ sectionId: result.section.id, term: query, index: result.occurrenceIndex })
                   setSearchOpen(false)
                   setQuery('')
                 }
@@ -584,17 +620,24 @@ export default function DocsPage() {
             {query && (
               <div className="border-t border-edge flex-1 min-h-0">
                 {searchResults.length > 0 ? (
-                  <div className="h-full overflow-y-auto">
-                    {searchResults.map(result => (
+                  <div ref={resultsContainerRef} className="h-full overflow-y-auto">
+                    {searchResults.map((result, index) => (
                       <button
                         key={`${result.section.id}-${result.occurrenceIndex ?? 'title'}`}
+                        onMouseMove={e => {
+                          if (e.clientX === lastMousePos.current.x && e.clientY === lastMousePos.current.y) return
+                          lastMousePos.current = { x: e.clientX, y: e.clientY }
+                          setSelectedResultIndex(index)
+                        }}
                         onClick={() => {
                           setActive(result.section.id)
                           setHighlight({ sectionId: result.section.id, term: query, index: result.occurrenceIndex })
                           setSearchOpen(false)
                           setQuery('')
                         }}
-                        className="w-full text-left p-4 border-b border-edge hover:bg-surface-hover"
+                        className={`w-full text-left p-4 border-b border-edge ${
+                          index === selectedResultIndex ? 'bg-surface-hover' : ''
+                        }`}
                       >
                         <div className="text-white font-semibold text-lg">
                           {highlightMatch(result.section.title, query)}
