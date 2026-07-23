@@ -37,10 +37,13 @@ function formatTs(tsStr) {
     const d = new Date(tsStr)
     const ms = String(d.getMilliseconds()).padStart(3, '0')
     const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) + `.${ms}`
+    const day = String(d.getDate()).padStart(2, '0')
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const date = `${day}-${month}-${d.getFullYear()}`
     return {
-      date: d.toLocaleDateString(),
+      date,
       time,
-      full: `${d.toLocaleDateString()} ${time}`,
+      full: `${date} ${time}`,
     }
   } catch (e) {
     console.error(e)
