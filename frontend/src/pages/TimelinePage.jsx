@@ -16,7 +16,6 @@ import {
 } from '../components/PanelContent'
 import {
   UI_BODY_MUTED_ITALIC_CLASS,
-  UI_HELPER_TEXT_CLASS,
   UI_TOOLBAR_BUTTON_DEFAULT,
   UI_ZOOM_INDICATOR_CLASS,
 } from '../uiTypography'
@@ -59,12 +58,6 @@ function parseProperties(propertiesStr) {
       return { key: match[1], value: match[2] }
     })
     .filter(Boolean)
-}
-
-function shortFileName(filePath) {
-  if (!filePath) return '—'
-  const base = filePath.split('/').pop() || filePath
-  return base
 }
 
 function formatDuration(tsA, tsB) {
@@ -583,16 +576,6 @@ export default function TimelinePage() {
 
   return (
     <div className="flex-1 flex flex-col bg-canvas overflow-hidden relative">
-
-      <div className="shrink-0 px-8 pt-5 flex items-center gap-5">
-        {[['A', 'Write'], ['C', 'Branch Write'], ['B', 'Metadata Op'], ['init', 'Initial State']].map(([type, lbl]) => (
-          <div key={type} className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: colorFor(type) }} />
-            <span className={UI_HELPER_TEXT_CLASS}>{lbl}</span>
-          </div>
-        ))}
-      </div>
-
       <div
         ref={viewportRef}
         className={`flex-1 relative overflow-hidden ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
@@ -609,7 +592,6 @@ export default function TimelinePage() {
           >
             {events.map((event, i) => {
               const ts = formatTs(event.details.timestamp)
-              const fileName = shortFileName(event.details.file_path)
               return (
                 <div key={i} className="flex items-center">
                   {i > 0 && (
@@ -642,7 +624,7 @@ export default function TimelinePage() {
                         style={{ fontSize: tl.fontXs, color: colorFor(event.type) }}
                         title={event.details.file_path ?? ''}
                       >
-                        {fileName}
+                        {labelFor(event.type)}
                       </div>
                     </div>
                     <div
