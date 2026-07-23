@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, cloneElement, Fragment } from 'react'
-import { UI_BODY_MUTED_CLASS, UI_DOCS_BODY_CLASS, UI_DOCS_NAV_TITLE_CLASS, UI_FILTER_INPUT_CLASS } from '../uiTypography'
+import { UI_DOCS_BODY_CLASS, UI_DOCS_NAV_TITLE_CLASS } from '../uiTypography'
 
 function Key({ k }) {
   return (
@@ -489,7 +489,6 @@ function extractText(node) {
 
 export default function DocsPage() {
   const [active, setActive] = useState(SECTIONS[0].id)
-  const [search, setSearch] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [highlight, setHighlight] = useState(null)
@@ -527,16 +526,6 @@ export default function DocsPage() {
   }, [active])
 
   useEffect(() => {
-    if (
-      filteredSections.length > 0 &&
-      !filteredSections.some(s => s.id === active)
-    ) {
-      setActive(filteredSections[0].id)
-      setHighlight(null)
-    }
-  }, [search])
-
-  useEffect(() => {
     if (highlight?.index != null && activeMarkRef.current) {
       activeMarkRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }
@@ -562,9 +551,7 @@ export default function DocsPage() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
-  const filteredSections = SECTIONS.filter(section => section.title.toLowerCase().includes(search.toLowerCase()))
-
-  const activeSection = filteredSections.find(s => s.id === active) ?? filteredSections[0]
+  const activeSection = SECTIONS.find(s => s.id === active) ?? SECTIONS[0]
 
   return (
     <div className="flex flex-1 overflow-hidden">
@@ -603,7 +590,6 @@ export default function DocsPage() {
                         key={`${result.section.id}-${result.occurrenceIndex ?? 'title'}`}
                         onClick={() => {
                           setActive(result.section.id)
-                          setSearch('')
                           setHighlight({ sectionId: result.section.id, term: query, index: result.occurrenceIndex })
                           setSearchOpen(false)
                           setQuery('')
@@ -648,15 +634,8 @@ export default function DocsPage() {
             </button>
           </div>
 
-          <input
-            type="text"
-            placeholder="Search docs..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className={`${UI_FILTER_INPUT_CLASS} mb-3`}
-          />
           <nav className="flex flex-col gap-0.5">
-            {filteredSections.map(s => (
+            {SECTIONS.map(s => (
               <button
                 key={s.id}
                 onClick={() => { setActive(s.id); setHighlight(null) }}
@@ -679,30 +658,24 @@ export default function DocsPage() {
             onChange={e => { setActive(e.target.value); setHighlight(null) }}
             className="w-full bg-surface-hover text-white text-sm border border-edge rounded-md px-3 py-2"
           >
-            {filteredSections.map(s => (
+            {SECTIONS.map(s => (
               <option key={s.id} value={s.id}>{s.title}</option>
             ))}
           </select>
         </div>
 
         <div className="max-w-3xl mx-auto px-6 py-8">
-          {activeSection ? (
-            <>
-              <h1 className="text-2xl font-bold text-white mb-6">{activeSection.title}</h1>
-              <div className={UI_DOCS_BODY_CLASS}>
-                {highlight?.sectionId === activeSection.id
-                  ? highlightTreeMatches(
-                      activeSection.body,
-                      highlight.term,
-                      { count: 0, target: highlight.index, key: 0 },
-                      activeMarkRef
-                    )
-                  : activeSection.body}
-              </div>
-            </>
-          ) : (
-            <p className={UI_BODY_MUTED_CLASS}>No matching documentation sections found.</p>
-          )}
+          <h1 className="text-2xl font-bold text-white mb-6">{activeSection.title}</h1>
+          <div className={UI_DOCS_BODY_CLASS}>
+            {highlight?.sectionId === activeSection.id
+              ? highlightTreeMatches(
+                  activeSection.body,
+                  highlight.term,
+                  { count: 0, target: highlight.index, key: 0 },
+                  activeMarkRef
+                )
+              : activeSection.body}
+          </div>
         </div>
       </div>
     </div>
