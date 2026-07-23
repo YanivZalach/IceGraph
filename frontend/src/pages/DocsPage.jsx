@@ -500,6 +500,18 @@ export default function DocsPage() {
   const activeMarkRef = useRef(null)
   const resultsContainerRef = useRef(null)
   const lastMousePos = useRef({ x: -1, y: -1 })
+
+  const closeSearch = () => {
+    setSearchOpen(false)
+    setQuery('')
+  }
+
+  const selectResult = result => {
+    setActive(result.section.id)
+    setHighlight({ sectionId: result.section.id, term: query, index: result.occurrenceIndex })
+    closeSearch()
+  }
+
   const searchResults = query
     ? SECTIONS.flatMap(section => {
         const content = extractText(section.body)
@@ -544,8 +556,7 @@ export default function DocsPage() {
   useEffect(() => {
     const handleKeyDown = e => {
       if (e.key === 'Escape') {
-        setSearchOpen(false)
-        setQuery('')
+        closeSearch()
         return
       }
 
@@ -561,17 +572,14 @@ export default function DocsPage() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
-  const activeSection = SECTIONS.find(s => s.id === active) ?? SECTIONS[0]
+  const activeSection = SECTIONS.find(s => s.id === active)
 
   return (
     <div className="flex flex-1 overflow-hidden">
       {searchOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-50 flex justify-center items-start pt-20 px-4"
-          onClick={() => {
-            setSearchOpen(false)
-            setQuery('')
-          }}
+          onClick={closeSearch}
         >
           <div
             className="w-full max-w-4xl h-[80vh] bg-surface-deep border border-edge rounded-lg shadow-xl flex flex-col"
@@ -585,12 +593,6 @@ export default function DocsPage() {
                 setSelectedResultIndex(0)
               }}
               onKeyDown={e => {
-                if (e.key === 'Escape') {
-                  setSearchOpen(false)
-                  setQuery('')
-                  return
-                }
-
                 if (e.ctrlKey && e.key === 'n') {
                   e.preventDefault()
                   setSelectedResultIndex(i => Math.min(i + 1, searchResults.length - 1))
@@ -607,10 +609,7 @@ export default function DocsPage() {
                   const result = searchResults[selectedResultIndex]
                   if (!result) return
                   e.preventDefault()
-                  setActive(result.section.id)
-                  setHighlight({ sectionId: result.section.id, term: query, index: result.occurrenceIndex })
-                  setSearchOpen(false)
-                  setQuery('')
+                  selectResult(result)
                 }
               }}
               placeholder="Search documentation..."
@@ -629,12 +628,7 @@ export default function DocsPage() {
                           lastMousePos.current = { x: e.clientX, y: e.clientY }
                           setSelectedResultIndex(index)
                         }}
-                        onClick={() => {
-                          setActive(result.section.id)
-                          setHighlight({ sectionId: result.section.id, term: query, index: result.occurrenceIndex })
-                          setSearchOpen(false)
-                          setQuery('')
-                        }}
+                        onClick={() => selectResult(result)}
                         className={`w-full text-left p-4 border-b border-edge ${
                           index === selectedResultIndex ? 'bg-surface-hover' : ''
                         }`}
