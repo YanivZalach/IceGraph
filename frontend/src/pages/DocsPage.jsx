@@ -25,6 +25,11 @@ function ShortcutRow({ keys, desc }) {
   )
 }
 
+const TEXT_PROP_BY_TYPE = new Map([
+  [ShortcutRow, 'desc'],
+  [Key, 'k'],
+])
+
 function escapeRegExp(text) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
@@ -102,12 +107,9 @@ function highlightTreeMatches(node, query, matchState, activeMarkRef) {
     ))
   }
 
-  if (node.type === ShortcutRow) {
-    return cloneElement(node, { desc: highlightTreeMatches(node.props.desc, query, matchState, activeMarkRef) })
-  }
-
-  if (node.type === Key) {
-    return cloneElement(node, { k: highlightTreeMatches(node.props.k, query, matchState, activeMarkRef) })
+  const textProp = TEXT_PROP_BY_TYPE.get(node.type)
+  if (textProp) {
+    return cloneElement(node, { [textProp]: highlightTreeMatches(node.props[textProp], query, matchState, activeMarkRef) })
   }
 
   if (node.props?.children) {
@@ -472,12 +474,9 @@ function extractText(node) {
     return node.map(extractText).join(' ')
   }
 
-  if (node?.type === ShortcutRow) {
-    return node.props.desc
-  }
-
-  if (node?.type === Key) {
-    return node.props.k
+  const textProp = TEXT_PROP_BY_TYPE.get(node?.type)
+  if (textProp) {
+    return node.props[textProp]
   }
 
   if (node?.props?.children) {
