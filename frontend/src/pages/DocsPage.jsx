@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, cloneElement, Fragment } from 'react'
 import { UI_DOCS_BODY_CLASS, UI_DOCS_NAV_TITLE_CLASS } from '../uiTypography'
 
 function Key({ k }) {
@@ -23,6 +23,100 @@ function ShortcutRow({ keys, desc }) {
       <span className="text-slate-300 text-sm">{desc}</span>
     </div>
   )
+}
+
+const TEXT_PROP_BY_TYPE = new Map([
+  [ShortcutRow, 'desc'],
+  [Key, 'k'],
+])
+
+function escapeRegExp(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function findAllIndices(text, query) {
+  const indices = []
+  const lowerText = text.toLowerCase()
+  const lowerQuery = query.toLowerCase()
+
+  let from = 0
+  while (true) {
+    const index = lowerText.indexOf(lowerQuery, from)
+    if (index === -1) break
+    indices.push(index)
+    from = index + lowerQuery.length
+  }
+
+  return indices
+}
+
+function highlightMatch(text, query) {
+  if (!query) return text
+
+  const regex = new RegExp(`(${escapeRegExp(query)})`, 'gi')
+
+  return text.split(regex).map((part, index) => {
+    if (part.toLowerCase() === query.toLowerCase()) {
+      return (
+        <mark
+          key={index}
+          className="bg-yellow-400 text-black px-1 rounded"
+        >
+          {part}
+        </mark>
+      )
+    }
+
+    return part
+  })
+}
+
+function highlightTreeMatches(node, query, matchState, activeMarkRef) {
+  if (node == null || typeof node === 'boolean') return node
+
+  if (typeof node === 'string') {
+    if (!node.toLowerCase().includes(query.toLowerCase())) return node
+
+    const regex = new RegExp(`(${escapeRegExp(query)})`, 'gi')
+
+    return node.split(regex).map(part => {
+      if (part.toLowerCase() !== query.toLowerCase()) return part
+
+      const isActive = matchState.count === matchState.target
+      matchState.count += 1
+
+      return (
+        <mark
+          key={`match-${matchState.key++}`}
+          ref={isActive ? activeMarkRef : undefined}
+          className={
+            isActive
+              ? 'bg-accent text-white px-1 rounded ring-2 ring-white'
+              : 'bg-yellow-400 text-black px-1 rounded'
+          }
+        >
+          {part}
+        </mark>
+      )
+    })
+  }
+
+  if (Array.isArray(node)) {
+    return node.map((child, i) => (
+      <Fragment key={i}>{highlightTreeMatches(child, query, matchState, activeMarkRef)}</Fragment>
+    ))
+  }
+
+  const textProp = TEXT_PROP_BY_TYPE.get(node.type)
+  if (textProp) {
+    return cloneElement(node, { [textProp]: highlightTreeMatches(node.props[textProp], query, matchState, activeMarkRef) })
+  }
+
+  if (node.props?.children) {
+    return cloneElement(node, { children: highlightTreeMatches(node.props.children, query, matchState, activeMarkRef) })
+  }
+
+  return node
 }
 
 const SECTIONS = [
@@ -306,6 +400,15 @@ const SECTIONS = [
         </p>
 
         <div className="space-y-1">
+          <h3 className="text-white font-semibold mb-2">Docs Page</h3>
+          <ShortcutRow keys={['k']} desc="Open the documentation search overlay" />
+          <ShortcutRow keys={['Ctrl', 'n']} desc="Select the next search result" />
+          <ShortcutRow keys={['Ctrl', 'p']} desc="Select the previous search result" />
+          <ShortcutRow keys={['Enter']} desc="Open the selected search result" />
+          <ShortcutRow keys={['Esc']} desc="Close the search overlay" />
+        </div>
+
+        <div className="space-y-1">
           <h3 className="text-white font-semibold mb-2">Graph View</h3>
           <ShortcutRow keys={['c']} desc="Center and zoom to fit the entire graph" />
           <ShortcutRow keys={['r']} desc="Reset view to initial state" />
@@ -364,26 +467,203 @@ const SECTIONS = [
   },
 ]
 
+function extractText(node) {
+  if (typeof node === 'string') return node
+
+  if (Array.isArray(node)) {
+    return node.map(extractText).join(' ')
+  }
+
+  const textProp = TEXT_PROP_BY_TYPE.get(node?.type)
+  if (textProp) {
+    return node.props[textProp]
+  }
+
+  if (node?.props?.children) {
+    return extractText(node.props.children)
+  }
+
+  return ''
+}
+
 export default function DocsPage() {
   const [active, setActive] = useState(SECTIONS[0].id)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const [highlight, setHighlight] = useState(null)
+  const [selectedResultIndex, setSelectedResultIndex] = useState(0)
   const contentRef = useRef(null)
+  const activeMarkRef = useRef(null)
+  const resultsContainerRef = useRef(null)
+  const lastMousePos = useRef({ x: -1, y: -1 })
+
+  const closeSearch = () => {
+    setSearchOpen(false)
+    setQuery('')
+  }
+
+  const selectResult = result => {
+    setActive(result.section.id)
+    setHighlight({ sectionId: result.section.id, term: query, index: result.occurrenceIndex })
+    closeSearch()
+  }
+
+  const searchResults = query
+    ? SECTIONS.flatMap(section => {
+        const content = extractText(section.body)
+        const contentMatches = findAllIndices(content, query)
+
+        return contentMatches.map((matchIndex, occurrenceIndex) => {
+          const snippetStart = Math.max(0, matchIndex - 40)
+          const snippet = content.substring(snippetStart, snippetStart + 140)
+
+          return {
+            section,
+            snippet,
+            occurrenceIndex,
+            totalInSection: contentMatches.length
+          }
+        })
+      })
+    : []
 
   useEffect(() => {
     if (contentRef.current) contentRef.current.scrollTop = 0
   }, [active])
 
+  useEffect(() => {
+    if (highlight?.index != null && activeMarkRef.current) {
+      activeMarkRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [highlight, active])
+
+  useEffect(() => {
+    resultsContainerRef.current?.children[selectedResultIndex]?.scrollIntoView({ block: 'nearest' })
+  }, [selectedResultIndex])
+
+  useEffect(() => {
+    const handleKeyDown = e => {
+      if (e.key === 'Escape') {
+        closeSearch()
+        return
+      }
+
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName) || e.target.isContentEditable) return
+
+      if (e.key === 'k') {
+        e.preventDefault()
+        setSearchOpen(true)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
   const activeSection = SECTIONS.find(s => s.id === active)
 
   return (
     <div className="flex flex-1 overflow-hidden">
+      {searchOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex justify-center items-start pt-20 px-4"
+          onClick={closeSearch}
+        >
+          <div
+            className="w-full max-w-4xl h-[80vh] bg-surface-deep border border-edge rounded-lg shadow-xl flex flex-col"
+            onClick={e => e.stopPropagation()}
+          >
+            <input
+              autoFocus
+              value={query}
+              onChange={e => {
+                setQuery(e.target.value)
+                setSelectedResultIndex(0)
+              }}
+              onKeyDown={e => {
+                if (e.ctrlKey && e.key === 'n') {
+                  e.preventDefault()
+                  setSelectedResultIndex(i => Math.min(i + 1, searchResults.length - 1))
+                  return
+                }
+
+                if (e.ctrlKey && e.key === 'p') {
+                  e.preventDefault()
+                  setSelectedResultIndex(i => Math.max(i - 1, 0))
+                  return
+                }
+
+                if (e.key === 'Enter') {
+                  const result = searchResults[selectedResultIndex]
+                  if (!result) return
+                  e.preventDefault()
+                  selectResult(result)
+                }
+              }}
+              placeholder="Search documentation..."
+              className="w-full px-4 py-3 bg-surface-hover text-white outline-none rounded-t-lg shrink-0"
+            />
+
+            {query && (
+              <div className="border-t border-edge flex-1 min-h-0">
+                {searchResults.length > 0 ? (
+                  <div ref={resultsContainerRef} className="h-full overflow-y-auto">
+                    {searchResults.map((result, index) => (
+                      <button
+                        key={`${result.section.id}-${result.occurrenceIndex}`}
+                        onMouseMove={e => {
+                          if (e.clientX === lastMousePos.current.x && e.clientY === lastMousePos.current.y) return
+                          lastMousePos.current = { x: e.clientX, y: e.clientY }
+                          setSelectedResultIndex(index)
+                        }}
+                        onClick={() => selectResult(result)}
+                        className={`w-full text-left p-4 border-b border-edge ${
+                          index === selectedResultIndex ? 'bg-surface-hover' : ''
+                        }`}
+                      >
+                        <div className="text-white font-semibold text-lg">
+                          {result.section.title}
+                        </div>
+
+                        <div className="text-accent text-xs mt-1">
+                          Found in: {result.section.title}
+                          {result.totalInSection > 1 && ` — match ${result.occurrenceIndex + 1} of ${result.totalInSection}`}
+                        </div>
+
+                        <div className="text-slate-400 text-sm mt-2 leading-relaxed">
+                          {highlightMatch(result.snippet, query)}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-4 text-slate-400">No results found.</div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <aside className="w-52 shrink-0 bg-[#151b26] border-r border-edge overflow-y-auto hidden sm:block">
         <div className="px-4 py-5">
-          <p className={UI_DOCS_NAV_TITLE_CLASS}>Documentation</p>
+          <div className="mb-4">
+            <p className={UI_DOCS_NAV_TITLE_CLASS}>Documentation</p>
+
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="w-full flex items-center justify-between rounded-md border border-edge bg-surface px-3 py-2 text-sm text-slate-400 hover:text-white hover:bg-surface-hover transition"
+            >
+              <span>Search docs...</span>
+              <Key k="k" />
+            </button>
+          </div>
+
           <nav className="flex flex-col gap-0.5">
             {SECTIONS.map(s => (
               <button
                 key={s.id}
-                onClick={() => setActive(s.id)}
+                onClick={() => { setActive(s.id); setHighlight(null) }}
                 className={`text-left text-sm px-3 py-2 rounded-md transition ${active === s.id
                   ? 'bg-accent-muted text-white font-medium'
                   : 'text-slate-400 hover:text-white hover:bg-surface-hover'
@@ -400,7 +680,7 @@ export default function DocsPage() {
         <div className="sm:hidden px-4 pt-4 pb-2">
           <select
             value={active}
-            onChange={e => setActive(e.target.value)}
+            onChange={e => { setActive(e.target.value); setHighlight(null) }}
             className="w-full bg-surface-hover text-white text-sm border border-edge rounded-md px-3 py-2"
           >
             {SECTIONS.map(s => (
@@ -412,7 +692,14 @@ export default function DocsPage() {
         <div className="max-w-3xl mx-auto px-6 py-8">
           <h1 className="text-2xl font-bold text-white mb-6">{activeSection.title}</h1>
           <div className={UI_DOCS_BODY_CLASS}>
-            {activeSection.body}
+            {highlight?.sectionId === activeSection.id
+              ? highlightTreeMatches(
+                  activeSection.body,
+                  highlight.term,
+                  { count: 0, target: highlight.index, key: 0 },
+                  activeMarkRef
+                )
+              : activeSection.body}
           </div>
         </div>
       </div>
