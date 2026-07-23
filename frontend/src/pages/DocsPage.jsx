@@ -517,25 +517,17 @@ export default function DocsPage() {
         const content = extractText(section.body)
         const contentMatches = findAllIndices(content, query)
 
-        if (contentMatches.length > 0) {
-          return contentMatches.map((matchIndex, occurrenceIndex) => {
-            const snippetStart = Math.max(0, matchIndex - 40)
-            const snippet = content.substring(snippetStart, snippetStart + 140)
+        return contentMatches.map((matchIndex, occurrenceIndex) => {
+          const snippetStart = Math.max(0, matchIndex - 40)
+          const snippet = content.substring(snippetStart, snippetStart + 140)
 
-            return {
-              section,
-              snippet,
-              occurrenceIndex,
-              totalInSection: contentMatches.length
-            }
-          })
-        }
-
-        if (section.title.toLowerCase().includes(query.toLowerCase())) {
-          return [{ section, snippet: section.title, occurrenceIndex: null, totalInSection: 0 }]
-        }
-
-        return []
+          return {
+            section,
+            snippet,
+            occurrenceIndex,
+            totalInSection: contentMatches.length
+          }
+        })
       })
     : []
 
@@ -622,7 +614,7 @@ export default function DocsPage() {
                   <div ref={resultsContainerRef} className="h-full overflow-y-auto">
                     {searchResults.map((result, index) => (
                       <button
-                        key={`${result.section.id}-${result.occurrenceIndex ?? 'title'}`}
+                        key={`${result.section.id}-${result.occurrenceIndex}`}
                         onMouseMove={e => {
                           if (e.clientX === lastMousePos.current.x && e.clientY === lastMousePos.current.y) return
                           lastMousePos.current = { x: e.clientX, y: e.clientY }
@@ -634,7 +626,7 @@ export default function DocsPage() {
                         }`}
                       >
                         <div className="text-white font-semibold text-lg">
-                          {highlightMatch(result.section.title, query)}
+                          {result.section.title}
                         </div>
 
                         <div className="text-accent text-xs mt-1">
