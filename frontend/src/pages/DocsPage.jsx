@@ -66,9 +66,6 @@ function highlightMatch(text, query) {
   })
 }
 
-// Walks a SECTIONS `body` tree in the same order as extractText, wrapping every
-// occurrence of `query` in a <mark>. The occurrence at `matchState.target` (an index
-// into that same order) gets `activeMarkRef` attached so it can be scrolled into view.
 function highlightTreeMatches(node, query, matchState, activeMarkRef) {
   if (node == null || typeof node === 'boolean') return node
 
