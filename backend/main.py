@@ -16,6 +16,8 @@ from constants import (
     MAX_SNAPSHOTS_TO_SHOW,
     MAX_GRACEFUL_SHUTDOWN_TIME_SECONDS,
     INCLUDE_NONE_ICEBERG_CATALOGS,
+    PRODUCTION_MODE,
+    WSGI_THREADS,
 )
 from spark_connect import close_spark_connect_session
 from graph_normalizer.graph_normalizer import GraphNormalizer
@@ -36,6 +38,8 @@ compute_cleanup_time_seconds = int(os.getenv("COMPUTE_CLEANUP_TIME_SECONDS", COM
 max_snapshots_to_show = int(os.getenv("MAX_SNAPSHOTS_TO_SHOW", MAX_SNAPSHOTS_TO_SHOW))
 max_graceful_shutdown_time_seconds = int(os.getenv("MAX_GRACEFUL_SHUTDOWN_TIME_SECONDS", MAX_GRACEFUL_SHUTDOWN_TIME_SECONDS))
 include_none_iceberg_catalogs = str(os.getenv("INCLUDE_NONE_ICEBERG_CATALOGS", INCLUDE_NONE_ICEBERG_CATALOGS)).lower() == "true"
+production_mode = str(os.getenv("PRODUCTION_MODE", PRODUCTION_MODE)).lower() == "true"
+wsgi_threads = int(os.getenv("WSGI_THREADS", WSGI_THREADS))
 
 executor_pool = ThreadPoolExecutor(max_workers=max_number_of_graphs_to_compute)
 
@@ -219,7 +223,12 @@ def _force_exit():
 
 if __name__ == "__main__":
     try:
-        app.run(host="0.0.0.0", port=APPLICATION_PORT)
+        if production_mode:
+            from waitress import serve
+
+            serve(app, host="0.0.0.0", port=APPLICATION_PORT, threads=wsgi_threads)
+        else:
+            app.run(host="0.0.0.0", port=APPLICATION_PORT)
 
     finally:
         watchdog = threading.Timer(max_graceful_shutdown_time_seconds, _force_exit)

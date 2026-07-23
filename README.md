@@ -111,6 +111,8 @@ If you want to change the default values of the application, you can set the fol
 - `MAX_GRACEFUL_SHUTDOWN_TIME_SECONDS`: The time to wait before forcing an exit of the application when shutting it down. Default is 10.
 - `INCLUDE_NONE_ICEBERG_CATALOGS`: Whether to include catalogs that are not exclusively Iceberg (such as the Spark session catalog) in the table selection autocompletion. Default is true.
 - `TABLE_LIST_CACHE_TTL_SECONDS`: The cache time-to-live for table selection autocompletion endpoint before refresh. Default is 60.
+- `PRODUCTION_MODE`: Whether to serve the app with the Waitress production WSGI server instead of Flask's development server. Always single-process (multi-threaded) so the in-memory job-polling state stays consistent. Default is false; the Docker image sets this to true.
+- `WSGI_THREADS`: The number of threads Waitress uses to handle concurrent requests when `PRODUCTION_MODE` is enabled. Default is 20.
 
 ### 3. Run
 
