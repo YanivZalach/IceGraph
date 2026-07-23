@@ -595,6 +595,8 @@ export default function TimelinePage() {
           >
             {events.map((event, i) => {
               const ts = formatTs(event.details.timestamp)
+              const canShowOperation = event.type === 'A' || event.type === 'C' || event.type === 'init'
+              const operation = canShowOperation ? snapshotMap[event.snapshotId]?.operation : null
               return (
                 <div key={i} className="flex items-center">
                   {i > 0 && (
@@ -623,11 +625,11 @@ export default function TimelinePage() {
                   >
                     <div className="text-center" style={{ maxWidth: tl.textMax }}>
                       <div
-                        className="font-mono font-bold leading-tight break-all"
+                        className="font-mono font-bold leading-tight break-all capitalize"
                         style={{ fontSize: tl.fontXs, color: colorFor(event.type) }}
                         title={event.details.file_path ?? ''}
                       >
-                        {labelFor(event.type)}
+                        {operation || labelFor(event.type)}
                       </div>
                     </div>
                     <div
