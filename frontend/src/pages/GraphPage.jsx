@@ -270,6 +270,7 @@ export default function GraphPage() {
 
     const handleKey = (e) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName) || e.target.isContentEditable) return
       if (e.key === 'i') { setIsInspectMode(p => !p); return }
       if (e.key === 'c') { resetZoom(); return }
       if (e.key === 'r') { resetView(); return }

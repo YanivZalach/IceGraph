@@ -362,6 +362,7 @@ export default function TimelinePage() {
 
     const handleKey = (e) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName) || e.target.isContentEditable) return
       if (e.key === 'Escape') { setSelected(null); return }
       if (selectedRef.current && (e.key === 'ArrowDown' || e.key === 'j')) {
         e.preventDefault()
