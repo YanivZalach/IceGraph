@@ -60,7 +60,7 @@ export default function NavBar() {
     const handleKey = (e) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName) || e.target.isContentEditable) return
-      const tabs = ['graph', 'metadata', 'timeline', 'filetree']
+      const tabs = ['timeline', 'metadata', 'filetree', 'graph']
       const idx = parseInt(e.key) - 1
       if (idx >= 0 && idx < tabs.length) {
         e.preventDefault()
@@ -113,7 +113,7 @@ export default function NavBar() {
     const tableParam = encodeURIComponent(IS_MOCK ? MOCK_TABLE : trimmed)
     let targetUrl
     if (IS_MOCK) {
-      const tab = location.pathname.match(/\/table\/([^/]+)/)?.[1] || 'graph'
+      const tab = location.pathname.match(/\/table\/([^/]+)/)?.[1] || 'timeline'
       targetUrl = `${BASE_PATH}/table/${tab}?table=${tableParam}`
     } else {
       targetUrl = `${BASE_PATH}/snapshots-selection?table=${tableParam}`
@@ -268,10 +268,10 @@ export default function NavBar() {
 
             <div className="w-px h-4 bg-slate-700" />
 
-            <NavLink to={`/table/graph${tabSearch}`} className={tabClass}>Graph</NavLink>
-            <NavLink to={`/table/metadata${tabSearch}`} className={tabClass}>Metadata</NavLink>
             <NavLink to={`/table/timeline${tabSearch}`} className={tabClass}>Timeline</NavLink>
+            <NavLink to={`/table/metadata${tabSearch}`} className={tabClass}>Metadata</NavLink>
             <NavLink to={`/table/filetree${tabSearch}`} className={tabClass}>FileTree</NavLink>
+            <NavLink to={`/table/graph${tabSearch}`} className={tabClass}>Graph</NavLink>
 
             {((errors && Object.keys(errors).length > 0) || (warnings && Object.keys(warnings).length > 0)) && (
               <button
@@ -365,10 +365,10 @@ export default function NavBar() {
 
           <div className="h-px bg-edge my-1" />
 
-          <NavLink to={`/table/graph${tabSearch}`} className={mobileTabClass}>Graph</NavLink>
-          <NavLink to={`/table/metadata${tabSearch}`} className={mobileTabClass}>Metadata</NavLink>
           <NavLink to={`/table/timeline${tabSearch}`} className={mobileTabClass}>Timeline</NavLink>
+          <NavLink to={`/table/metadata${tabSearch}`} className={mobileTabClass}>Metadata</NavLink>
           <NavLink to={`/table/filetree${tabSearch}`} className={mobileTabClass}>FileTree</NavLink>
+          <NavLink to={`/table/graph${tabSearch}`} className={mobileTabClass}>Graph</NavLink>
 
           {((errors && Object.keys(errors).length > 0) || (warnings && Object.keys(warnings).length > 0)) && (
             <button

@@ -1,4 +1,4 @@
-export const MOCK_HOME_ROUTE = '/table/graph?table=default.events'
+export const MOCK_HOME_ROUTE = '/table/timeline?table=default.events'
 export const MOCK_TABLE = 'default.events'
 /** Vite `base` without trailing slash; empty string at site root. */
 export const BASE_PATH = import.meta.env.BASE_URL.replace(/\/$/, '')

@@ -172,7 +172,7 @@ const SECTIONS = [
         <div className="space-y-2">
           <h3 className="text-white font-semibold">3. Wait for the graph</h3>
           <p>
-            IceGraph fetches the metadata in the background. Once ready, you land on the Graph view.
+            IceGraph fetches the metadata in the background. Once ready, you land on the Timeline view.
             Large ranges with many data files may take a moment.
           </p>
         </div>
@@ -184,6 +184,94 @@ const SECTIONS = [
             IceGraph opens the new table in a separate browser tab so your current graph stays loaded.
           </p>
         </div>
+      </div>
+    ),
+  },
+  {
+    id: 'timeline-view',
+    title: 'Timeline View',
+    body: (
+      <div className="space-y-4">
+        <p>
+          A chronological list of every snapshot in your selected range. Each row shows when the
+          snapshot was created, what operation produced it, and how many files and records changed.
+        </p>
+        <div className="space-y-2">
+          <h3 className="text-white font-semibold">Operation types</h3>
+          <ul className="list-disc list-inside space-y-2">
+            <li><strong className="text-white">append</strong> — new data was added to the table</li>
+            <li><strong className="text-white">overwrite</strong> — new data was written, and any existing data in the affected partitions was replaced</li>
+            <li><strong className="text-white">replace</strong> — files were rewritten (e.g. compaction) without changing the actual records; common in Iceberg maintenance procedures</li>
+            <li><strong className="text-white">delete</strong> — rows or files were removed from the table</li>
+          </ul>
+        </div>
+        <p>
+          Use the Timeline to pinpoint when a large write happened, spot unexpected deletes, or
+          verify that a compaction job ran as expected.
+        </p>
+        <div className="space-y-2">
+          <h3 className="text-white font-semibold">Zoom &amp; pan</h3>
+          <p>
+            Scroll the mouse wheel to zoom in and out (text and nodes scale together, like Graph view).
+            Drag the timeline background to pan. Use horizontal trackpad scroll or Shift + wheel to pan
+            sideways without zooming. <strong className="text-white">Fit Timeline</strong> scales the full
+            history to the viewport and centers it.
+          </p>
+        </div>
+        <div className="space-y-2">
+          <h3 className="text-white font-semibold">Details panel</h3>
+          <p>
+            Click a timeline event to open its details in a panel on the right — the same panel used in
+            Graph view. Drag the left-edge grip to widen it, use fullscreen to expand, and copy field
+            values with the clipboard icon. Long JSON diffs are collapsed by default and can be expanded
+            or collapsed with <strong className="text-white">▼</strong> / <strong className="text-white">▲</strong>.
+          </p>
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'metadata-view',
+    title: 'Metadata View',
+    body: (
+      <div className="space-y-4">
+        <p>
+          Shows the structured metadata of your table — schema, partition spec, and sort order. Use this
+          to verify column types, understand partition strategies, and inspect how the schema has evolved.
+        </p>
+        <ul className="list-disc list-inside space-y-1">
+          <li>Column IDs are stable even when columns are renamed — useful for tracing schema evolution</li>
+          <li><strong className="text-white">Overview</strong> fields include a clipboard icon to copy individual values</li>
+        </ul>
+      </div>
+    ),
+  },
+  {
+    id: 'filetree-view',
+    title: 'FileTree View',
+    body: (
+      <div className="space-y-4">
+        <p>
+          Shows all data files in your selected snapshot range organized as a directory tree, grouped
+          by their partition paths.
+        </p>
+        <p>
+          This view solves a common source of confusion: if you look at the <strong className="text-white">raw storage directory</strong> written
+          by your engine (Spark, for example), you see all files ever written — including files from
+          old snapshots that have since been replaced, and files that belong to different table versions.
+        </p>
+        <p>
+          <strong className="text-white">What's on disk is not the same as what Iceberg considers the current table.</strong> The
+          FileTree view shows only the files Iceberg actually tracks as part of the selected snapshots,
+          giving you a true picture of the table's data.
+        </p>
+        <ul className="list-disc list-inside space-y-1">
+          <li>Expand directories to see individual files</li>
+          <li>Choose a branch, and within it, a snapshot to explore</li>
+          <li>Many small files in one partition path often indicates a small-file problem</li>
+          <li>Each file shows its <strong className="text-white">first appearing timestamp</strong> tracked by Iceberg in the <strong className="text-white">asked snapshot range</strong></li>
+          <li>Each folder shows a <strong className="text-white">last modified</strong> timestamp — the most recent first-appearing timestamp among all its files</li>
+        </ul>
       </div>
     ),
   },
@@ -233,94 +321,6 @@ const SECTIONS = [
             efficient. A snapshot with no shared manifests or data files means a full overwrite occurred.
           </p>
         </div>
-      </div>
-    ),
-  },
-  {
-    id: 'metadata-view',
-    title: 'Metadata View',
-    body: (
-      <div className="space-y-4">
-        <p>
-          Shows the structured metadata of your table — schema, partition spec, and sort order. Use this
-          to verify column types, understand partition strategies, and inspect how the schema has evolved.
-        </p>
-        <ul className="list-disc list-inside space-y-1">
-          <li>Column IDs are stable even when columns are renamed — useful for tracing schema evolution</li>
-          <li><strong className="text-white">Overview</strong> fields include a clipboard icon to copy individual values</li>
-        </ul>
-      </div>
-    ),
-  },
-  {
-    id: 'timeline-view',
-    title: 'Timeline View',
-    body: (
-      <div className="space-y-4">
-        <p>
-          A chronological list of every snapshot in your selected range. Each row shows when the
-          snapshot was created, what operation produced it, and how many files and records changed.
-        </p>
-        <div className="space-y-2">
-          <h3 className="text-white font-semibold">Operation types</h3>
-          <ul className="list-disc list-inside space-y-2">
-            <li><strong className="text-white">append</strong> — new data was added to the table</li>
-            <li><strong className="text-white">overwrite</strong> — new data was written, and any existing data in the affected partitions was replaced</li>
-            <li><strong className="text-white">replace</strong> — files were rewritten (e.g. compaction) without changing the actual records; common in Iceberg maintenance procedures</li>
-            <li><strong className="text-white">delete</strong> — rows or files were removed from the table</li>
-          </ul>
-        </div>
-        <p>
-          Use the Timeline to pinpoint when a large write happened, spot unexpected deletes, or
-          verify that a compaction job ran as expected.
-        </p>
-        <div className="space-y-2">
-          <h3 className="text-white font-semibold">Zoom &amp; pan</h3>
-          <p>
-            Scroll the mouse wheel to zoom in and out (text and nodes scale together, like Graph view).
-            Drag the timeline background to pan. Use horizontal trackpad scroll or Shift + wheel to pan
-            sideways without zooming. <strong className="text-white">Fit Timeline</strong> scales the full
-            history to the viewport and centers it.
-          </p>
-        </div>
-        <div className="space-y-2">
-          <h3 className="text-white font-semibold">Details panel</h3>
-          <p>
-            Click a timeline event to open its details in a panel on the right — the same panel used in
-            Graph view. Drag the left-edge grip to widen it, use fullscreen to expand, and copy field
-            values with the clipboard icon. Long JSON diffs are collapsed by default and can be expanded
-            or collapsed with <strong className="text-white">▼</strong> / <strong className="text-white">▲</strong>.
-          </p>
-        </div>
-      </div>
-    ),
-  },
-  {
-    id: 'filetree-view',
-    title: 'FileTree View',
-    body: (
-      <div className="space-y-4">
-        <p>
-          Shows all data files in your selected snapshot range organized as a directory tree, grouped
-          by their partition paths.
-        </p>
-        <p>
-          This view solves a common source of confusion: if you look at the <strong className="text-white">raw storage directory</strong> written
-          by your engine (Spark, for example), you see all files ever written — including files from
-          old snapshots that have since been replaced, and files that belong to different table versions.
-        </p>
-        <p>
-          <strong className="text-white">What's on disk is not the same as what Iceberg considers the current table.</strong> The
-          FileTree view shows only the files Iceberg actually tracks as part of the selected snapshots,
-          giving you a true picture of the table's data.
-        </p>
-        <ul className="list-disc list-inside space-y-1">
-          <li>Expand directories to see individual files</li>
-          <li>Choose a branch, and within it, a snapshot to explore</li>
-          <li>Many small files in one partition path often indicates a small-file problem</li>
-          <li>Each file shows its <strong className="text-white">first appearing timestamp</strong> tracked by Iceberg in the <strong className="text-white">asked snapshot range</strong></li>
-          <li>Each folder shows a <strong className="text-white">last modified</strong> timestamp — the most recent first-appearing timestamp among all its files</li>
-        </ul>
       </div>
     ),
   },
@@ -389,10 +389,10 @@ const SECTIONS = [
       <div className="space-y-6">
         <div className="space-y-1">
           <h3 className="text-white font-semibold mb-2">Global</h3>
-          <ShortcutRow keys={['1']} desc="Go to Graph view" />
+          <ShortcutRow keys={['1']} desc="Go to Timeline view" />
           <ShortcutRow keys={['2']} desc="Go to Metadata view" />
-          <ShortcutRow keys={['3']} desc="Go to Timeline view" />
-          <ShortcutRow keys={['4']} desc="Go to FileTree view" />
+          <ShortcutRow keys={['3']} desc="Go to FileTree view" />
+          <ShortcutRow keys={['4']} desc="Go to Graph view" />
         </div>
 
         <p className="text-slate-400 text-xs">
@@ -409,6 +409,24 @@ const SECTIONS = [
         </div>
 
         <div className="space-y-1">
+          <h3 className="text-white font-semibold mb-2">Timeline View</h3>
+          <ShortcutRow keys={['Shift', 'Scroll']} desc="Pan the timeline horizontally" />
+          <ShortcutRow keys={['r']} desc="Center and zoom to fit the entire timeline" />
+          <ShortcutRow keys={['h', '←']} desc="Select the previous snapshot — if none is selected, jumps to the first (oldest)" />
+          <ShortcutRow keys={['l', '→']} desc="Select the next snapshot — if none is selected, jumps to the last (newest)" />
+          <ShortcutRow keys={['j', '↓']} desc="Scroll the snapshot details panel down" />
+          <ShortcutRow keys={['k', '↑']} desc="Scroll the snapshot details panel up" />
+          <ShortcutRow keys={['f']} desc="Toggle fullscreen for the snapshot details panel (when open)" />
+          <ShortcutRow keys={['Esc']} desc="Close the snapshot details panel" />
+        </div>
+
+        <div className="space-y-1">
+          <h3 className="text-white font-semibold mb-2">Metadata View</h3>
+          <ShortcutRow keys={['j', '↓']} desc="Scroll the page down" />
+          <ShortcutRow keys={['k', '↑']} desc="Scroll the page up" />
+        </div>
+
+        <div className="space-y-1">
           <h3 className="text-white font-semibold mb-2">Graph View</h3>
           <ShortcutRow keys={['c']} desc="Center and zoom to fit the entire graph" />
           <ShortcutRow keys={['r']} desc="Reset view to initial state" />
@@ -420,24 +438,6 @@ const SECTIONS = [
           <ShortcutRow keys={['k', '↑']} desc="Scroll the node details panel up (when open)" />
           <ShortcutRow keys={['f']} desc="Toggle fullscreen for the details panel (when open)" />
           <ShortcutRow keys={['Esc']} desc="Close the node details panel" />
-        </div>
-
-        <div className="space-y-1">
-          <h3 className="text-white font-semibold mb-2">Metadata View</h3>
-          <ShortcutRow keys={['j', '↓']} desc="Scroll the page down" />
-          <ShortcutRow keys={['k', '↑']} desc="Scroll the page up" />
-        </div>
-
-        <div className="space-y-1">
-          <h3 className="text-white font-semibold mb-2">Timeline View</h3>
-          <ShortcutRow keys={['Shift', 'Scroll']} desc="Pan the timeline horizontally" />
-          <ShortcutRow keys={['r']} desc="Center and zoom to fit the entire timeline" />
-          <ShortcutRow keys={['h', '←']} desc="Select the previous snapshot — if none is selected, jumps to the first (oldest)" />
-          <ShortcutRow keys={['l', '→']} desc="Select the next snapshot — if none is selected, jumps to the last (newest)" />
-          <ShortcutRow keys={['j', '↓']} desc="Scroll the snapshot details panel down" />
-          <ShortcutRow keys={['k', '↑']} desc="Scroll the snapshot details panel up" />
-          <ShortcutRow keys={['f']} desc="Toggle fullscreen for the snapshot details panel (when open)" />
-          <ShortcutRow keys={['Esc']} desc="Close the snapshot details panel" />
         </div>
       </div>
     ),
