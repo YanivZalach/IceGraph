@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
+import JSONbig from 'json-bigint'
 import CopyableValue from '../components/CopyableValue'
+import { DEFAULT_COLLAPSE_LINES, PANEL_COLLAPSE_TOGGLE_CLASS } from '../components/PanelContent'
 import { FileType } from '../graphConstants'
 import {
   UI_BODY_MUTED_CLASS,
@@ -10,6 +12,7 @@ import {
   UI_MONO_MUTED_CLASS,
 } from '../uiTypography'
 import { formatLocaleDateTime, parseUtcDate } from '../utils/dateUtils'
+import { highlightJson } from '../utils/jsonHighlight'
 import { bindMouseScrollHandoff } from '../utils/smoothScroll'
 
 function Section({ title, children }) {
@@ -19,6 +22,48 @@ function Section({ title, children }) {
         <h2 className={UI_METADATA_SECTION_TITLE_CLASS}>{title}</h2>
       </div>
       <div className="px-5 py-4">{children}</div>
+    </div>
+  )
+}
+
+const JSONbigString = JSONbig({ storeAsString: true })
+
+function parseJsonMaybe(value) {
+  if (typeof value !== 'string') return null
+  const trimmed = value.trim()
+  if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return null
+  try {
+    const parsed = JSONbigString.parse(trimmed)
+    return parsed && typeof parsed === 'object' ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+function JsonPropertyValue({ data }) {
+  const [isCollapsed, setIsCollapsed] = useState(true)
+  const fullText = JSON.stringify(data, null, 2)
+  const lines = fullText.split('\n')
+  const isCollapsible = lines.length > DEFAULT_COLLAPSE_LINES
+  const displayText = isCollapsible && isCollapsed
+    ? lines.slice(0, DEFAULT_COLLAPSE_LINES).join('\n')
+    : fullText
+
+  return (
+    <div className="flex-1 min-w-0 flex flex-col items-start gap-1">
+      {isCollapsible && (
+        <button
+          type="button"
+          onClick={() => setIsCollapsed(p => !p)}
+          className={PANEL_COLLAPSE_TOGGLE_CLASS}
+        >
+          {isCollapsed ? `▼ (${lines.length} lines)` : '▲'}
+        </button>
+      )}
+      <pre className={`${UI_BODY_MUTED_CLASS} break-all whitespace-pre-wrap`}>
+        {highlightJson(displayText)}
+        {isCollapsible && isCollapsed && '\n…'}
+      </pre>
     </div>
   )
 }
@@ -307,12 +352,19 @@ export default function MetadataPage() {
         {properties.length > 0 && (
           <Section title="Properties">
             <div className="flex flex-col">
-              {properties.map(([k, v]) => (
-                <div key={k} className="flex items-start gap-4 py-2 border-b border-edge last:border-0">
-                  <span className="text-sm font-mono text-accent min-w-45 shrink-0">{k}</span>
-                  <span className={`${UI_BODY_MUTED_CLASS} break-all`}>{String(v)}</span>
-                </div>
-              ))}
+              {properties.map(([k, v]) => {
+                const parsedJson = parseJsonMaybe(v)
+                return (
+                  <div key={k} className="flex items-start gap-4 py-2 border-b border-edge last:border-0">
+                    <span className="text-sm font-mono text-accent min-w-45 shrink-0">{k}</span>
+                    {parsedJson ? (
+                      <JsonPropertyValue data={parsedJson} />
+                    ) : (
+                      <span className={`${UI_BODY_MUTED_CLASS} break-all`}>{String(v)}</span>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </Section>
         )}
