@@ -46,6 +46,15 @@ docker run -e SPARK_REMOTE=sc://<ip>:15002 -p 5000:5000 icegraph   # Run contain
 cd docker_demo && docker compose up   # Full demo stack with mock Iceberg tables
 ```
 
+### CLI (Python)
+
+```bash
+cd cli
+uv sync                    # Install dependencies
+uv run pytest               # Run unit tests
+uv run icegraph --help       # Run the CLI without installing it
+```
+
 ## Architecture
 
 **Backend** (`/backend/`) — Flask API that reads Iceberg metadata via Spark Connect:
@@ -73,6 +82,8 @@ cd docker_demo && docker compose up   # Full demo stack with mock Iceberg tables
 2. `GET /api/v1/snapshot-map/<table>` — load snapshot history for UI selection
 3. `POST /api/v1/graph-data` — submit async job with table name + snapshot range
 4. `GET /api/v1/graph-data/<job_id>` — poll until complete, returns graph JSON
+
+**CLI / client package** (`/cli/`) — a second client, independent of the frontend, packaged separately (`icegraph-client` on PyPI, `icegraph_client` importable, `icegraph` command). Talks to the same `/api/v1/*` endpoints as the frontend; introduces no backend changes. `client.py` (HTTP) and `storage.py` (local JSON persistence under `~/.icegraph/`) are plain, framework-free modules meant to be imported directly — `__main__.py` is a thin argparse layer on top, not where the logic lives. See `cli/README.md`.
 
 ## Frontend Styling Conventions
 
@@ -129,3 +140,4 @@ Backend environment variables (set in `backend/.env`):
 - CI publishes Docker image to Docker Hub and deploys frontend to GitHub Pages on version tags (`v*`)
 - GitHub Pages demo uses MSW to mock API responses (no backend); enabled via `VITE_ENABLE_MSW=true` in the deploy workflow
 - The Vite `base` path is `/IceGraph/` for GitHub Pages but `/` for Docker
+- CI runs the CLI's unit test suite (`cli/tests/`) on every push to `master` (`.github/workflows/cli-tests.yml`)

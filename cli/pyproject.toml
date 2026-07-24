@@ -1,0 +1,24 @@
+[project]
+name = "icegraph-client"
+version = "0.1.0"
+description = "Python client and CLI for IceGraph — inspect Apache Iceberg table metadata from the terminal or your own scripts."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "requests>=2.31.0",
+]
+
+[project.scripts]
+icegraph = "icegraph_client.__main__:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/icegraph_client"]
