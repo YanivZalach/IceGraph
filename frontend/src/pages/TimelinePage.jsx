@@ -595,7 +595,7 @@ export default function TimelinePage() {
 
   if (events.length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-canvas">
+      <div className="flex-1 flex items-center justify-center bg-graph-grid">
         <p className={UI_BODY_MUTED_ITALIC_CLASS}>No metadata history available.</p>
       </div>
     )
@@ -606,7 +606,7 @@ export default function TimelinePage() {
   const tl = timelineSizes(view.zoom)
 
   return (
-    <div className="flex-1 flex flex-col bg-canvas overflow-hidden relative">
+    <div className="flex-1 flex flex-col bg-graph-grid overflow-hidden relative">
       <div className="shrink-0 px-8 pt-5 flex items-center gap-5">
         {[['A', 'Write'], ['C', 'Branch Write'], ['B', 'Metadata Op'], ['init', 'Initial State']].map(([type, lbl]) => (
           <div key={type} className="flex items-center gap-1.5">
