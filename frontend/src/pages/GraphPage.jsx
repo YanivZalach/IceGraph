@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react'
 import { useLocation, useOutletContext } from 'react-router-dom'
 import ForceGraph2D from 'react-force-graph-2d'
-import { PanelDetailRow, PanelHeader, PANEL_STATUS_BADGE_CLASS } from '../components/PanelContent'
+import { isEmptyValue, PanelDetailRow, PanelHeader, PANEL_STATUS_BADGE_CLASS } from '../components/PanelContent'
 import {
   UI_DIALOG_SECTION_TITLE_CLASS,
   UI_POPUP_HINT_CLASS,
@@ -666,7 +666,7 @@ export default function GraphPage() {
               🔒 Locked View
             </span>
           )}
-          {sticky.rows.filter((r) => r.value !== '').map((r, i) => (
+          {sticky.rows.filter((r) => !isEmptyValue(r.value)).map((r, i) => (
             <PanelDetailRow
               key={i}
               label={r.label}

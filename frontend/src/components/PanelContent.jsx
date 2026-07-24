@@ -84,6 +84,13 @@ export function PanelSectionTitle({ children, className = '' }) {
   )
 }
 
+export function isEmptyValue(value) {
+  if (value == null || value === '') return true
+  if (Array.isArray(value)) return value.length === 0
+  if (typeof value === 'object') return Object.keys(value).length === 0
+  return false
+}
+
 export function PanelDetailRow({
   label,
   value,
@@ -129,7 +136,7 @@ export function PanelDetailRow({
               : {}
           }
         >
-          {hasValue ? textToCopy : '—'}
+          {hasValue ? textToCopy : '-'}
         </span>
       </div>
     </div>
