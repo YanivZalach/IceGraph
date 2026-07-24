@@ -156,7 +156,7 @@ class CollectMetadata(Collector):
             current_schema_id=row["current-schema-id"],
             sort_order_id=row["default-sort-order-id"],
             refs=refs,
-            properties=json.loads(row["properties"]) if row.get("properties") else {},
+            properties=json.loads(row["properties"]),
             pointed_snapshots_files=json.loads(row["pointed_snapshots_files"]) if row.get("pointed_snapshots_files") else None,
             pointed_metadata_log_count=row["pointed_metadata_log_count"],
             child_files=child_files,

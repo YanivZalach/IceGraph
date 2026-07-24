@@ -4,7 +4,7 @@ from typing import Dict, List, Optional
 from base_classes.base_file import BaseFile, HiddenFile
 from collectors.collect_manifests import ManifestRecord
 from collectors.collector import Collector, FilesCollection
-from constants import FileType, UI_NEWLINE
+from constants import FileType
 from extractors.data_files_extractor import DataFilesExtractor
 from collectors.utils import format_partition
 from base_classes.utils import timed
@@ -24,7 +24,7 @@ class DataFileRecord(BaseFile):
     earliest_appearing_snapshot_id: int
     earliest_appearing_snapshot_timestamp: Optional[str]
     sort_order_id: int
-    split_offsets: str
+    split_offsets: List[int]
     key_metadata: str
     equality_ids: str
     hidden_data_file_metadata: HiddenDataFileMetadata
@@ -65,7 +65,7 @@ class CollectDataFiles(Collector):
             earliest_appearing_snapshot_id=data_file_dict["earliest_snapshot_id"],
             earliest_appearing_snapshot_timestamp=data_file_dict["earliest_snapshot_timestamp"],
             sort_order_id=data_file_dict["sort_order_id"],
-            split_offsets=UI_NEWLINE.join(map(str, data_file_dict["split_offsets"] or [])),
+            split_offsets=data_file_dict["split_offsets"] or [],
             key_metadata=data_file_dict["key_metadata"],
             equality_ids=data_file_dict["equality_ids"],
             child_files=[],
