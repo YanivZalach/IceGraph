@@ -63,7 +63,11 @@ def collect_databases_in_catalogs(spark: SparkSession, catalogs: List[str]) -> L
 def collect_catalogs_tables_names(spark: SparkSession, databases: List[str]) -> List[str]:
     tables_df = None
     for database in databases:
-        df = spark.sql(f"show tables in {database}").withColumn("table", F.concat(F.lit(f"{database}."), F.col("tableName"))).select("table", "isTemporary")
+        df = (
+            spark.sql(f"show tables in {database}")
+            .withColumn("table", F.concat(F.lit(f"{database}."), F.col("tableName")))
+            .select("table", "isTemporary")
+        )
         if tables_df is None:
             tables_df = df
         else:

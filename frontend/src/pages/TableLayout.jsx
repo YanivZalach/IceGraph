@@ -11,42 +11,25 @@ import {
   BRANCH_CONNECTION_COLOR,
   DELETED_DATA_FILE_CONNECTION_COLOR,
   NODE_STYLE_MAP,
-  UI_NEWLINE,
-  UI_SECTION_NEWLINE,
 } from '../graphConstants'
 import { getCachedData } from '../utils/cacheUtils'
 
-const parseNodeDetails = (details) => {
+const localizeNodeTimestamps = (details) => {
   if (!details) return {}
 
-  const splitToken = UI_SECTION_NEWLINE === '\n' ? /\\n|\n/ : UI_SECTION_NEWLINE
+  const result = { ...details }
 
-  const lines = details
-    .split(splitToken)
-    .map(l => l.replace(new RegExp(UI_NEWLINE, 'g'), '\n'))
+  for (const key of Object.keys(result)) {
+    if (!key.includes('timestamp')) continue
 
-  const result = {}
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim()
-    const idx = line.indexOf(':')
-    if (idx === -1) continue
-
-    const key = line.substring(0, idx).trim()
-    let value = line.substring(idx + 1).trim()
-
-    if (key.includes('timestamp')) {
-      try {
-        const dateObj = parseUtcDate(value)
-        if (dateObj) {
-          value = formatLocaleDateTime(dateObj)
-        }
-      } catch (e) {
-        console.error('Failed to parse timestamp key:', key, 'value:', value, 'error:', e)
+    try {
+      const dateObj = parseUtcDate(result[key])
+      if (dateObj) {
+        result[key] = formatLocaleDateTime(dateObj)
       }
+    } catch (e) {
+      console.error('Failed to parse timestamp key:', key, 'value:', result[key], 'error:', e)
     }
-
-    result[key] = value
   }
 
   return result
@@ -116,7 +99,7 @@ export default function TableLayout() {
       const style = NODE_STYLE_MAP[node.type] || { rgb: [100, 100, 100], level: 0 }
       const [r, g, b] = style.rgb
 
-      node.details = parseNodeDetails(node.details)
+      node.details = localizeNodeTimestamps(node.details)
 
       return { ...node, shape: 'box', color: `rgba(${r},${g},${b},${node.color_shift || 1})`, level: style.level }
     })
