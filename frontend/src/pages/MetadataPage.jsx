@@ -11,7 +11,6 @@ import {
 } from '../uiTypography'
 import { formatLocaleDateTime, parseUtcDate } from '../utils/dateUtils'
 import { bindMouseScrollHandoff } from '../utils/smoothScroll'
-import { parseSummary } from '../utils/snapshotUtils'
 
 function Section({ title, children }) {
   return (
@@ -187,8 +186,7 @@ export default function MetadataPage() {
     .find(n => n.type === FileType.SNAPSHOT && n.details &&
       String(n.details.snapshot_id) === String(metadata['current-snapshot-id']))
 
-  const currentSummary = currentSnapshotNode ? parseSummary(currentSnapshotNode.details.summary) : []
-  const getStat = (key) => currentSummary.find(s => s.key === key)?.value ?? null
+  const getStat = (key) => currentSnapshotNode?.details?.summary?.[key] ?? null
 
   return (
     <div className="flex-1 overflow-y-auto bg-canvas">

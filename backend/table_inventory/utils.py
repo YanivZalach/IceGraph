@@ -17,6 +17,15 @@ def format_schemas_to_full_dict(schemas: List[Dict[str, Any]]) -> List[Dict[str,
     return formatted_schemas
 
 
+def parse_json_string_fields(data: Dict[str, Any], fields: List[str]) -> Dict[str, Any]:
+    for field in fields:
+        if isinstance(data.get(field), str):
+            with suppress(Exception):
+                data[field] = json.loads(data[field])
+
+    return data
+
+
 def get_json_metadata_from_path(metadata_path: str) -> Dict[str, Any]:
     spark = open_spark_connect_session()
 

@@ -2,7 +2,7 @@ from base_classes.utils import column_to_string_utc
 import json
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import pyspark.sql
 from arrow import Arrow
@@ -33,8 +33,8 @@ class MetadataFileRecord(BaseFile):
     partition_spec_id: int
     current_schema_id: int
     sort_order_id: int
-    refs: str
-    properties: str
+    refs: Dict[str, Any]
+    properties: Dict[str, str]
     pointed_snapshots_files: Optional[str]
     pointed_metadata_log_count: int
     hidden_metadata: HiddenMetadata2
@@ -155,8 +155,8 @@ class CollectMetadata(Collector):
             partition_spec_id=row["default-spec-id"],
             current_schema_id=row["current-schema-id"],
             sort_order_id=row["default-sort-order-id"],
-            refs=json.dumps(refs),
-            properties=row["properties"] if row.get("properties") else "{}",
+            refs=refs,
+            properties=json.loads(row["properties"]) if row.get("properties") else {},
             pointed_snapshots_files=row.get("pointed_snapshots_files"),
             pointed_metadata_log_count=row["pointed_metadata_log_count"],
             child_files=child_files,

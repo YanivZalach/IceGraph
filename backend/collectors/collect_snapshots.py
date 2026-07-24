@@ -9,7 +9,7 @@ from pyspark.sql import functions as F
 
 from base_classes.base_file import BaseFile
 from collectors.collector import Collector, FilesCollection
-from constants import FileType, MAX_SNAPSHOTS_TO_COMPUTE, UI_NEWLINE
+from constants import FileType, MAX_SNAPSHOTS_TO_COMPUTE
 from icegraph_logger import logger
 from base_classes.utils import timed
 
@@ -22,7 +22,7 @@ class SnapshotRecord(BaseFile):
     snapshot_id: int
     parent_id: Optional[int]
     operation: Optional[str]
-    summary: str
+    summary: Dict[str, str]
 
 
 class CollectSnapshots(Collector):
@@ -66,8 +66,8 @@ class CollectSnapshots(Collector):
             raise ValueError(f"Too many snapshots to compute. Maximum is {max_snapshots_to_compute}.")
 
     @staticmethod
-    def _format_summary(summary: dict) -> str:
-        return UI_NEWLINE.join((f"{k}: {(int(v) / (1024 ** 3)):.5f} GB" if k.endswith("files-size") else f"{k}: {v}") for k, v in summary.items())
+    def _format_summary(summary: dict) -> dict:
+        return {k: (f"{(int(v) / (1024 ** 3)):.5f} GB" if k.endswith("files-size") else v) for k, v in summary.items()}
 
     def _parse_snapshot_row(self, snapshot) -> SnapshotRecord:
         return SnapshotRecord(

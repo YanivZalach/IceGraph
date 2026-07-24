@@ -24,7 +24,6 @@ import ResizableSidePanel from '../components/ResizableSidePanel'
 import { FileType } from '../graphConstants'
 import JSONbig from 'json-bigint'
 import { parseUtcDate } from '../utils/dateUtils'
-import { parseSummary } from '../utils/snapshotUtils'
 import { bindMouseScrollHandoff } from '../utils/smoothScroll'
 
 const COLOR_A = '#1964B9'
@@ -52,18 +51,6 @@ function formatTs(tsStr) {
   }
 }
 
-function parseProperties(propertiesStr) {
-  if (!propertiesStr) return []
-  return propertiesStr
-    .split('\n')
-    .map(line => {
-      const match = line.match(/^"([^"]+)":\s*"([^"]*)"$/)
-      if (!match) return null
-      return { key: match[1], value: match[2] }
-    })
-    .filter(Boolean)
-}
-
 function formatDuration(tsA, tsB) {
   const dA = parseUtcDate(tsA)
   const dB = parseUtcDate(tsB)
@@ -73,6 +60,13 @@ function formatDuration(tsA, tsB) {
   if (diff >= 3600000) return `${Math.round(diff / 3600000)}h`
   if (diff >= 60000) return `${Math.round(diff / 60000)}m`
   return `${Math.round(diff / 1000)}s`
+}
+
+function hasFieldChanged(before, after) {
+  if (typeof before === 'object' || typeof after === 'object') {
+    return JSON.stringify(before) !== JSON.stringify(after)
+  }
+  return before !== after
 }
 
 function colorFor(type) {
@@ -125,6 +119,7 @@ function DiffRow({ label, before, after }) {
   const [isCollapsed, setIsCollapsed] = useState(true)
   const tryParse = (val) => {
     if (!val) return null
+    if (typeof val === 'object') return val
     try {
       const p = JSONbig({ storeAsString: true }).parse(val)
       return (typeof p === 'object' && p !== null) ? p : null
@@ -226,6 +221,7 @@ function DiffRow({ label, before, after }) {
 
   const tryFormat = (val) => {
     if (!val) return val
+    if (typeof val === 'object') return JSON.stringify(val, null, 2)
     try {
       const parsed = JSONbig({ storeAsString: true }).parse(val)
       if (typeof parsed === 'object' && parsed !== null) {
@@ -244,7 +240,7 @@ function DiffRow({ label, before, after }) {
         <div>
           <div className={PANEL_DIFF_BEFORE_LABEL_CLASS}>Before</div>
           <div className="relative">
-            {before && <CopyIconButton text={tryFormat(before)} className="absolute top-1.5 right-1.5 z-10" />}
+            {before != null && before !== '' && <CopyIconButton text={tryFormat(before)} className="absolute top-1.5 right-1.5 z-10" />}
             <pre className={PANEL_DIFF_BEFORE_VALUE_CLASS}>
               {tryFormat(before) ?? '—'}
             </pre>
@@ -253,7 +249,7 @@ function DiffRow({ label, before, after }) {
         <div>
           <div className={PANEL_DIFF_AFTER_LABEL_CLASS}>After</div>
           <div className="relative">
-            {after && <CopyIconButton text={tryFormat(after)} className="absolute top-1.5 right-1.5 z-10" />}
+            {after != null && after !== '' && <CopyIconButton text={tryFormat(after)} className="absolute top-1.5 right-1.5 z-10" />}
             <pre className={PANEL_DIFF_AFTER_VALUE_CLASS}>
               {tryFormat(after) ?? '—'}
             </pre>
@@ -266,13 +262,13 @@ function DiffRow({ label, before, after }) {
 
 
 function SnapSummary({ summary }) {
-  const rows = parseSummary(summary)
-  if (rows.length === 0) return null
+  const entries = summary ? Object.entries(summary) : []
+  if (entries.length === 0) return null
   return (
     <div>
       <PanelSectionTitle>Summary</PanelSectionTitle>
       <div className="flex flex-col gap-3">
-        {rows.map(({ key, value }) => (
+        {entries.map(([key, value]) => (
           <PanelDetailRow key={key} label={key} value={value} />
         ))}
       </div>
@@ -401,8 +397,8 @@ export default function TimelinePage() {
 
       if (prev && details.refs && prev.refs) {
         try {
-          const currentRefs = JSONbig({ storeAsString: true }).parse(details.refs)
-          const prevRefs = JSONbig({ storeAsString: true }).parse(prev.refs)
+          const currentRefs = details.refs
+          const prevRefs = prev.refs
 
           for (const key of Object.keys(prevRefs)) {
             if (currentRefs[key] && prevRefs[key]) {
@@ -427,7 +423,7 @@ export default function TimelinePage() {
       const diff =
         (type === 'B' || type === 'C') && prev
           ? Object.keys(details)
-            .filter(k => details[k] !== prev[k])
+            .filter(k => hasFieldChanged(details[k], prev[k]))
             .map(k => ({ key: k, before: prev[k], after: details[k] }))
           : []
 
@@ -741,11 +737,11 @@ export default function TimelinePage() {
                   <SnapSummary summary={selectedSnap.summary} />
                 </>
               )}
-              {parseProperties(selected.details.properties).length > 0 && (
+              {selected.details.properties && Object.keys(selected.details.properties).length > 0 && (
                 <div>
                   <PanelSectionTitle>Properties</PanelSectionTitle>
                   <div className="flex flex-col gap-3">
-                    {parseProperties(selected.details.properties).map(({ key, value }) => (
+                    {Object.entries(selected.details.properties).map(([key, value]) => (
                       <PanelDetailRow key={key} label={key} value={value} />
                     ))}
                   </div>

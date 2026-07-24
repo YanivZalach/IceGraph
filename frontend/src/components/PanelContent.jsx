@@ -100,7 +100,9 @@ export function PanelDetailRow({
   }
 
   let displayValue = value
-  if (value != null && value !== '') {
+  if (typeof value === 'object' && value !== null) {
+    displayValue = JSON.stringify(value, null, 2)
+  } else if (value != null && value !== '') {
     const parsed = tryParseJson(String(value))
     if (parsed !== undefined && typeof parsed === 'object' && parsed !== null) {
       displayValue = JSON.stringify(parsed, null, 2)

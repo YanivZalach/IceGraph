@@ -12,7 +12,7 @@ from collectors.collect_snapshots import CollectSnapshots, SnapshotRecord
 from constants import DATA_FILES_CUTOFF_WARNING, FileType, MAX_DATA_FILES_TO_COLLECT
 from icegraph_logger import logger
 from search_cutoff.find_search_cutoff import SearchCutoff, find_search_cutoff
-from table_inventory.utils import format_schemas_to_full_dict, get_json_metadata_from_path
+from table_inventory.utils import format_schemas_to_full_dict, get_json_metadata_from_path, parse_json_string_fields
 
 max_data_files_to_collect = int(os.getenv("MAX_DATA_FILES_TO_COLLECT", MAX_DATA_FILES_TO_COLLECT))
 
@@ -224,6 +224,7 @@ class TableInventory(SparkTableAction):
 
             current_table_specs = get_json_metadata_from_path(current_main_metadata_file.file_path)
             current_table_specs["schemas"] = format_schemas_to_full_dict(current_table_specs.get("schemas", []))
+            current_table_specs = parse_json_string_fields(current_table_specs, ["refs", "properties"])
 
             self._current_table_specs.update(current_table_specs)
 
