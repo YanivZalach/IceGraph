@@ -35,7 +35,7 @@ class MetadataFileRecord(BaseFile):
     sort_order_id: int
     refs: Dict[str, Any]
     properties: Dict[str, str]
-    pointed_snapshots_files: Optional[str]
+    pointed_snapshots_files: Optional[List[Dict[str, str]]]
     pointed_metadata_log_count: int
     hidden_metadata: HiddenMetadata2
 
@@ -157,7 +157,7 @@ class CollectMetadata(Collector):
             sort_order_id=row["default-sort-order-id"],
             refs=refs,
             properties=json.loads(row["properties"]) if row.get("properties") else {},
-            pointed_snapshots_files=row.get("pointed_snapshots_files"),
+            pointed_snapshots_files=json.loads(row["pointed_snapshots_files"]) if row.get("pointed_snapshots_files") else None,
             pointed_metadata_log_count=row["pointed_metadata_log_count"],
             child_files=child_files,
             hidden_metadata=HiddenMetadata2(

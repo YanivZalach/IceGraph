@@ -151,7 +151,6 @@ export default function TableLayout() {
         const text = await res.text()
         setRawData(text)
         const data = JSONbig({ storeAsString: true }).parse(text)
-        console.log(JSONbig({ storeAsString: true }).parse(text))
 
         setGraphData(buildGraphData(data))
         setErrors(data.errors || {})

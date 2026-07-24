@@ -22,7 +22,6 @@ import {
 } from '../uiTypography'
 import ResizableSidePanel from '../components/ResizableSidePanel'
 import { FileType } from '../graphConstants'
-import JSONbig from 'json-bigint'
 import { parseUtcDate } from '../utils/dateUtils'
 import { bindMouseScrollHandoff } from '../utils/smoothScroll'
 
@@ -117,14 +116,7 @@ function contentNaturalSize(content, zoom) {
 
 function DiffRow({ label, before, after }) {
   const [isCollapsed, setIsCollapsed] = useState(true)
-  const tryParse = (val) => {
-    if (!val) return null
-    if (typeof val === 'object') return val
-    try {
-      const p = JSONbig({ storeAsString: true }).parse(val)
-      return (typeof p === 'object' && p !== null) ? p : null
-    } catch { return null }
-  }
+  const tryParse = (val) => (val && typeof val === 'object') ? val : null
 
   const beforeObj = tryParse(before)
   const afterObj = tryParse(after)
@@ -221,14 +213,7 @@ function DiffRow({ label, before, after }) {
 
   const tryFormat = (val) => {
     if (!val) return val
-    if (typeof val === 'object') return JSON.stringify(val, null, 2)
-    try {
-      const parsed = JSONbig({ storeAsString: true }).parse(val)
-      if (typeof parsed === 'object' && parsed !== null) {
-        return JSON.stringify(parsed, null, 2)
-      }
-    } catch { }
-    return val
+    return typeof val === 'object' ? JSON.stringify(val, null, 2) : val
   }
 
   return (
@@ -396,23 +381,19 @@ export default function TimelinePage() {
       let branchName = null
 
       if (prev && details.refs && prev.refs) {
-        try {
-          const currentRefs = details.refs
-          const prevRefs = prev.refs
+        const currentRefs = details.refs
+        const prevRefs = prev.refs
 
-          for (const key of Object.keys(prevRefs)) {
-            if (currentRefs[key] && prevRefs[key]) {
-              const currentSnapId = currentRefs[key]['snapshot-id']
-              const prevSnapId = prevRefs[key]['snapshot-id']
-              if (currentSnapId !== prevSnapId) {
-                branchSnapId = currentSnapId
-                branchName = key
-                break
-              }
+        for (const key of Object.keys(prevRefs)) {
+          if (currentRefs[key] && prevRefs[key]) {
+            const currentSnapId = currentRefs[key]['snapshot-id']
+            const prevSnapId = prevRefs[key]['snapshot-id']
+            if (currentSnapId !== prevSnapId) {
+              branchSnapId = currentSnapId
+              branchName = key
+              break
             }
           }
-        } catch (e) {
-          console.error("Failed to parse refs", e)
         }
       }
 

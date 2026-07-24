@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import JSONbig from 'json-bigint'
 import CopyIconButton from './CopyIconButton'
 import {
   UI_BODY_MUTED_ITALIC_CLASS,
@@ -91,23 +90,9 @@ export function PanelDetailRow({
   relaxedCollapse = false,
   collapseLineCount = DEFAULT_COLLAPSE_LINES,
 }) {
-  const tryParseJson = (str) => {
-    try {
-      return JSONbig({ storeAsString: true }).parse(str)
-    } catch {
-      return undefined
-    }
-  }
-
-  let displayValue = value
-  if (typeof value === 'object' && value !== null) {
-    displayValue = JSON.stringify(value, null, 2)
-  } else if (value != null && value !== '') {
-    const parsed = tryParseJson(String(value))
-    if (parsed !== undefined && typeof parsed === 'object' && parsed !== null) {
-      displayValue = JSON.stringify(parsed, null, 2)
-    }
-  }
+  const displayValue = typeof value === 'object' && value !== null
+    ? JSON.stringify(value, null, 2)
+    : value
 
   const textToCopy = displayValue != null && displayValue !== '' ? String(displayValue) : ''
   const hasValue = textToCopy !== ''
