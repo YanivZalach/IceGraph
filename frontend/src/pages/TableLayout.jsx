@@ -6,7 +6,9 @@ import { IS_MOCK, MOCK_HOME_ROUTE } from '../appConstants'
 import { UI_BODY_MUTED_CLASS, UI_DIALOG_TITLE_CLASS, UI_MONO_MUTED_CLASS } from '../uiTypography'
 
 import MetadataStructured from '../components/MetadataStructured'
-import SchemaFieldList from '../components/SchemaFieldList'
+import PartitionSpecList from '../components/PartitionSpecList'
+import SchemaFieldList, { TypeDisplay } from '../components/SchemaFieldList'
+import SortOrderList from '../components/SortOrderList'
 import { useTableSpecs } from '../context/TableSpecsContext'
 import {
   BRANCH_CONNECTION_COLOR,
@@ -14,6 +16,170 @@ import {
   NODE_STYLE_MAP,
 } from '../graphConstants'
 import { getCachedData } from '../utils/cacheUtils'
+import { diffFieldLists } from '../utils/diffFieldLists'
+
+const DETAIL_TYPE_CONFIG = {
+  schema: {
+    listKey: 'schemas',
+    idKey: 'schema-id',
+    fieldIdKey: f => f['field-id'] ?? f.id,
+    noPrevLabel: 'No previous schema',
+  },
+  spec: {
+    listKey: 'partition-specs',
+    idKey: 'spec-id',
+    fieldIdKey: f => f['field-id'],
+    noPrevLabel: 'No previous partition spec',
+  },
+  order: {
+    listKey: 'sort-orders',
+    idKey: 'order-id',
+    fieldIdKey: f => f['source-id'],
+    noPrevLabel: 'No previous sort order',
+  },
+}
+
+function TypeText({ type }) {
+  return typeof type === 'string' ? type : JSON.stringify(type)
+}
+
+function SchemaDiffView({ diff }) {
+  return (
+    <div>
+      <div className="flex items-center gap-3 pb-1 mb-1 border-b border-edge">
+        <span className="text-xs font-bold text-slate-500 uppercase w-6 text-right shrink-0">ID</span>
+        <span className="text-xs font-bold text-slate-500 uppercase min-w-30">Name</span>
+        <span className="text-xs font-bold text-slate-500 uppercase">Type</span>
+      </div>
+      {diff.map((entry, i) => {
+        if (entry.status === 'unchanged') return (
+          <div key={i} className="py-2 border-b border-edge last:border-0 flex items-center gap-3 opacity-50">
+            <span className="text-base font-mono text-slate-500 w-6 text-right shrink-0 tabular-nums">{entry.field['field-id'] ?? entry.field.id ?? '—'}</span>
+            <span className="text-sm font-semibold text-ink min-w-30">{entry.field.name}</span>
+            <TypeDisplay type={entry.field.type} />
+          </div>
+        )
+        if (entry.status === 'added') return (
+          <div key={i} className="py-2 border-b border-edge last:border-0 flex items-center gap-3 bg-green-900/20">
+            <span className="text-xs font-bold text-green-400 w-6 text-right shrink-0">+</span>
+            <span className="text-sm font-semibold text-green-300 min-w-30">{entry.field.name}</span>
+            <TypeDisplay type={entry.field.type} />
+          </div>
+        )
+        if (entry.status === 'removed') return (
+          <div key={i} className="py-2 border-b border-edge last:border-0 flex items-center gap-3 bg-red-900/20">
+            <span className="text-xs font-bold text-red-400 w-6 text-right shrink-0">−</span>
+            <span className="text-sm font-semibold text-red-300 line-through min-w-30">{entry.field.name}</span>
+            <TypeDisplay type={entry.field.type} />
+          </div>
+        )
+        return (
+          <div key={i} className="py-2 border-b border-edge last:border-0 flex flex-col gap-1 bg-amber-900/20">
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-bold text-amber-400 w-6 text-right shrink-0">~</span>
+              <span className="text-sm font-semibold text-amber-300 min-w-30">{entry.curr.name}{entry.prev.name !== entry.curr.name ? <span className="text-amber-600 line-through ml-2">{entry.prev.name}</span> : null}</span>
+            </div>
+            {JSON.stringify(entry.prev.type) !== JSON.stringify(entry.curr.type) && (
+              <div className="ml-9 flex items-center gap-3 text-xs font-mono">
+                <TypeDisplay type={entry.prev.type} />
+                <span className="text-slate-500">→</span>
+                <TypeDisplay type={entry.curr.type} />
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function PartitionDiffView({ diff }) {
+  return (
+    <div>
+      <div className="flex items-center gap-x-4 pb-1 mb-1 border-b border-edge">
+        <span className="text-xs font-bold text-slate-500 uppercase w-10 text-right shrink-0">ID</span>
+        <span className="text-xs font-bold text-slate-500 uppercase w-14 text-right shrink-0">Source ID</span>
+        <span className="text-xs font-bold text-slate-500 uppercase min-w-30 shrink-0">Name</span>
+        <span className="text-xs font-bold text-slate-500 uppercase shrink-0">Transform</span>
+      </div>
+      {diff.map((entry, i) => {
+        if (entry.status === 'unchanged') return (
+          <div key={i} className="flex items-center gap-x-4 py-2 border-b border-edge last:border-0 opacity-50">
+            <span className="text-base font-mono text-slate-500 w-10 text-right shrink-0 tabular-nums">{entry.field['field-id'] ?? '—'}</span>
+            <span className="text-xs font-mono text-slate-500 w-14 text-right shrink-0 tabular-nums">{entry.field['source-id'] ?? '—'}</span>
+            <span className="text-sm font-semibold text-ink min-w-30 shrink-0">{entry.field.name}</span>
+            <span className="text-xs font-mono text-slate-400">{entry.field.transform}</span>
+          </div>
+        )
+        if (entry.status === 'added' || entry.status === 'removed') {
+          const added = entry.status === 'added'
+          return (
+            <div key={i} className={`flex items-center gap-x-4 py-2 border-b border-edge last:border-0 ${added ? 'bg-green-900/20' : 'bg-red-900/20'}`}>
+              <span className={`text-xs font-bold w-10 text-right shrink-0 ${added ? 'text-green-400' : 'text-red-400'}`}>{added ? '+' : '−'}</span>
+              <span className={`text-xs font-mono w-14 text-right shrink-0 tabular-nums ${added ? 'text-green-400' : 'text-red-400'}`}>{entry.field['source-id'] ?? '—'}</span>
+              <span className={`text-sm font-semibold min-w-30 shrink-0 ${added ? 'text-green-300' : 'text-red-300 line-through'}`}>{entry.field.name}</span>
+              <span className={`text-xs font-mono ${added ? 'text-green-400' : 'text-red-400'}`}>{entry.field.transform}</span>
+            </div>
+          )
+        }
+        return (
+          <div key={i} className="py-2 border-b border-edge last:border-0 flex items-center gap-x-4 bg-amber-900/20">
+            <span className="text-xs font-bold text-amber-400 w-10 text-right shrink-0">~</span>
+            <span className="text-xs font-mono text-slate-400 w-14 text-right shrink-0 tabular-nums">{entry.curr['source-id'] ?? '—'}</span>
+            <span className="text-sm font-semibold text-amber-300 min-w-30 shrink-0">{entry.curr.name}{entry.prev.name !== entry.curr.name ? <span className="text-amber-600 line-through ml-2">{entry.prev.name}</span> : null}</span>
+            <span className="text-xs font-mono flex items-center gap-2">
+              {entry.prev.transform !== entry.curr.transform ? (
+                <>
+                  <span className="text-red-400 line-through">{entry.prev.transform}</span>
+                  <span className="text-slate-500">→</span>
+                  <span className="text-green-400">{entry.curr.transform}</span>
+                </>
+              ) : entry.curr.transform}
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function SortDiffView({ diff }) {
+  return (
+    <div>
+      <div className="grid grid-cols-[1fr_120px_120px] pb-1 mb-1 border-b border-edge">
+        <span className="text-xs font-bold text-slate-500 uppercase">Transform</span>
+        <span className="text-xs font-bold text-slate-500 uppercase">Direction</span>
+        <span className="text-xs font-bold text-slate-500 uppercase">Nulls</span>
+      </div>
+      {diff.map((entry, i) => {
+        if (entry.status === 'unchanged') return (
+          <div key={i} className="grid grid-cols-[1fr_120px_120px] py-2 border-b border-edge last:border-0 items-center opacity-50">
+            <span className="text-sm font-mono text-slate-400"><TypeText type={entry.field.transform} /></span>
+            <span className="text-sm text-ink">{entry.field.direction}</span>
+            <span className="text-sm text-slate-400">{entry.field['null-order']}</span>
+          </div>
+        )
+        if (entry.status === 'added' || entry.status === 'removed') {
+          const added = entry.status === 'added'
+          return (
+            <div key={i} className={`grid grid-cols-[1fr_120px_120px] py-2 border-b border-edge last:border-0 items-center ${added ? 'bg-green-900/20' : 'bg-red-900/20'}`}>
+              <span className={`text-sm font-mono ${added ? 'text-green-400' : 'text-red-400 line-through'}`}><TypeText type={entry.field.transform} /></span>
+              <span className={`text-sm ${added ? 'text-green-300' : 'text-red-300'}`}>{entry.field.direction}</span>
+              <span className={`text-sm ${added ? 'text-green-400' : 'text-red-400'}`}>{entry.field['null-order']}</span>
+            </div>
+          )
+        }
+        return (
+          <div key={i} className="grid grid-cols-[1fr_120px_120px] py-2 border-b border-edge last:border-0 items-center bg-amber-900/20">
+            <span className="text-sm font-mono text-amber-300"><TypeText type={entry.curr.transform} /></span>
+            <span className="text-sm text-amber-300">{entry.curr.direction}{entry.prev.direction !== entry.curr.direction ? <span className="text-amber-600 line-through ml-2">{entry.prev.direction}</span> : null}</span>
+            <span className="text-sm text-amber-300">{entry.curr['null-order']}{entry.prev['null-order'] !== entry.curr['null-order'] ? <span className="text-amber-600 line-through ml-2">{entry.prev['null-order']}</span> : null}</span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
 
 const localizeNodeTimestamps = (details) => {
   if (!details) return {}
@@ -347,51 +513,37 @@ export default function TableLayout() {
               />
 
               {selectionDetail && (() => {
-                const isSchema = selectionDetail.type === 'schema'
-                const schemas = metadata?.schemas ?? []
-                const schemaIdx = isSchema ? schemas.findIndex(s => s['schema-id'] === selectionDetail.id) : -1
-                const prevSchema = schemaIdx > 0 ? schemas[schemaIdx - 1] : null
-                const hasPrev = prevSchema !== null
+                const config = DETAIL_TYPE_CONFIG[selectionDetail.type]
+                const list = metadata?.[config.listKey] ?? []
+                const idx = list.findIndex(s => s[config.idKey] === selectionDetail.id)
+                const prevItem = idx > 0 ? list[idx - 1] : null
+                const hasPrev = prevItem !== null
 
-                const schemaDiff = isSchema && showDiff && hasPrev ? (() => {
-                  const prevById = Object.fromEntries((prevSchema.fields ?? []).map(f => [f['field-id'] ?? f.id, f]))
-                  const currById = Object.fromEntries((selectionDetail.data.fields ?? []).map(f => [f['field-id'] ?? f.id, f]))
-                  const allIds = Array.from(new Set([...Object.keys(prevById), ...Object.keys(currById)]))
-                  return allIds.map(fid => {
-                    const prev = prevById[fid]
-                    const curr = currById[fid]
-                    if (!prev) return { status: 'added', field: curr }
-                    if (!curr) return { status: 'removed', field: prev }
-                    const typeChanged = JSON.stringify(prev.type) !== JSON.stringify(curr.type)
-                    const nameChanged = prev.name !== curr.name
-                    if (typeChanged || nameChanged) return { status: 'changed', prev, curr }
-                    return { status: 'unchanged', field: curr }
-                  })
-                })() : null
+                const diff = showDiff && hasPrev
+                  ? diffFieldLists(prevItem.fields, selectionDetail.data.fields, config.fieldIdKey)
+                  : null
 
                 return (
                   <div ref={detailPanelRef} className="rounded-lg border-2 border-accent">
                     <div className="flex items-center justify-between px-4 py-2 bg-accent">
                       <span className="text-sm font-bold text-white">{selectionDetail.label}</span>
                       <div className="flex items-center gap-2">
-                        {isSchema && (
-                          <div className="flex items-center gap-0">
-                            <button
-                              className={`text-xs font-bold px-2 py-0.5 rounded-l-full border border-white/30 transition ${!showDiff ? 'bg-white text-accent' : 'bg-transparent text-white/70 hover:text-white'}`}
-                              onClick={() => setShowDiff(false)}
-                            >
-                              Full
-                            </button>
-                            <button
-                              disabled={!hasPrev}
-                              title={!hasPrev ? 'No previous schema' : 'Show diff to previous schema'}
-                              className={`text-xs font-bold px-2 py-0.5 rounded-r-full border border-white/30 transition ${showDiff ? 'bg-white text-accent' : !hasPrev ? 'bg-transparent text-white/30 cursor-not-allowed' : 'bg-transparent text-white/70 hover:text-white cursor-pointer'}`}
-                              onClick={() => hasPrev && setShowDiff(true)}
-                            >
-                              Diff
-                            </button>
-                          </div>
-                        )}
+                        <div className="flex items-center gap-0">
+                          <button
+                            className={`text-xs font-bold px-2 py-0.5 rounded-l-full border border-white/30 transition ${!showDiff ? 'bg-white text-accent' : 'bg-transparent text-white/70 hover:text-white'}`}
+                            onClick={() => setShowDiff(false)}
+                          >
+                            Full
+                          </button>
+                          <button
+                            disabled={!hasPrev}
+                            title={!hasPrev ? config.noPrevLabel : 'Show diff to previous version'}
+                            className={`text-xs font-bold px-2 py-0.5 rounded-r-full border border-white/30 transition ${showDiff ? 'bg-white text-accent' : !hasPrev ? 'bg-transparent text-white/30 cursor-not-allowed' : 'bg-transparent text-white/70 hover:text-white cursor-pointer'}`}
+                            onClick={() => hasPrev && setShowDiff(true)}
+                          >
+                            Diff
+                          </button>
+                        </div>
                         <button
                           className="text-white/70 hover:text-white text-xl leading-none cursor-pointer transition"
                           onClick={() => setSelectionDetail(null)}
@@ -401,61 +553,18 @@ export default function TableLayout() {
                       </div>
                     </div>
                     <div className="px-4 py-3 max-h-[300px] overflow-y-auto">
-                      {isSchema && !showDiff && (
+                      {!showDiff && selectionDetail.type === 'schema' && (
                         <SchemaFieldList schema={selectionDetail.data} />
                       )}
-                      {isSchema && showDiff && schemaDiff && (
-                        <div>
-                          <div className="flex items-center gap-3 pb-1 mb-1 border-b border-edge">
-                            <span className="text-xs font-bold text-slate-500 uppercase w-6 text-right shrink-0">#</span>
-                            <span className="text-xs font-bold text-slate-500 uppercase min-w-30">Name</span>
-                            <span className="text-xs font-bold text-slate-500 uppercase">Type</span>
-                          </div>
-                          {schemaDiff.map((entry, i) => {
-                            if (entry.status === 'unchanged') return (
-                              <div key={i} className="py-2 border-b border-edge last:border-0 flex items-center gap-3 opacity-50">
-                                <span className="text-base font-mono text-slate-500 w-6 text-right shrink-0 tabular-nums">{entry.field['field-id'] ?? entry.field.id ?? '—'}</span>
-                                <span className="text-sm font-semibold text-ink min-w-30">{entry.field.name}</span>
-                                <span className="text-xs font-mono text-slate-400">{typeof entry.field.type === 'string' ? entry.field.type : JSON.stringify(entry.field.type)}</span>
-                              </div>
-                            )
-                            if (entry.status === 'added') return (
-                              <div key={i} className="py-2 border-b border-edge last:border-0 flex items-center gap-3 bg-green-900/20">
-                                <span className="text-xs font-bold text-green-400 w-6 text-right shrink-0">+</span>
-                                <span className="text-sm font-semibold text-green-300 min-w-30">{entry.field.name}</span>
-                                <span className="text-xs font-mono text-green-400">{typeof entry.field.type === 'string' ? entry.field.type : JSON.stringify(entry.field.type)}</span>
-                              </div>
-                            )
-                            if (entry.status === 'removed') return (
-                              <div key={i} className="py-2 border-b border-edge last:border-0 flex items-center gap-3 bg-red-900/20">
-                                <span className="text-xs font-bold text-red-400 w-6 text-right shrink-0">−</span>
-                                <span className="text-sm font-semibold text-red-300 line-through min-w-30">{entry.field.name}</span>
-                                <span className="text-xs font-mono text-red-400">{typeof entry.field.type === 'string' ? entry.field.type : JSON.stringify(entry.field.type)}</span>
-                              </div>
-                            )
-                            return (
-                              <div key={i} className="py-2 border-b border-edge last:border-0 flex flex-col gap-1 bg-amber-900/20">
-                                <div className="flex items-center gap-3">
-                                  <span className="text-xs font-bold text-amber-400 w-6 text-right shrink-0">~</span>
-                                  <span className="text-sm font-semibold text-amber-300 min-w-30">{entry.curr.name}{entry.prev.name !== entry.curr.name ? <span className="text-amber-600 line-through ml-2">{entry.prev.name}</span> : null}</span>
-                                </div>
-                                {JSON.stringify(entry.prev.type) !== JSON.stringify(entry.curr.type) && (
-                                  <div className="ml-9 flex items-center gap-2 text-xs font-mono">
-                                    <span className="text-red-400 line-through">{typeof entry.prev.type === 'string' ? entry.prev.type : JSON.stringify(entry.prev.type)}</span>
-                                    <span className="text-slate-500">→</span>
-                                    <span className="text-green-400">{typeof entry.curr.type === 'string' ? entry.curr.type : JSON.stringify(entry.curr.type)}</span>
-                                  </div>
-                                )}
-                              </div>
-                            )
-                          })}
-                        </div>
+                      {!showDiff && selectionDetail.type === 'spec' && (
+                        <PartitionSpecList spec={selectionDetail.data} />
                       )}
-                      {!isSchema && (
-                        <pre className="text-xs font-mono text-slate-300 whitespace-pre overflow-x-auto">
-                          {JSON.stringify(selectionDetail.data, null, 2)}
-                        </pre>
+                      {!showDiff && selectionDetail.type === 'order' && (
+                        <SortOrderList order={selectionDetail.data} />
                       )}
+                      {showDiff && diff && selectionDetail.type === 'schema' && <SchemaDiffView diff={diff} />}
+                      {showDiff && diff && selectionDetail.type === 'spec' && <PartitionDiffView diff={diff} />}
+                      {showDiff && diff && selectionDetail.type === 'order' && <SortDiffView diff={diff} />}
                     </div>
                   </div>
                 )

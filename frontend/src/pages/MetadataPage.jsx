@@ -3,11 +3,12 @@ import { useOutletContext } from 'react-router-dom'
 import JSONbig from 'json-bigint'
 import CopyableValue from '../components/CopyableValue'
 import { DEFAULT_COLLAPSE_LINES, PANEL_COLLAPSE_TOGGLE_CLASS } from '../components/PanelContent'
+import PartitionSpecList from '../components/PartitionSpecList'
 import SchemaFieldList from '../components/SchemaFieldList'
+import SortOrderList from '../components/SortOrderList'
 import { FileType } from '../graphConstants'
 import {
   UI_BODY_MUTED_CLASS,
-  UI_BODY_MUTED_ITALIC_CLASS,
   UI_FIELD_LABEL_CLASS,
   UI_METADATA_SECTION_TITLE_CLASS,
   UI_MONO_MUTED_CLASS,
@@ -310,29 +311,13 @@ export default function MetadataPage() {
             ) : (
               <p className={UI_BODY_MUTED_ITALIC_CLASS}>Unpartitioned.</p>
             )}
+            <PartitionSpecList spec={defaultSpec} />
           </Section>
         )}
 
         {defaultOrder && (
           <Section title={`Sort Order — ID ${defaultOrder['order-id']}`}>
-            {defaultOrder.fields?.length > 0 ? (
-              <div>
-                <div className="grid grid-cols-[1fr_120px_120px] pb-1 mb-1 border-b border-edge">
-                  <span className="text-xs font-bold text-slate-500 uppercase">Transform</span>
-                  <span className="text-xs font-bold text-slate-500 uppercase">Direction</span>
-                  <span className="text-xs font-bold text-slate-500 uppercase">Nulls</span>
-                </div>
-                {defaultOrder.fields.map((f, i) => (
-                  <div key={i} className="grid grid-cols-[1fr_120px_120px] py-2 border-b border-edge last:border-0 items-center">
-                    <span className="text-sm font-mono text-accent">{typeof f.transform === 'object' ? JSON.stringify(f.transform) : f.transform}</span>
-                    <span className="text-sm text-ink">{f.direction}</span>
-                    <span className={UI_BODY_MUTED_CLASS}>{f['null-order']}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className={UI_BODY_MUTED_ITALIC_CLASS}>Unsorted.</p>
-            )}
+            <SortOrderList order={defaultOrder} />
           </Section>
         )}
 

@@ -101,7 +101,7 @@ export default function SchemaFieldList({ schema }) {
   return (
     <div>
       <div className="flex items-center gap-3 pb-1 mb-1 border-b border-edge">
-        <span className="text-xs font-bold text-slate-500 uppercase w-6 text-right shrink-0">#</span>
+        <span className="text-xs font-bold text-slate-500 uppercase w-6 text-right shrink-0">ID</span>
         <span className="text-xs font-bold text-slate-500 uppercase min-w-30">Name</span>
         <span className="text-xs font-bold text-slate-500 uppercase">Type</span>
       </div>
