@@ -1,17 +1,19 @@
-from typing import Any, Dict, Iterable
+from typing import Any
 
-from constants import UI_NEWLINE, UI_SECTION_NEWLINE
-
-
-def format_node_info(file_info: Dict[str, Any]) -> str:
-    formatted_info = file_info["type"].upper()
-    formatted_info += UI_SECTION_NEWLINE + UI_SECTION_NEWLINE.join(f"{key}: {_format_element_for_ui(value)}" for key, value in file_info.items())
-
-    return formatted_info
+JS_MAX_SAFE_INTEGER = 2**53 - 1
 
 
-def _format_element_for_ui(element) -> str:
-    if isinstance(element, Iterable) and not isinstance(element, str):
-        return UI_NEWLINE.join(list(element))
+def to_json_safe(value: Any) -> Any:
+    if isinstance(value, int):
+        return str(value) if abs(value) > JS_MAX_SAFE_INTEGER else value
 
-    return str(element)
+    if isinstance(value, dict):
+        return {key: to_json_safe(v) for key, v in value.items()}
+
+    if isinstance(value, (set, frozenset)):
+        return sorted(to_json_safe(v) for v in value)
+
+    if isinstance(value, (list, tuple)):
+        return [to_json_safe(v) for v in value]
+
+    return value

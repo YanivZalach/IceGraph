@@ -29,6 +29,7 @@ from base_classes.utils import verify_iceberg_table
 
 load_dotenv()
 app = Flask(__name__, static_url_path="/static")
+app.json.sort_keys = False
 
 job_lock = threading.Lock()
 jobs: dict[str, dict] = {}

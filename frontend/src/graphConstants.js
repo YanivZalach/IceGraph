@@ -20,9 +20,6 @@ export const NODE_STYLE_MAP = {
   [FileType.POSITION_DELETE]: { rgb: [185, 35, 60], level: 2 },
   [FileType.EQUALITY_DELETE]: { rgb: [185, 35, 60], level: 2 },
 }
-export const UI_SECTION_NEWLINE = '\x00'
-export const UI_NEWLINE = '\n'
-
 const FILE_TYPE_LABELS = {
   [FileType.MAIN_METADATA]: 'Main Metadata',
   [FileType.METADATA]: 'Metadata',

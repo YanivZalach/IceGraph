@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import JSONbig from 'json-bigint'
 import CopyIconButton from './CopyIconButton'
 import {
   UI_BODY_MUTED_ITALIC_CLASS,
@@ -85,27 +84,22 @@ export function PanelSectionTitle({ children, className = '' }) {
   )
 }
 
+export function isEmptyValue(value) {
+  if (value == null || value === '') return true
+  if (Array.isArray(value)) return value.length === 0
+  if (typeof value === 'object') return Object.keys(value).length === 0
+  return false
+}
+
 export function PanelDetailRow({
   label,
   value,
   relaxedCollapse = false,
   collapseLineCount = DEFAULT_COLLAPSE_LINES,
 }) {
-  const tryParseJson = (str) => {
-    try {
-      return JSONbig({ storeAsString: true }).parse(str)
-    } catch {
-      return undefined
-    }
-  }
-
-  let displayValue = value
-  if (value != null && value !== '') {
-    const parsed = tryParseJson(String(value))
-    if (parsed !== undefined && typeof parsed === 'object' && parsed !== null) {
-      displayValue = JSON.stringify(parsed, null, 2)
-    }
-  }
+  const displayValue = typeof value === 'object' && value !== null
+    ? JSON.stringify(value, null, 2)
+    : value
 
   const textToCopy = displayValue != null && displayValue !== '' ? String(displayValue) : ''
   const hasValue = textToCopy !== ''
@@ -123,7 +117,7 @@ export function PanelDetailRow({
             onClick={() => setIsCollapsed(p => !p)}
             className={PANEL_COLLAPSE_TOGGLE_CLASS}
           >
-            {isCollapsed ? `▼ Show all (${lineCount} lines)` : '▲ Collapse'}
+            {isCollapsed ? `(${lineCount} lines) ▼` : '▲'}
           </button>
         )}
       </div>
@@ -142,7 +136,7 @@ export function PanelDetailRow({
               : {}
           }
         >
-          {hasValue ? textToCopy : '—'}
+          {hasValue ? textToCopy : '-'}
         </span>
       </div>
     </div>

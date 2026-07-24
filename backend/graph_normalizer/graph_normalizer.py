@@ -3,7 +3,7 @@ import os
 from collectors.collect_metadata import MetadataFileRecord
 from constants import FileType
 from table_inventory.table_inventory import TableInventoryResult
-from graph_normalizer.utils import format_node_info
+from graph_normalizer.utils import to_json_safe
 
 
 class GraphNormalizer:
@@ -21,13 +21,15 @@ class GraphNormalizer:
         self._build_nodes()
         self._build_edges()
 
-        return {
-            "nodes": list(self._path_to_nodes.values()),
-            "edges": self._edges,
-            "metadata": self._current_table_metadata,
-            "errors": self._errors,
-            "warnings": self._warnings,
-        }
+        return to_json_safe(
+            {
+                "nodes": list(self._path_to_nodes.values()),
+                "edges": self._edges,
+                "metadata": self._current_table_metadata,
+                "errors": self._errors,
+                "warnings": self._warnings,
+            }
+        )
 
     def _build_nodes(self):
         for file in self._files:
@@ -40,7 +42,7 @@ class GraphNormalizer:
             self._path_to_nodes[file_path] = {
                 "id": file_path,
                 "label": os.path.basename(file_path),
-                "details": format_node_info(file.to_dict()),
+                "details": file.to_dict(),
                 "type": file.type.value,
                 "color_shift": color_shift,
             }
