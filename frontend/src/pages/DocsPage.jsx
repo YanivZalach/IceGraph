@@ -172,7 +172,7 @@ const SECTIONS = [
         <div className="space-y-2">
           <h3 className="text-white font-semibold">3. Wait for the graph</h3>
           <p>
-            IceGraph fetches the metadata in the background. Once ready, you land on the Graph view.
+            IceGraph fetches the metadata in the background. Once ready, you land on the Timeline view.
             Large ranges with many data files may take a moment.
           </p>
         </div>
@@ -389,10 +389,10 @@ const SECTIONS = [
       <div className="space-y-6">
         <div className="space-y-1">
           <h3 className="text-white font-semibold mb-2">Global</h3>
-          <ShortcutRow keys={['1']} desc="Go to Graph view" />
+          <ShortcutRow keys={['1']} desc="Go to Timeline view" />
           <ShortcutRow keys={['2']} desc="Go to Metadata view" />
-          <ShortcutRow keys={['3']} desc="Go to Timeline view" />
-          <ShortcutRow keys={['4']} desc="Go to FileTree view" />
+          <ShortcutRow keys={['3']} desc="Go to FileTree view" />
+          <ShortcutRow keys={['4']} desc="Go to Graph view" />
         </div>
 
         <p className="text-slate-400 text-xs">

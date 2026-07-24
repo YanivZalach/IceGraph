@@ -113,7 +113,7 @@ export default function SnapshotSelectionPage() {
         const params = new URLSearchParams({ table: tableName })
         if (startSnapshot) params.set('start_snapshot_id', startSnapshot)
         if (endSnapshot) params.set('end_snapshot_id', endSnapshot)
-        navigate(`/table/graph?${params.toString()}`)
+        navigate(`/table/timeline?${params.toString()}`)
     }
 
     if (error) {
