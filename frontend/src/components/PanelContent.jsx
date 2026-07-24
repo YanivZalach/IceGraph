@@ -117,7 +117,7 @@ export function PanelDetailRow({
             onClick={() => setIsCollapsed(p => !p)}
             className={PANEL_COLLAPSE_TOGGLE_CLASS}
           >
-            {isCollapsed ? `▼ Show all (${lineCount} lines)` : '▲ Collapse'}
+            {isCollapsed ? `(${lineCount} lines) ▼` : '▲'}
           </button>
         )}
       </div>

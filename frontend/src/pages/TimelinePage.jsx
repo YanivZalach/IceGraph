@@ -68,6 +68,40 @@ function hasFieldChanged(before, after) {
   return before !== after
 }
 
+function diffListEntries(beforeArr, afterArr) {
+  const key = (v) => JSON.stringify(v)
+  const n = beforeArr.length
+  const m = afterArr.length
+
+  const dp = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0))
+  for (let i = n - 1; i >= 0; i--) {
+    for (let j = m - 1; j >= 0; j--) {
+      dp[i][j] = key(beforeArr[i]) === key(afterArr[j])
+        ? dp[i + 1][j + 1] + 1
+        : Math.max(dp[i + 1][j], dp[i][j + 1])
+    }
+  }
+
+  const entries = []
+  let i = 0, j = 0
+  while (i < n && j < m) {
+    if (key(beforeArr[i]) === key(afterArr[j])) {
+      entries.push({ tone: 'same', value: beforeArr[i] })
+      i++; j++
+    } else if (dp[i + 1][j] >= dp[i][j + 1]) {
+      entries.push({ tone: 'removed', value: beforeArr[i] })
+      i++
+    } else {
+      entries.push({ tone: 'added', value: afterArr[j] })
+      j++
+    }
+  }
+  while (i < n) { entries.push({ tone: 'removed', value: beforeArr[i] }); i++ }
+  while (j < m) { entries.push({ tone: 'added', value: afterArr[j] }); j++ }
+
+  return entries
+}
+
 function colorFor(type) {
   if (type === 'A') return COLOR_A
   if (type === 'B') return COLOR_B
@@ -114,14 +148,83 @@ function contentNaturalSize(content, zoom) {
   }
 }
 
-function DiffRow({ label, before, after }) {
+function DiffBox({ label, lineCount, openBracket, closeBracket, children }) {
   const [isCollapsed, setIsCollapsed] = useState(true)
+  const isCollapsible = lineCount > DEFAULT_COLLAPSE_LINES
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <span className={`block ${PANEL_FIELD_LABEL_WIDE_CLASS}`}>
+          {label.replace(/_/g, ' ')}
+        </span>
+        {isCollapsible && (
+          <button
+            type="button"
+            onClick={() => setIsCollapsed(p => !p)}
+            className={PANEL_COLLAPSE_TOGGLE_CLASS}
+          >
+            {isCollapsed ? `(${lineCount} lines) ▼` : '▲'}
+          </button>
+        )}
+      </div>
+      <div
+        className="bg-diff-bg border border-edge rounded-lg py-3 font-mono text-xs overflow-x-auto shadow-2xl flex flex-col"
+        style={
+          isCollapsible && isCollapsed
+            ? {
+              maxHeight: `${DEFAULT_COLLAPSE_LINES}lh`,
+              overflow: 'hidden',
+              maskImage: 'linear-gradient(to bottom, black 60%, transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(to bottom, black 60%, transparent 100%)',
+            }
+            : {}
+        }
+      >
+        <div className="px-4 py-0.5 text-slate-500 opacity-40">{openBracket}</div>
+        <div className="flex flex-col">{children}</div>
+        <div className="px-4 py-0.5 text-slate-500 opacity-40">{closeBracket}</div>
+      </div>
+    </div>
+  )
+}
+
+function DiffLine({ tone, sign, children }) {
+  const toneClass = tone === 'removed'
+    ? 'bg-red-500/8 text-red-400'
+    : tone === 'added'
+      ? 'bg-green-500/8 text-green-400'
+      : 'text-slate-300'
+  const signOpacity = tone === 'same' ? 'opacity-20' : 'opacity-50'
+
+  return (
+    <div className={`${toneClass} px-8 py-0.5 flex gap-2`}>
+      <span className={`w-3 shrink-0 ${signOpacity} text-center`}>{sign}</span>
+      <span className="break-all">{children}</span>
+    </div>
+  )
+}
+
+function DiffRow({ label, before, after }) {
   const tryParse = (val) => (val && typeof val === 'object') ? val : null
 
   const beforeObj = tryParse(before)
   const afterObj = tryParse(after)
 
   if (beforeObj && afterObj) {
+    if (Array.isArray(beforeObj) && Array.isArray(afterObj)) {
+      const entries = diffListEntries(beforeObj, afterObj)
+      return (
+        <DiffBox label={label} lineCount={entries.length + 2} openBracket="[" closeBracket="]">
+          {entries.map((entry, idx) => (
+            <DiffLine key={idx} tone={entry.tone} sign={entry.tone === 'removed' ? '-' : entry.tone === 'added' ? '+' : ' '}>
+              {JSON.stringify(entry.value)}
+            </DiffLine>
+          ))}
+        </DiffBox>
+      )
+    }
+
     const allKeys = Array.from(new Set([...Object.keys(beforeObj), ...Object.keys(afterObj)])).sort()
     const lineCount = allKeys.reduce((n, key) => {
       const bVal = beforeObj[key]
@@ -129,85 +232,32 @@ function DiffRow({ label, before, after }) {
       const changed = bVal !== undefined && aVal !== undefined && JSON.stringify(bVal) !== JSON.stringify(aVal)
       return n + (changed ? 2 : 1)
     }, 2)
-    const isCollapsible = lineCount > DEFAULT_COLLAPSE_LINES
-    return (
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between gap-2">
-          <span className={`block ${PANEL_FIELD_LABEL_WIDE_CLASS}`}>
-            {label.replace(/_/g, ' ')}
-          </span>
-          {isCollapsible && (
-            <button
-              type="button"
-              onClick={() => setIsCollapsed(p => !p)}
-              className={PANEL_COLLAPSE_TOGGLE_CLASS}
-            >
-              {isCollapsed ? `▼ Show all (${lineCount} lines)` : '▲ Collapse'}
-            </button>
-          )}
-        </div>
-        <div
-          className="bg-diff-bg border border-edge rounded-lg py-3 font-mono text-xs overflow-x-auto shadow-2xl flex flex-col"
-          style={
-            isCollapsible && isCollapsed
-              ? {
-                maxHeight: `${DEFAULT_COLLAPSE_LINES}lh`,
-                overflow: 'hidden',
-                maskImage: 'linear-gradient(to bottom, black 60%, transparent 100%)',
-                WebkitMaskImage: 'linear-gradient(to bottom, black 60%, transparent 100%)',
-              }
-              : {}
-          }
-        >
-          <div className="px-4 py-0.5 text-slate-500 opacity-40">{"{"}</div>
-          <div className="flex flex-col">
-            {allKeys.map(key => {
-              const bVal = beforeObj[key]
-              const aVal = afterObj[key]
-              const bStr = JSON.stringify(bVal)
-              const aStr = JSON.stringify(aVal)
 
-              if (bVal !== undefined && aVal === undefined) {
-                return (
-                  <div key={key} className="bg-red-500/8 text-red-400 px-8 py-0.5 flex gap-2">
-                    <span className="w-3 shrink-0 opacity-50 text-center">-</span>
-                    <span className="break-all">"{key}": {bStr}</span>
-                  </div>
-                )
-              }
-              if (bVal === undefined && aVal !== undefined) {
-                return (
-                  <div key={key} className="bg-green-500/8 text-green-400 px-8 py-0.5 flex gap-2">
-                    <span className="w-3 shrink-0 opacity-50 text-center">+</span>
-                    <span className="break-all">"{key}": {aStr}</span>
-                  </div>
-                )
-              }
-              if (bStr !== aStr) {
-                return (
-                  <div key={key}>
-                    <div className="bg-red-500/8 text-red-400 px-8 py-0.5 flex gap-2">
-                      <span className="w-3 shrink-0 opacity-40 text-center">-</span>
-                      <span className="break-all">"{key}": {bStr}</span>
-                    </div>
-                    <div className="bg-green-500/8 text-green-400 px-8 py-0.5 flex gap-2">
-                      <span className="w-3 shrink-0 opacity-50 text-center">+</span>
-                      <span className="break-all">"{key}": {aStr}</span>
-                    </div>
-                  </div>
-                )
-              }
-              return (
-                <div key={key} className="px-8 py-0.5 text-slate-300 flex gap-2">
-                  <span className="w-3 shrink-0 opacity-20 text-center"> </span>
-                  <span className="break-all">"{key}": {bStr}</span>
-                </div>
-              )
-            })}
-          </div>
-          <div className="px-4 py-0.5 text-slate-500 opacity-40">{"}"}</div>
-        </div>
-      </div>
+    return (
+      <DiffBox label={label} lineCount={lineCount} openBracket="{" closeBracket="}">
+        {allKeys.map(key => {
+          const bVal = beforeObj[key]
+          const aVal = afterObj[key]
+          const bStr = JSON.stringify(bVal)
+          const aStr = JSON.stringify(aVal)
+
+          if (bVal !== undefined && aVal === undefined) {
+            return <DiffLine key={key} tone="removed" sign="-">"{key}": {bStr}</DiffLine>
+          }
+          if (bVal === undefined && aVal !== undefined) {
+            return <DiffLine key={key} tone="added" sign="+">"{key}": {aStr}</DiffLine>
+          }
+          if (bStr !== aStr) {
+            return (
+              <div key={key} className="flex flex-col">
+                <DiffLine tone="removed" sign="-">"{key}": {bStr}</DiffLine>
+                <DiffLine tone="added" sign="+">"{key}": {aStr}</DiffLine>
+              </div>
+            )
+          }
+          return <DiffLine key={key} tone="same" sign=" ">"{key}": {bStr}</DiffLine>
+        })}
+      </DiffBox>
     )
   }
 

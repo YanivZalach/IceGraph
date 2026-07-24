@@ -222,7 +222,7 @@ const SECTIONS = [
             <li><strong className="text-white">Resize</strong> — drag the grip handle on the left edge of the panel to widen it. Wider panels give text fields more room and show more lines before you need to expand a field.</li>
             <li><strong className="text-white">Fullscreen</strong> — click the expand button in the panel header to fill the graph area. Click the compress button or press <strong className="text-white">Esc</strong> to exit.</li>
             <li><strong className="text-white">Copy</strong> — click the clipboard icon inside any field to copy its value.</li>
-            <li><strong className="text-white">Long values</strong> — fields with many lines can be expanded or collapsed individually with <strong className="text-white">Show all</strong> / <strong className="text-white">Collapse</strong>.</li>
+            <li><strong className="text-white">Long values</strong> — fields with many lines can be expanded or collapsed individually with <strong className="text-white">▼</strong> / <strong className="text-white">▲</strong>.</li>
           </ul>
         </div>
         <div className="space-y-2">
@@ -289,7 +289,7 @@ const SECTIONS = [
             Click a timeline event to open its details in a panel on the right — the same panel used in
             Graph view. Drag the left-edge grip to widen it, use fullscreen to expand, and copy field
             values with the clipboard icon. Long JSON diffs are collapsed by default and can be expanded
-            or collapsed with <strong className="text-white">Show all</strong> / <strong className="text-white">Collapse</strong>.
+            or collapsed with <strong className="text-white">▼</strong> / <strong className="text-white">▲</strong>.
           </p>
         </div>
       </div>
