@@ -22,27 +22,30 @@ import {
 } from '../uiTypography'
 import ResizableSidePanel from '../components/ResizableSidePanel'
 import { FileType } from '../graphConstants'
-import { parseUtcDate } from '../utils/dateUtils'
+import { parseUtcDate, formatUtcOffset } from '../utils/dateUtils'
 import { bindMouseScrollHandoff } from '../utils/smoothScroll'
 
 const COLOR_A = '#1964B9'
 const COLOR_B = '#6437D2'
-const COLOR_C = '#D97706'
-const COLOR_INIT = '#4a5568'
+const COLOR_C = '#0EA5E9'
+const COLOR_INIT = '#D97706'
 
 function formatTs(tsStr) {
   if (!tsStr) return null
   try {
     const d = new Date(tsStr)
     const ms = String(d.getMilliseconds()).padStart(3, '0')
-    const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) + `.${ms}`
+    const offset = formatUtcOffset(d)
+    const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
     const day = String(d.getDate()).padStart(2, '0')
     const month = String(d.getMonth() + 1).padStart(2, '0')
     const date = `${day}-${month}-${d.getFullYear()}`
     return {
       date,
       time,
-      full: `${date} ${time}`,
+      ms,
+      offset,
+      full: `${date} ${time}.${ms}${offset}`,
     }
   } catch (e) {
     console.error(e)
@@ -609,7 +612,7 @@ export default function TimelinePage() {
   return (
     <div className="flex-1 flex flex-col bg-graph-grid overflow-hidden relative">
       <div className="shrink-0 px-8 pt-5 flex items-center gap-5">
-        {[['A', 'Write'], ['C', 'Branch Write'], ['B', 'Metadata Op'], ['init', 'Initial State']].map(([type, lbl]) => (
+        {[['init', 'Initial State'], ['A', 'Write'], ['B', 'Metadata Op'], ['C', 'Branch Write']].map(([type, lbl]) => (
           <div key={type} className="flex items-center gap-1.5">
             <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: colorFor(type) }} />
             <span className={UI_HELPER_TEXT_CLASS}>{lbl}</span>
@@ -686,7 +689,7 @@ export default function TimelinePage() {
                       {ts && (
                         <>
                           <div className="text-slate-500 leading-tight" style={{ fontSize: tl.fontDetail }}>{ts.date}</div>
-                          <div className="text-slate-600 leading-tight" style={{ fontSize: tl.fontDetail }}>{ts.time}</div>
+                          <div className="text-slate-300 leading-tight" style={{ fontSize: tl.fontDetail }}>{ts.time}</div>
                         </>
                       )}
                     </div>

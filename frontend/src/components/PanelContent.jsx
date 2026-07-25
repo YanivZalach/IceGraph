@@ -10,9 +10,9 @@ import {
 export const PANEL_TITLE_CLASS =
   'text-base font-bold uppercase tracking-wide text-ink leading-snug'
 
-export const PANEL_SUBTITLE_CLASS = 'text-xs font-mono text-ink mt-1 break-all'
+export const PANEL_SUBTITLE_CLASS = 'text-sm font-mono text-slate-400 mt-1 break-words'
 
-export const PANEL_META_CLASS = 'text-xs text-slate-500 mt-1'
+export const PANEL_META_CLASS = 'text-sm text-ink mt-1'
 
 export const PANEL_FIELD_LABEL_CLASS = UI_FIELD_LABEL_CLASS
 
@@ -58,6 +58,16 @@ function stripAlpha(color) {
   return m ? `rgb(${m[1]}, ${m[2]}, ${m[3]})` : colorParseCtx.fillStyle
 }
 
+function renderBreakablePath(path) {
+  const segments = path.split('/')
+  return segments.map((segment, i) => (
+    <span key={i}>
+      {segment}
+      {i < segments.length - 1 ? <>/<wbr /></> : null}
+    </span>
+  ))
+}
+
 export function PanelHeader({ title, titleColor, subtitle, meta }) {
   const opaqueColor = stripAlpha(titleColor)
   return (
@@ -69,7 +79,7 @@ export function PanelHeader({ title, titleColor, subtitle, meta }) {
         {title}
       </div>
       {subtitle ? (
-        <div className={PANEL_SUBTITLE_CLASS}>{subtitle}</div>
+        <div className={PANEL_SUBTITLE_CLASS}>{renderBreakablePath(subtitle)}</div>
       ) : null}
       {meta ? (
         <div className={PANEL_META_CLASS}>{meta}</div>
