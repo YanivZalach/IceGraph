@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import CopyIconButton from '../components/CopyIconButton'
+import { useViewInGraph } from '../hooks/useViewInGraph'
 import {
   PanelDetailRow,
   PanelHeader,
@@ -117,6 +118,26 @@ function labelFor(type) {
   if (type === 'B') return 'Metadata Op'
   if (type === 'C') return 'Branch Write'
   return 'Init'
+}
+
+function GraphLinkButton({ label, onClick, loading, disabled }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={`Open ${label.toLowerCase()} in a new tab, selected in the graph`}
+      className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-accent border border-accent/40 rounded-md px-2.5 py-1.5 hover:bg-accent-muted hover:border-accent transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <circle cx="4" cy="8" r="2" />
+        <circle cx="12" cy="4" r="2" />
+        <circle cx="12" cy="12" r="2" />
+        <path d="M6 7.2L10 4.8M6 8.8L10 11.2" strokeLinecap="round" />
+      </svg>
+      {loading ? 'Opening…' : label}
+    </button>
+  )
 }
 
 const ZOOM_MIN = 0.35
@@ -327,6 +348,7 @@ function DiffList({ diff }) {
 
 export default function TimelinePage() {
   const { nodes } = useOutletContext()
+  const { viewInGraph, duplicatingNodeId, canViewInGraph } = useViewInGraph()
   const [selected, setSelected] = useState(null)
   const [view, setView] = useState(DEFAULT_VIEW)
   const [isDragging, setIsDragging] = useState(false)
@@ -407,7 +429,7 @@ export default function TimelinePage() {
     }
   }, [])
 
-  const { events, snapshotMap } = useMemo(() => {
+  const { events, snapshotMap, snapshotNodeIdMap } = useMemo(() => {
     const allNodes = nodes || []
 
     const metaNodes = allNodes
@@ -416,14 +438,18 @@ export default function TimelinePage() {
       .sort((a, b) => new Date(a.details.timestamp) - new Date(b.details.timestamp))
 
     const snapMap = {}
+    const snapNodeIdMap = {}
     allNodes
       .filter(n => n.type === FileType.SNAPSHOT)
       .forEach(n => {
         const d = n.details
-        if (d.snapshot_id) snapMap[d.snapshot_id] = d
+        if (d.snapshot_id) {
+          snapMap[d.snapshot_id] = d
+          snapNodeIdMap[d.snapshot_id] = n.id
+        }
       })
 
-    const timeline = metaNodes.map(({ details }, i) => {
+    const timeline = metaNodes.map(({ details, id: metadataNodeId }, i) => {
       const prev = i > 0 ? metaNodes[i - 1].details : null
       let type = !prev
         ? 'init'
@@ -467,11 +493,12 @@ export default function TimelinePage() {
         type,
         diff,
         snapshotId: type === 'C' ? branchSnapId : details.snapshot_id,
-        branchName
+        branchName,
+        metadataNodeId,
       }
     })
 
-    return { events: timeline, snapshotMap: snapMap }
+    return { events: timeline, snapshotMap: snapMap, snapshotNodeIdMap: snapNodeIdMap }
   }, [nodes])
 
   const animateToView = (target, duration = 450) => {
@@ -729,6 +756,23 @@ export default function TimelinePage() {
             />
           )}
         >
+          <div className="flex items-center gap-2 pb-4 border-b border-edge">
+            <GraphLinkButton
+              label="Metadata"
+              onClick={e => viewInGraph(e, selected.metadataNodeId)}
+              loading={duplicatingNodeId === selected.metadataNodeId}
+              disabled={!canViewInGraph || !!duplicatingNodeId}
+            />
+            {snapshotNodeIdMap[selected.snapshotId] && (
+              <GraphLinkButton
+                label="Snapshot"
+                onClick={e => viewInGraph(e, snapshotNodeIdMap[selected.snapshotId])}
+                loading={duplicatingNodeId === snapshotNodeIdMap[selected.snapshotId]}
+                disabled={!canViewInGraph || !!duplicatingNodeId}
+              />
+            )}
+          </div>
+
           {selected.type === 'A' && (
             <>
               <PanelDetailRow label="Snapshot ID" value={selected.snapshotId} />

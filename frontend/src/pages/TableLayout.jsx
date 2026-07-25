@@ -36,7 +36,7 @@ const localizeNodeTimestamps = (details) => {
 }
 
 export default function TableLayout() {
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const { detailsOpen, setDetailsOpen, selectionDetail, setSelectionDetail, setRawData, setErrors, setWarnings, issuesOpen, setIssuesOpen, errors, warnings } = useTableSpecs()
   const detailPanelRef = useRef(null)
@@ -196,10 +196,10 @@ export default function TableLayout() {
             setWarnings(data.warnings || {})
             setLoading(false)
 
-            const cleanUrl = new URL(window.location.href)
-            cleanUrl.searchParams.delete('dup')
-            cleanUrl.searchParams.delete('cache_id')
-            history.replaceState(history.state, '', cleanUrl.toString())
+            const nextParams = new URLSearchParams(searchParams)
+            nextParams.delete('dup')
+            nextParams.delete('cache_id')
+            setSearchParams(nextParams, { replace: true })
             return
           }
           else {
