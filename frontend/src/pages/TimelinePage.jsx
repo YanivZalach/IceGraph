@@ -22,7 +22,7 @@ import {
 } from '../uiTypography'
 import ResizableSidePanel from '../components/ResizableSidePanel'
 import { FileType } from '../graphConstants'
-import { parseUtcDate } from '../utils/dateUtils'
+import { parseUtcDate, formatUtcOffset } from '../utils/dateUtils'
 import { bindMouseScrollHandoff } from '../utils/smoothScroll'
 
 const COLOR_A = '#1964B9'
@@ -35,14 +35,17 @@ function formatTs(tsStr) {
   try {
     const d = new Date(tsStr)
     const ms = String(d.getMilliseconds()).padStart(3, '0')
-    const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) + `.${ms}`
+    const offset = formatUtcOffset(d)
+    const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
     const day = String(d.getDate()).padStart(2, '0')
     const month = String(d.getMonth() + 1).padStart(2, '0')
     const date = `${day}-${month}-${d.getFullYear()}`
     return {
       date,
       time,
-      full: `${date} ${time}`,
+      ms,
+      offset,
+      full: `${date} ${time}.${ms}${offset}`,
     }
   } catch (e) {
     console.error(e)
@@ -686,7 +689,7 @@ export default function TimelinePage() {
                       {ts && (
                         <>
                           <div className="text-slate-500 leading-tight" style={{ fontSize: tl.fontDetail }}>{ts.date}</div>
-                          <div className="text-slate-600 leading-tight" style={{ fontSize: tl.fontDetail }}>{ts.time}</div>
+                          <div className="text-slate-300 leading-tight" style={{ fontSize: tl.fontDetail }}>{ts.time}</div>
                         </>
                       )}
                     </div>
