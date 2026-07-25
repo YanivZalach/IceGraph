@@ -166,7 +166,9 @@ const SECTIONS = [
           <h3 className="text-white font-semibold">2. Pick a snapshot range</h3>
           <p>
             IceGraph shows you the table's snapshot history. Select the range of snapshots you want
-            to explore. A smaller range loads faster and produces a less cluttered graph.
+            to explore. A smaller range loads faster and produces a less cluttered graph. If you just
+            want the table's current state, click <strong className="text-white">Latest Metadata Only</strong> to
+            the left of the snapshot pickers to skip range selection and go straight to the Metadata view for the latest snapshot.
           </p>
         </div>
         <div className="space-y-2">
