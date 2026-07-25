@@ -27,8 +27,8 @@ import { bindMouseScrollHandoff } from '../utils/smoothScroll'
 
 const COLOR_A = '#1964B9'
 const COLOR_B = '#6437D2'
-const COLOR_C = '#D97706'
-const COLOR_INIT = '#4a5568'
+const COLOR_C = '#059669'
+const COLOR_INIT = '#D97706'
 
 function formatTs(tsStr) {
   if (!tsStr) return null
@@ -609,7 +609,7 @@ export default function TimelinePage() {
   return (
     <div className="flex-1 flex flex-col bg-graph-grid overflow-hidden relative">
       <div className="shrink-0 px-8 pt-5 flex items-center gap-5">
-        {[['A', 'Write'], ['C', 'Branch Write'], ['B', 'Metadata Op'], ['init', 'Initial State']].map(([type, lbl]) => (
+        {[['init', 'Initial State'], ['A', 'Write'], ['B', 'Metadata Op'], ['C', 'Branch Write']].map(([type, lbl]) => (
           <div key={type} className="flex items-center gap-1.5">
             <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: colorFor(type) }} />
             <span className={UI_HELPER_TEXT_CLASS}>{lbl}</span>
