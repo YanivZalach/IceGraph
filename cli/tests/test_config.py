@@ -1,9 +1,9 @@
 import argparse
 from pathlib import Path
 
-from icegraph_client.client import DEFAULT_SERVER_URL
-from icegraph_client.config import CliConfig
-from icegraph_client.storage import DEFAULT_DATA_DIR
+from icegraph_client.client.client import DEFAULT_SERVER_URL
+from icegraph_client.config.config import CliConfig
+from icegraph_client.storage.storage import DEFAULT_DATA_DIR
 
 
 def _args(server=None, data_dir=None):

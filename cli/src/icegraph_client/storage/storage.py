@@ -1,23 +1,21 @@
-from __future__ import annotations
-
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
+from typing import Dict, Optional
 
 DEFAULT_DATA_DIR = Path.home() / ".icegraph"
 
 
 class LocalStorage:
     def __init__(self, data_dir: Path = DEFAULT_DATA_DIR):
-        self.data_dir = data_dir
+        self._data_dir = data_dir
 
     def save(
         self,
         table_name: str,
         start_snapshot_id: Optional[int],
         end_snapshot_id: Optional[int],
-        result: dict,
+        result: Dict,
     ) -> Path:
         path = self._result_path(table_name, start_snapshot_id, end_snapshot_id)
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -55,12 +53,12 @@ class LocalStorage:
         table_name: str,
         start_snapshot_id: Optional[int],
         end_snapshot_id: Optional[int],
-    ) -> dict:
+    ) -> Dict:
         path = self.resolve_path(table_name, start_snapshot_id, end_snapshot_id)
         return json.loads(path.read_text())
 
     def _table_dir(self, table_name: str) -> Path:
-        return self.data_dir / table_name
+        return self._data_dir / table_name
 
     def _result_path(self, table_name: str, start_snapshot_id: Optional[int], end_snapshot_id: Optional[int]) -> Path:
         filename = f"{self._range_label(start_snapshot_id)}-{self._range_label(end_snapshot_id)}.json"

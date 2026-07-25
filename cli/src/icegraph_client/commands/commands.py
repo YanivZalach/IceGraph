@@ -1,12 +1,10 @@
-from __future__ import annotations
-
 import argparse
 import sys
 import webbrowser
 
-from .client import IcegraphClient, IcegraphError, JobFailedError
-from .config import CliConfig
-from .storage import LocalStorage
+from icegraph_client.client.client import IcegraphClient, IcegraphError
+from icegraph_client.config.config import CliConfig
+from icegraph_client.storage.storage import LocalStorage
 
 VALID_PAGES = ("graph", "metadata", "timeline", "filetree")
 VALID_TYPES = ("main_metadata", "metadata", "snapshot", "manifest", "data", "position_delete", "equality_delete")
@@ -32,7 +30,7 @@ class CommandRunner:
     def load(self, args: argparse.Namespace) -> int:
         try:
             result = self._client.load_table(args.table, args.start, args.end)
-        except (IcegraphError, JobFailedError) as e:
+        except IcegraphError as e:
             print(f"Error: {e}", file=sys.stderr)
             return 1
 

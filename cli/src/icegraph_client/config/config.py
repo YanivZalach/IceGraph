@@ -1,12 +1,10 @@
-from __future__ import annotations
-
 import argparse
 import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from .client import DEFAULT_SERVER_URL
-from .storage import DEFAULT_DATA_DIR
+from icegraph_client.client.client import DEFAULT_SERVER_URL
+from icegraph_client.storage.storage import DEFAULT_DATA_DIR
 
 
 @dataclass(frozen=True)

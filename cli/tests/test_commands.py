@@ -1,7 +1,7 @@
 import argparse
 
-from icegraph_client.commands import CommandRunner
-from icegraph_client.config import CliConfig
+from icegraph_client.commands.commands import CommandRunner
+from icegraph_client.config.config import CliConfig
 
 
 def _show_args(table, start=None, end=None, type_=None, operation=None):

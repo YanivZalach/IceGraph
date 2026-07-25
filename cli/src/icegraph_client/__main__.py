@@ -1,13 +1,11 @@
-from __future__ import annotations
-
 import argparse
 import sys
-from typing import Optional
+from typing import List, Optional
 
-from .client import DEFAULT_SERVER_URL
-from .commands import VALID_PAGES, VALID_TYPES, CommandRunner
-from .config import CliConfig
-from .storage import DEFAULT_DATA_DIR
+from icegraph_client.client.client import DEFAULT_SERVER_URL
+from icegraph_client.commands.commands import VALID_PAGES, VALID_TYPES, CommandRunner
+from icegraph_client.config.config import CliConfig
+from icegraph_client.storage.storage import DEFAULT_DATA_DIR
 
 
 def _add_range_args(parser: argparse.ArgumentParser) -> None:
@@ -43,7 +41,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: Optional[list] = None) -> int:
+def main(argv: Optional[List[str]] = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 

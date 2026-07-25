@@ -1,8 +1,6 @@
-from __future__ import annotations
-
 import time
 from dataclasses import dataclass
-from typing import Optional
+from typing import Dict, List, Optional, Tuple
 
 import requests
 
@@ -20,17 +18,17 @@ class JobFailedError(IcegraphError):
 
 @dataclass
 class TablesResponse:
-    tables: list
+    tables: List[str]
     include_none_iceberg_catalogs: bool
 
 
 class IcegraphClient:
     def __init__(self, server_url: str = DEFAULT_SERVER_URL, session: Optional[requests.Session] = None):
-        self.server_url = server_url.rstrip("/")
+        self._server_url = server_url.rstrip("/")
         self._session = session or requests.Session()
 
     def list_tables(self) -> TablesResponse:
-        resp = self._session.get(f"{self.server_url}/api/v1/tables")
+        resp = self._session.get(f"{self._server_url}/api/v1/tables")
         data = self._json_or_raise(resp)
         return TablesResponse(tables=data["tables"], include_none_iceberg_catalogs=data["include_none_iceberg_catalogs"])
 
@@ -41,12 +39,12 @@ class IcegraphClient:
         if end_snapshot_id is not None:
             form["end_snapshot_id"] = str(end_snapshot_id)
 
-        resp = self._session.post(f"{self.server_url}/api/v1/graph-data", data=form)
+        resp = self._session.post(f"{self._server_url}/api/v1/graph-data", data=form)
         data = self._json_or_raise(resp)
         return data["key"]
 
-    def poll_job(self, job_id: str) -> tuple:
-        resp = self._session.get(f"{self.server_url}/api/v1/graph-data/{job_id}")
+    def poll_job(self, job_id: str) -> Tuple[int, Dict]:
+        resp = self._session.get(f"{self._server_url}/api/v1/graph-data/{job_id}")
         return resp.status_code, self._safe_json(resp) or {}
 
     def load_table(
@@ -55,7 +53,7 @@ class IcegraphClient:
         start_snapshot_id: Optional[int] = None,
         end_snapshot_id: Optional[int] = None,
         poll_interval: float = POLL_INTERVAL_SECONDS,
-    ) -> dict:
+    ) -> Dict:
         job_id = self.submit_graph_job(table_name, start_snapshot_id, end_snapshot_id)
 
         while True:
@@ -67,18 +65,18 @@ class IcegraphClient:
                 continue
             raise JobFailedError(data.get("error", f"Job failed with status {status_code}"))
 
-    def snapshot_map(self, table_name: str) -> dict:
-        resp = self._session.get(f"{self.server_url}/api/v1/snapshot-map/{table_name}")
+    def snapshot_map(self, table_name: str) -> Dict:
+        resp = self._session.get(f"{self._server_url}/api/v1/snapshot-map/{table_name}")
         return self._json_or_raise(resp)
 
     @staticmethod
-    def _safe_json(resp: requests.Response) -> Optional[dict]:
+    def _safe_json(resp: requests.Response) -> Optional[Dict]:
         try:
             return resp.json()
         except ValueError:
             return None
 
-    def _json_or_raise(self, resp: requests.Response) -> dict:
+    def _json_or_raise(self, resp: requests.Response) -> Dict:
         data = self._safe_json(resp)
         if resp.status_code >= 400:
             message = data.get("error") if data else resp.text

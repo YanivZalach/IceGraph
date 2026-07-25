@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from icegraph_client.client import IcegraphClient, IcegraphError, JobFailedError
+from icegraph_client.client.client import IcegraphClient, IcegraphError, JobFailedError
 
 
 def make_response(status_code, json_data=None, text=""):
@@ -39,7 +39,7 @@ def test_list_tables_error():
 
 def test_server_url_trailing_slash_is_stripped():
     client = IcegraphClient("http://localhost:5000/", session=MagicMock())
-    assert client.server_url == "http://localhost:5000"
+    assert client._server_url == "http://localhost:5000"
 
 
 def test_submit_graph_job_builds_form_and_returns_key():

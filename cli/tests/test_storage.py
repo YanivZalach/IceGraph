@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from icegraph_client.storage import LocalStorage
+from icegraph_client.storage.storage import LocalStorage
 
 
 def test_save_writes_file_and_pointer(tmp_path):
