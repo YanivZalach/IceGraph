@@ -27,7 +27,7 @@ import { bindMouseScrollHandoff } from '../utils/smoothScroll'
 
 const COLOR_A = '#1964B9'
 const COLOR_B = '#6437D2'
-const COLOR_C = '#059669'
+const COLOR_C = '#0EA5E9'
 const COLOR_INIT = '#D97706'
 
 function formatTs(tsStr) {
