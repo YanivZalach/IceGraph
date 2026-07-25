@@ -140,4 +140,4 @@ Backend environment variables (set in `backend/.env`):
 - CI publishes Docker image to Docker Hub and deploys frontend to GitHub Pages on version tags (`v*`)
 - GitHub Pages demo uses MSW to mock API responses (no backend); enabled via `VITE_ENABLE_MSW=true` in the deploy workflow
 - The Vite `base` path is `/IceGraph/` for GitHub Pages but `/` for Docker
-- CI runs the CLI's unit test suite (`cli/tests/`) on every push to `master` (`.github/workflows/cli-tests.yml`)
+- CI runs the CLI's unit test suite (`cli/tests/`) on pushes to `master` that touch `cli/**` (`.github/workflows/cli-tests.yml`)

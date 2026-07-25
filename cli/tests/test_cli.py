@@ -50,18 +50,26 @@ def test_load_subcommand_accepts_timestamp_range():
     assert args.end == "2026-02-01T00:00:00"
 
 
-def test_use_subcommand_parses_range():
-    args = build_parser().parse_args(["use", "default.logging", "--start", "1", "--end", "2026-01-01"])
+def test_use_subcommand_parses_table():
+    args = build_parser().parse_args(["use", "default.logging"])
     assert args.command == "use"
     assert args.table == "default.logging"
-    assert args.start == "1"
-    assert args.end == "2026-01-01"
+    assert args.index is None
 
 
-def test_use_subcommand_range_is_optional():
-    args = build_parser().parse_args(["use", "default.logging"])
-    assert args.start is None
-    assert args.end is None
+def test_use_subcommand_rejects_start_end():
+    with pytest.raises(SystemExit):
+        build_parser().parse_args(["use", "default.logging", "--start", "1"])
+
+
+def test_use_subcommand_index_flag():
+    args = build_parser().parse_args(["use", "default.logging", "--index", "2"])
+    assert args.index == 2
+
+
+def test_use_subcommand_index_short_flag():
+    args = build_parser().parse_args(["use", "default.logging", "-i", "0"])
+    assert args.index == 0
 
 
 def test_show_subcommand_rejects_start_end():

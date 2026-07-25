@@ -4,12 +4,13 @@ import json
 import re
 import sys
 import webbrowser
-from datetime import datetime
 from typing import Optional, Tuple, Union
+
+import arrow
 
 from icegraph_client.client.client import IcegraphClient, IcegraphError
 from icegraph_client.config.config import CliConfig
-from icegraph_client.storage.storage import LocalStorage
+from icegraph_client.storage.storage import EMPTY_TABLE_END, Bound, LocalStorage
 
 VALID_PAGES = ("graph", "metadata", "timeline", "filetree")
 VALID_TYPES = ("main_metadata", "metadata", "snapshot", "manifest", "data", "position_delete", "equality_delete")
@@ -63,6 +64,8 @@ class CommandRunner:
         except FileNotFoundError as e:
             return self._fail(e)
 
+        self._warn_if_empty_load(args.table, self._storage.current_range(args.table))
+
         table_metadata = result.get("metadata") or {}
         print(json.dumps(table_metadata) if args.json else json.dumps(table_metadata, indent=2, default=str))
         return 0
@@ -93,6 +96,7 @@ class CommandRunner:
         print(f"Loaded {node_count} nodes for {args.table} -> {path}", file=status_stream)
         if issue_count:
             print(f"{issue_count} issue(s) found -- run `icegraph show {args.table} --issues` to view them.", file=status_stream)
+        self._warn_if_empty_load(args.table, (start, end), stream=status_stream)
 
         if args.json:
             print(json.dumps(self._without_metadata(result)))
@@ -109,20 +113,27 @@ class CommandRunner:
             return 0
 
         for timestamp, info in snapshot_map.items():
-            print(f"{timestamp}  {info.get('snapshot_id', '?'):<20} {info.get('operation', '?')}")
+            local_ts = arrow.get(timestamp).to(self._local_timezone()).isoformat()
+            print(f"{local_ts}  {info.get('snapshot_id', '?'):<20} {info.get('operation', '?')}")
         return 0
 
     def use(self, args: argparse.Namespace) -> int:
-        if args.start is None and args.end is None:
+        if args.index is None:
             return self._list_ranges(args.table)
 
-        try:
-            start, end = self._resolve_range(args.table, args.start, args.end)
-            path = self._storage.set_latest(args.table, start, end)
-        except (IcegraphError, FileNotFoundError) as e:
-            return self._fail(e)
+        return self._use_index(args.table, args.index)
 
-        print(f"Now using {args.table} {self._storage._range_label(start)}-{self._storage._range_label(end)} -> {path}")
+    def _use_index(self, table: str, index: int) -> int:
+        ranges = self._storage.list_ranges(table)
+        if not ranges:
+            return self._fail(IcegraphError(f"No loaded ranges for {table}. Run `icegraph load {table}` first."))
+        if not (0 <= index < len(ranges)):
+            return self._fail(IcegraphError(f"No range at index {index} for {table} -- valid indices are 0-{len(ranges) - 1}."))
+
+        start, end = ranges[index]
+        path = self._storage.set_latest(table, start, end)
+        print(f"Now using {table} {self._storage._range_label(start)}-{self._storage._range_label(end)} -> {path}")
+        self._warn_if_empty_load(table, (start, end))
         return 0
 
     def _list_ranges(self, table: str) -> int:
@@ -132,9 +143,9 @@ class CommandRunner:
             return 0
 
         current = self._storage.current_range(table)
-        for start, end in ranges:
+        for i, (start, end) in enumerate(ranges):
             marker = "  (current)" if (start, end) == current else ""
-            print(f"{self._storage._range_label(start)} -> {self._storage._range_label(end)}{marker}")
+            print(f"[{i}] {self._storage._range_label(start)} -> {self._storage._range_label(end)}{marker}")
         return 0
 
     @staticmethod
@@ -146,11 +157,21 @@ class CommandRunner:
     def _without_metadata(result: dict) -> dict:
         return {k: v for k, v in result.items() if k != "metadata"}
 
+    @staticmethod
+    def _warn_if_empty_load(table: str, range_pair, stream=None) -> None:
+        if range_pair is not None and range_pair[1] == EMPTY_TABLE_END:
+            print(
+                f"Note: {table} had no snapshots when this was loaded -- run `icegraph load {table}` again to check for new data.",
+                file=stream if stream is not None else sys.stderr,
+            )
+
     def show(self, args: argparse.Namespace) -> int:
         try:
             result = self._storage.load(args.table)
         except FileNotFoundError as e:
             return self._fail(e)
+
+        self._warn_if_empty_load(args.table, self._storage.current_range(args.table))
 
         if args.issues:
             return self._show_issues(result, as_json=args.json)
@@ -180,11 +201,12 @@ class CommandRunner:
         return 0
 
     _DATE_ONLY_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+    _HAS_EXPLICIT_OFFSET_RE = re.compile(r"(Z|[+-]\d{2}:?\d{2})$")
 
-    def _resolve_range(self, table: str, start_arg, end_arg) -> Tuple[Optional[int], Optional[int]]:
-        # Fetch the snapshot map at most once, even if both bounds are dates/timestamps.
+    def _resolve_range(self, table: str, start_arg, end_arg) -> Tuple[Optional[int], Bound]:
+        # Fetch the snapshot map at most once, even if both bounds need it.
         snapshot_map = None
-        if self._is_timestamp_like(start_arg) or self._is_timestamp_like(end_arg):
+        if self._needs_snapshot_map(start_arg, "start") or self._needs_snapshot_map(end_arg, "end"):
             snapshot_map = self._client.snapshot_map(table)
 
         start = self._resolve_snapshot_ref(table, start_arg, "start", snapshot_map)
@@ -192,18 +214,23 @@ class CommandRunner:
         return start, end
 
     @staticmethod
-    def _is_timestamp_like(value) -> bool:
-        return value is not None and not (isinstance(value, int) or str(value).isdigit())
+    def _needs_snapshot_map(value, boundary: str) -> bool:
+        if value is None:
+            # An omitted start means "from the beginning of history" -- a valid, stable
+            # request on its own that never needs resolving. An omitted end needs the
+            # actual latest snapshot (or a mark that the table has none) to stay meaningful.
+            return boundary == "end"
+        return not (isinstance(value, int) or str(value).isdigit())
 
     def _resolve_snapshot_ref(
         self, table: str, value: Optional[Union[str, int]], boundary: str, snapshot_map: Optional[dict] = None
-    ) -> Optional[int]:
-        if value is None:
-            return None
-        if isinstance(value, int) or str(value).isdigit():
+    ) -> Bound:
+        if value is not None and (isinstance(value, int) or str(value).isdigit()):
             return int(value)
 
-        target = self._parse_timestamp(str(value), boundary)
+        if value is None and boundary == "start":
+            return None
+
         if snapshot_map is None:
             snapshot_map = self._client.snapshot_map(table)
 
@@ -213,6 +240,21 @@ class CommandRunner:
                 snapshots.append((self._parse_timestamp(ts, boundary), int(info["snapshot_id"])))
             except IcegraphError:
                 continue
+
+        if value is None:
+            # boundary == "end" here (see above): a bound to resolve to the table's
+            # actual latest snapshot right now, so a loaded range stays a fixed,
+            # trustworthy fact even if the table is updated later.
+            if not snapshots:
+                # A freshly created table may have only its initial metadata file and no
+                # snapshots yet -- mark that explicitly rather than guessing a number.
+                return EMPTY_TABLE_END
+            return max(snapshots, key=lambda pair: pair[0])[1]
+
+        if not snapshots:
+            raise IcegraphError(f"{table} has no snapshots.")
+
+        target = self._parse_timestamp(str(value), boundary)
 
         if boundary == "end":
             candidates = [(t, sid) for t, sid in snapshots if t <= target]
@@ -229,14 +271,12 @@ class CommandRunner:
         return pick[1]
 
     @classmethod
-    def _parse_timestamp(cls, value: str, boundary: str) -> datetime:
+    def _parse_timestamp(cls, value: str, boundary: str) -> arrow.Arrow:
         text = value.strip()
         date_only = bool(cls._DATE_ONLY_RE.match(text))
-        if text.endswith("Z"):
-            text = text[:-1] + "+00:00"
 
         try:
-            parsed = datetime.fromisoformat(text)
+            parsed = arrow.get(text)
         except ValueError as e:
             raise IcegraphError(f"Could not parse '{value}' as a snapshot id or timestamp.") from e
 
@@ -244,15 +284,16 @@ class CommandRunner:
             parsed = parsed.replace(hour=23, minute=59, second=59, microsecond=999999)
 
         # The backend reports snapshot timestamps in UTC, but a value with no explicit
-        # offset was typed by the user in their own local timezone, not UTC.
-        if parsed.tzinfo is None:
+        # offset was typed by the user in their own local timezone, not UTC (arrow.get
+        # defaults input with no timezone designator to UTC, so relabel it).
+        if not cls._HAS_EXPLICIT_OFFSET_RE.search(text):
             parsed = parsed.replace(tzinfo=cls._local_timezone())
 
         return parsed
 
     @staticmethod
     def _local_timezone():
-        return datetime.now().astimezone().tzinfo
+        return "local"
 
     @staticmethod
     def _node_summary(node: dict) -> str:
@@ -324,11 +365,7 @@ class CommandRunner:
             return 1
 
         id_to_node = {n.get("id"): n for n in nodes}
-        children = [
-            id_to_node[edge["to"]]
-            for edge in result.get("edges", [])
-            if edge.get("from") == node.get("id") and edge.get("to") in id_to_node
-        ]
+        children = [id_to_node[edge["to"]] for edge in result.get("edges", []) if edge.get("from") == node.get("id") and edge.get("to") in id_to_node]
 
         if as_json:
             print(json.dumps(children))
@@ -345,11 +382,12 @@ class CommandRunner:
     def open(self, args: argparse.Namespace) -> int:
         current = self._storage.current_range(args.table)
         start, end = current if current is not None else (None, None)
+        self._warn_if_empty_load(args.table, current)
 
         params = [f"table={args.table}"]
         if start is not None:
             params.append(f"start_snapshot_id={start}")
-        if end is not None:
+        if isinstance(end, int):
             params.append(f"end_snapshot_id={end}")
 
         url = f"{self._config.server_url}/table/{args.page}?{'&'.join(params)}"

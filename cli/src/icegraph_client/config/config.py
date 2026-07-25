@@ -75,8 +75,7 @@ def _prompt_for_server_url(non_interactive: bool) -> str:
             value = input("IceGraph server URL: ").strip()
         except EOFError:
             raise MissingServerUrlError(
-                "No IceGraph server configured and no terminal available to ask. "
-                "Pass --server or set ICEGRAPH_SERVER_URL."
+                "No IceGraph server configured and no terminal available to ask. " "Pass --server or set ICEGRAPH_SERVER_URL."
             )
 
         if value:

@@ -28,19 +28,21 @@ icegraph show default.logging --issues
 icegraph show default.logging --json   # or -j
 icegraph metadata default.logging
 icegraph open default.logging
-icegraph use default.logging                              # list every range you've loaded for this table
-icegraph use default.logging --start 2026-01-01 --end 2026-02-01   # switch back to a previously loaded range
+icegraph use default.logging                              # list every range you've loaded for this table, numbered
+icegraph use default.logging --index 0                    # switch to a previously loaded range by its number
 ```
 
 `tables` and `load` print a status line to stderr while they wait on the server, so stdout stays clean for scripting.
 
-`snapshots <table>` lists a table's snapshot history as `timestamp  snapshot_id  operation` (add `-j`/`--json` for the raw mapping) — use it to find a timestamp to pass to `load`/`use`.
+`snapshots <table>` lists a table's snapshot history as `timestamp  snapshot_id  operation` (add `-j`/`--json` for the raw mapping) — use it to find a timestamp to pass to `load`. The text listing displays timestamps in your machine's local timezone (the backend reports them in UTC); `-j`/`--json` returns the raw UTC values unchanged.
 
-`load`/`use` are the only commands that take `--start`/`--end`, and each accepts either a snapshot ID or a date/timestamp — a plain numeric ID is used as-is with no extra network call; anything else is resolved automatically against the table's snapshot history: `--end` picks the latest snapshot at or before the given time, `--start` picks the earliest snapshot at or after it. A bare date (`2026-01-01`, no time part) is treated as spanning the whole day, so `--end 2026-01-01` includes everything committed that day rather than stopping at midnight. There's no need to match an exact timestamp or disambiguate — the nearest snapshot is always picked automatically.
+`load` is the only command that takes `--start`/`--end`, and each accepts either a snapshot ID or a date/timestamp — a plain numeric ID is used as-is with no extra network call; anything else is resolved automatically against the table's snapshot history: `--end` picks the latest snapshot at or before the given time, `--start` picks the earliest snapshot at or after it. A bare date (`2026-01-01`, no time part) is treated as spanning the whole day, so `--end 2026-01-01` includes everything committed that day rather than stopping at midnight. There's no need to match an exact timestamp or disambiguate — the nearest snapshot is always picked automatically.
+
+Omitting `--start`/`--end` is handled differently for each, since they mean different things: **omitting `--start`** stays unbounded (`None`) — "from the beginning of history" is a valid, stable request on its own, so nothing is resolved or looked up. **Omitting `--end`** always resolves to a concrete number — the table's actual latest snapshot **right now** — rather than an open-ended "whatever's latest" marker, so a loaded range stays a fixed, trustworthy fact even if the table gets new snapshots later; run `load` again to pick up new data. A freshly created table with only its initial metadata file and no snapshots yet is still loadable: `--start` stays `None` as usual, and `--end` is saved as `empty` (since there's no snapshot yet to resolve it to) — any later `show`/`metadata`/`open`/`use` against that range prints a note suggesting you `load` again once the table has data.
 
 The backend reports snapshot timestamps in UTC. A date/timestamp you type with no explicit UTC offset (e.g. `2026-01-01` or `2026-01-01T20:00:00`) is interpreted in **your machine's local timezone** and converted to UTC before comparing — so `--end 2026-01-01` means midnight-to-midnight in your own timezone, not UTC. Include an explicit offset (e.g. `2026-01-01T00:00:00+00:00`) to bypass local-timezone interpretation entirely.
 
-`use <table>` with no `--start`/`--end` lists every range you've loaded for that table (marking the current one); with `--start`/`--end`, it switches which loaded range `show`/`metadata`/`open` operate on, without re-fetching from the server — errors if that exact range hasn't been `load`ed yet.
+`use <table>` with no `--index` lists every range you've loaded for that table, numbered `[0]`, `[1]`, ... (marking the current one). Pass `--index`/`-i <N>` to switch to one by its number — no need to remember exact IDs/timestamps.
 
 `show` explores the currently loaded range's cached graph — it takes no date arguments, only filters:
 - with no flags, lists every node as `type  id` (filterable with `--type`/`--operation`; `--type metadata` also includes `main_metadata` nodes)
@@ -65,7 +67,7 @@ If no server URL is given via `--server` or `ICEGRAPH_SERVER_URL`, the CLI asks 
 
 **For scripts and AI/agent use:** always pass `--server`/`ICEGRAPH_SERVER_URL` explicitly rather than relying on the prompt. The CLI never blocks on `input()` when stdin isn't a real terminal — it fails immediately with a clear error instead — but pass `--non-interactive` (or set `ICEGRAPH_NON_INTERACTIVE=true`) for a hard guarantee it will never prompt, even if stdin happens to be attached to a real terminal.
 
-`load` resolves `--start`/`--end` to snapshot IDs (see above) and persists a table's full graph-data response, gzip-compressed, to `<data-dir>/<table>/<start-id>-<end-id>.json.gz` (`None` in place of a bound that wasn't given), recording it as that table's current range. `show`/`metadata`/`open` always operate on the current range; use `use` to switch it to any other range you've already loaded.
+`load` resolves `--start`/`--end` per the rules above (start may stay `None`; end always resolves to a number, or `empty` for a snapshot-less table) and persists a table's full graph-data response, gzip-compressed, to `<data-dir>/<table>/<start-label>-<end-label>.json.gz`, recording it as that table's current range. `show`/`metadata`/`open` always operate on the current range; use `use` to switch it to any other range you've already loaded.
 
 `load` also takes `-j`/`--json`, for a one-shot load-and-explore: it prints the loaded result as compact JSON on stdout (same shape as `show --json` with no filters — everything except the table's root `metadata`) while the normal "Loaded N nodes" status line moves to stderr, so stdout is pure JSON. It still saves to disk as usual, so a later `show`/`use` sees the same range. Useful for scripts/agents that want the data in a single call instead of `load` then `show --json`.
 

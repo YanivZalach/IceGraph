@@ -3,6 +3,9 @@ name: CLI unit tests
 on:
   push:
     branches: [master]
+    paths:
+      - "cli/**"
+      - ".github/workflows/cli-tests.yml"
 
 jobs:
   test:

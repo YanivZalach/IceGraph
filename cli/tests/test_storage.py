@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from icegraph_client.storage.storage import LocalStorage
+from icegraph_client.storage.storage import EMPTY_TABLE_END, LocalStorage
 
 GZIP_MAGIC = b"\x1f\x8b"
 
@@ -88,6 +88,44 @@ def test_list_ranges_returns_all_loaded_ranges_sorted(tmp_path):
     storage.save("default.logging", 100, 200, {"nodes": []})
 
     assert storage.list_ranges("default.logging") == [(100, 200), (300, 400)]
+
+
+def test_list_ranges_handles_mix_of_bounded_and_unbounded_ranges(tmp_path):
+    storage = LocalStorage(tmp_path)
+    storage.save("default.events", None, None, {"nodes": []})
+    storage.save("default.events", 2170216877480741855, None, {"nodes": []})
+    storage.save("default.events", 100, 200, {"nodes": []})
+
+    # must not raise TypeError comparing None to int, and bounded ranges sort before unbounded ones
+    assert storage.list_ranges("default.events") == [
+        (100, 200),
+        (2170216877480741855, None),
+        (None, None),
+    ]
+
+
+def test_save_and_load_round_trip_empty_table_marker(tmp_path):
+    storage = LocalStorage(tmp_path)
+
+    path = storage.save("default.fresh", None, EMPTY_TABLE_END, {"nodes": []})
+
+    assert path.name == f"None-{EMPTY_TABLE_END}.json.gz"
+    assert storage.current_range("default.fresh") == (None, EMPTY_TABLE_END)
+    assert storage.load("default.fresh") == {"nodes": []}
+
+
+def test_list_ranges_handles_mix_of_int_none_and_empty_marker(tmp_path):
+    storage = LocalStorage(tmp_path)
+    storage.save("default.events", None, None, {"nodes": []})
+    storage.save("default.events", None, EMPTY_TABLE_END, {"nodes": []})
+    storage.save("default.events", 100, 200, {"nodes": []})
+
+    # must not raise comparing "empty"/None/int against each other
+    assert storage.list_ranges("default.events") == [
+        (100, 200),
+        (None, EMPTY_TABLE_END),
+        (None, None),
+    ]
 
 
 def test_list_ranges_empty_when_nothing_loaded(tmp_path):
