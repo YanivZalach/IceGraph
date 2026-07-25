@@ -1,18 +1,23 @@
+import gzip
 import json
 
 import pytest
 
 from icegraph_client.storage.storage import LocalStorage
 
+GZIP_MAGIC = b"\x1f\x8b"
 
-def test_save_writes_file_and_pointer(tmp_path):
+
+def test_save_writes_gzip_compressed_file_and_pointer(tmp_path):
     storage = LocalStorage(tmp_path)
     result = {"nodes": [{"id": "a"}], "edges": []}
 
     path = storage.save("default.logging", None, None, result)
 
     assert path.exists()
-    assert json.loads(path.read_text()) == result
+    assert path.read_bytes()[:2] == GZIP_MAGIC
+    with gzip.open(path, "rt", encoding="utf-8") as f:
+        assert json.load(f) == result
 
     pointer = tmp_path / "default.logging" / "_latest.json"
     assert pointer.exists()
@@ -24,13 +29,13 @@ def test_save_writes_file_and_pointer(tmp_path):
 def test_save_names_file_by_range(tmp_path):
     storage = LocalStorage(tmp_path)
     path = storage.save("default.logging", 1, 2, {"nodes": []})
-    assert path.name == "1-2.json"
+    assert path.name == "1-2.json.gz"
 
 
 def test_save_names_file_none_for_missing_range(tmp_path):
     storage = LocalStorage(tmp_path)
     path = storage.save("default.logging", None, None, {"nodes": []})
-    assert path.name == "None-None.json"
+    assert path.name == "None-None.json.gz"
 
 
 def test_load_round_trips(tmp_path):

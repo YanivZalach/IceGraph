@@ -7,8 +7,7 @@ It's a package first: `IcegraphClient` and the storage helpers have no CLI-frame
 ## Install
 
 ```bash
-cd cli
-pip install -e .
+pip install icegraph-client
 ```
 
 This installs the `icegraph` command and makes `icegraph_client` importable.
@@ -30,7 +29,7 @@ icegraph open default.logging
 | Server URL | `--server` | `ICEGRAPH_SERVER_URL` | `http://localhost:5000` |
 | Local data directory | `--data-dir` | `ICEGRAPH_DATA_DIR` | `~/.icegraph` |
 
-`load` persists a table's full graph-data response to `<data-dir>/<table>/<start>-<end>.json` (`None` in place of a bound that wasn't given) and records it as that table's latest load. `show`/`open` use the latest load automatically unless `--start`/`--end` are given explicitly.
+`load` persists a table's full graph-data response, gzip-compressed, to `<data-dir>/<table>/<start>-<end>.json.gz` (`None` in place of a bound that wasn't given) and records it as that table's latest load. `show`/`open` use the latest load automatically unless `--start`/`--end` are given explicitly.
 
 ## As a library
 
@@ -44,8 +43,11 @@ print(len(result["nodes"]), "nodes")
 
 ## Development
 
+Working from source instead of the published package:
+
 ```bash
 cd cli
-uv sync
-uv run pytest
+uv sync                    # Install dependencies into cli/.venv
+uv run icegraph --help      # Run the CLI without installing it
+uv run pytest                # Run the test suite
 ```

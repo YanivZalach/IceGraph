@@ -71,7 +71,13 @@ Graph jobs are tracked in each pod's memory, so if you run more than one replica
 
 ## CLI
 
-A Python client and CLI for inspecting a table from the terminal — list tables, load a table's metadata to disk, filter/print it, and jump straight to the browser view. Install with `pip install -e cli/` (from a running IceGraph server) — see [cli/README.md](cli/README.md) for usage and configuration.
+A Python client and CLI for inspecting a table from the terminal — list tables, load a table's metadata to disk, filter/print it, and jump straight to the browser view.
+
+```bash
+pip install icegraph-client
+```
+
+Talks to a running IceGraph server — see [cli/README.md](cli/README.md) for usage and configuration.
 
 ## Start Using Source Code (Contributor to IceGraph)
 
@@ -132,3 +138,16 @@ npm run dev
 ```
 
 Go to `http://localhost:3000` and explore your tables.
+
+### 4. CLI (optional)
+
+To work on the CLI from source instead of the published `icegraph-client` package:
+
+```bash
+cd cli
+uv sync                    # Install dependencies into cli/.venv
+uv run icegraph --help      # Run the CLI without installing it
+uv run pytest                # Run the test suite
+```
+
+See [cli/README.md](cli/README.md) for the full command reference.

@@ -1,3 +1,4 @@
+import gzip
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -19,7 +20,8 @@ class LocalStorage:
     ) -> Path:
         path = self._result_path(table_name, start_snapshot_id, end_snapshot_id)
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(result))
+        with gzip.open(path, "wt", encoding="utf-8") as f:
+            json.dump(result, f)
 
         pointer = self._latest_pointer_path(table_name)
         pointer.write_text(json.dumps({
@@ -55,13 +57,14 @@ class LocalStorage:
         end_snapshot_id: Optional[int],
     ) -> Dict:
         path = self.resolve_path(table_name, start_snapshot_id, end_snapshot_id)
-        return json.loads(path.read_text())
+        with gzip.open(path, "rt", encoding="utf-8") as f:
+            return json.load(f)
 
     def _table_dir(self, table_name: str) -> Path:
         return self._data_dir / table_name
 
     def _result_path(self, table_name: str, start_snapshot_id: Optional[int], end_snapshot_id: Optional[int]) -> Path:
-        filename = f"{self._range_label(start_snapshot_id)}-{self._range_label(end_snapshot_id)}.json"
+        filename = f"{self._range_label(start_snapshot_id)}-{self._range_label(end_snapshot_id)}.json.gz"
         return self._table_dir(table_name) / filename
 
     def _latest_pointer_path(self, table_name: str) -> Path:
