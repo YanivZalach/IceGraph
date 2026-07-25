@@ -26,6 +26,7 @@ import {
   remToPx,
 } from '../layoutConstants'
 import { bindMouseScrollHandoff } from '../utils/smoothScroll'
+import { SELECT_NODE_ID_PARAM } from '../appConstants'
 
 const POPUP_KEYS = 'abdegmnopqstuvwxyz'
 
@@ -373,7 +374,7 @@ export default function GraphPage() {
     fgRef.current.d3ReheatSimulation()
 
     const historyId = history.state?.graphSelection
-    const queryId = searchParams.get('select_node_id')
+    const queryId = searchParams.get(SELECT_NODE_ID_PARAM)
     const sessionId = sessionStorage.getItem('last_graph_selection')
     const targetNodeId = historyId || queryId || sessionId
 
@@ -387,7 +388,7 @@ export default function GraphPage() {
 
         if (queryId) {
           const nextParams = new URLSearchParams(searchParams)
-          nextParams.delete('select_node_id')
+          nextParams.delete(SELECT_NODE_ID_PARAM)
           setSearchParams(nextParams, { replace: true })
           history.replaceState({ graphSelection: targetNodeId }, '')
         }

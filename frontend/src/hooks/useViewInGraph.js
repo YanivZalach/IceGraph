@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useTableSpecs } from '../context/TableSpecsContext'
-import { BASE_PATH } from '../appConstants'
+import { BASE_PATH, SELECT_NODE_ID_PARAM } from '../appConstants'
 import { cacheData, clearCachedData } from '../utils/cacheUtils'
 
 export function useViewInGraph() {
@@ -15,7 +15,7 @@ export function useViewInGraph() {
     setDuplicatingNodeId(nodeId)
 
     const url = new URL(`${window.location.origin}${BASE_PATH}/table/graph${tabSearch}`)
-    url.searchParams.set('select_node_id', nodeId)
+    url.searchParams.set(SELECT_NODE_ID_PARAM, nodeId)
     url.searchParams.set('dup', '1')
     url.searchParams.set('cache_id', crypto.randomUUID())
 
