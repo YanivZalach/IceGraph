@@ -478,6 +478,12 @@ const SECTIONS = [
           tables, pull metadata down to your terminal, and jump straight to a table's browser view — no UI
           needed.
         </p>
+        <p>
+          The flow: list tables, pick one, check its snapshot history, <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">load</code> a
+          range, then explore that loaded range with <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">show</code>/<code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">metadata</code>/<code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">open</code> —
+          none of which take a date/range argument themselves, since they always operate on whatever range you last loaded (or switched to with{' '}
+          <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">use</code>).
+        </p>
         <div className="space-y-2">
           <h3 className="text-white font-semibold">Install</h3>
           <p>
@@ -489,14 +495,35 @@ const SECTIONS = [
           <h3 className="text-white font-semibold">Commands</h3>
           <ul className="list-disc list-inside space-y-2">
             <li><code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph tables</code> — list Iceberg tables known to the server</li>
-            <li><code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph load &lt;table&gt; [--start ID] [--end ID]</code> — fetch a table's metadata and save it locally</li>
-            <li><code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph show &lt;table&gt; [--type TYPE] [--operation OP]</code> — list nodes from the last load, optionally filtered</li>
+            <li><code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph snapshots &lt;table&gt;</code> — list a table's snapshot history as timestamp / id / operation</li>
+            <li><code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph metadata &lt;table&gt;</code> — print the current range's schema, partition spec, and sort order as JSON, read locally like <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">show</code> (no server request)</li>
+            <li><code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph load &lt;table&gt; [--start ID-or-date] [--end ID-or-date]</code> — fetch a table's metadata and save it locally as the table's current range</li>
+            <li><code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph use &lt;table&gt; [--start ID-or-date] [--end ID-or-date]</code> — with no range, lists every range you've loaded for this table (marking the current one); with a range, switches to it without re-fetching (errors if it hasn't been loaded)</li>
+            <li><code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph show &lt;table&gt; [--type TYPE] [--operation OP]</code> — list nodes from the current range, optionally filtered (<code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">--type metadata</code> also includes main metadata nodes)</li>
             <li><code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph show &lt;table&gt; --node &lt;id&gt;</code> — print every field the backend returned for one node; matches an exact id or a unique substring of it, so you don't have to type the full file path</li>
             <li><code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph show &lt;table&gt; --children &lt;id&gt;</code> — list the nodes one node points to (a manifest's data files, a snapshot's manifests, etc.), matched the same way</li>
-            <li><code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph show &lt;table&gt; --issues</code> — print any errors/warnings from the last load (same data as the <strong className="text-white">Issues</strong> panel)</li>
-            <li><code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph show &lt;table&gt; --json</code> — machine-readable output for any of the above; with no other flags, dumps the entire cached result (nodes, edges, metadata, errors, warnings) so a script or an AI agent can explore it in full</li>
-            <li><code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph open &lt;table&gt; [--page graph|metadata|timeline|filetree]</code> — open a table's browser view in your default browser (falls back to printing the URL if it can't); pass <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">--no-browser</code> to always just print it</li>
+            <li><code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph show &lt;table&gt; --issues</code> — print any errors/warnings from the current range (same data as the <strong className="text-white">Issues</strong> panel)</li>
+            <li><code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph show &lt;table&gt; --json</code> (or <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">-j</code>) — machine-readable output for any of the above; with no other flags, dumps the current range's nodes, edges, errors, and warnings (never the table's root metadata — that's exclusive to the <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">metadata</code> command) so a script or an AI agent can explore it in full</li>
+            <li><code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph open &lt;table&gt; [--page graph|metadata|timeline|filetree]</code> — open the current range's browser view in your default browser (falls back to printing the URL if it can't, or if nothing's been loaded yet); pass <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">--no-browser</code> to always just print it</li>
           </ul>
+        </div>
+        <div className="space-y-2">
+          <h3 className="text-white font-semibold">Snapshot ranges</h3>
+          <p>
+            <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">--start</code>/<code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">--end</code> — only on <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">load</code> and <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">use</code>, never on <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">show</code>/<code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">metadata</code>/<code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">open</code> — each accept a snapshot ID or a date/timestamp.
+            A numeric ID is used as-is; anything else is auto-detected against the table's snapshot history —
+            <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm"> --end</code> picks the latest snapshot at or before that time,
+            <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm"> --start</code> the earliest one at or after it — no need to match an exact timestamp.
+            A bare date like <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">2026-01-01</code> spans the whole day, so
+            <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm"> --end 2026-01-01</code> includes everything committed that day.
+          </p>
+          <p>
+            The backend reports snapshot timestamps in UTC. A date/timestamp with no explicit UTC offset is interpreted in{' '}
+            <strong className="text-white">your machine's local timezone</strong> and converted to UTC before comparing —
+            so <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">--end 2026-01-01</code> means midnight-to-midnight
+            in your own timezone, not UTC. Add an explicit offset (e.g. <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">2026-01-01T00:00:00+00:00</code>)
+            to specify UTC directly instead.
+          </p>
         </div>
         <div className="space-y-2">
           <h3 className="text-white font-semibold">Pointing it at a server</h3>

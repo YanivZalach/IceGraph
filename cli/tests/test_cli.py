@@ -17,8 +17,62 @@ def test_global_flags_parse_before_subcommand():
 def test_load_subcommand_parses_range():
     args = build_parser().parse_args(["load", "default.logging", "--start", "1", "--end", "2"])
     assert args.table == "default.logging"
-    assert args.start == 1
-    assert args.end == 2
+    assert args.start == "1"
+    assert args.end == "2"
+
+
+def test_load_subcommand_accepts_timestamp_range():
+    args = build_parser().parse_args(["load", "default.logging", "--start", "2026-01-01", "--end", "2026-02-01T00:00:00"])
+    assert args.start == "2026-01-01"
+    assert args.end == "2026-02-01T00:00:00"
+
+
+def test_use_subcommand_parses_range():
+    args = build_parser().parse_args(["use", "default.logging", "--start", "1", "--end", "2026-01-01"])
+    assert args.command == "use"
+    assert args.table == "default.logging"
+    assert args.start == "1"
+    assert args.end == "2026-01-01"
+
+
+def test_use_subcommand_range_is_optional():
+    args = build_parser().parse_args(["use", "default.logging"])
+    assert args.start is None
+    assert args.end is None
+
+
+def test_show_subcommand_rejects_start_end():
+    with pytest.raises(SystemExit):
+        build_parser().parse_args(["show", "default.logging", "--start", "1"])
+
+
+def test_open_subcommand_rejects_start_end():
+    with pytest.raises(SystemExit):
+        build_parser().parse_args(["open", "default.logging", "--start", "1"])
+
+
+def test_snapshots_subcommand_parses():
+    args = build_parser().parse_args(["snapshots", "default.logging"])
+    assert args.command == "snapshots"
+    assert args.table == "default.logging"
+    assert args.json is False
+
+
+def test_snapshots_subcommand_json_short_flag():
+    args = build_parser().parse_args(["snapshots", "default.logging", "-j"])
+    assert args.json is True
+
+
+def test_metadata_subcommand_parses():
+    args = build_parser().parse_args(["metadata", "default.logging"])
+    assert args.command == "metadata"
+    assert args.table == "default.logging"
+    assert args.json is False
+
+
+def test_metadata_subcommand_json_short_flag():
+    args = build_parser().parse_args(["metadata", "default.logging", "-j"])
+    assert args.json is True
 
 
 def test_show_subcommand_parses_filters():
@@ -53,6 +107,11 @@ def test_show_subcommand_json_flag():
 
     default_args = build_parser().parse_args(["show", "default.logging"])
     assert default_args.json is False
+
+
+def test_show_subcommand_json_short_flag():
+    args = build_parser().parse_args(["show", "default.logging", "-j"])
+    assert args.json is True
 
 
 def test_show_subcommand_node_and_children_are_mutually_exclusive():

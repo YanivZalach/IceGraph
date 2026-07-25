@@ -80,3 +80,48 @@ def test_resolve_path_raises_for_missing_explicit_range(tmp_path):
 
     with pytest.raises(FileNotFoundError):
         storage.resolve_path("default.logging", 1, 2)
+
+
+def test_list_ranges_returns_all_loaded_ranges_sorted(tmp_path):
+    storage = LocalStorage(tmp_path)
+    storage.save("default.logging", 300, 400, {"nodes": []})
+    storage.save("default.logging", 100, 200, {"nodes": []})
+
+    assert storage.list_ranges("default.logging") == [(100, 200), (300, 400)]
+
+
+def test_list_ranges_empty_when_nothing_loaded(tmp_path):
+    storage = LocalStorage(tmp_path)
+    assert storage.list_ranges("default.logging") == []
+
+
+def test_current_range_reflects_latest_pointer(tmp_path):
+    storage = LocalStorage(tmp_path)
+    storage.save("default.logging", 100, 200, {"nodes": []})
+    storage.save("default.logging", 300, 400, {"nodes": []})
+
+    assert storage.current_range("default.logging") == (300, 400)
+
+
+def test_current_range_none_when_nothing_loaded(tmp_path):
+    storage = LocalStorage(tmp_path)
+    assert storage.current_range("default.logging") is None
+
+
+def test_set_latest_switches_pointer_to_existing_range(tmp_path):
+    storage = LocalStorage(tmp_path)
+    storage.save("default.logging", 100, 200, {"nodes": ["a"]})
+    storage.save("default.logging", 300, 400, {"nodes": ["b"]})
+
+    path = storage.set_latest("default.logging", 100, 200)
+
+    assert storage.current_range("default.logging") == (100, 200)
+    assert storage.load("default.logging") == {"nodes": ["a"]}
+    assert path.name == "100-200.json.gz"
+
+
+def test_set_latest_raises_when_range_not_loaded(tmp_path):
+    storage = LocalStorage(tmp_path)
+
+    with pytest.raises(FileNotFoundError):
+        storage.set_latest("default.logging", 1, 2)

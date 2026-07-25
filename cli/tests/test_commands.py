@@ -1,15 +1,26 @@
 import argparse
 import json
+import sys
+from datetime import timedelta, timezone
 
+import pytest
+
+from icegraph_client.client.client import IcegraphError
 from icegraph_client.commands.commands import CommandRunner
 from icegraph_client.config.config import CliConfig
 
 
-def _show_args(table, start=None, end=None, type_=None, operation=None, issues=False, node=None, children=None, json_=False):
+@pytest.fixture(autouse=True)
+def _fixed_local_timezone(monkeypatch):
+    # Snapshot resolution treats naive (no explicit offset) user input as local time.
+    # Pin "local" to UTC by default so date-only tests are deterministic regardless
+    # of the timezone of the machine running the suite.
+    monkeypatch.setattr(CommandRunner, "_local_timezone", staticmethod(lambda: timezone.utc))
+
+
+def _show_args(table, type_=None, operation=None, issues=False, node=None, children=None, json_=False):
     return argparse.Namespace(
         table=table,
-        start=start,
-        end=end,
         type=type_,
         operation=operation,
         issues=issues,
@@ -19,8 +30,20 @@ def _show_args(table, start=None, end=None, type_=None, operation=None, issues=F
     )
 
 
-def _open_args(table, start=None, end=None, page="graph", no_browser=True):
-    return argparse.Namespace(table=table, start=start, end=end, page=page, no_browser=no_browser)
+def _open_args(table, page="graph", no_browser=True):
+    return argparse.Namespace(table=table, page=page, no_browser=no_browser)
+
+
+def _load_args(table, start=None, end=None):
+    return argparse.Namespace(table=table, start=start, end=end)
+
+
+def _use_args(table, start=None, end=None):
+    return argparse.Namespace(table=table, start=start, end=end)
+
+
+def _snapshots_args(table, json_=False):
+    return argparse.Namespace(table=table, json=json_)
 
 
 def test_cmd_show_prints_all_nodes_by_default(tmp_path, capsys):
@@ -54,6 +77,23 @@ def test_cmd_show_filters_by_type(tmp_path, capsys):
     assert exit_code == 0
     assert "metadata" not in out
     assert "snapshot" in out
+
+
+def test_cmd_show_type_metadata_also_includes_main_metadata(tmp_path, capsys):
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+    nodes = [
+        {"id": "a", "type": "main_metadata"},
+        {"id": "b", "type": "metadata"},
+        {"id": "c", "type": "snapshot", "details": {"operation": "append"}},
+    ]
+    runner._storage.save("default.logging", None, None, {"nodes": nodes})
+
+    exit_code = runner.show(_show_args("default.logging", type_="metadata"))
+
+    out = capsys.readouterr().out
+    lines = [line.split() for line in out.strip().splitlines()]
+    assert exit_code == 0
+    assert lines == [["main_metadata", "a"], ["metadata", "b"]]
 
 
 def test_cmd_show_filters_by_operation_case_insensitive(tmp_path, capsys):
@@ -234,7 +274,7 @@ def test_cmd_show_children_reports_none(tmp_path, capsys):
     assert "No children." in out
 
 
-def test_cmd_show_json_without_filters_dumps_full_result(tmp_path, capsys):
+def test_cmd_show_json_without_filters_dumps_full_result_except_table_metadata(tmp_path, capsys):
     runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
     result = {"nodes": [{"id": "a", "type": "metadata"}], "edges": [], "metadata": {"schema": {}}, "errors": {}, "warnings": {}}
     runner._storage.save("default.logging", None, None, result)
@@ -243,7 +283,8 @@ def test_cmd_show_json_without_filters_dumps_full_result(tmp_path, capsys):
 
     out = capsys.readouterr().out
     assert exit_code == 0
-    assert json.loads(out) == result
+    # the table's root "metadata" key is exclusive to `icegraph metadata` -- show never leaks it
+    assert json.loads(out) == {"nodes": [{"id": "a", "type": "metadata"}], "edges": [], "errors": {}, "warnings": {}}
 
 
 def test_cmd_show_json_with_type_filter_dumps_only_nodes(tmp_path, capsys):
@@ -258,14 +299,25 @@ def test_cmd_show_json_with_type_filter_dumps_only_nodes(tmp_path, capsys):
     assert json.loads(out) == [{"id": "b", "type": "snapshot"}]
 
 
-def test_cmd_open_prints_url_with_range(tmp_path, capsys):
+def test_cmd_open_prints_url_for_currently_loaded_range(tmp_path, capsys):
     runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+    runner._storage.save("default.logging", 1, 2, {"nodes": []})
 
-    exit_code = runner.open(_open_args("default.logging", start=1, end=2))
+    exit_code = runner.open(_open_args("default.logging"))
 
     out = capsys.readouterr().out.strip()
     assert exit_code == 0
     assert out == "http://localhost:5000/table/graph?table=default.logging&start_snapshot_id=1&end_snapshot_id=2"
+
+
+def test_cmd_open_omits_range_params_when_nothing_loaded(tmp_path, capsys):
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+
+    exit_code = runner.open(_open_args("default.logging"))
+
+    out = capsys.readouterr().out.strip()
+    assert exit_code == 0
+    assert out == "http://localhost:5000/table/graph?table=default.logging"
 
 
 def test_cmd_open_respects_configured_server_and_page(tmp_path, capsys):
@@ -317,3 +369,282 @@ def test_cmd_open_prints_when_webbrowser_raises(tmp_path, capsys, monkeypatch):
     out = capsys.readouterr().out.strip()
     assert exit_code == 0
     assert out == "http://localhost:5000/table/graph?table=default.logging"
+
+
+def test_cmd_load_prints_loading_banner_only_once(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(sys.stderr, "isatty", lambda: True)
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+    runner._client.load_table = lambda *a, **kw: {"nodes": []}
+
+    exit_code = runner.load(_load_args("default.logging"))
+
+    err = capsys.readouterr().err
+    assert exit_code == 0
+    assert "\n" not in err
+    assert err.count("Loading default.logging") == 1
+
+
+def test_resolve_snapshot_ref_passes_through_none(tmp_path):
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+    assert runner._resolve_snapshot_ref("default.logging", None, "start") is None
+
+
+def test_resolve_snapshot_ref_accepts_int(tmp_path):
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+    assert runner._resolve_snapshot_ref("default.logging", 42, "start") == 42
+
+
+def test_resolve_snapshot_ref_accepts_numeric_string_without_network(tmp_path):
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+
+    def _fail(table):
+        raise AssertionError("should not call snapshot_map for a plain numeric id")
+
+    runner._client.snapshot_map = _fail
+
+    assert runner._resolve_snapshot_ref("default.logging", "42", "end") == 42
+
+
+_THREE_SNAPSHOTS = {
+    "2026-01-01T00:00:00+00:00": {"snapshot_id": "100", "operation": "append"},
+    "2026-01-15T00:00:00+00:00": {"snapshot_id": "150", "operation": "append"},
+    "2026-02-01T00:00:00+00:00": {"snapshot_id": "200", "operation": "append"},
+}
+
+
+def test_resolve_snapshot_ref_end_picks_latest_at_or_before(tmp_path):
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+    runner._client.snapshot_map = lambda table: _THREE_SNAPSHOTS
+
+    # 2026-01-20 falls between the 01-15 and 02-01 snapshots -> nearest at-or-before is 150
+    assert runner._resolve_snapshot_ref("default.logging", "2026-01-20", "end") == 150
+
+
+def test_resolve_snapshot_ref_start_picks_earliest_at_or_after(tmp_path):
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+    runner._client.snapshot_map = lambda table: _THREE_SNAPSHOTS
+
+    # 2026-01-20 falls between the 01-15 and 02-01 snapshots -> nearest at-or-after is 200
+    assert runner._resolve_snapshot_ref("default.logging", "2026-01-20", "start") == 200
+
+
+def test_resolve_snapshot_ref_date_only_end_includes_whole_day(tmp_path):
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+    runner._client.snapshot_map = lambda table: {
+        "2026-01-15T08:00:00+00:00": {"snapshot_id": "150", "operation": "append"},
+        "2026-01-15T20:00:00+00:00": {"snapshot_id": "151", "operation": "overwrite"},
+    }
+
+    # a bare date for --end should include everything committed that day, not just before midnight
+    assert runner._resolve_snapshot_ref("default.logging", "2026-01-15", "end") == 151
+
+
+def test_resolve_snapshot_ref_date_only_start_is_beginning_of_day(tmp_path):
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+    runner._client.snapshot_map = lambda table: {
+        "2026-01-15T08:00:00+00:00": {"snapshot_id": "150", "operation": "append"},
+        "2026-01-15T20:00:00+00:00": {"snapshot_id": "151", "operation": "overwrite"},
+    }
+
+    assert runner._resolve_snapshot_ref("default.logging", "2026-01-15", "start") == 150
+
+
+def test_resolve_snapshot_ref_exact_timestamp_matches_itself(tmp_path):
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+    runner._client.snapshot_map = lambda table: _THREE_SNAPSHOTS
+
+    assert runner._resolve_snapshot_ref("default.logging", "2026-01-15T00:00:00+00:00", "end") == 150
+
+
+def test_resolve_snapshot_ref_naive_input_uses_local_timezone_not_utc(tmp_path, monkeypatch):
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+    # Backend timestamps are always UTC. Simulate a user in UTC-8: local
+    # "2026-01-15T20:00:00" (no offset given) is 2026-01-16T04:00:00 UTC.
+    monkeypatch.setattr(CommandRunner, "_local_timezone", staticmethod(lambda: timezone(timedelta(hours=-8))))
+    runner._client.snapshot_map = lambda table: {
+        "2026-01-16T03:00:00+00:00": {"snapshot_id": "150", "operation": "append"},
+        "2026-01-16T05:00:00+00:00": {"snapshot_id": "151", "operation": "append"},
+    }
+
+    # If the naive input were misread as UTC (old, incorrect behavior), the target
+    # would be 2026-01-15T20:00:00+00:00 -> before both snapshots -> would raise.
+    # Read correctly as local UTC-8 -> target is 04:00 UTC -> nearest at-or-before is 150.
+    assert runner._resolve_snapshot_ref("default.logging", "2026-01-15T20:00:00", "end") == 150
+
+
+def test_resolve_snapshot_ref_explicit_offset_overrides_local_timezone(tmp_path, monkeypatch):
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+    monkeypatch.setattr(CommandRunner, "_local_timezone", staticmethod(lambda: timezone(timedelta(hours=-8))))
+    runner._client.snapshot_map = lambda table: _THREE_SNAPSHOTS
+
+    # An explicit +00:00 offset must be honored as-is, ignoring the local timezone.
+    assert runner._resolve_snapshot_ref("default.logging", "2026-01-15T00:00:00+00:00", "end") == 150
+
+
+def test_resolve_snapshot_ref_raises_when_end_before_all_snapshots(tmp_path):
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+    runner._client.snapshot_map = lambda table: _THREE_SNAPSHOTS
+
+    with pytest.raises(IcegraphError, match="No snapshot found at or before"):
+        runner._resolve_snapshot_ref("default.logging", "2020-01-01", "end")
+
+
+def test_resolve_snapshot_ref_raises_when_start_after_all_snapshots(tmp_path):
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+    runner._client.snapshot_map = lambda table: _THREE_SNAPSHOTS
+
+    with pytest.raises(IcegraphError, match="No snapshot found at or after"):
+        runner._resolve_snapshot_ref("default.logging", "2030-01-01", "start")
+
+
+def test_resolve_snapshot_ref_raises_on_unparseable_value(tmp_path):
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+    runner._client.snapshot_map = lambda table: _THREE_SNAPSHOTS
+
+    with pytest.raises(IcegraphError, match="Could not parse"):
+        runner._resolve_snapshot_ref("default.logging", "not-a-date", "end")
+
+
+def test_cmd_use_resolves_timestamps_and_switches_current_range(tmp_path, capsys):
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+    runner._storage.save("default.logging", 100, 200, {"nodes": ["first load"]})
+    runner._storage.save("default.logging", 300, 400, {"nodes": ["second load"]})
+    runner._client.snapshot_map = lambda table: {
+        "2026-01-01T00:00:00+00:00": {"snapshot_id": "100", "operation": "append"},
+    }
+
+    exit_code = runner.use(_use_args("default.logging", start="2026-01-01", end=200))
+
+    out = capsys.readouterr().out
+    assert exit_code == 0
+    assert "100-200" in out
+    assert runner._storage.current_range("default.logging") == (100, 200)
+    assert runner._storage.load("default.logging") == {"nodes": ["first load"]}
+
+
+def test_cmd_use_errors_when_range_not_loaded(tmp_path, capsys):
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+
+    exit_code = runner.use(_use_args("default.logging", start=1, end=2))
+
+    err = capsys.readouterr().err
+    assert exit_code == 1
+    assert "Run `icegraph load default.logging" in err
+
+
+def test_cmd_use_with_no_range_lists_loaded_ranges(tmp_path, capsys):
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+    runner._storage.save("default.logging", 100, 200, {"nodes": []})
+    runner._storage.save("default.logging", 300, 400, {"nodes": []})
+
+    exit_code = runner.use(_use_args("default.logging"))
+
+    out = capsys.readouterr().out
+    assert exit_code == 0
+    assert "100 -> 200" in out
+    assert "300 -> 400  (current)" in out
+
+
+def test_cmd_use_with_no_range_and_nothing_loaded(tmp_path, capsys):
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+
+    exit_code = runner.use(_use_args("default.logging"))
+
+    out = capsys.readouterr().out
+    assert exit_code == 0
+    assert "Run `icegraph load default.logging` first." in out
+
+
+def test_cmd_snapshots_prints_formatted_list(tmp_path, capsys):
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+    runner._client.snapshot_map = lambda table: {"2026-01-01T00:00:00+00:00": {"snapshot_id": "100", "operation": "append"}}
+
+    exit_code = runner.snapshots(_snapshots_args("default.logging"))
+
+    out = capsys.readouterr().out
+    assert exit_code == 0
+    assert "2026-01-01T00:00:00+00:00" in out
+    assert "100" in out
+    assert "append" in out
+
+
+def test_cmd_snapshots_json(tmp_path, capsys):
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+    snapshot_map = {"2026-01-01T00:00:00+00:00": {"snapshot_id": "100", "operation": "append"}}
+    runner._client.snapshot_map = lambda table: snapshot_map
+
+    exit_code = runner.snapshots(_snapshots_args("default.logging", json_=True))
+
+    out = capsys.readouterr().out
+    assert exit_code == 0
+    assert json.loads(out) == snapshot_map
+
+
+def test_cmd_snapshots_error(tmp_path, capsys):
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+
+    def _raise(table):
+        raise IcegraphError("boom")
+
+    runner._client.snapshot_map = _raise
+
+    exit_code = runner.snapshots(_snapshots_args("default.logging"))
+
+    err = capsys.readouterr().err
+    assert exit_code == 1
+    assert "boom" in err
+
+
+def _metadata_args(table, json_=False):
+    return argparse.Namespace(table=table, json=json_)
+
+
+def test_cmd_metadata_reads_from_currently_loaded_range(tmp_path, capsys):
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+
+    def _fail(*a, **kw):
+        raise AssertionError("metadata must not hit the server -- it reads the loaded range like show/open")
+
+    runner._client.snapshot_map = _fail
+    runner._client.load_table = _fail
+    runner._storage.save("default.logging", None, 200, {"metadata": {"table-name": "default.logging", "schemas": []}})
+
+    exit_code = runner.metadata(_metadata_args("default.logging"))
+
+    out = capsys.readouterr().out
+    assert exit_code == 0
+    assert json.loads(out) == {"table-name": "default.logging", "schemas": []}
+
+
+def test_cmd_metadata_follows_use_switch(tmp_path, capsys):
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+    runner._storage.save("default.logging", 100, 200, {"metadata": {"schema-id": 1}})
+    runner._storage.save("default.logging", 300, 400, {"metadata": {"schema-id": 2}})
+    runner._storage.set_latest("default.logging", 100, 200)
+
+    exit_code = runner.metadata(_metadata_args("default.logging"))
+
+    out = capsys.readouterr().out
+    assert exit_code == 0
+    assert json.loads(out) == {"schema-id": 1}
+
+
+def test_cmd_metadata_json_is_compact(tmp_path, capsys):
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+    runner._storage.save("default.logging", None, None, {"metadata": {"a": 1}})
+
+    exit_code = runner.metadata(_metadata_args("default.logging", json_=True))
+
+    out = capsys.readouterr().out
+    assert exit_code == 0
+    assert out == '{"a": 1}\n'
+
+
+def test_cmd_metadata_errors_when_nothing_loaded(tmp_path, capsys):
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+
+    exit_code = runner.metadata(_metadata_args("default.logging"))
+
+    err = capsys.readouterr().err
+    assert exit_code == 1
+    assert "Run `icegraph load default.logging` first." in err
