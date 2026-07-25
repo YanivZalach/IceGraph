@@ -756,7 +756,7 @@ export default function TimelinePage() {
             />
           )}
         >
-          <div className="flex items-center gap-2 pb-4 border-b border-edge">
+          <div className="flex items-center justify-center gap-2 pb-4 border-b border-edge">
             <GraphLinkButton
               label="Metadata"
               onClick={e => viewInGraph(e, selected.metadataNodeId)}
