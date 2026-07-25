@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react'
-import { useLocation, useOutletContext, useSearchParams } from 'react-router-dom'
+import { useOutletContext, useSearchParams } from 'react-router-dom'
 import ForceGraph2D from 'react-force-graph-2d'
 import { isEmptyValue, PanelDetailRow, PanelHeader, PANEL_STATUS_BADGE_CLASS } from '../components/PanelContent'
 import {
@@ -75,7 +75,6 @@ function getLineage(nodeId, links) {
 export default function GraphPage() {
   const { nodes: rawNodes, edges: rawEdges, errors } = useOutletContext()
 
-  const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
   const fgRef = useRef()
   const hasInitialized = useRef(false)
@@ -374,10 +373,9 @@ export default function GraphPage() {
     fgRef.current.d3ReheatSimulation()
 
     const historyId = history.state?.graphSelection
-    const locationId = location.state?.selectNodeId
     const queryId = searchParams.get('select_node_id')
     const sessionId = sessionStorage.getItem('last_graph_selection')
-    const targetNodeId = historyId || locationId || queryId || sessionId
+    const targetNodeId = historyId || queryId || sessionId
 
     if (targetNodeId) {
       const node = graphData.nodes.find(n => String(n.id) === String(targetNodeId))
@@ -392,8 +390,6 @@ export default function GraphPage() {
           nextParams.delete('select_node_id')
           setSearchParams(nextParams, { replace: true })
           history.replaceState({ graphSelection: targetNodeId }, '')
-        } else if (location.state?.selectNodeId) {
-          history.replaceState({ graphSelection: targetNodeId }, '')
         }
 
         setTimeout(() => {
@@ -403,7 +399,7 @@ export default function GraphPage() {
     } else {
       setTimeout(() => resetView(), 100)
     }
-  }, [graphData, location.state, searchParams, resetView])
+  }, [graphData, searchParams, resetView])
 
   useEffect(() => {
     const handleVisibilityChange = () => {

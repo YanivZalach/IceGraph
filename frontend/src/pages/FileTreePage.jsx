@@ -129,7 +129,7 @@ function FileRow({ filePath, checkedFiles, toggleFile, viewInGraph, duplicatingN
       )}
       <button
         onClick={e => viewInGraph(e, filePath)}
-        disabled={duplicatingNodeId === filePath}
+        disabled={!!duplicatingNodeId}
         title={duplicatingNodeId === filePath ? 'Opening…' : 'View in graph'}
         className="shrink-0 ml-2 p-1 rounded text-slate-500 hover:text-accent hover:bg-accent-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
