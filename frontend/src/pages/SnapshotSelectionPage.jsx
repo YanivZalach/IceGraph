@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { UI_BODY_MUTED_CLASS, UI_FORM_LABEL_MB_CLASS, UI_PAGE_TITLE_CLASS } from '../uiTypography'
+import { UI_BODY_MUTED_CLASS, UI_FORM_LABEL_MB_CLASS, UI_HELPER_TEXT_CLASS, UI_PAGE_TITLE_CLASS } from '../uiTypography'
 import { parseUtcDate, formatLocaleDateTime } from '../utils/dateUtils'
 
 function SnapshotItem({ ts, id, operation, selectedId, onClick }) {
@@ -116,6 +116,11 @@ export default function SnapshotSelectionPage() {
         navigate(`/table/timeline?${params.toString()}`)
     }
 
+    function handleJumpToLatest(latestSnapshotId) {
+        const params = new URLSearchParams({ table: tableName, start_snapshot_id: latestSnapshotId })
+        navigate(`/table/metadata?${params.toString()}`)
+    }
+
     if (error) {
         return (
             <div className="flex-1 flex items-center justify-center p-8 text-red-400">
@@ -144,10 +149,11 @@ export default function SnapshotSelectionPage() {
             const readableTs = dateObj ? formatLocaleDateTime(dateObj) : ts;
             return [readableTs, val.snapshot_id, val.operation];
         });
+    const latestSnapshotId = entries[0]?.[1]
 
     return (
         <div className="flex-1 flex items-center justify-center p-8">
-            <div className="bg-surface rounded-2xl shadow-xl p-10 w-full max-w-4xl border border-edge">
+            <div className="bg-surface rounded-2xl shadow-xl p-10 w-full max-w-5xl border border-edge">
                 <h2 className={`${UI_PAGE_TITLE_CLASS} mb-4`}>
                     Select Snapshots
                 </h2>
@@ -156,6 +162,20 @@ export default function SnapshotSelectionPage() {
                 </p>
                 <form onSubmit={handleSubmit} className="flex flex-col gap-6">
                     <div className="flex gap-6">
+                        {latestSnapshotId && (
+                            <div className="w-44 shrink-0 flex flex-col justify-center items-center gap-3 border-r border-dashed border-edge pr-6">
+                                <button
+                                    type="button"
+                                    onClick={() => handleJumpToLatest(latestSnapshotId)}
+                                    className="w-full rounded-xl border-2 border-accent text-accent font-bold text-sm px-3 py-3 hover:bg-accent/10 active:bg-accent/20 transition-colors"
+                                >
+                                    Latest Metadata Only
+                                </button>
+                                <p className={`${UI_HELPER_TEXT_CLASS} text-center`}>
+                                    Skip range selection and jump straight to the table's current state
+                                </p>
+                            </div>
+                        )}
                         <div className="flex-1">
                             <label className={UI_FORM_LABEL_MB_CLASS}>Start Snapshot</label>
                             <div ref={startListRef} className="h-72 overflow-y-auto bg-edge rounded-xl p-2 space-y-2 scroll-py-4">
