@@ -3,15 +3,27 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { UI_BODY_MUTED_CLASS, UI_FORM_LABEL_MB_CLASS, UI_HELPER_TEXT_CLASS, UI_PAGE_TITLE_CLASS } from '../uiTypography'
 import { parseUtcDate, formatLocaleDateTime } from '../utils/dateUtils'
 
+function splitTsPrecision(ts) {
+    const dotIdx = ts.indexOf('.')
+    if (dotIdx === -1) return { dateTime: ts, precision: '' }
+    return { dateTime: ts.slice(0, dotIdx), precision: ts.slice(dotIdx) }
+}
+
 function SnapshotItem({ ts, id, operation, selectedId, onClick }) {
     const isSelected = selectedId === id
+    const { dateTime, precision } = splitTsPrecision(ts)
     return (
         <div key={id} data-id={id} onClick={() => onClick(id)}
             className={`p-3 rounded-lg cursor-pointer border ${isSelected ? 'bg-accent border-accent' : 'bg-surface border-edge'}`}>
-            <div className="flex justify-between items-start">
-                <div className="text-xs text-slate-300">{ts}</div>
+            <div className="flex justify-between items-center gap-2">
+                <div className={`text-sm font-semibold ${isSelected ? 'text-white' : 'text-slate-200'}`}>
+                    {dateTime}
+                    {precision && (
+                        <span className={`font-normal ${isSelected ? 'text-blue-200/70' : 'text-slate-500'}`}>{precision}</span>
+                    )}
+                </div>
                 {operation && (
-                    <span className={`text-xs uppercase font-bold px-1.5 py-0.5 rounded ${operation === 'overwrite' ? 'bg-blue-950/80 text-blue-400 border border-blue-800' :
+                    <span className={`shrink-0 text-xs uppercase font-bold px-1.5 py-0.5 rounded ${operation === 'overwrite' ? 'bg-blue-950/80 text-blue-400 border border-blue-800' :
                         operation === 'append' ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800' :
                             operation === 'replace' ? 'bg-amber-950/80 text-amber-400 border border-amber-800' :
                                 operation === 'delete' ? 'bg-rose-950/80 text-rose-400 border border-rose-800' :
@@ -21,7 +33,7 @@ function SnapshotItem({ ts, id, operation, selectedId, onClick }) {
                     </span>
                 )}
             </div>
-            <div className={`text-sm ${isSelected ? 'text-blue-200' : 'text-slate-500'} font-mono mt-1 opacity-75`}>ID: {id}</div>
+            <div className={`text-sm whitespace-nowrap ${isSelected ? 'text-blue-200/70' : 'text-slate-500'} mt-1`}>ID: {id}</div>
         </div>
     )
 }
@@ -153,7 +165,7 @@ export default function SnapshotSelectionPage() {
 
     return (
         <div className="flex-1 flex items-center justify-center p-8">
-            <div className="bg-surface rounded-2xl shadow-xl p-10 w-full max-w-5xl border border-edge">
+            <div className="bg-surface rounded-2xl shadow-xl p-10 w-full max-w-6xl border border-edge">
                 <h2 className={`${UI_PAGE_TITLE_CLASS} mb-4`}>
                     Select Snapshots
                 </h2>
@@ -176,7 +188,8 @@ export default function SnapshotSelectionPage() {
                                 </p>
                             </div>
                         )}
-                        <div className="flex-1">
+                        <div className="flex flex-wrap flex-1 gap-6">
+                        <div className="flex-1 min-w-72">
                             <label className={UI_FORM_LABEL_MB_CLASS}>Start Snapshot</label>
                             <div ref={startListRef} className="h-72 overflow-y-auto bg-edge rounded-xl p-2 space-y-2 scroll-py-4">
                                 {entries.map(([ts, id, operation]) => (
@@ -196,7 +209,7 @@ export default function SnapshotSelectionPage() {
                             </div>
                         </div>
 
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-72">
                             <label className={UI_FORM_LABEL_MB_CLASS}>End Snapshot</label>
                             <div ref={endListRef} className="h-72 overflow-y-auto bg-edge rounded-xl p-2 space-y-2 scroll-py-4">
                                 <div data-id="" onClick={() => setEndSnapshot('')}
@@ -214,6 +227,7 @@ export default function SnapshotSelectionPage() {
                                     />
                                 ))}
                             </div>
+                        </div>
                         </div>
                     </div>
                     <button ref={submitBtnRef} type="submit" className="w-full bg-accent hover:bg-accent-dark py-3 rounded-lg text-white font-bold transition-colors">
