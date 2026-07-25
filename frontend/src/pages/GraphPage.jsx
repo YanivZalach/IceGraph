@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react'
-import { useLocation, useOutletContext } from 'react-router-dom'
+import { useOutletContext, useSearchParams } from 'react-router-dom'
 import ForceGraph2D from 'react-force-graph-2d'
 import { isEmptyValue, PanelDetailRow, PanelHeader, PANEL_STATUS_BADGE_CLASS } from '../components/PanelContent'
 import {
@@ -26,6 +26,7 @@ import {
   remToPx,
 } from '../layoutConstants'
 import { bindMouseScrollHandoff } from '../utils/smoothScroll'
+import { SELECT_NODE_ID_PARAM } from '../appConstants'
 
 const POPUP_KEYS = 'abdegmnopqstuvwxyz'
 
@@ -75,7 +76,7 @@ function getLineage(nodeId, links) {
 export default function GraphPage() {
   const { nodes: rawNodes, edges: rawEdges, errors } = useOutletContext()
 
-  const location = useLocation()
+  const [searchParams, setSearchParams] = useSearchParams()
   const fgRef = useRef()
   const hasInitialized = useRef(false)
   const isResettingRef = useRef(false)
@@ -373,9 +374,9 @@ export default function GraphPage() {
     fgRef.current.d3ReheatSimulation()
 
     const historyId = history.state?.graphSelection
-    const locationId = location.state?.selectNodeId
+    const queryId = searchParams.get(SELECT_NODE_ID_PARAM)
     const sessionId = sessionStorage.getItem('last_graph_selection')
-    const targetNodeId = historyId || locationId || sessionId
+    const targetNodeId = historyId || queryId || sessionId
 
     if (targetNodeId) {
       const node = graphData.nodes.find(n => String(n.id) === String(targetNodeId))
@@ -385,7 +386,10 @@ export default function GraphPage() {
         setStickyNode(node)
         setIsFullView(false)
 
-        if (location.state?.selectNodeId) {
+        if (queryId) {
+          const nextParams = new URLSearchParams(searchParams)
+          nextParams.delete(SELECT_NODE_ID_PARAM)
+          setSearchParams(nextParams, { replace: true })
           history.replaceState({ graphSelection: targetNodeId }, '')
         }
 
@@ -396,7 +400,7 @@ export default function GraphPage() {
     } else {
       setTimeout(() => resetView(), 100)
     }
-  }, [graphData, location.state, resetView])
+  }, [graphData, searchParams, resetView])
 
   useEffect(() => {
     const handleVisibilityChange = () => {

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useLocation, useNavigate, useOutletContext } from 'react-router-dom'
+import { useOutletContext } from 'react-router-dom'
 import { FileType } from '../graphConstants'
+import { useViewInGraph } from '../hooks/useViewInGraph'
 import {
   UI_BODY_MUTED_ITALIC_CLASS,
   UI_FIELD_LABEL_MB_CLASS,
@@ -98,7 +99,7 @@ function buildTree(partitions) {
   return root
 }
 
-function FileRow({ filePath, checkedFiles, toggleFile, navigate, tabSearch, timestamp }) {
+function FileRow({ filePath, checkedFiles, toggleFile, viewInGraph, duplicatingNodeId, timestamp }) {
   return (
     <div
       onClick={() => toggleFile(filePath)}
@@ -127,9 +128,10 @@ function FileRow({ filePath, checkedFiles, toggleFile, navigate, tabSearch, time
         </span>
       )}
       <button
-        onClick={e => { e.stopPropagation(); navigate(`/table/graph${tabSearch}`, { state: { selectNodeId: filePath } }) }}
-        title="View in graph"
-        className="shrink-0 ml-2 p-1 rounded text-slate-500 hover:text-accent hover:bg-accent-muted transition-colors"
+        onClick={e => viewInGraph(e, filePath)}
+        disabled={!!duplicatingNodeId}
+        title={duplicatingNodeId === filePath ? 'Opening…' : 'View in graph'}
+        className="shrink-0 ml-2 p-1 rounded text-slate-500 hover:text-accent hover:bg-accent-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
           <circle cx="4" cy="8" r="2" />
@@ -142,7 +144,7 @@ function FileRow({ filePath, checkedFiles, toggleFile, navigate, tabSearch, time
   )
 }
 
-function TreeNode({ label, node, path, checkedFiles, toggleFile, toggleBulk, navigate, tabSearch, collapsed, toggleCollapse, setCollapsed, fileTimestampMap }) {
+function TreeNode({ label, node, path, checkedFiles, toggleFile, toggleBulk, viewInGraph, duplicatingNodeId, collapsed, toggleCollapse, setCollapsed, fileTimestampMap }) {
   const allFiles = getAllFilesFromNode(node)
   const allChecked = allFiles.length > 0 && allFiles.every(f => checkedFiles.has(f))
   const someChecked = !allChecked && allFiles.some(f => checkedFiles.has(f))
@@ -243,8 +245,8 @@ function TreeNode({ label, node, path, checkedFiles, toggleFile, toggleBulk, nav
               checkedFiles={checkedFiles}
               toggleFile={toggleFile}
               toggleBulk={toggleBulk}
-              navigate={navigate}
-              tabSearch={tabSearch}
+              viewInGraph={viewInGraph}
+              duplicatingNodeId={duplicatingNodeId}
               collapsed={collapsed}
               toggleCollapse={toggleCollapse}
               setCollapsed={setCollapsed}
@@ -259,8 +261,8 @@ function TreeNode({ label, node, path, checkedFiles, toggleFile, toggleBulk, nav
                   filePath={filePath}
                   checkedFiles={checkedFiles}
                   toggleFile={toggleFile}
-                  navigate={navigate}
-                  tabSearch={tabSearch}
+                  viewInGraph={viewInGraph}
+                  duplicatingNodeId={duplicatingNodeId}
                   timestamp={fileTimestampMap[filePath]}
                 />
               ))}
@@ -274,8 +276,7 @@ function TreeNode({ label, node, path, checkedFiles, toggleFile, toggleBulk, nav
 
 export default function FileTreePage() {
   const { nodes, edges, metadata } = useOutletContext()
-  const navigate = useNavigate()
-  const { search: tabSearch } = useLocation()
+  const { viewInGraph, duplicatingNodeId } = useViewInGraph()
   const [search, setSearch] = useState('')
   const [selectedBranch, setSelectedBranch] = useState(null)
   const [selectedIdx, setSelectedIdx] = useState(null)
@@ -754,8 +755,8 @@ export default function FileTreePage() {
                       filePath={filePath}
                       checkedFiles={checkedFiles}
                       toggleFile={toggleFile}
-                      navigate={navigate}
-                      tabSearch={tabSearch}
+                      viewInGraph={viewInGraph}
+                      duplicatingNodeId={duplicatingNodeId}
                       timestamp={fileTimestampMap[filePath]}
                     />
                   ))}
@@ -776,8 +777,8 @@ export default function FileTreePage() {
                     filePath={filePath}
                     checkedFiles={checkedFiles}
                     toggleFile={toggleFile}
-                    navigate={navigate}
-                    tabSearch={tabSearch}
+                    viewInGraph={viewInGraph}
+                    duplicatingNodeId={duplicatingNodeId}
                     timestamp={fileTimestampMap[filePath]}
                   />
                 ))}
@@ -794,8 +795,8 @@ export default function FileTreePage() {
                   checkedFiles={checkedFiles}
                   toggleFile={toggleFile}
                   toggleBulk={toggleBulk}
-                  navigate={navigate}
-                  tabSearch={tabSearch}
+                  viewInGraph={viewInGraph}
+                  duplicatingNodeId={duplicatingNodeId}
                   collapsed={collapsed}
                   toggleCollapse={toggleCollapse}
                   setCollapsed={setCollapsed}
