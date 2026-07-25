@@ -467,6 +467,49 @@ const SECTIONS = [
       </div>
     ),
   },
+  {
+    id: 'cli-tool',
+    title: 'CLI Tool',
+    body: (
+      <div className="space-y-5">
+        <p>
+          <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph</code> is
+          a standalone command-line client that talks to the same read-only API as this UI. Use it to list
+          tables, pull metadata down to your terminal, and jump straight to a table's browser view — no UI
+          needed.
+        </p>
+        <div className="space-y-2">
+          <h3 className="text-white font-semibold">Install</h3>
+          <p>
+            <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">pip install icegraph-client</code> installs
+            the <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph</code> command.
+          </p>
+        </div>
+        <div className="space-y-2">
+          <h3 className="text-white font-semibold">Commands</h3>
+          <ul className="list-disc list-inside space-y-2">
+            <li><code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph tables</code> — list Iceberg tables known to the server</li>
+            <li><code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph load &lt;table&gt; [--start ID] [--end ID]</code> — fetch a table's metadata and save it locally</li>
+            <li><code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph show &lt;table&gt; [--type TYPE] [--operation OP]</code> — list nodes from the last load, optionally filtered</li>
+            <li><code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph show &lt;table&gt; --node &lt;id&gt;</code> — print every field the backend returned for one node; matches an exact id or a unique substring of it, so you don't have to type the full file path</li>
+            <li><code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph show &lt;table&gt; --children &lt;id&gt;</code> — list the nodes one node points to (a manifest's data files, a snapshot's manifests, etc.), matched the same way</li>
+            <li><code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph show &lt;table&gt; --issues</code> — print any errors/warnings from the last load (same data as the <strong className="text-white">Issues</strong> panel)</li>
+            <li><code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph show &lt;table&gt; --json</code> — machine-readable output for any of the above; with no other flags, dumps the entire cached result (nodes, edges, metadata, errors, warnings) so a script or an AI agent can explore it in full</li>
+            <li><code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph open &lt;table&gt; [--page graph|metadata|timeline|filetree]</code> — open a table's browser view in your default browser (falls back to printing the URL if it can't); pass <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">--no-browser</code> to always just print it</li>
+          </ul>
+        </div>
+        <div className="space-y-2">
+          <h3 className="text-white font-semibold">Pointing it at a server</h3>
+          <p>
+            The first time you run any command, the CLI asks for your IceGraph server's URL and remembers
+            it for next time — it never assumes one. Pass <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">--server</code> or
+            set the <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">ICEGRAPH_SERVER_URL</code> environment
+            variable to skip the prompt or point at a different server.
+          </p>
+        </div>
+      </div>
+    ),
+  },
 ]
 
 function extractText(node) {

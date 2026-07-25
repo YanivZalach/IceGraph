@@ -1,6 +1,6 @@
 import time
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 import requests
 
@@ -53,6 +53,7 @@ class IcegraphClient:
         start_snapshot_id: Optional[int] = None,
         end_snapshot_id: Optional[int] = None,
         poll_interval: float = POLL_INTERVAL_SECONDS,
+        on_poll: Optional[Callable[[], None]] = None,
     ) -> Dict:
         job_id = self.submit_graph_job(table_name, start_snapshot_id, end_snapshot_id)
 
@@ -61,6 +62,8 @@ class IcegraphClient:
             if status_code == 200:
                 return data
             if status_code == 202:
+                if on_poll is not None:
+                    on_poll()
                 time.sleep(poll_interval)
                 continue
             raise JobFailedError(data.get("error", f"Job failed with status {status_code}"))

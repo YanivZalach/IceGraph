@@ -95,6 +95,26 @@ def test_load_table_polls_until_complete():
     assert session.get.call_count == 2
 
 
+def test_load_table_calls_on_poll_while_processing():
+    session = MagicMock()
+    session.post.return_value = make_response(202, {"key": "job-1", "status": "processing"})
+    session.get.side_effect = [
+        make_response(202, {"key": "job-1", "status": "processing"}),
+        make_response(202, {"key": "job-1", "status": "processing"}),
+        make_response(200, {"nodes": []}),
+    ]
+    client = IcegraphClient("http://localhost:5000", session=session)
+    tick_count = 0
+
+    def on_poll():
+        nonlocal tick_count
+        tick_count += 1
+
+    client.load_table("default.logging", poll_interval=0, on_poll=on_poll)
+
+    assert tick_count == 2
+
+
 def test_load_table_raises_on_failure():
     session = MagicMock()
     session.post.return_value = make_response(202, {"key": "job-1", "status": "processing"})

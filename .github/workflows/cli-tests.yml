@@ -6,11 +6,16 @@ on:
 
 jobs:
   test:
-    name: Run icegraph-client unit tests
-    runs-on: ubuntu-latest
+    name: Run icegraph-client unit tests (${{ matrix.os }}, py${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
     defaults:
       run:
         working-directory: cli
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
 
     steps:
       - name: Check out the repo
@@ -19,7 +24,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
 
       - name: Install uv
         run: pip install uv
