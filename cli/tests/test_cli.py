@@ -14,11 +14,34 @@ def test_global_flags_parse_before_subcommand():
     assert args.data_dir == "/data"
 
 
+def test_non_interactive_flag_defaults_to_false():
+    args = build_parser().parse_args(["tables"])
+    assert args.non_interactive is False
+
+
+def test_non_interactive_flag_parses_before_subcommand():
+    args = build_parser().parse_args(["--non-interactive", "tables"])
+    assert args.non_interactive is True
+
+
 def test_load_subcommand_parses_range():
     args = build_parser().parse_args(["load", "default.logging", "--start", "1", "--end", "2"])
     assert args.table == "default.logging"
     assert args.start == "1"
     assert args.end == "2"
+
+
+def test_load_subcommand_json_flag():
+    args = build_parser().parse_args(["load", "default.logging", "--json"])
+    assert args.json is True
+
+    default_args = build_parser().parse_args(["load", "default.logging"])
+    assert default_args.json is False
+
+
+def test_load_subcommand_json_short_flag():
+    args = build_parser().parse_args(["load", "default.logging", "-j"])
+    assert args.json is True
 
 
 def test_load_subcommand_accepts_timestamp_range():

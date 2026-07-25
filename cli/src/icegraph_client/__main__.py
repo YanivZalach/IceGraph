@@ -22,6 +22,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="icegraph", description="Inspect Apache Iceberg table metadata from the terminal.")
     parser.add_argument("--server", default=None, help="IceGraph server URL (env ICEGRAPH_SERVER_URL; prompted for and saved on first run if neither is set)")
     parser.add_argument("--data-dir", default=None, dest="data_dir", help=f"Local persistence directory (env ICEGRAPH_DATA_DIR, default {DEFAULT_DATA_DIR})")
+    parser.add_argument(
+        "--non-interactive", action="store_true", dest="non_interactive",
+        help="Never prompt for input (env ICEGRAPH_NON_INTERACTIVE); fail immediately if --server/ICEGRAPH_SERVER_URL isn't set and none is saved yet. "
+             "Also implied automatically when stdin isn't a terminal.",
+    )
 
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -38,6 +43,7 @@ def build_parser() -> argparse.ArgumentParser:
     load_parser = subparsers.add_parser("load", help="Load a table's metadata and persist it to disk")
     load_parser.add_argument("table")
     _add_range_args(load_parser)
+    load_parser.add_argument("-j", "--json", action="store_true", help="Also print the loaded result as machine-readable JSON (one-shot load+show)")
 
     use_parser = subparsers.add_parser("use", help="Switch the loaded range that show/metadata/open operate on, or list loaded ranges")
     use_parser.add_argument("table")

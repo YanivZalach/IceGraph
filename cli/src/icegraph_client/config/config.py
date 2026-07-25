@@ -27,7 +27,8 @@ class CliConfig:
 
         server_url = args.server or os.environ.get("ICEGRAPH_SERVER_URL") or _load_saved_server_url(data_dir)
         if not server_url:
-            server_url = _prompt_for_server_url()
+            non_interactive = getattr(args, "non_interactive", False) or _env_flag("ICEGRAPH_NON_INTERACTIVE")
+            server_url = _prompt_for_server_url(non_interactive)
             _save_server_url(data_dir, server_url)
 
         return cls(server_url=server_url, data_dir=data_dir)
@@ -54,7 +55,17 @@ def _save_server_url(data_dir: Path, server_url: str) -> None:
     path.write_text(json.dumps({"server_url": server_url}))
 
 
-def _prompt_for_server_url() -> str:
+def _env_flag(name: str) -> bool:
+    return os.environ.get(name, "false").strip().lower() in ("1", "true", "yes")
+
+
+def _prompt_for_server_url(non_interactive: bool) -> str:
+    if non_interactive or not sys.stdin.isatty():
+        raise MissingServerUrlError(
+            "No IceGraph server configured and no interactive terminal to ask "
+            "(running non-interactively). Pass --server or set ICEGRAPH_SERVER_URL."
+        )
+
     print(
         "No IceGraph server configured yet (pass --server or set ICEGRAPH_SERVER_URL to skip this prompt next time).",
         file=sys.stderr,

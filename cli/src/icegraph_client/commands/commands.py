@@ -5,7 +5,7 @@ import re
 import sys
 import webbrowser
 from datetime import datetime
-from typing import Optional, Union
+from typing import Optional, Tuple, Union
 
 from icegraph_client.client.client import IcegraphClient, IcegraphError
 from icegraph_client.config.config import CliConfig
@@ -51,8 +51,7 @@ class CommandRunner:
         try:
             response = self._client.list_tables()
         except IcegraphError as e:
-            print(f"Error: {e}", file=sys.stderr)
-            return 1
+            return self._fail(e)
 
         for table in response.tables:
             print(table)
@@ -62,8 +61,7 @@ class CommandRunner:
         try:
             result = self._storage.load(args.table)
         except FileNotFoundError as e:
-            print(f"Error: {e}", file=sys.stderr)
-            return 1
+            return self._fail(e)
 
         table_metadata = result.get("metadata") or {}
         print(json.dumps(table_metadata) if args.json else json.dumps(table_metadata, indent=2, default=str))
@@ -74,8 +72,7 @@ class CommandRunner:
         spinner.tick(f"Loading {args.table} ...")
 
         try:
-            start = self._resolve_snapshot_ref(args.table, args.start, "start")
-            end = self._resolve_snapshot_ref(args.table, args.end, "end")
+            start, end = self._resolve_range(args.table, args.start, args.end)
             result = self._client.load_table(
                 args.table,
                 start,
@@ -84,26 +81,28 @@ class CommandRunner:
             )
         except IcegraphError as e:
             spinner.clear()
-            print(f"Error: {e}", file=sys.stderr)
-            return 1
+            return self._fail(e)
 
         spinner.clear()
 
         path = self._storage.save(args.table, start, end, result)
         node_count = len(result.get("nodes", []))
-        print(f"Loaded {node_count} nodes for {args.table} -> {path}")
-
         issue_count = len(result.get("errors") or {}) + len(result.get("warnings") or {})
+
+        status_stream = sys.stderr if args.json else sys.stdout
+        print(f"Loaded {node_count} nodes for {args.table} -> {path}", file=status_stream)
         if issue_count:
-            print(f"{issue_count} issue(s) found -- run `icegraph show {args.table} --issues` to view them.")
+            print(f"{issue_count} issue(s) found -- run `icegraph show {args.table} --issues` to view them.", file=status_stream)
+
+        if args.json:
+            print(json.dumps(self._without_metadata(result)))
         return 0
 
     def snapshots(self, args: argparse.Namespace) -> int:
         try:
             snapshot_map = self._client.snapshot_map(args.table)
         except IcegraphError as e:
-            print(f"Error: {e}", file=sys.stderr)
-            return 1
+            return self._fail(e)
 
         if args.json:
             print(json.dumps(snapshot_map))
@@ -118,14 +117,12 @@ class CommandRunner:
             return self._list_ranges(args.table)
 
         try:
-            start = self._resolve_snapshot_ref(args.table, args.start, "start")
-            end = self._resolve_snapshot_ref(args.table, args.end, "end")
+            start, end = self._resolve_range(args.table, args.start, args.end)
             path = self._storage.set_latest(args.table, start, end)
         except (IcegraphError, FileNotFoundError) as e:
-            print(f"Error: {e}", file=sys.stderr)
-            return 1
+            return self._fail(e)
 
-        print(f"Now using {args.table} {self._range_label(start)}-{self._range_label(end)} -> {path}")
+        print(f"Now using {args.table} {self._storage._range_label(start)}-{self._storage._range_label(end)} -> {path}")
         return 0
 
     def _list_ranges(self, table: str) -> int:
@@ -137,19 +134,23 @@ class CommandRunner:
         current = self._storage.current_range(table)
         for start, end in ranges:
             marker = "  (current)" if (start, end) == current else ""
-            print(f"{self._range_label(start)} -> {self._range_label(end)}{marker}")
+            print(f"{self._storage._range_label(start)} -> {self._storage._range_label(end)}{marker}")
         return 0
 
     @staticmethod
-    def _range_label(value: Optional[int]) -> str:
-        return str(value) if value is not None else "None"
+    def _fail(e: Exception) -> int:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
+    @staticmethod
+    def _without_metadata(result: dict) -> dict:
+        return {k: v for k, v in result.items() if k != "metadata"}
 
     def show(self, args: argparse.Namespace) -> int:
         try:
             result = self._storage.load(args.table)
         except FileNotFoundError as e:
-            print(f"Error: {e}", file=sys.stderr)
-            return 1
+            return self._fail(e)
 
         if args.issues:
             return self._show_issues(result, as_json=args.json)
@@ -167,10 +168,7 @@ class CommandRunner:
             nodes = [n for n in nodes if args.operation.lower() in (n.get("details", {}).get("operation") or "").lower()]
 
         if args.json:
-            if filtered:
-                print(json.dumps(nodes))
-            else:
-                print(json.dumps({k: v for k, v in result.items() if k != "metadata"}))
+            print(json.dumps(nodes if filtered else self._without_metadata(result)))
             return 0
 
         if not nodes:
@@ -183,14 +181,31 @@ class CommandRunner:
 
     _DATE_ONLY_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
-    def _resolve_snapshot_ref(self, table: str, value: Optional[Union[str, int]], boundary: str) -> Optional[int]:
+    def _resolve_range(self, table: str, start_arg, end_arg) -> Tuple[Optional[int], Optional[int]]:
+        # Fetch the snapshot map at most once, even if both bounds are dates/timestamps.
+        snapshot_map = None
+        if self._is_timestamp_like(start_arg) or self._is_timestamp_like(end_arg):
+            snapshot_map = self._client.snapshot_map(table)
+
+        start = self._resolve_snapshot_ref(table, start_arg, "start", snapshot_map)
+        end = self._resolve_snapshot_ref(table, end_arg, "end", snapshot_map)
+        return start, end
+
+    @staticmethod
+    def _is_timestamp_like(value) -> bool:
+        return value is not None and not (isinstance(value, int) or str(value).isdigit())
+
+    def _resolve_snapshot_ref(
+        self, table: str, value: Optional[Union[str, int]], boundary: str, snapshot_map: Optional[dict] = None
+    ) -> Optional[int]:
         if value is None:
             return None
         if isinstance(value, int) or str(value).isdigit():
             return int(value)
 
         target = self._parse_timestamp(str(value), boundary)
-        snapshot_map = self._client.snapshot_map(table)
+        if snapshot_map is None:
+            snapshot_map = self._client.snapshot_map(table)
 
         snapshots = []
         for ts, info in snapshot_map.items():
@@ -202,13 +217,14 @@ class CommandRunner:
         if boundary == "end":
             candidates = [(t, sid) for t, sid in snapshots if t <= target]
             pick = max(candidates, key=lambda pair: pair[0], default=None)
-            if pick is None:
-                raise IcegraphError(f"No snapshot found at or before '{value}' for {table}.")
+            direction = "at or before"
         else:
             candidates = [(t, sid) for t, sid in snapshots if t >= target]
             pick = min(candidates, key=lambda pair: pair[0], default=None)
-            if pick is None:
-                raise IcegraphError(f"No snapshot found at or after '{value}' for {table}.")
+            direction = "at or after"
+
+        if pick is None:
+            raise IcegraphError(f"No snapshot found {direction} '{value}' for {table}.")
 
         return pick[1]
 
@@ -280,10 +296,16 @@ class CommandRunner:
             print(f"WARNING  {op}: {message}")
         return 0
 
-    def _show_node(self, result: dict, query: str, as_json: bool = False) -> int:
-        node, error = self._find_node(result.get("nodes", []), query)
+    def _resolve_node_or_report(self, nodes: list, query: str) -> Optional[dict]:
+        node, error = self._find_node(nodes, query)
         if error:
             print(error, file=sys.stderr)
+            return None
+        return node
+
+    def _show_node(self, result: dict, query: str, as_json: bool = False) -> int:
+        node = self._resolve_node_or_report(result.get("nodes", []), query)
+        if node is None:
             return 1
 
         if as_json:
@@ -297,9 +319,8 @@ class CommandRunner:
 
     def _show_children(self, result: dict, query: str, as_json: bool = False) -> int:
         nodes = result.get("nodes", [])
-        node, error = self._find_node(nodes, query)
-        if error:
-            print(error, file=sys.stderr)
+        node = self._resolve_node_or_report(nodes, query)
+        if node is None:
             return 1
 
         id_to_node = {n.get("id"): n for n in nodes}

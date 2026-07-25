@@ -48,12 +48,8 @@ class LocalStorage:
         )
 
     def current_range(self, table_name: str) -> Optional[Tuple[Optional[int], Optional[int]]]:
-        pointer = self._latest_pointer_path(table_name)
-        if not pointer.exists():
-            return None
-
-        pointer_data = json.loads(pointer.read_text())
-        return self._parse_range_filename(pointer_data["file"])
+        filename = self._read_latest_filename(table_name)
+        return self._parse_range_filename(filename) if filename is not None else None
 
     def resolve_path(
         self,
@@ -67,12 +63,18 @@ class LocalStorage:
                 raise FileNotFoundError(f"No loaded data for {table_name} in that range. Run `icegraph load {table_name}` first.")
             return path
 
-        pointer = self._latest_pointer_path(table_name)
-        if not pointer.exists():
+        filename = self._read_latest_filename(table_name)
+        if filename is None:
             raise FileNotFoundError(f"No loaded data for {table_name} yet. Run `icegraph load {table_name}` first.")
 
-        pointer_data = json.loads(pointer.read_text())
-        return self._table_dir(table_name) / pointer_data["file"]
+        return self._table_dir(table_name) / filename
+
+    def _read_latest_filename(self, table_name: str) -> Optional[str]:
+        pointer = self._latest_pointer_path(table_name)
+        if not pointer.exists():
+            return None
+
+        return json.loads(pointer.read_text())["file"]
 
     def load(
         self,

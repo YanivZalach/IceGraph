@@ -497,7 +497,7 @@ const SECTIONS = [
             <li><code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph tables</code> — list Iceberg tables known to the server</li>
             <li><code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph snapshots &lt;table&gt;</code> — list a table's snapshot history as timestamp / id / operation</li>
             <li><code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph metadata &lt;table&gt;</code> — print the current range's schema, partition spec, and sort order as JSON, read locally like <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">show</code> (no server request)</li>
-            <li><code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph load &lt;table&gt; [--start ID-or-date] [--end ID-or-date]</code> — fetch a table's metadata and save it locally as the table's current range</li>
+            <li><code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph load &lt;table&gt; [--start ID-or-date] [--end ID-or-date]</code> — fetch a table's metadata and save it locally as the table's current range; add <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">--json</code>/<code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">-j</code> for a one-shot load-and-explore that also prints the result as JSON on stdout</li>
             <li><code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph use &lt;table&gt; [--start ID-or-date] [--end ID-or-date]</code> — with no range, lists every range you've loaded for this table (marking the current one); with a range, switches to it without re-fetching (errors if it hasn't been loaded)</li>
             <li><code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph show &lt;table&gt; [--type TYPE] [--operation OP]</code> — list nodes from the current range, optionally filtered (<code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">--type metadata</code> also includes main metadata nodes)</li>
             <li><code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph show &lt;table&gt; --node &lt;id&gt;</code> — print every field the backend returned for one node; matches an exact id or a unique substring of it, so you don't have to type the full file path</li>
@@ -532,6 +532,13 @@ const SECTIONS = [
             it for next time — it never assumes one. Pass <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">--server</code> or
             set the <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">ICEGRAPH_SERVER_URL</code> environment
             variable to skip the prompt or point at a different server.
+          </p>
+          <p>
+            For scripts or an AI agent driving the CLI: always pass <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">--server</code> explicitly
+            rather than relying on the prompt. The CLI already fails immediately with a clear error instead of hanging whenever stdin isn't a real
+            terminal, but <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">--non-interactive</code> (or{' '}
+            <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">ICEGRAPH_NON_INTERACTIVE=true</code>) guarantees it will
+            never prompt, even if stdin happens to be attached to a real terminal.
           </p>
         </div>
       </div>

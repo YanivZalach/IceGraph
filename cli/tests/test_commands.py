@@ -34,8 +34,8 @@ def _open_args(table, page="graph", no_browser=True):
     return argparse.Namespace(table=table, page=page, no_browser=no_browser)
 
 
-def _load_args(table, start=None, end=None):
-    return argparse.Namespace(table=table, start=start, end=end)
+def _load_args(table, start=None, end=None, json_=False):
+    return argparse.Namespace(table=table, start=start, end=end, json=json_)
 
 
 def _use_args(table, start=None, end=None):
@@ -384,6 +384,40 @@ def test_cmd_load_prints_loading_banner_only_once(tmp_path, capsys, monkeypatch)
     assert err.count("Loading default.logging") == 1
 
 
+def test_cmd_load_json_prints_only_json_on_stdout(tmp_path, capsys):
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+    runner._client.load_table = lambda *a, **kw: {
+        "nodes": [{"id": "a"}], "edges": [], "metadata": {"schema": {}}, "errors": {}, "warnings": {}
+    }
+
+    exit_code = runner.load(_load_args("default.logging", json_=True))
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert json.loads(captured.out) == {"nodes": [{"id": "a"}], "edges": [], "errors": {}, "warnings": {}}
+    assert "Loaded 1 nodes" in captured.err
+
+
+def test_cmd_load_json_still_saves_to_storage(tmp_path):
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+    runner._client.load_table = lambda *a, **kw: {"nodes": []}
+
+    runner.load(_load_args("default.logging", json_=True))
+
+    assert runner._storage.load("default.logging") == {"nodes": []}
+
+
+def test_cmd_load_without_json_prints_status_to_stdout(tmp_path, capsys):
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+    runner._client.load_table = lambda *a, **kw: {"nodes": []}
+
+    exit_code = runner.load(_load_args("default.logging"))
+
+    out = capsys.readouterr().out
+    assert exit_code == 0
+    assert "Loaded 0 nodes" in out
+
+
 def test_resolve_snapshot_ref_passes_through_none(tmp_path):
     runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
     assert runner._resolve_snapshot_ref("default.logging", None, "start") is None
@@ -410,6 +444,49 @@ _THREE_SNAPSHOTS = {
     "2026-01-15T00:00:00+00:00": {"snapshot_id": "150", "operation": "append"},
     "2026-02-01T00:00:00+00:00": {"snapshot_id": "200", "operation": "append"},
 }
+
+
+def test_resolve_range_fetches_snapshot_map_only_once_for_both_bounds(tmp_path):
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+    calls = []
+
+    def _snapshot_map(table):
+        calls.append(table)
+        return _THREE_SNAPSHOTS
+
+    runner._client.snapshot_map = _snapshot_map
+
+    start, end = runner._resolve_range("default.logging", "2026-01-01", "2026-02-01")
+
+    assert (start, end) == (100, 200)
+    assert calls == ["default.logging"]
+
+
+def test_resolve_range_skips_network_when_both_bounds_are_numeric(tmp_path):
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+
+    def _fail(table):
+        raise AssertionError("should not call snapshot_map when both bounds are plain ids")
+
+    runner._client.snapshot_map = _fail
+
+    assert runner._resolve_range("default.logging", "100", 200) == (100, 200)
+
+
+def test_resolve_range_fetches_once_when_only_one_bound_is_a_timestamp(tmp_path):
+    runner = CommandRunner(CliConfig(server_url="http://localhost:5000", data_dir=tmp_path))
+    calls = []
+
+    def _snapshot_map(table):
+        calls.append(table)
+        return _THREE_SNAPSHOTS
+
+    runner._client.snapshot_map = _snapshot_map
+
+    start, end = runner._resolve_range("default.logging", "2026-01-01", 999)
+
+    assert (start, end) == (100, 999)
+    assert calls == ["default.logging"]
 
 
 def test_resolve_snapshot_ref_end_picks_latest_at_or_before(tmp_path):

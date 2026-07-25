@@ -59,10 +59,15 @@ The backend reports snapshot timestamps in UTC. A date/timestamp you type with n
 |---|---|---|---|
 | Server URL | `--server` | `ICEGRAPH_SERVER_URL` | Prompted for on first run (see below) |
 | Local data directory | `--data-dir` | `ICEGRAPH_DATA_DIR` | `~/.icegraph` |
+| Non-interactive mode | `--non-interactive` | `ICEGRAPH_NON_INTERACTIVE` | Off (auto-enabled whenever stdin isn't a terminal) |
 
 If no server URL is given via `--server` or `ICEGRAPH_SERVER_URL`, the CLI asks for one interactively the first time it runs, then saves it to `<data-dir>/config.json` so later runs don't ask again.
 
+**For scripts and AI/agent use:** always pass `--server`/`ICEGRAPH_SERVER_URL` explicitly rather than relying on the prompt. The CLI never blocks on `input()` when stdin isn't a real terminal — it fails immediately with a clear error instead — but pass `--non-interactive` (or set `ICEGRAPH_NON_INTERACTIVE=true`) for a hard guarantee it will never prompt, even if stdin happens to be attached to a real terminal.
+
 `load` resolves `--start`/`--end` to snapshot IDs (see above) and persists a table's full graph-data response, gzip-compressed, to `<data-dir>/<table>/<start-id>-<end-id>.json.gz` (`None` in place of a bound that wasn't given), recording it as that table's current range. `show`/`metadata`/`open` always operate on the current range; use `use` to switch it to any other range you've already loaded.
+
+`load` also takes `-j`/`--json`, for a one-shot load-and-explore: it prints the loaded result as compact JSON on stdout (same shape as `show --json` with no filters — everything except the table's root `metadata`) while the normal "Loaded N nodes" status line moves to stderr, so stdout is pure JSON. It still saves to disk as usual, so a later `show`/`use` sees the same range. Useful for scripts/agents that want the data in a single call instead of `load` then `show --json`.
 
 ## As a library
 
