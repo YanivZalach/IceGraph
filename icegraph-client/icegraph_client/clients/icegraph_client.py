@@ -1,3 +1,4 @@
+import sys
 from urllib.parse import urlparse
 
 from icegraph_client.clients.tables_client import TablesClient
@@ -30,11 +31,12 @@ class IceGraphClient:
             if snapshots:
                 latest_snapshot = max(snapshots, key=lambda snapshot: snapshot.timestamp)
                 print(
-                    f"No snapshot range given, selected only the latest snapshot: {latest_snapshot.snapshot_id} at date {latest_snapshot.timestamp.humanize()}"
+                    f"No snapshot range given, selected only the latest snapshot {latest_snapshot.snapshot_id} at {latest_snapshot.timestamp.humanize()}",
+                    file=sys.stderr,
                 )
                 start_snapshot_id = latest_snapshot.snapshot_id
 
             else:
-                print(f"Table {table} has no data, both start and end snapshot remain unset")
+                print(f"Table {table} has no data, both start and end snapshot remain unset", file=sys.stderr)
 
         return self._graph_client.get_graph(table, start_snapshot_id, end_snapshot_id, poll_interval_seconds)

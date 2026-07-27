@@ -1,6 +1,7 @@
 import argparse
+import inspect
 import os
-import textwrap
+import sys
 
 from icegraph_client.clients.icegraph_client import IceGraphClient
 from icegraph_client.utils.json_utils import jsonify
@@ -32,17 +33,31 @@ def main():
 
     base_url = args.base_url or os.environ.get(BASE_URL_ENV_VAR)
     if not base_url:
-        parser.error(textwrap.dedent(f"""\
-                --base-url is required, or set the {BASE_URL_ENV_VAR} environment variable
-                bash/zsh: export {BASE_URL_ENV_VAR}=http://<icegraph-server-host>/ | cmd: set {BASE_URL_ENV_VAR}=http://<icegraph-server-host>/"""))
+        print(
+            inspect.cleandoc(f"""
+                No IceGraph server address was given.
+
+                Set it with one of the following:
+                  As an argument: --base-url http://<icegraph-server-host>
+                  As an environment variable (bash/zsh): export {BASE_URL_ENV_VAR}=http://<icegraph-server-host>
+                  As an environment variable (cmd): set {BASE_URL_ENV_VAR}=http://<icegraph-server-host>
+            """),
+            file=sys.stderr,
+        )
+        sys.exit(2)
 
     client = IceGraphClient(base_url)
 
     if args.command == "tables":
+        print("Fetching tables...", file=sys.stderr)
         result = client.list_tables()
+
     elif args.command == "snapshots":
+        print(f"Fetching snapshots for '{args.table}'...", file=sys.stderr)
         result = client.get_snapshot_map(args.table)
+
     elif args.command == "graph":
+        print(f"Building graph for '{args.table}'...", file=sys.stderr)
         result = client.get_graph(args.table, args.start_snapshot_id, args.end_snapshot_id)
 
     print(jsonify(result))
