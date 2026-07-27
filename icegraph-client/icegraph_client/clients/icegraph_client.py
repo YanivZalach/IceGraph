@@ -1,8 +1,8 @@
 from urllib.parse import urlparse
 
-from icegraph_client.tables_client import TablesClient
-from icegraph_client.snapshots_client import SnapshotsClient
-from icegraph_client.graph_client import GraphClient
+from icegraph_client.clients.tables_client import TablesClient
+from icegraph_client.clients.snapshots_client import SnapshotsClient
+from icegraph_client.clients.graph_client import GraphClient
 
 
 class IceGraphClient:

@@ -2,8 +2,8 @@ import argparse
 import os
 import textwrap
 
-from icegraph_client.icegraph_client import IceGraphClient
-from icegraph_client.json_utils import jsonify
+from icegraph_client.clients.icegraph_client import IceGraphClient
+from icegraph_client.utils.json_utils import jsonify
 
 BASE_URL_ENV_VAR = "ICEGRAPH_BASE_URL"
 
