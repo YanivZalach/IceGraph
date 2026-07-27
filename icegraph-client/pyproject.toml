@@ -20,8 +20,8 @@ include = ["icegraph_client*"]
 
 [tool.setuptools_scm]
 root = ".."
-tag_regex = "^client-v(?P<version>.*)$"
-git_describe_command = ["git", "describe", "--dirty", "--tags", "--long", "--match", "client-v*"]
+tag_regex = "^v(?P<version>.*)$"
+git_describe_command = ["git", "describe", "--dirty", "--tags", "--long", "--match", "v*"]
 
 [tool.black]
 line-length = 150

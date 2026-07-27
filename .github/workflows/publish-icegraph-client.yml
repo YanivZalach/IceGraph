@@ -3,7 +3,7 @@ name: Publish icegraph-client to PyPI
 on:
   push:
     tags:
-      - "client-v*"
+      - "v*"
 
 jobs:
   publish:
