@@ -4,6 +4,8 @@ from dataclasses import dataclass
 import arrow
 import requests
 
+from icegraph_client.utils.http_utils import raise_for_status
+
 
 @dataclass
 class Issues:
@@ -61,10 +63,10 @@ class GraphClient:
             },
             **self.requests_kwargs,
         )
-        response.raise_for_status()
+        raise_for_status(response)
         return response.json()["key"]
 
     def _get_graph_job(self, job_id: str) -> dict:
         response = requests.get(f"{self.base_url}/api/v1/graph-data/{job_id}", **self.requests_kwargs)
-        response.raise_for_status()
+        raise_for_status(response)
         return response.json()

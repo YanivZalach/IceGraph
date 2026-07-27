@@ -3,6 +3,8 @@ from dataclasses import dataclass
 import requests
 import arrow
 
+from icegraph_client.utils.http_utils import raise_for_status
+
 
 @dataclass
 class SnapshotInfo:
@@ -18,7 +20,7 @@ class SnapshotsClient:
 
     def get_snapshot_map(self, table: str) -> list[SnapshotInfo]:
         response = requests.get(f"{self.base_url}/api/v1/snapshot-map/{table}", **self.requests_kwargs)
-        response.raise_for_status()
+        raise_for_status(response)
         data = response.json()
 
         return [

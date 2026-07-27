@@ -1,5 +1,7 @@
 import requests
 
+from icegraph_client.utils.http_utils import raise_for_status
+
 
 class TablesClient:
     def __init__(self, base_url: str, **requests_kwargs):
@@ -8,6 +10,6 @@ class TablesClient:
 
     def list_tables(self) -> list[str]:
         response = requests.get(f"{self.base_url}/api/v1/tables", **self.requests_kwargs)
-        response.raise_for_status()
+        raise_for_status(response)
 
         return response.json()["tables"]

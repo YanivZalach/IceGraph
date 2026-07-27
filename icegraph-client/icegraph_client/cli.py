@@ -3,26 +3,46 @@ import inspect
 import os
 import sys
 
+import requests
+
 from icegraph_client.clients.icegraph_client import IceGraphClient
 from icegraph_client.utils.json_utils import jsonify
 
 BASE_URL_ENV_VAR = "ICEGRAPH_BASE_URL"
 
 
+def _tables(client: IceGraphClient, _: argparse.Namespace):
+    print("Fetching tables...", file=sys.stderr)
+    return client.list_tables()
+
+
+def _snapshots(client: IceGraphClient, args: argparse.Namespace):
+    print(f"Fetching snapshots for '{args.table}'...", file=sys.stderr)
+    return client.get_snapshot_map(args.table)
+
+
+def _graph(client: IceGraphClient, args: argparse.Namespace):
+    print(f"Building graph for '{args.table}'...", file=sys.stderr)
+    return client.get_graph(args.table, args.start_snapshot_id, args.end_snapshot_id)
+
+
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="icegraph")
-    parser.add_argument("--base-url", default=None)
+    parser = argparse.ArgumentParser(prog="icegraph", description="CLI for the IceGraph server API")
+    parser.add_argument("--base-url", default=None, help=f"IceGraph server URL. Falls back to the {BASE_URL_ENV_VAR} environment variable")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    subparsers.add_parser("tables")
+    tables_parser = subparsers.add_parser("tables", help="List all available tables")
+    tables_parser.set_defaults(handler=_tables)
 
-    snapshots_parser = subparsers.add_parser("snapshots")
-    snapshots_parser.add_argument("table")
+    snapshots_parser = subparsers.add_parser("snapshots", help="Get the snapshot map for a table")
+    snapshots_parser.add_argument("table", help="Full table name")
+    snapshots_parser.set_defaults(handler=_snapshots)
 
-    graph_parser = subparsers.add_parser("graph")
-    graph_parser.add_argument("table")
-    graph_parser.add_argument("--start-snapshot-id", default=None)
-    graph_parser.add_argument("--end-snapshot-id", default=None)
+    graph_parser = subparsers.add_parser("graph", help="Build the metadata graph for a table")
+    graph_parser.add_argument("table", help="Full table name")
+    graph_parser.add_argument("-s", "--start-snapshot-id", default=None, help="Start snapshot id")
+    graph_parser.add_argument("-e", "--end-snapshot-id", default=None, help="End snapshot id")
+    graph_parser.set_defaults(handler=_graph)
 
     return parser
 
@@ -48,17 +68,11 @@ def main():
 
     client = IceGraphClient(base_url)
 
-    if args.command == "tables":
-        print("Fetching tables...", file=sys.stderr)
-        result = client.list_tables()
-
-    elif args.command == "snapshots":
-        print(f"Fetching snapshots for '{args.table}'...", file=sys.stderr)
-        result = client.get_snapshot_map(args.table)
-
-    elif args.command == "graph":
-        print(f"Building graph for '{args.table}'...", file=sys.stderr)
-        result = client.get_graph(args.table, args.start_snapshot_id, args.end_snapshot_id)
+    try:
+        result = args.handler(client, args)
+    except requests.RequestException as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
 
     print(jsonify(result))
 
