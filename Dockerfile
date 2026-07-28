@@ -1,4 +1,6 @@
 FROM node:24-slim AS frontend-builder
+ARG APP_VERSION=dev
+ENV VITE_APP_VERSION=$APP_VERSION
 WORKDIR /build
 
 COPY frontend/package*.json ./

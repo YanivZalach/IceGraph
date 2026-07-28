@@ -38,6 +38,7 @@ jobs:
           VITE_USE_MSW: "true"
           VITE_BASE: "/IceGraph/"
           VITE_OUT_DIR: "dist"
+          VITE_APP_VERSION: ${{ github.ref_name }}
         run: npm run build
 
       - name: Add 404 fallback for SPA routing
