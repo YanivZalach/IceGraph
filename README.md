@@ -21,8 +21,11 @@ Look at Live Demo! [https://yanivzalach.github.io/IceGraph/](https://yanivzalach
 * **Snapshot & Metadata Lineage** — Trace table evolution, commits, schema changes, and snapshot history over time.
 * **Partition & File Browser** — Navigate partitions and files through a familiar hierarchical view.
 * **Debugging & Learning Tool** — Designed for both production debugging and understanding Iceberg internals.
+* **Python Client & CLI** — Script access to tables, snapshots, and the metadata graph via `icegraph-client`. See the [Python Client & CLI section of the docs](https://yanivzalach.github.io/IceGraph/docs) for details.
+
 
 > **Recommended**: In production, use a user with read-only permissions for the Spark Connect server, for extra peace of mind.
+
 
 ## Mock Data Example Using Docker
 
@@ -128,3 +131,13 @@ npm run dev
 ```
 
 Go to `http://localhost:3000` and explore your tables.
+
+### 4. icegraph-client
+
+To work on the CLI/client itself:
+
+```bash
+cd icegraph-client
+uv sync
+uv run icegraph --base-url http://localhost:3000 tables
+```

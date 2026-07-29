@@ -472,6 +472,41 @@ const SECTIONS = [
       </div>
     ),
   },
+  {
+    id: 'cli',
+    title: 'CLI & Python Client',
+    body: (
+      <div className="space-y-5">
+        <p>
+          <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph-client</code> is
+          a Python client and CLI for the same backend API this UI uses — handy for scripting access to tables,
+          snapshots, and the metadata graph.
+        </p>
+        <div className="space-y-2">
+          <h3 className="text-white font-semibold">Install</h3>
+          <pre className="bg-surface-hover rounded-md p-3 text-sm text-[#7dd3fc] overflow-x-auto">pip install icegraph-client</pre>
+        </div>
+        <div className="space-y-2">
+          <h3 className="text-white font-semibold">Point it at your server</h3>
+          <p>
+            Pass <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">--base-url</code>,
+            or set it once via the <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">ICEGRAPH_BASE_URL</code> environment
+            variable.
+          </p>
+        </div>
+        <div className="space-y-2">
+          <h3 className="text-white font-semibold">Commands</h3>
+          <pre className="bg-surface-hover rounded-md p-3 text-sm text-[#7dd3fc] overflow-x-auto whitespace-pre-wrap">{`icegraph tables
+icegraph snapshots <table>
+icegraph graph <table> [--start-snapshot-id ID] [--end-snapshot-id ID]`}</pre>
+        </div>
+        <p>
+          Each command prints its result as JSON on stdout, so it pipes and redirects cleanly (e.g. into{' '}
+          <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">jq</code>, Python, or a file). Status messages go to stderr, so they never end up mixed into the JSON output.
+        </p>
+      </div>
+    ),
+  },
 ]
 
 function extractText(node) {
@@ -517,21 +552,21 @@ export default function DocsPage() {
 
   const searchResults = query
     ? SECTIONS.flatMap(section => {
-        const content = extractText(section.body)
-        const contentMatches = findAllIndices(content, query)
+      const content = extractText(section.body)
+      const contentMatches = findAllIndices(content, query)
 
-        return contentMatches.map((matchIndex, occurrenceIndex) => {
-          const snippetStart = Math.max(0, matchIndex - 40)
-          const snippet = content.substring(snippetStart, snippetStart + 140)
+      return contentMatches.map((matchIndex, occurrenceIndex) => {
+        const snippetStart = Math.max(0, matchIndex - 40)
+        const snippet = content.substring(snippetStart, snippetStart + 140)
 
-          return {
-            section,
-            snippet,
-            occurrenceIndex,
-            totalInSection: contentMatches.length
-          }
-        })
+        return {
+          section,
+          snippet,
+          occurrenceIndex,
+          totalInSection: contentMatches.length
+        }
       })
+    })
     : []
 
   useEffect(() => {
@@ -624,9 +659,8 @@ export default function DocsPage() {
                           setSelectedResultIndex(index)
                         }}
                         onClick={() => selectResult(result)}
-                        className={`w-full text-left p-4 border-b border-edge ${
-                          index === selectedResultIndex ? 'bg-surface-hover' : ''
-                        }`}
+                        className={`w-full text-left p-4 border-b border-edge ${index === selectedResultIndex ? 'bg-surface-hover' : ''
+                          }`}
                       >
                         <div className="text-white font-semibold text-lg">
                           {result.section.title}
@@ -701,11 +735,11 @@ export default function DocsPage() {
           <div className={UI_DOCS_BODY_CLASS}>
             {highlight?.sectionId === activeSection.id
               ? highlightTreeMatches(
-                  activeSection.body,
-                  highlight.term,
-                  { count: 0, target: highlight.index, key: 0 },
-                  activeMarkRef
-                )
+                activeSection.body,
+                highlight.term,
+                { count: 0, target: highlight.index, key: 0 },
+                activeMarkRef
+              )
               : activeSection.body}
           </div>
         </div>

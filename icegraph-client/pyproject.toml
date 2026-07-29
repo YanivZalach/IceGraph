@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0", "setuptools_scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "icegraph-client"
+description = "Python client and CLI for the IceGraph server API"
+requires-python = ">=3.9"
+dynamic = ["version"]
+dependencies = [
+    "requests>=2.25",
+    "arrow>=1.0",
+]
+
+[project.scripts]
+icegraph = "icegraph_client.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["icegraph_client*"]
+
+[tool.setuptools_scm]
+root = ".."
+tag_regex = "^v(?P<version>.*)$"
+git_describe_command = ["git", "describe", "--dirty", "--tags", "--long", "--match", "v*"]
+
+[tool.black]
+line-length = 150

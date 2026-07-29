@@ -6,7 +6,9 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   base: process.env.VITE_BASE ?? '/',
   server: {
+    host: true,
     port: 3000,
+    allowedHosts: ['host.docker.internal'],
     proxy: {
       '/api': 'http://localhost:5000',
     },
