@@ -2,6 +2,9 @@ import { useState, useRef, useEffect, cloneElement, Fragment } from 'react'
 import { UI_DOCS_BODY_CLASS, UI_DOCS_NAV_TITLE_CLASS } from '../uiTypography'
 import { APP_VERSION } from '../appConstants'
 
+const PIP_INSTALL_COMMAND =
+  APP_VERSION === 'dev' ? 'pip install icegraph-client' : `pip install icegraph-client==${APP_VERSION.replace(/^v/, '')}`
+
 function Key({ k }) {
   return (
     <kbd className="bg-surface-hover border border-[#3d4a5c] text-[#7dd3fc] text-xs font-mono px-2 py-0.5 rounded">
@@ -484,7 +487,12 @@ const SECTIONS = [
         </p>
         <div className="space-y-2">
           <h3 className="text-white font-semibold">Install</h3>
-          <pre className="bg-surface-hover rounded-md p-3 text-sm text-[#7dd3fc] overflow-x-auto">pip install icegraph-client</pre>
+          <p>
+            <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph-client</code> is
+            only guaranteed compatible with the exact same version of the IceGraph server it talks to - they're
+            released together. Install that version:
+          </p>
+          <pre className="bg-surface-hover rounded-md p-3 text-sm text-[#7dd3fc] overflow-x-auto">{PIP_INSTALL_COMMAND}</pre>
         </div>
         <div className="space-y-2">
           <h3 className="text-white font-semibold">Point it at your server</h3>
