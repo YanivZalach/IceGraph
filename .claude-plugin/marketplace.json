@@ -1,0 +1,18 @@
+{
+  "name": "icegraph-marketplace",
+  "owner": {
+    "name": "Yaniv Zalach"
+  },
+  "description": "Plugins for working with IceGraph, the Apache Iceberg debugging and visualization platform.",
+  "plugins": [
+    {
+      "name": "icegraph",
+      "source": "./claude-plugin",
+      "description": "Talk to a remote IceGraph server via the icegraph CLI, interpret Iceberg table metadata like an expert, and build deep-link URLs into the IceGraph web UI.",
+      "author": {
+        "name": "Yaniv Zalach"
+      },
+      "category": "data"
+    }
+  ]
+}
