@@ -1,0 +1,11 @@
+{
+  "name": "icegraph",
+  "description": "Talk to a remote IceGraph server via the icegraph CLI, interpret Iceberg table metadata like an expert, and build deep-link URLs into the IceGraph web UI.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Yaniv Zalach"
+  },
+  "homepage": "https://github.com/YanivZalach/IceGraph",
+  "repository": "https://github.com/YanivZalach/IceGraph",
+  "license": "MIT"
+}
