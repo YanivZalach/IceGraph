@@ -9,6 +9,8 @@ from icegraph_client.clients.icegraph_client import IceGraphClient
 from icegraph_client.utils.json_utils import jsonify
 
 BASE_URL_ENV_VAR = "ICEGRAPH_BASE_URL"
+TOKEN_ENV_VAR = "ICEGRAPH_TOKEN"
+COOKIE_ENV_VAR = "ICEGRAPH_COOKIE"
 
 
 def _tables(client: IceGraphClient, _: argparse.Namespace):
@@ -29,6 +31,8 @@ def _graph(client: IceGraphClient, args: argparse.Namespace):
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="icegraph", description="CLI for the IceGraph server API")
     parser.add_argument("--base-url", default=None, help=f"IceGraph server URL. Falls back to the {BASE_URL_ENV_VAR} environment variable")
+    parser.add_argument("--token", default=None, help=f"Bearer token, for servers that require authentication. Falls back to the {TOKEN_ENV_VAR} environment variable")
+    parser.add_argument("--cookie", default=None, help=f"Cookie header value, for servers that require authentication. Falls back to the {COOKIE_ENV_VAR} environment variable")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     tables_parser = subparsers.add_parser("tables", help="List all available tables")
@@ -66,7 +70,16 @@ def main():
         )
         sys.exit(2)
 
-    client = IceGraphClient(base_url)
+    token = args.token or os.environ.get(TOKEN_ENV_VAR)
+    cookie = args.cookie or os.environ.get(COOKIE_ENV_VAR)
+
+    headers = {}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    if cookie:
+        headers["Cookie"] = cookie
+
+    client = IceGraphClient(base_url, headers=headers)
 
     try:
         result = args.handler(client, args)
