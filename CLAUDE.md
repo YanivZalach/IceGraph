@@ -11,6 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Python files must not exceed 400 lines.
 - Never run git commands — only the user does.
 - When a change affects the user interface (behavior, navigation, interactions, views), update the relevant section in `frontend/src/pages/DocsPage.jsx`.
+- When `icegraph-client`'s public API or CLI commands change, update the CLI section in `frontend/src/pages/DocsPage.jsx` and the Python Client & CLI bullet in `README.md` to match.
 - The Issues panel content (errors and warnings) is driven entirely by the backend response (`data.errors`, `data.warnings`). UI changes to this panel must be coordinated with backend error/warning emission logic.
 - Whenever creating a constant that is settable via an environment variable, define its default value in `backend/constants.py` and add its description to `README.md`.
 
@@ -46,6 +47,14 @@ docker run -e SPARK_REMOTE=sc://<ip>:15002 -p 5000:5000 icegraph   # Run contain
 cd docker_demo && docker compose up   # Full demo stack with mock Iceberg tables
 ```
 
+### icegraph-client (Python client + CLI)
+
+```bash
+cd icegraph-client
+uv sync                                                    # Install dependencies (editable install)
+uv run icegraph --base-url http://localhost:5000 tables    # Run the CLI against a local backend
+```
+
 ## Architecture
 
 **Backend** (`/backend/`) — Flask API that reads Iceberg metadata via Spark Connect:
@@ -67,6 +76,13 @@ cd docker_demo && docker compose up   # Full demo stack with mock Iceberg tables
 - `components/PanelContent.jsx` — side-panel components (`PanelHeader`, `PanelDetailRow`, `PanelSectionTitle`) and panel-specific typography tokens
 - `components/ResizableSidePanel.jsx` — draggable side panel shell used by Graph and Timeline
 - `mocks/` — MSW handlers used in the GitHub Pages demo (no real backend)
+
+**icegraph-client** (`/icegraph-client/`) — Python client + CLI for the backend API, published to PyPI:
+
+- `icegraph_client/clients/` — `TablesClient`, `SnapshotsClient`, `GraphClient` (one per API endpoint) composed by `IceGraphClient`
+- `icegraph_client/utils/` — `http_utils.raise_for_status` (surfaces the backend's JSON error body), `json_utils.jsonify` (dataclass/Arrow-aware JSON serialization)
+- `icegraph_client/cli.py` — `icegraph` console command (`tables` / `snapshots` / `graph` subcommands); JSON results go to stdout, status/progress messages to stderr so output pipes cleanly
+- Version is derived from git tags via `setuptools_scm` (see Deployment Notes) — not set manually in `pyproject.toml`
 
 **API flow:**
 1. `GET /api/v1/tables` — list Iceberg tables from the Spark catalog (for Home and navbar picker)
@@ -127,5 +143,6 @@ Backend environment variables (set in `backend/.env`):
 ## Deployment Notes
 
 - CI publishes Docker image to Docker Hub and deploys frontend to GitHub Pages on version tags (`v*`)
+- The same `v*` tag also publishes `icegraph-client` to PyPI (`.github/workflows/publish-icegraph-client.yml`); its version is derived from the tag itself via `setuptools_scm` in `icegraph-client/pyproject.toml`, so it always matches the server version — `icegraph-client` is only guaranteed compatible with the IceGraph server at the same version
 - GitHub Pages demo uses MSW to mock API responses (no backend); enabled via `VITE_ENABLE_MSW=true` in the deploy workflow
 - The Vite `base` path is `/IceGraph/` for GitHub Pages but `/` for Docker
