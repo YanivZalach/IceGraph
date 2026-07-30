@@ -6,6 +6,7 @@ WORKDIR /build
 COPY frontend/package*.json ./
 RUN npm ci
 COPY frontend ./
+COPY claude-plugin/skills/icegraph/SKILL.md /claude-plugin/skills/icegraph/SKILL.md
 RUN npm run build
 
 FROM python:3.12-slim AS builder

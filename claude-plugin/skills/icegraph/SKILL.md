@@ -36,12 +36,13 @@ Once you have it, reuse it for the rest of the task instead of re-asking per com
 
 ## 1. Prerequisites
 
-- `pip install icegraph-client` — ideally pinned to the exact server version
-  (`pip install icegraph-client==<version>`), since the client is only guaranteed compatible with
-  the matching server release. If the version is unknown, check `<base_url>/docs` — the Overview
-  section shows a **Version** field — and use that value to pin the install. Only fall back to an
-  unpinned install (and mention the caveat) if the docs page isn't reachable either.
-- Confirm it's on PATH with `icegraph --help` before relying on it.
+- Confirm `icegraph` is on PATH with `icegraph --help` before relying on it.
+- **If it's not installed, don't just suggest a bare `pip install icegraph-client`.** Check
+  `<base_url>/docs` first — the Overview section shows a **Version** field — and suggest the
+  version-pinned install command instead: `pip install icegraph-client==<version>`. The client is
+  only guaranteed compatible with the matching server release, so pinning matters. Only fall back
+  to suggesting an unpinned install (and mention that caveat) if the docs page isn't reachable
+  either. Suggest the command for the user to run — don't install it yourself.
 
 ## 2. Commands
 

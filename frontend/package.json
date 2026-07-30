@@ -3,7 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "copy-skill": "node -e \"require('fs').mkdirSync('public',{recursive:true});require('fs').copyFileSync('../claude-plugin/skills/icegraph/SKILL.md','public/SKILL.md')\"",
+    "predev": "npm run copy-skill",
     "dev": "vite",
+    "prebuild": "npm run copy-skill",
     "build": "vite build",
     "preview": "vite preview",
     "msw:init": "msw init public/"
