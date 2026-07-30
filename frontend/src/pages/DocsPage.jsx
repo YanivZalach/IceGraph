@@ -501,6 +501,23 @@ const SECTIONS = [
             or set it once via the <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">ICEGRAPH_BASE_URL</code> environment
             variable.
           </p>
+          <p>
+            If your server sits behind auth, pass{' '}
+            <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">--token</code> (sent as
+            an <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">Authorization: Bearer</code> header)
+            or <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">--cookie</code> — or
+            set them via the <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">ICEGRAPH_TOKEN</code> /{' '}
+            <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">ICEGRAPH_COOKIE</code> environment
+            variables.
+          </p>
+          <p>
+            IceGraph itself doesn't have a login system, so you'll only need a token or cookie if your team has
+            placed the server behind its own proxy. If you're already able to reach the IceGraph UI in a browser,
+            that proxy has already authenticated your session - you can find the value it's using by opening
+            DevTools → Application/Storage → Cookies (or the Network tab → any request → Request Headers) on the
+            IceGraph page. If that doesn't apply, or you're not sure, it's best to check with whoever set up your
+            IceGraph server - they'll know how their proxy handles authentication.
+          </p>
         </div>
         <div className="space-y-2">
           <h3 className="text-white font-semibold">Commands</h3>
