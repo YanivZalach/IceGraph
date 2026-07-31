@@ -146,6 +146,11 @@ particular table in focus.
 Don't invent table names, snapshot ids, or node ids — they must come from an actual CLI call or
 from what the user told you directly.
 
+**If you have browser automation available** (e.g. Playwright tools), don't just show the link —
+open it too, so the user is actually looking at the view you're describing instead of having to
+click it themselves. Still always include the link text in your reply as well, since opening a
+browser tab isn't a substitute for giving the user something they can re-open, copy, or share.
+
 ## 5. Tracing a snapshot back to the Spark job that wrote it
 
 A `graph` node with `type: "snapshot"` has a `details.summary` dict — a raw, unfiltered passthrough
