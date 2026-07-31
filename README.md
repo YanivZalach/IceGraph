@@ -39,7 +39,7 @@ Run the docker compose:
 docker compose up -d
 ```
 
-Go to `http://localhost:5000` and explore table `default.events` and table `default.logging`.
+Go to `http://localhost:5050` and explore table `default.events` and table `default.logging`.
 
 To rebuild only the IceGraph image after local code changes (without restarting Spark or other services):
 ```bash
@@ -53,7 +53,7 @@ The easiest way to run IceGraph is via [DockerHub](https://hub.docker.com/r/yani
 ### Spark connect 3.5.4
 
 ```bash
-docker run -e SPARK_REMOTE=sc://<spark-connect-ip>:15002 -p 5000:5000 yanivzalach/icegraph:latest
+docker run -e SPARK_REMOTE=sc://<spark-connect-ip>:15002 -p 5050:5050 yanivzalach/icegraph:latest
 ```
 
 ### Other Spark Connect versions
@@ -65,7 +65,7 @@ docker build -t icegraph .
 
 Then run with the same command:
 ```bash
-docker run -e SPARK_REMOTE=sc://<spark-connect-ip>:15002 -p 5000:5000 icegraph
+docker run -e SPARK_REMOTE=sc://<spark-connect-ip>:15002 -p 5050:5050 icegraph
 ```
 
 ### Deploying Multiple Pods

@@ -27,7 +27,7 @@ IceGraph is an interactive Apache Iceberg debugging and visualization platform. 
 ```bash
 cd backend
 uv sync                    # Install dependencies
-uv run python main.py      # Start Flask server on port 5000
+uv run python main.py      # Start Flask server on port 5050
 ```
 
 ### Frontend (Node/React)
@@ -35,7 +35,7 @@ uv run python main.py      # Start Flask server on port 5000
 ```bash
 cd frontend
 npm i                      # Install dependencies
-npm run dev                # Start Vite dev server on port 3000 (proxies /api to port 5000)
+npm run dev                # Start Vite dev server on port 3000 (proxies /api to port 5050)
 npm run build              # Production build to /dist
 ```
 
@@ -43,7 +43,7 @@ npm run build              # Production build to /dist
 
 ```bash
 docker build -t icegraph .                                          # Multi-stage build
-docker run -e SPARK_REMOTE=sc://<ip>:15002 -p 5000:5000 icegraph   # Run container
+docker run -e SPARK_REMOTE=sc://<ip>:15002 -p 5050:5050 icegraph   # Run container
 
 cd docker_demo && docker compose up   # Full demo stack with mock Iceberg tables
 ```
@@ -53,7 +53,7 @@ cd docker_demo && docker compose up   # Full demo stack with mock Iceberg tables
 ```bash
 cd icegraph-client
 uv sync                                                    # Install dependencies (editable install)
-uv run icegraph --base-url http://localhost:5000 tables    # Run the CLI against a local backend
+uv run icegraph --base-url http://localhost:5050 tables    # Run the CLI against a local backend
 ```
 
 ## Architecture

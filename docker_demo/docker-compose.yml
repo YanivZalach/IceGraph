@@ -1,7 +1,7 @@
 # ─────────────────────────────────────────────────────────────────
 # IceGraph demo stack.
 # Using HADOOP Catalog.
-# After all services are healthy (can take a couple of minutes), open http://localhost:5000 .
+# After all services are healthy (can take a couple of minutes), open http://localhost:5050 .
 # Creating 2 tables: default.logging, default.events .
 # ─────────────────────────────────────────────────────────────────
 
@@ -98,7 +98,7 @@ services:
       context: ..
       dockerfile: Dockerfile
     ports:
-      - "5000:5000"
+      - "5050:5050"
     depends_on:
       spark-connect:
         condition: service_healthy

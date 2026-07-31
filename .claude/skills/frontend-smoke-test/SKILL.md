@@ -29,7 +29,7 @@ the dev server / backend location was already established earlier in the same co
 don't make the user repeat themselves.
 
 Also confirm the backend is reachable the same way if you don't already know: ask whether a
-backend is running (Flask on port 5000 by default, proxied through Vite) or whether they want you
+backend is running (Flask on port 5050 by default, proxied through Vite) or whether they want you
 to use the MSW-mocked demo data instead. Don't assume — this repo can run against a real Spark
 Connect backend, a docker demo stack, or the `VITE_USE_MSW=true` mock mode, and each has
 different available tables.
