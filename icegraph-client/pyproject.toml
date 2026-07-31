@@ -5,6 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "icegraph-client"
 description = "Python client and CLI for the IceGraph server API"
+readme = "README.md"
 requires-python = ">=3.9"
 dynamic = ["version"]
 dependencies = [
