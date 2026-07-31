@@ -166,7 +166,7 @@ const SECTIONS = [
       <div className="space-y-5">
         <p>
           IceGraph ships an AI-assistant <strong className="text-white">skill</strong> so you can ask
-          an agent to inspect and debug your tables directly — list tables, read snapshot history,
+          an agent to inspect and debug your tables directly - list tables, read snapshot history,
           pull the metadata graph, and get links back into this UI, all in plain language.
         </p>
         <div className="space-y-2">
@@ -177,15 +177,15 @@ const SECTIONS = [
           <pre className="bg-surface-hover rounded-md p-3 text-sm text-[#7dd3fc] overflow-x-auto whitespace-pre-wrap">{`/plugin marketplace add YanivZalach/IceGraph
 /plugin install icegraph`}</pre>
           <p>
-            This is a <strong className="text-white">one-time install</strong> — once it's done, the
+            This is a <strong className="text-white">one-time install</strong> - once it's done, the
             plugin is available in every future Claude Code session on that machine, not just the
             current one.
           </p>
         </div>
         <div className="space-y-2">
-          <h3 className="text-white font-semibold">Other coding agents</h3>
+          <h3 className="text-white font-semibold">Other coding agents / Manual install</h3>
           <p>
-            No plugin system needed — the skill is a single, self-contained instructions file. Grab
+            No plugin system needed - the skill is a single, self-contained instructions file. Grab
             it, then tell your agent to read and follow it:
           </p>
           <a
@@ -202,7 +202,7 @@ const SECTIONS = [
         <div className="space-y-2">
           <h3 className="text-white font-semibold">Requirements</h3>
           <p>
-            Nothing to set up ahead of time — the agent checks for <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph-client</code> itself,
+            Nothing to set up ahead of time - the agent checks for <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">icegraph-client</code> itself,
             gives you the right install command if it's missing, and asks for your server's address
             and any auth it needs as you go.
           </p>
