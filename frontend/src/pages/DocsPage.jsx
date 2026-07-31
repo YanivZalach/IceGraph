@@ -5,8 +5,6 @@ import { APP_VERSION, BASE_PATH } from '../appConstants'
 const PIP_INSTALL_COMMAND =
   APP_VERSION === 'dev' ? 'pip install icegraph-client' : `pip install icegraph-client==${APP_VERSION.replace(/^v/, '')}`
 
-const SKILL_FILE_URL = `${window.location.origin}${BASE_PATH}/SKILL.md`
-
 function Key({ k }) {
   return (
     <kbd className="bg-surface-hover border border-[#3d4a5c] text-[#7dd3fc] text-xs font-mono px-2 py-0.5 rounded">
@@ -189,7 +187,7 @@ const SECTIONS = [
             it, then tell your agent to read and follow it:
           </p>
           <a
-            href={SKILL_FILE_URL}
+            href={`${BASE_PATH}/SKILL.md`}
             download="SKILL.md"
             target="_blank"
             rel="noopener noreferrer"
