@@ -43,6 +43,14 @@ production_mode = str(os.getenv("PRODUCTION_MODE", PRODUCTION_MODE)).lower() == 
 wsgi_threads = int(os.getenv("WSGI_THREADS", WSGI_THREADS))
 
 executor_pool = ThreadPoolExecutor(max_workers=max_number_of_graphs_to_compute)
+api_key = os.getenv("API_KEY", "")
+
+
+@app.before_request
+def require_api_key():
+    if api_key and request.path.startswith("/api/"):
+        if request.headers.get("X-API-Key") != api_key:
+            return jsonify({"error": "Unauthorized"}), 401
 
 
 def _safe_update_job(job_id, **fields):
@@ -229,7 +237,7 @@ if __name__ == "__main__":
 
             serve(app, host="0.0.0.0", port=APPLICATION_PORT, threads=wsgi_threads)
         else:
-            app.run(host="0.0.0.0", port=APPLICATION_PORT, debug=True)
+            app.run(host="127.0.0.1", port=APPLICATION_PORT, debug=False)
 
     finally:
         watchdog = threading.Timer(max_graceful_shutdown_time_seconds, _force_exit)
