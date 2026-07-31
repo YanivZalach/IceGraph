@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, cloneElement, Fragment } from 'react'
 import { UI_DOCS_BODY_CLASS, UI_DOCS_NAV_TITLE_CLASS } from '../uiTypography'
-import { APP_VERSION } from '../appConstants'
+import { APP_VERSION, BASE_PATH } from '../appConstants'
 
 const PIP_INSTALL_COMMAND =
   APP_VERSION === 'dev' ? 'pip install icegraph-client' : `pip install icegraph-client==${APP_VERSION.replace(/^v/, '')}`
@@ -187,7 +187,7 @@ const SECTIONS = [
             it, then tell your agent to read and follow it:
           </p>
           <a
-            href="SKILL.md"
+            href={`${BASE_PATH}/SKILL.md`}
             download="SKILL.md"
             target="_blank"
             rel="noopener noreferrer"
