@@ -12,7 +12,7 @@ export const handlers = [
   }),
 
   http.post('/api/v1/graph-data', () => {
-    return HttpResponse.json({ "key": "default_events_None_None", "status": "processing" }, { status: 202 })
+    return HttpResponse.json({ "key": "default_events_None_None", "status": "processing", "X-IceGraph-Job-Token": "mock-token" }, { status: 202 })
   }),
 
   http.get('/api/v1/graph-data/default_events_None_None', () => {

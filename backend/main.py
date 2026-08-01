@@ -1,5 +1,6 @@
 import os
 import re
+import secrets
 import threading
 import traceback
 from concurrent.futures import ThreadPoolExecutor
@@ -12,6 +13,7 @@ from pyspark.errors import AnalysisException
 from constants import (
     APPLICATION_PORT,
     COMPUTE_CLEANUP_TIME_SECONDS,
+    JOB_TOKEN_FIELD,
     MAX_NUMBER_OF_GRAPHS_TO_COMPUTE,
     MAX_SNAPSHOTS_TO_SHOW,
     MAX_GRACEFUL_SHUTDOWN_TIME_SECONDS,
@@ -180,8 +182,11 @@ def graph_data():
             else:
                 logger.info(f"Duplicate request for {job_id}")
 
+            response[JOB_TOKEN_FIELD] = job[JOB_TOKEN_FIELD]
             return jsonify(response), 202
 
+        token = secrets.token_urlsafe(32)
+        response[JOB_TOKEN_FIELD] = token
         jobs[job_id] = response
 
     executor_pool.submit(
@@ -198,9 +203,11 @@ def graph_data():
 
 @app.route("/api/v1/graph-data/<job_id>", methods=["GET"])
 def get_job_status(job_id):
+    token = request.headers.get(JOB_TOKEN_FIELD, "")
+
     with job_lock:
         job = jobs.get(job_id)
-        if not job:
+        if not job or not token or not secrets.compare_digest(token, job[JOB_TOKEN_FIELD]):
             return jsonify({"error": "Job not found"}), 404
 
         job = job.copy()
