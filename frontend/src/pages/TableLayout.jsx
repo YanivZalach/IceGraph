@@ -166,7 +166,8 @@ export default function TableLayout() {
 
         clearPolling()
       } else if (res.status !== 202) {
-        setError(res.error || 'Job failed')
+        const data = await res.json()
+        setError(data.error || 'Job failed')
         setLoading(false)
         setJobId(null)
         setJobToken(null)
