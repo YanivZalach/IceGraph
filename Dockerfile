@@ -31,7 +31,7 @@ COPY images ./images
 
 ENV PRODUCTION_MODE=true
 
-EXPOSE 5000
+EXPOSE 5050
 
 COPY --from=frontend-builder /dist ./backend/static
 

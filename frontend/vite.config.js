@@ -10,7 +10,7 @@ export default defineConfig({
     port: 3000,
     allowedHosts: ['host.docker.internal'],
     proxy: {
-      '/api': 'http://localhost:5000',
+      '/api': 'http://localhost:5050',
     },
   },
   build: {
