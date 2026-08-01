@@ -31,8 +31,14 @@ def _graph(client: IceGraphClient, args: argparse.Namespace):
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="icegraph", description="CLI for the IceGraph server API")
     parser.add_argument("--base-url", default=None, help=f"IceGraph server URL. Falls back to the {BASE_URL_ENV_VAR} environment variable")
-    parser.add_argument("--token", default=None, help=f"Bearer token, for servers that require authentication. Falls back to the {TOKEN_ENV_VAR} environment variable")
-    parser.add_argument("--cookie", default=None, help=f"Cookie header value, for servers that require authentication. Falls back to the {COOKIE_ENV_VAR} environment variable")
+    parser.add_argument(
+        "--token", default=None, help=f"Bearer token, for servers that require authentication. Falls back to the {TOKEN_ENV_VAR} environment variable"
+    )
+    parser.add_argument(
+        "--cookie",
+        default=None,
+        help=f"Cookie header value, for servers that require authentication. Falls back to the {COOKIE_ENV_VAR} environment variable",
+    )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     tables_parser = subparsers.add_parser("tables", help="List all available tables")

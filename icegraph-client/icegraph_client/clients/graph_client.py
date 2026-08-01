@@ -6,6 +6,8 @@ import requests
 
 from icegraph_client.utils.http_utils import raise_for_status
 
+JOB_TOKEN_HEADER = "X-IceGraph-Job-Token"
+
 
 @dataclass
 class Issues:
@@ -45,15 +47,15 @@ class GraphClient:
         return details_list
 
     def _get_graph(self, table: str, start_snapshot_id: str, end_snapshot_id: str, poll_interval_seconds: float) -> dict:
-        job_id = self._submit_graph_job(table, start_snapshot_id, end_snapshot_id)
+        job_id, token = self._submit_graph_job(table, start_snapshot_id, end_snapshot_id)
 
         while True:
-            result = self._get_graph_job(job_id)
+            result = self._get_graph_job(job_id, token)
             if result.get("status") != "processing":
                 return result
             time.sleep(poll_interval_seconds)
 
-    def _submit_graph_job(self, table: str, start_snapshot_id=None, end_snapshot_id=None) -> str:
+    def _submit_graph_job(self, table: str, start_snapshot_id=None, end_snapshot_id=None) -> tuple[str, str]:
         response = requests.post(
             f"{self.base_url}/api/v1/graph-data",
             data={
@@ -64,9 +66,12 @@ class GraphClient:
             **self.requests_kwargs,
         )
         raise_for_status(response)
-        return response.json()["key"]
+        body = response.json()
+        return body["key"], body[JOB_TOKEN_HEADER]
 
-    def _get_graph_job(self, job_id: str) -> dict:
-        response = requests.get(f"{self.base_url}/api/v1/graph-data/{job_id}", **self.requests_kwargs)
+    def _get_graph_job(self, job_id: str, token: str) -> dict:
+        kwargs = {**self.requests_kwargs}
+        kwargs["headers"] = {**kwargs.get("headers", {}), JOB_TOKEN_HEADER: token}
+        response = requests.get(f"{self.base_url}/api/v1/graph-data/{job_id}", **kwargs)
         raise_for_status(response)
         return response.json()

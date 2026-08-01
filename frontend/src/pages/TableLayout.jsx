@@ -77,6 +77,7 @@ export default function TableLayout() {
   const [error, setError] = useState(null)
   const [graphData, setGraphData] = useState(null)
   const [jobId, setJobId] = useState(null)
+  const [jobToken, setJobToken] = useState(null)
 
   const pollIntervalRef = useRef(null)
 
@@ -136,6 +137,7 @@ export default function TableLayout() {
       }
 
       const result = await res.json()
+      setJobToken(result['X-IceGraph-Job-Token'])
       setJobId(result.key)
 
     } catch (err) {
@@ -144,9 +146,11 @@ export default function TableLayout() {
     }
   }
 
-  const pollJobStatus = async (jid) => {
+  const pollJobStatus = async (jid, token) => {
     try {
-      const res = await fetch(`/api/v1/graph-data/${jid}`)
+      const res = await fetch(`/api/v1/graph-data/${jid}`, {
+        headers: { 'X-IceGraph-Job-Token': token },
+      })
       if (res.status === 200) {
         const text = await res.text()
         setRawData(text)
@@ -158,12 +162,14 @@ export default function TableLayout() {
         setWarnings(data.warnings || {})
         setLoading(false)
         setJobId(null)
+        setJobToken(null)
 
         clearPolling()
       } else if (res.status !== 202) {
         setError(res.error || 'Job failed')
         setLoading(false)
         setJobId(null)
+        setJobToken(null)
 
         clearPolling()
       }
@@ -172,6 +178,7 @@ export default function TableLayout() {
       setError(err.message || 'Failed to check job status')
       setLoading(false)
       setJobId(null)
+      setJobToken(null)
 
       clearPolling()
     }
@@ -222,16 +229,16 @@ export default function TableLayout() {
   }, [tableName, startSnapshot, endSnapshot])
 
   useEffect(() => {
-    if (!jobId) return
+    if (!jobId || !jobToken) return
 
-    pollJobStatus(jobId)
+    pollJobStatus(jobId, jobToken)
 
     pollIntervalRef.current = setInterval(() => {
-      pollJobStatus(jobId)
+      pollJobStatus(jobId, jobToken)
     }, 1000)
 
     return clearPolling
-  }, [jobId])
+  }, [jobId, jobToken])
 
   if (loading) {
     return (
