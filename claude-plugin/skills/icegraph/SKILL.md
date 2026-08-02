@@ -47,12 +47,13 @@ Once you have it, reuse it for the rest of the task instead of re-asking per com
 ## 2. Commands
 
 ```
-icegraph [--base-url URL] [--token TOKEN] [--cookie COOKIE] tables
+icegraph [--base-url URL] [--token TOKEN] [--cookie COOKIE] [--no-verify-ssl] tables
 icegraph [...] snapshots <table>
 icegraph [...] graph <table> [-s/--start-snapshot-id ID] [-e/--end-snapshot-id ID]
 ```
 
-Every flag also has an env var fallback: `ICEGRAPH_BASE_URL`, `ICEGRAPH_TOKEN`, `ICEGRAPH_COOKIE`.
+Every flag also has an env var fallback: `ICEGRAPH_BASE_URL`, `ICEGRAPH_TOKEN`, `ICEGRAPH_COOKIE`,
+`ICEGRAPH_NO_VERIFY_SSL`.
 Each command prints its result as **JSON on stdout only** — status messages ("Fetching tables...",
 etc.) go to stderr, so stdout is always safe to parse directly.
 
@@ -84,7 +85,8 @@ place to look for those.
   back to step 0.
 - Exit code `1` with `Error: ...` on stderr → the request itself failed (network, auth rejection,
   bad table name, etc.). Don't retry blindly — surface the message and move to step 3 if it looks
-  auth-related (connection refused, 401/403).
+  auth-related (connection refused, 401/403), or step 3a if it looks TLS-related (`SSLError`,
+  `CERTIFICATE_VERIFY_FAILED`, "self-signed certificate", etc.).
 
 ## 3. If a command fails and it looks like an auth problem
 
@@ -101,6 +103,19 @@ outside proxy. If a request looks rejected for that reason:
 - Once they give you a value, pass it via `--token`/`--cookie` or `$ICEGRAPH_TOKEN`/`$ICEGRAPH_COOKIE`.
 
 Never guess or fabricate a token/cookie value.
+
+## 3a. If a command fails and it looks like a TLS/SSL problem
+
+An `SSLError`/`CERTIFICATE_VERIFY_FAILED`/"self-signed certificate" failure means the server's TLS
+certificate isn't trusted by this machine, most often a self-signed or internal-CA cert on an
+internal IceGraph server.
+
+**Never add `--no-verify-ssl` on your own.** It disables certificate verification for the request,
+which has real security implications (no protection against a MITM'd connection) — explain that
+plainly and ask the user whether they want to proceed with it before you re-run the command.
+Only add it after they say yes; if they decline, stop and suggest they fix the underlying cert
+trust instead (import the internal CA, use the correct hostname, etc.) — that's their call, not
+something to solve for them.
 
 ## 4. Building a link into the web UI
 
