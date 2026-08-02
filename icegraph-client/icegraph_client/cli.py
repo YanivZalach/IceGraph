@@ -85,7 +85,7 @@ def main():
 
     token = args.token or os.environ.get(TOKEN_ENV_VAR)
     cookie = args.cookie or os.environ.get(COOKIE_ENV_VAR)
-    no_verify_ssl = args.no_verify_ssl or bool(os.environ.get(NO_VERIFY_SSL_ENV_VAR))
+    no_verify_ssl = args.no_verify_ssl or os.environ.get(NO_VERIFY_SSL_ENV_VAR, "").strip().lower() in ("1", "true", "yes")
 
     headers = {}
     if token:
