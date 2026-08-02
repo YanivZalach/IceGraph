@@ -73,14 +73,45 @@ export function TypeDisplay({ type }) {
   )
 }
 
-export function FieldRow({ field }) {
+function SchemaFieldHeader() {
   return (
-    <div className="py-4 border-b border-edge last:border-0">
+    <div className="flex items-center gap-3 pb-1 mb-1 border-b border-edge">
+      <span className="text-xs font-bold text-slate-500 uppercase w-6 text-right shrink-0">ID</span>
+      <span className="text-xs font-bold text-slate-500 uppercase min-w-30">Name</span>
+      <span className="text-xs font-bold text-slate-500 uppercase">Type</span>
+    </div>
+  )
+}
+
+export function FieldRow({ field, status, prevField }) {
+  const dim = status === 'unchanged' ? 'opacity-50' : ''
+  const bg =
+    status === 'added' ? 'bg-green-900/20' :
+    status === 'removed' ? 'bg-red-900/20' :
+    status === 'changed' ? 'bg-amber-900/20' : ''
+  const idColor =
+    status === 'added' ? 'text-green-400' :
+    status === 'removed' ? 'text-red-400' :
+    status === 'changed' ? 'text-amber-400' : 'text-slate-500'
+  const nameColor =
+    status === 'added' ? 'text-green-300' :
+    status === 'removed' ? 'text-red-300 line-through' :
+    status === 'changed' ? 'text-amber-300' : 'text-ink-bright'
+  const marker = status === 'added' ? '+' : status === 'removed' ? '−' : status === 'changed' ? '~' : null
+  const typeChanged = status === 'changed' && JSON.stringify(prevField.type) !== JSON.stringify(field.type)
+
+  return (
+    <div className={`py-4 border-b border-edge last:border-0 ${bg} ${dim}`}>
       <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 mb-3">
-        <span className="text-base font-mono text-slate-500 w-10 text-right shrink-0 tabular-nums">
-          {field['field-id'] ?? field.id ?? '—'}
+        <span className={`text-base font-mono w-10 text-right shrink-0 tabular-nums ${idColor}`}>
+          {marker ?? (field['field-id'] ?? field.id ?? '—')}
         </span>
-        <span className="text-sm font-bold text-ink-bright min-w-0">{field.name}</span>
+        <span className={`text-sm font-bold min-w-0 ${nameColor}`}>
+          {field.name}
+          {status === 'changed' && prevField.name !== field.name && (
+            <span className="text-amber-600 line-through ml-2 font-normal">{prevField.name}</span>
+          )}
+        </span>
         {field.required === false ? (
           <span className="text-xs font-bold text-slate-400 uppercase shrink-0">optional</span>
         ) : (
@@ -88,7 +119,15 @@ export function FieldRow({ field }) {
         )}
       </div>
       <div className="ml-14">
-        <TypeDisplay type={field.type} />
+        {typeChanged ? (
+          <div className="flex items-center gap-3 text-xs font-mono">
+            <TypeDisplay type={prevField.type} />
+            <span className="text-slate-500">→</span>
+            <TypeDisplay type={field.type} />
+          </div>
+        ) : (
+          <TypeDisplay type={field.type} />
+        )}
       </div>
     </div>
   )
@@ -100,12 +139,24 @@ export default function SchemaFieldList({ schema }) {
   }
   return (
     <div>
-      <div className="flex items-center gap-3 pb-1 mb-1 border-b border-edge">
-        <span className="text-xs font-bold text-slate-500 uppercase w-6 text-right shrink-0">ID</span>
-        <span className="text-xs font-bold text-slate-500 uppercase min-w-30">Name</span>
-        <span className="text-xs font-bold text-slate-500 uppercase">Type</span>
-      </div>
+      <SchemaFieldHeader />
       {schema.fields.map(f => <FieldRow key={f['field-id'] ?? f.name} field={f} />)}
+    </div>
+  )
+}
+
+export function SchemaDiffView({ diff }) {
+  return (
+    <div>
+      <SchemaFieldHeader />
+      {diff.map((entry, i) => (
+        <FieldRow
+          key={i}
+          field={entry.status === 'changed' ? entry.curr : entry.field}
+          prevField={entry.status === 'changed' ? entry.prev : undefined}
+          status={entry.status}
+        />
+      ))}
     </div>
   )
 }

@@ -6,9 +6,9 @@ import { IS_MOCK, MOCK_HOME_ROUTE } from '../appConstants'
 import { UI_BODY_MUTED_CLASS, UI_DIALOG_TITLE_CLASS, UI_MONO_MUTED_CLASS } from '../uiTypography'
 
 import MetadataStructured from '../components/MetadataStructured'
-import PartitionSpecList from '../components/PartitionSpecList'
-import SchemaFieldList, { TypeDisplay } from '../components/SchemaFieldList'
-import SortOrderList from '../components/SortOrderList'
+import PartitionSpecList, { PartitionDiffView } from '../components/PartitionSpecList'
+import SchemaFieldList, { SchemaDiffView } from '../components/SchemaFieldList'
+import SortOrderList, { SortDiffView } from '../components/SortOrderList'
 import { useTableSpecs } from '../context/TableSpecsContext'
 import {
   BRANCH_CONNECTION_COLOR,
@@ -37,148 +37,6 @@ const DETAIL_TYPE_CONFIG = {
     fieldIdKey: f => f['source-id'],
     noPrevLabel: 'No previous sort order',
   },
-}
-
-function TypeText({ type }) {
-  return typeof type === 'string' ? type : JSON.stringify(type)
-}
-
-function SchemaDiffView({ diff }) {
-  return (
-    <div>
-      <div className="flex items-center gap-3 pb-1 mb-1 border-b border-edge">
-        <span className="text-xs font-bold text-slate-500 uppercase w-6 text-right shrink-0">ID</span>
-        <span className="text-xs font-bold text-slate-500 uppercase min-w-30">Name</span>
-        <span className="text-xs font-bold text-slate-500 uppercase">Type</span>
-      </div>
-      {diff.map((entry, i) => {
-        if (entry.status === 'unchanged') return (
-          <div key={i} className="py-2 border-b border-edge last:border-0 flex items-center gap-3 opacity-50">
-            <span className="text-base font-mono text-slate-500 w-6 text-right shrink-0 tabular-nums">{entry.field['field-id'] ?? entry.field.id ?? '—'}</span>
-            <span className="text-sm font-semibold text-ink min-w-30">{entry.field.name}</span>
-            <TypeDisplay type={entry.field.type} />
-          </div>
-        )
-        if (entry.status === 'added') return (
-          <div key={i} className="py-2 border-b border-edge last:border-0 flex items-center gap-3 bg-green-900/20">
-            <span className="text-xs font-bold text-green-400 w-6 text-right shrink-0">+</span>
-            <span className="text-sm font-semibold text-green-300 min-w-30">{entry.field.name}</span>
-            <TypeDisplay type={entry.field.type} />
-          </div>
-        )
-        if (entry.status === 'removed') return (
-          <div key={i} className="py-2 border-b border-edge last:border-0 flex items-center gap-3 bg-red-900/20">
-            <span className="text-xs font-bold text-red-400 w-6 text-right shrink-0">−</span>
-            <span className="text-sm font-semibold text-red-300 line-through min-w-30">{entry.field.name}</span>
-            <TypeDisplay type={entry.field.type} />
-          </div>
-        )
-        return (
-          <div key={i} className="py-2 border-b border-edge last:border-0 flex flex-col gap-1 bg-amber-900/20">
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-bold text-amber-400 w-6 text-right shrink-0">~</span>
-              <span className="text-sm font-semibold text-amber-300 min-w-30">{entry.curr.name}{entry.prev.name !== entry.curr.name ? <span className="text-amber-600 line-through ml-2">{entry.prev.name}</span> : null}</span>
-            </div>
-            {JSON.stringify(entry.prev.type) !== JSON.stringify(entry.curr.type) && (
-              <div className="ml-9 flex items-center gap-3 text-xs font-mono">
-                <TypeDisplay type={entry.prev.type} />
-                <span className="text-slate-500">→</span>
-                <TypeDisplay type={entry.curr.type} />
-              </div>
-            )}
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-function PartitionDiffView({ diff }) {
-  return (
-    <div>
-      <div className="flex items-center gap-x-4 pb-1 mb-1 border-b border-edge">
-        <span className="text-xs font-bold text-slate-500 uppercase w-10 text-right shrink-0">ID</span>
-        <span className="text-xs font-bold text-slate-500 uppercase w-14 text-right shrink-0">Source ID</span>
-        <span className="text-xs font-bold text-slate-500 uppercase min-w-30 shrink-0">Name</span>
-        <span className="text-xs font-bold text-slate-500 uppercase shrink-0">Transform</span>
-      </div>
-      {diff.map((entry, i) => {
-        if (entry.status === 'unchanged') return (
-          <div key={i} className="flex items-center gap-x-4 py-2 border-b border-edge last:border-0 opacity-50">
-            <span className="text-base font-mono text-slate-500 w-10 text-right shrink-0 tabular-nums">{entry.field['field-id'] ?? '—'}</span>
-            <span className="text-xs font-mono text-slate-500 w-14 text-right shrink-0 tabular-nums">{entry.field['source-id'] ?? '—'}</span>
-            <span className="text-sm font-semibold text-ink min-w-30 shrink-0">{entry.field.name}</span>
-            <span className="text-xs font-mono text-slate-400">{entry.field.transform}</span>
-          </div>
-        )
-        if (entry.status === 'added' || entry.status === 'removed') {
-          const added = entry.status === 'added'
-          return (
-            <div key={i} className={`flex items-center gap-x-4 py-2 border-b border-edge last:border-0 ${added ? 'bg-green-900/20' : 'bg-red-900/20'}`}>
-              <span className={`text-xs font-bold w-10 text-right shrink-0 ${added ? 'text-green-400' : 'text-red-400'}`}>{added ? '+' : '−'}</span>
-              <span className={`text-xs font-mono w-14 text-right shrink-0 tabular-nums ${added ? 'text-green-400' : 'text-red-400'}`}>{entry.field['source-id'] ?? '—'}</span>
-              <span className={`text-sm font-semibold min-w-30 shrink-0 ${added ? 'text-green-300' : 'text-red-300 line-through'}`}>{entry.field.name}</span>
-              <span className={`text-xs font-mono ${added ? 'text-green-400' : 'text-red-400'}`}>{entry.field.transform}</span>
-            </div>
-          )
-        }
-        return (
-          <div key={i} className="py-2 border-b border-edge last:border-0 flex items-center gap-x-4 bg-amber-900/20">
-            <span className="text-xs font-bold text-amber-400 w-10 text-right shrink-0">~</span>
-            <span className="text-xs font-mono text-slate-400 w-14 text-right shrink-0 tabular-nums">{entry.curr['source-id'] ?? '—'}</span>
-            <span className="text-sm font-semibold text-amber-300 min-w-30 shrink-0">{entry.curr.name}{entry.prev.name !== entry.curr.name ? <span className="text-amber-600 line-through ml-2">{entry.prev.name}</span> : null}</span>
-            <span className="text-xs font-mono flex items-center gap-2">
-              {entry.prev.transform !== entry.curr.transform ? (
-                <>
-                  <span className="text-red-400 line-through">{entry.prev.transform}</span>
-                  <span className="text-slate-500">→</span>
-                  <span className="text-green-400">{entry.curr.transform}</span>
-                </>
-              ) : entry.curr.transform}
-            </span>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-function SortDiffView({ diff }) {
-  return (
-    <div>
-      <div className="grid grid-cols-[1fr_120px_120px] pb-1 mb-1 border-b border-edge">
-        <span className="text-xs font-bold text-slate-500 uppercase">Transform</span>
-        <span className="text-xs font-bold text-slate-500 uppercase">Direction</span>
-        <span className="text-xs font-bold text-slate-500 uppercase">Nulls</span>
-      </div>
-      {diff.map((entry, i) => {
-        if (entry.status === 'unchanged') return (
-          <div key={i} className="grid grid-cols-[1fr_120px_120px] py-2 border-b border-edge last:border-0 items-center opacity-50">
-            <span className="text-sm font-mono text-slate-400"><TypeText type={entry.field.transform} /></span>
-            <span className="text-sm text-ink">{entry.field.direction}</span>
-            <span className="text-sm text-slate-400">{entry.field['null-order']}</span>
-          </div>
-        )
-        if (entry.status === 'added' || entry.status === 'removed') {
-          const added = entry.status === 'added'
-          return (
-            <div key={i} className={`grid grid-cols-[1fr_120px_120px] py-2 border-b border-edge last:border-0 items-center ${added ? 'bg-green-900/20' : 'bg-red-900/20'}`}>
-              <span className={`text-sm font-mono ${added ? 'text-green-400' : 'text-red-400 line-through'}`}><TypeText type={entry.field.transform} /></span>
-              <span className={`text-sm ${added ? 'text-green-300' : 'text-red-300'}`}>{entry.field.direction}</span>
-              <span className={`text-sm ${added ? 'text-green-400' : 'text-red-400'}`}>{entry.field['null-order']}</span>
-            </div>
-          )
-        }
-        return (
-          <div key={i} className="grid grid-cols-[1fr_120px_120px] py-2 border-b border-edge last:border-0 items-center bg-amber-900/20">
-            <span className="text-sm font-mono text-amber-300"><TypeText type={entry.curr.transform} /></span>
-            <span className="text-sm text-amber-300">{entry.curr.direction}{entry.prev.direction !== entry.curr.direction ? <span className="text-amber-600 line-through ml-2">{entry.prev.direction}</span> : null}</span>
-            <span className="text-sm text-amber-300">{entry.curr['null-order']}{entry.prev['null-order'] !== entry.curr['null-order'] ? <span className="text-amber-600 line-through ml-2">{entry.prev['null-order']}</span> : null}</span>
-          </div>
-        )
-      })}
-    </div>
-  )
 }
 
 const localizeNodeTimestamps = (details) => {
