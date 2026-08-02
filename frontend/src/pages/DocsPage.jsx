@@ -569,6 +569,13 @@ const SECTIONS = [
             IceGraph page. If that doesn't apply, or you're not sure, it's best to check with whoever set up your
             IceGraph server - they'll know how their proxy handles authentication.
           </p>
+          <p>
+            If your server uses a self-signed or otherwise untrusted TLS certificate, pass{' '}
+            <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">--no-verify-ssl</code> to
+            skip certificate verification, or set the{' '}
+            <code className="bg-surface-hover px-1.5 py-0.5 rounded text-[#7dd3fc] text-sm">ICEGRAPH_NO_VERIFY_SSL</code> environment
+            variable.
+          </p>
         </div>
         <div className="space-y-2">
           <h3 className="text-white font-semibold">Commands</h3>

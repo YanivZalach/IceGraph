@@ -11,6 +11,7 @@ from icegraph_client.utils.json_utils import jsonify
 BASE_URL_ENV_VAR = "ICEGRAPH_BASE_URL"
 TOKEN_ENV_VAR = "ICEGRAPH_TOKEN"
 COOKIE_ENV_VAR = "ICEGRAPH_COOKIE"
+NO_VERIFY_SSL_ENV_VAR = "ICEGRAPH_NO_VERIFY_SSL"
 
 
 def _tables(client: IceGraphClient, _: argparse.Namespace):
@@ -38,6 +39,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--cookie",
         default=None,
         help=f"Cookie header value, for servers that require authentication. Falls back to the {COOKIE_ENV_VAR} environment variable",
+    )
+    parser.add_argument(
+        "--no-verify-ssl",
+        action="store_true",
+        default=False,
+        help=f"Skip TLS certificate verification. Falls back to the {NO_VERIFY_SSL_ENV_VAR} environment variable",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -78,6 +85,7 @@ def main():
 
     token = args.token or os.environ.get(TOKEN_ENV_VAR)
     cookie = args.cookie or os.environ.get(COOKIE_ENV_VAR)
+    no_verify_ssl = args.no_verify_ssl or bool(os.environ.get(NO_VERIFY_SSL_ENV_VAR))
 
     headers = {}
     if token:
@@ -85,7 +93,7 @@ def main():
     if cookie:
         headers["Cookie"] = cookie
 
-    client = IceGraphClient(base_url, headers=headers)
+    client = IceGraphClient(base_url, headers=headers, verify=not no_verify_ssl)
 
     try:
         result = args.handler(client, args)
