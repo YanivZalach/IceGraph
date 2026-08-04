@@ -16,3 +16,4 @@ docker_demo/data
 frontend/public/mockServiceWorker.js
 frontend/public/SKILL.md
 .playwright-mcp/
+.omp/
