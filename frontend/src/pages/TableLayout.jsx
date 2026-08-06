@@ -13,6 +13,7 @@ import { useTableSpecs } from '../context/TableSpecsContext'
 import {
   BRANCH_CONNECTION_COLOR,
   DELETED_DATA_FILE_CONNECTION_COLOR,
+  FileType,
   NODE_STYLE_MAP,
 } from '../graphConstants'
 import { getCachedData } from '../utils/cacheUtils'
@@ -58,6 +59,54 @@ const localizeNodeTimestamps = (details) => {
   }
 
   return result
+}
+
+const MAIN_BRANCH_NAME = 'main'
+
+const buildEdgesFromNodes = (nodes) => {
+  const nodeIds = new Set(nodes.map(n => n.id))
+  const snapshotPathById = {}
+  nodes.forEach(n => {
+    if (n.type === FileType.SNAPSHOT && n.details?.snapshot_id != null) {
+      snapshotPathById[String(n.details.snapshot_id)] = n.id
+    }
+  })
+
+  const edges = []
+  nodes.forEach(node => {
+    const details = node.details || {}
+
+    if (node.type === FileType.MAIN_METADATA || node.type === FileType.METADATA) {
+      const mainPath = details.snapshot_id != null ? snapshotPathById[String(details.snapshot_id)] : null
+      if (mainPath && nodeIds.has(mainPath)) {
+        edges.push({ from: node.id, to: mainPath })
+      }
+
+      const branchNamesBySnapId = {}
+      Object.entries(details.refs || {}).forEach(([name, attrs]) => {
+        if (attrs?.type === 'branch' && name !== MAIN_BRANCH_NAME) {
+          const snapId = String(attrs['snapshot-id'])
+          ;(branchNamesBySnapId[snapId] = branchNamesBySnapId[snapId] || []).push(name)
+        }
+      })
+      Object.entries(branchNamesBySnapId).forEach(([snapId, names]) => {
+        const branchPath = snapshotPathById[snapId]
+        if (branchPath && nodeIds.has(branchPath)) {
+          edges.push({ from: node.id, to: branchPath, branch_names: names.join(', ') })
+        }
+      })
+      return
+    }
+
+    const deleted = new Set(details.deleted_child_files || [])
+    ;(details.child_files || []).forEach(childPath => {
+      if (!nodeIds.has(childPath)) return
+      const edge = { from: node.id, to: childPath }
+      if (node.type === FileType.MANIFEST && deleted.has(childPath)) edge.is_deleted = true
+      edges.push(edge)
+    })
+  })
+  return edges
 }
 
 export default function TableLayout() {
@@ -135,7 +184,7 @@ export default function TableLayout() {
 
       return { ...node, shape: 'box', color: `rgba(${r},${g},${b},${node.color_shift || 1})`, level: style.level }
     })
-    const styledEdges = data.edges.map((edge) => {
+    const styledEdges = buildEdgesFromNodes(data.nodes || []).map((edge) => {
       const newEdge = { ...edge }
       if (edge.is_deleted) {
         newEdge.color = DELETED_DATA_FILE_CONNECTION_COLOR
