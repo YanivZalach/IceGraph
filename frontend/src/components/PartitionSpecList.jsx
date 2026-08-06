@@ -4,7 +4,7 @@ function PartitionFieldHeader() {
   return (
     <div className="flex items-center gap-x-4 pb-1 mb-1 border-b border-edge">
       <span className="text-xs font-bold text-slate-500 uppercase w-10 text-right shrink-0">ID</span>
-      <span className="text-xs font-bold text-slate-500 uppercase w-14 text-right shrink-0">Source ID</span>
+      <span className="text-xs font-bold text-slate-500 uppercase w-20 text-right shrink-0">Source ID</span>
       <span className="text-xs font-bold text-slate-500 uppercase min-w-30 shrink-0">Name</span>
       <span className="text-xs font-bold text-slate-500 uppercase shrink-0">Transform</span>
     </div>
@@ -36,7 +36,7 @@ export function PartitionFieldRow({ field, status, prevField }) {
       <span className={`text-base font-mono w-10 text-right shrink-0 tabular-nums ${idColor}`}>
         {marker ?? (field['field-id'] ?? '—')}
       </span>
-      <span className={`text-xs font-mono w-14 text-right shrink-0 tabular-nums ${sourceIdColor}`}>
+      <span className={`text-xs font-mono w-20 text-right shrink-0 tabular-nums ${sourceIdColor}`}>
         {field['source-id'] ?? '—'}
       </span>
       <span className={`text-sm font-semibold min-w-30 shrink-0 ${nameColor}`}>
