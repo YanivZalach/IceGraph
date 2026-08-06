@@ -6,7 +6,8 @@ function TypeText({ type }) {
 
 function SortFieldHeader() {
   return (
-    <div className="grid grid-cols-[1fr_120px_120px] pb-1 mb-1 border-b border-edge">
+    <div className="grid grid-cols-[90px_1fr_120px_120px] pb-1 mb-1 border-b border-edge">
+      <span className="text-xs font-bold text-slate-500 uppercase">Source ID</span>
       <span className="text-xs font-bold text-slate-500 uppercase">Transform</span>
       <span className="text-xs font-bold text-slate-500 uppercase">Direction</span>
       <span className="text-xs font-bold text-slate-500 uppercase">Nulls</span>
@@ -34,7 +35,10 @@ export function SortFieldRow({ field, status, prevField }) {
     status === 'changed' ? 'text-amber-300' : ''
 
   return (
-    <div className={`grid grid-cols-[1fr_120px_120px] py-2 border-b border-edge last:border-0 items-center ${bg} ${dim}`}>
+    <div className={`grid grid-cols-[90px_1fr_120px_120px] py-2 border-b border-edge last:border-0 items-center ${bg} ${dim}`}>
+      <span className="text-xs font-mono text-slate-500 tabular-nums">
+        {field['source-id'] ?? '—'}
+      </span>
       <span className={`text-sm font-mono ${transformColor}`}>
         <TypeText type={field.transform} />
       </span>
