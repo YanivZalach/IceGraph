@@ -104,6 +104,7 @@ export default function TableLayout() {
   const [jobId, setJobId] = useState(null)
   const [jobToken, setJobToken] = useState(null)
   const [showDiff, setShowDiff] = useState(false)
+  const [specJsonCopied, setSpecJsonCopied] = useState(false)
 
   const pollIntervalRef = useRef(null)
 
@@ -402,6 +403,16 @@ export default function TableLayout() {
                             Diff
                           </button>
                         </div>
+                        <button
+                          className="text-xs font-bold px-2 py-0.5 rounded-full border border-white/30 bg-transparent text-white/70 hover:text-white transition cursor-pointer"
+                          onClick={() => {
+                            navigator.clipboard.writeText(JSON.stringify(selectionDetail.data, null, 2))
+                            setSpecJsonCopied(true)
+                            setTimeout(() => setSpecJsonCopied(false), 2000)
+                          }}
+                        >
+                          {specJsonCopied ? '✓ Copied' : 'Copy JSON'}
+                        </button>
                         <button
                           className="text-white/70 hover:text-white text-xl leading-none cursor-pointer transition"
                           onClick={() => setSelectionDetail(null)}

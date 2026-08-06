@@ -6,10 +6,10 @@ function TypeText({ type }) {
 
 function SortFieldHeader() {
   return (
-    <div className="grid grid-cols-[90px_1fr_120px_120px] pb-1 mb-1 border-b border-edge">
-      <span className="text-xs font-bold text-slate-500 uppercase">Source ID</span>
-      <span className="text-xs font-bold text-slate-500 uppercase">Transform</span>
-      <span className="text-xs font-bold text-slate-500 uppercase">Direction</span>
+    <div className="flex items-center gap-x-4 pb-1 mb-1 border-b border-edge">
+      <span className="text-xs font-bold text-slate-500 uppercase w-20 text-right shrink-0">Source ID</span>
+      <span className="text-xs font-bold text-slate-500 uppercase shrink-0">Transform</span>
+      <span className="text-xs font-bold text-slate-500 uppercase w-20 shrink-0">Direction</span>
       <span className="text-xs font-bold text-slate-500 uppercase">Nulls</span>
     </div>
   )
@@ -24,7 +24,7 @@ export function SortFieldRow({ field, status, prevField }) {
   const transformColor =
     status === 'added' ? 'text-green-400' :
     status === 'removed' ? 'text-red-400 line-through' :
-    status === 'changed' ? 'text-amber-300' : 'text-accent'
+    status === 'changed' ? 'text-amber-300' : ''
   const directionColor =
     status === 'added' ? 'text-green-300' :
     status === 'removed' ? 'text-red-300' :
@@ -35,14 +35,20 @@ export function SortFieldRow({ field, status, prevField }) {
     status === 'changed' ? 'text-amber-300' : ''
 
   return (
-    <div className={`grid grid-cols-[90px_1fr_120px_120px] py-2 border-b border-edge last:border-0 items-center ${bg} ${dim}`}>
-      <span className="text-xs font-mono text-slate-500 tabular-nums">
+    <div className={`flex items-center gap-x-4 py-2 border-b border-edge last:border-0 ${bg} ${dim}`}>
+      <span className="text-xs font-mono w-20 text-right shrink-0 tabular-nums text-slate-500">
         {field['source-id'] ?? '—'}
       </span>
-      <span className={`text-sm font-mono ${transformColor}`}>
-        <TypeText type={field.transform} />
-      </span>
-      <span className={`text-sm ${directionColor}`}>
+      {status === 'added' || status === 'removed' || status === 'changed' ? (
+        <span className={`text-xs font-mono shrink-0 ${transformColor}`}>
+          <TypeText type={field.transform} />
+        </span>
+      ) : (
+        <span className="text-xs font-mono text-accent bg-accent-muted px-2 py-0.5 rounded shrink-0">
+          <TypeText type={field.transform} />
+        </span>
+      )}
+      <span className={`text-sm w-20 shrink-0 ${directionColor}`}>
         {field.direction}
         {status === 'changed' && prevField.direction !== field.direction && (
           <span className="text-amber-600 line-through ml-2">{prevField.direction}</span>
