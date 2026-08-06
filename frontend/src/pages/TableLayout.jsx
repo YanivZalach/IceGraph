@@ -6,6 +6,9 @@ import { IS_MOCK, MOCK_HOME_ROUTE } from '../appConstants'
 import { UI_BODY_MUTED_CLASS, UI_DIALOG_TITLE_CLASS, UI_MONO_MUTED_CLASS } from '../uiTypography'
 
 import MetadataStructured from '../components/MetadataStructured'
+import PartitionSpecList, { PartitionDiffView } from '../components/PartitionSpecList'
+import SchemaFieldList, { SchemaDiffView } from '../components/SchemaFieldList'
+import SortOrderList, { SortDiffView } from '../components/SortOrderList'
 import { useTableSpecs } from '../context/TableSpecsContext'
 import {
   BRANCH_CONNECTION_COLOR,
@@ -13,6 +16,28 @@ import {
   NODE_STYLE_MAP,
 } from '../graphConstants'
 import { getCachedData } from '../utils/cacheUtils'
+import { diffFieldLists } from '../utils/diffFieldLists'
+
+const DETAIL_TYPE_CONFIG = {
+  schema: {
+    listKey: 'schemas',
+    idKey: 'schema-id',
+    fieldIdKey: f => f['field-id'] ?? f.id,
+    noPrevLabel: 'No previous schema',
+  },
+  spec: {
+    listKey: 'partition-specs',
+    idKey: 'spec-id',
+    fieldIdKey: f => f['field-id'],
+    noPrevLabel: 'No previous partition spec',
+  },
+  order: {
+    listKey: 'sort-orders',
+    idKey: 'order-id',
+    fieldIdKey: f => f['source-id'],
+    noPrevLabel: 'No previous sort order',
+  },
+}
 
 const localizeNodeTimestamps = (details) => {
   if (!details) return {}
@@ -78,6 +103,7 @@ export default function TableLayout() {
   const [graphData, setGraphData] = useState(null)
   const [jobId, setJobId] = useState(null)
   const [jobToken, setJobToken] = useState(null)
+  const [showDiff, setShowDiff] = useState(false)
 
   const pollIntervalRef = useRef(null)
 
@@ -88,6 +114,10 @@ export default function TableLayout() {
     }
   }
 
+
+  useEffect(() => {
+    setShowDiff(false)
+  }, [selectionDetail])
 
   useEffect(() => {
     if (selectionDetail && detailPanelRef.current) {
@@ -304,7 +334,7 @@ export default function TableLayout() {
       label = `Order ID: ${id}`
     }
 
-    if (data) setSelectionDetail({ label, data })
+    if (data) setSelectionDetail({ label, data, type, id })
   }
 
   return (
@@ -340,22 +370,63 @@ export default function TableLayout() {
                 selectedId={selectionDetail?.label}
               />
 
-              {selectionDetail && (
-                <div ref={detailPanelRef} className="rounded-lg border-2 border-accent">
-                  <div className="flex items-center justify-between px-4 py-2 bg-accent">
-                    <span className="text-sm font-bold text-white">{selectionDetail.label}</span>
-                    <button
-                      className="text-white/70 hover:text-white text-xl leading-none cursor-pointer transition"
-                      onClick={() => setSelectionDetail(null)}
-                    >
-                      ×
-                    </button>
+              {selectionDetail && (() => {
+                const config = DETAIL_TYPE_CONFIG[selectionDetail.type]
+                const list = metadata?.[config.listKey] ?? []
+                const idx = list.findIndex(s => s[config.idKey] === selectionDetail.id)
+                const prevItem = idx > 0 ? list[idx - 1] : null
+                const hasPrev = prevItem !== null
+
+                const diff = showDiff && hasPrev
+                  ? diffFieldLists(prevItem.fields, selectionDetail.data.fields, config.fieldIdKey)
+                  : null
+
+                return (
+                  <div ref={detailPanelRef} className="rounded-lg border-2 border-accent">
+                    <div className="flex items-center justify-between px-4 py-2 bg-accent">
+                      <span className="text-sm font-bold text-white">{selectionDetail.label}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-0">
+                          <button
+                            className={`text-xs font-bold px-2 py-0.5 rounded-l-full border border-white/30 transition ${!showDiff ? 'bg-white text-accent' : 'bg-transparent text-white/70 hover:text-white'}`}
+                            onClick={() => setShowDiff(false)}
+                          >
+                            Full
+                          </button>
+                          <button
+                            disabled={!hasPrev}
+                            title={!hasPrev ? config.noPrevLabel : 'Show diff to previous version'}
+                            className={`text-xs font-bold px-2 py-0.5 rounded-r-full border border-white/30 transition ${showDiff ? 'bg-white text-accent' : !hasPrev ? 'bg-transparent text-white/30 cursor-not-allowed' : 'bg-transparent text-white/70 hover:text-white cursor-pointer'}`}
+                            onClick={() => hasPrev && setShowDiff(true)}
+                          >
+                            Diff
+                          </button>
+                        </div>
+                        <button
+                          className="text-white/70 hover:text-white text-xl leading-none cursor-pointer transition"
+                          onClick={() => setSelectionDetail(null)}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                    <div className="px-4 py-3 max-h-[300px] overflow-y-auto">
+                      {!showDiff && selectionDetail.type === 'schema' && (
+                        <SchemaFieldList schema={selectionDetail.data} />
+                      )}
+                      {!showDiff && selectionDetail.type === 'spec' && (
+                        <PartitionSpecList spec={selectionDetail.data} />
+                      )}
+                      {!showDiff && selectionDetail.type === 'order' && (
+                        <SortOrderList order={selectionDetail.data} />
+                      )}
+                      {showDiff && diff && selectionDetail.type === 'schema' && <SchemaDiffView diff={diff} />}
+                      {showDiff && diff && selectionDetail.type === 'spec' && <PartitionDiffView diff={diff} />}
+                      {showDiff && diff && selectionDetail.type === 'order' && <SortDiffView diff={diff} />}
+                    </div>
                   </div>
-                  <pre style={{ margin: 0, padding: '1rem', background: '#0d1117', color: '#e2e8f0', fontSize: '0.8rem', fontFamily: 'monospace', whiteSpace: 'pre', overflowX: 'auto', maxHeight: '300px', display: 'block' }}>
-                    {JSON.stringify(selectionDetail.data, null, 2)}
-                  </pre>
-                </div>
-              )}
+                )
+              })()}
 
             </div>
           </div>

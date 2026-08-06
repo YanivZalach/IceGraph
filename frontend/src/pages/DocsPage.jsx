@@ -403,7 +403,11 @@ const SECTIONS = [
         <p>
           The currently active version in each section is highlighted with an{' '}
           <strong className="text-white">ACTIVE</strong> badge. Click any version to expand its full
-          definition as JSON — useful for comparing how a schema or partition strategy changed over time.
+          field-level definition — schema fields render with their types (including nested structs,
+          lists, and maps), while partition and sort order fields render as structured tables. Use the{' '}
+          <strong className="text-white">Full</strong> / <strong className="text-white">Diff</strong>{' '}
+          toggle to compare a version against the one before it, with added, removed, and changed
+          fields highlighted.
         </p>
       </div>
     ),

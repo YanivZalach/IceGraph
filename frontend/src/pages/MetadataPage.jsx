@@ -3,10 +3,12 @@ import { useOutletContext } from 'react-router-dom'
 import JSONbig from 'json-bigint'
 import CopyableValue from '../components/CopyableValue'
 import { DEFAULT_COLLAPSE_LINES, PANEL_COLLAPSE_TOGGLE_CLASS } from '../components/PanelContent'
+import PartitionSpecList from '../components/PartitionSpecList'
+import SchemaFieldList from '../components/SchemaFieldList'
+import SortOrderList from '../components/SortOrderList'
 import { FileType } from '../graphConstants'
 import {
   UI_BODY_MUTED_CLASS,
-  UI_BODY_MUTED_ITALIC_CLASS,
   UI_FIELD_LABEL_CLASS,
   UI_METADATA_SECTION_TITLE_CLASS,
   UI_MONO_MUTED_CLASS,
@@ -73,102 +75,6 @@ function KV({ label, value, mono = false }) {
     <div className="flex flex-col gap-0.5 py-2 border-b border-edge last:border-0 [&:nth-last-child(2)]:border-0">
       <span className={UI_FIELD_LABEL_CLASS}>{label}</span>
       <CopyableValue value={value} mono={mono} />
-    </div>
-  )
-}
-
-function TypeDisplay({ type }) {
-  if (typeof type === 'string') {
-    return (
-      <span className="text-xs font-mono text-accent bg-accent-muted px-2 py-0.5 rounded">
-        {type}
-      </span>
-    )
-  }
-
-  if (type.type === 'struct') {
-    return (
-      <div className="flex flex-col gap-2">
-        <span className="text-xs font-mono text-violet-400 bg-violet-900/30 px-2 py-0.5 rounded w-fit">
-          struct
-        </span>
-        <div className="ml-3 border-l-2 border-edge pl-4 flex flex-col gap-3 py-1">
-          {type.fields.map(f => (
-            <div key={f.id || f['field-id'] || f.name} className="flex flex-col gap-1.5">
-              <div className="flex items-center gap-2">
-                <span className="text-base font-mono text-slate-500 w-5 text-right shrink-0">
-                  {f.id || f['field-id'] || '—'}
-                </span>
-                <span className="text-sm font-semibold text-ink">{f.name}</span>
-                {f.required === false && (
-                  <span className="text-xs font-bold text-slate-600 uppercase">optional</span>
-                )}
-              </div>
-              <TypeDisplay type={f.type} />
-            </div>
-          ))}
-        </div>
-      </div>
-    )
-  }
-
-  if (type.type === 'list') {
-    return (
-      <div className="flex flex-col gap-2">
-        <span className="text-xs font-mono text-amber-400 bg-amber-900/40 px-2 py-0.5 rounded w-fit">
-          list
-        </span>
-        <div className="ml-3 border-l-2 border-edge pl-4 py-1">
-          <TypeDisplay type={type.element} />
-        </div>
-      </div>
-    )
-  }
-
-  if (type.type === 'map') {
-    return (
-      <div className="flex flex-col gap-2">
-        <span className="text-xs font-mono text-emerald-400 bg-emerald-900/40 px-2 py-0.5 rounded w-fit">
-          map
-        </span>
-        <div className="ml-3 border-l-2 border-edge pl-4 flex flex-col gap-3 py-1">
-          <div className="flex items-start gap-2">
-            <span className="text-xs font-bold text-slate-500 uppercase mt-1 shrink-0 w-10 text-right">Key</span>
-            <TypeDisplay type={type.key} />
-          </div>
-          <div className="flex items-start gap-2">
-            <span className="text-xs font-bold text-slate-500 uppercase mt-1 shrink-0 w-10 text-right">Value</span>
-            <TypeDisplay type={type.value} />
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <pre className="text-detail font-mono text-slate-300 bg-canvas border border-edge rounded p-2 overflow-x-auto">
-      {JSON.stringify(type, null, 2)}
-    </pre>
-  )
-}
-
-function FieldRow({ field }) {
-  return (
-    <div className="py-4 border-b border-edge last:border-0">
-      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 mb-3">
-        <span className="text-base font-mono text-slate-500 w-10 shrink-0 tabular-nums">
-          {field['field-id'] ?? field.id ?? '—'}
-        </span>
-        <span className="text-sm font-bold text-ink-bright min-w-0">{field.name}</span>
-        {field.required === false ? (
-          <span className="text-xs font-bold text-slate-400 uppercase shrink-0">optional</span>
-        ) : (
-          <span />
-        )}
-      </div>
-      <div className="ml-14">
-        <TypeDisplay type={field.type} />
-      </div>
     </div>
   )
 }
@@ -289,49 +195,13 @@ export default function MetadataPage() {
 
         {defaultSpec && (
           <Section title={`Partition Spec — ID ${defaultSpec['spec-id']}`}>
-            {defaultSpec.fields?.length > 0 ? (
-              <div>
-                <div className="flex items-center gap-x-4 pb-1 mb-1 border-b border-edge">
-                  <span className="text-xs font-bold text-slate-500 uppercase w-10 shrink-0">ID</span>
-                  <span className="text-xs font-bold text-slate-500 uppercase min-w-30 shrink-0">Name</span>
-                  <span className="text-xs font-bold text-slate-500 uppercase min-w-20 shrink-0">Source ID</span>
-                  <span className="text-xs font-bold text-slate-500 uppercase shrink-0">Transform</span>
-                </div>
-                {defaultSpec.fields.map((f, i) => (
-                  <div key={i} className="flex items-center gap-x-4 py-2 border-b border-edge last:border-0">
-                    <span className="text-base font-mono text-slate-500 w-10 text-right shrink-0 tabular-nums">{f['field-id'] ?? i}</span>
-                    <span className="text-sm font-semibold text-ink min-w-30 shrink-0">{f.name}</span>
-                    <span className="text-base font-mono text-slate-500 min-w-20 shrink-0 tabular-nums">{f['source-id'] ?? '—'}</span>
-                    <span className="text-xs font-mono text-accent bg-accent-muted px-2 py-0.5 rounded shrink-0">{f.transform}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className={UI_BODY_MUTED_ITALIC_CLASS}>Unpartitioned.</p>
-            )}
+            <PartitionSpecList spec={defaultSpec} />
           </Section>
         )}
 
         {defaultOrder && (
           <Section title={`Sort Order — ID ${defaultOrder['order-id']}`}>
-            {defaultOrder.fields?.length > 0 ? (
-              <div>
-                <div className="grid grid-cols-[1fr_120px_120px] pb-1 mb-1 border-b border-edge">
-                  <span className="text-xs font-bold text-slate-500 uppercase">Transform</span>
-                  <span className="text-xs font-bold text-slate-500 uppercase">Direction</span>
-                  <span className="text-xs font-bold text-slate-500 uppercase">Nulls</span>
-                </div>
-                {defaultOrder.fields.map((f, i) => (
-                  <div key={i} className="grid grid-cols-[1fr_120px_120px] py-2 border-b border-edge last:border-0 items-center">
-                    <span className="text-sm font-mono text-accent">{typeof f.transform === 'object' ? JSON.stringify(f.transform) : f.transform}</span>
-                    <span className="text-sm text-ink">{f.direction}</span>
-                    <span className={UI_BODY_MUTED_CLASS}>{f['null-order']}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className={UI_BODY_MUTED_ITALIC_CLASS}>Unsorted.</p>
-            )}
+            <SortOrderList order={defaultOrder} />
           </Section>
         )}
 
@@ -371,18 +241,7 @@ export default function MetadataPage() {
 
         {currentSchema && (
           <Section title={`Current Schema — ID ${currentSchema['schema-id']}`}>
-            {currentSchema.fields?.length > 0 ? (
-              <div>
-                <div className="flex items-center gap-3 pb-1 mb-1 border-b border-edge">
-                  <span className="text-xs font-bold text-slate-500 uppercase w-6 shrink-0">ID</span>
-                  <span className="text-xs font-bold text-slate-500 uppercase min-w-30">Name</span>
-                  <span className="text-xs font-bold text-slate-500 uppercase">Type</span>
-                </div>
-                {currentSchema.fields.map(f => <FieldRow key={f['field-id'] ?? f.name} field={f} />)}
-              </div>
-            ) : (
-              <p className={UI_BODY_MUTED_ITALIC_CLASS}>No fields defined.</p>
-            )}
+            <SchemaFieldList schema={currentSchema} />
           </Section>
         )}
 
