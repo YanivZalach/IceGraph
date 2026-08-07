@@ -14,6 +14,7 @@ import {
   BRANCH_CONNECTION_COLOR,
   DELETED_DATA_FILE_CONNECTION_COLOR,
   FileType,
+  MAIN_BRANCH_NAME,
   NODE_STYLE_MAP,
 } from '../graphConstants'
 import { getCachedData } from '../utils/cacheUtils'
@@ -61,8 +62,6 @@ const localizeNodeTimestamps = (details) => {
   return result
 }
 
-const MAIN_BRANCH_NAME = 'main'
-
 const buildEdgesFromNodes = (nodes) => {
   const nodeIds = new Set(nodes.map(n => n.id))
   const snapshotPathById = {}
@@ -86,7 +85,8 @@ const buildEdgesFromNodes = (nodes) => {
       Object.entries(details.refs || {}).forEach(([name, attrs]) => {
         if (attrs?.type === 'branch' && name !== MAIN_BRANCH_NAME) {
           const snapId = String(attrs['snapshot-id'])
-          ;(branchNamesBySnapId[snapId] = branchNamesBySnapId[snapId] || []).push(name)
+          if (!branchNamesBySnapId[snapId]) branchNamesBySnapId[snapId] = []
+          branchNamesBySnapId[snapId].push(name)
         }
       })
       Object.entries(branchNamesBySnapId).forEach(([snapId, names]) => {
@@ -99,7 +99,8 @@ const buildEdgesFromNodes = (nodes) => {
     }
 
     const deleted = new Set(details.deleted_child_files || [])
-    ;(details.child_files || []).forEach(childPath => {
+    const childFiles = details.child_files || []
+    childFiles.forEach(childPath => {
       if (!nodeIds.has(childPath)) return
       const edge = { from: node.id, to: childPath }
       if (node.type === FileType.MANIFEST && deleted.has(childPath)) edge.is_deleted = true
