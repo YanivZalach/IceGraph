@@ -76,6 +76,8 @@ Graph jobs are tracked in each pod's memory, so if you run more than one replica
 
 Before contributing, read [ARCHITECTURE_PHILOSOPHY.md](ARCHITECTURE_PHILOSOPHY.md) — the design pillars IceGraph is built on.
 
+Work is tracked as tickets of three types: Frontend Refactor, Enrichments, and Bugs, on the [IceGraph Roadmap](https://github.com/users/YanivZalach/projects/3) board.
+
 ### Prerequisites
 
 - npm
