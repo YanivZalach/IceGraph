@@ -262,7 +262,7 @@ const SECTIONS = [
           <ul className="list-disc list-inside space-y-2">
             <li><strong className="text-white">append</strong> — new data was added to the table</li>
             <li><strong className="text-white">overwrite</strong> — new data was written, and any existing data in the affected partitions was replaced</li>
-            <li><strong className="text-white">replace</strong> — files were rewritten (e.g. compaction) without changing the actual records; common in Iceberg maintenance procedures</li>
+            <li><strong className="text-white">replace</strong> — files were rewritten without changing the actual records (compaction, changing the data file format, relocating data files, or rewriting manifests); common in Iceberg maintenance procedures. In the details panel this operation is refined by what the snapshot actually rewrote: <strong className="text-white">rewrite data files (replace)</strong>, <strong className="text-white">rewrite delete files (replace)</strong> or <strong className="text-white">rewrite manifests (replace)</strong></li>
             <li><strong className="text-white">delete</strong> — rows or files were removed from the table</li>
           </ul>
         </div>

@@ -24,6 +24,7 @@ from constants import (
 from spark_connect import close_spark_connect_session
 from graph_normalizer.graph_normalizer import GraphNormalizer
 from icegraph_logger import logger
+from snapshot_analyzer.snapshot_analyzer import SnapshotAnalyzer
 from snapshot_map.snapshot_mapping import collect_snapshot_map
 from table_list_catalog.table_list_catalog import TableListCatalog
 from table_inventory.table_inventory import TableInventory
@@ -77,6 +78,8 @@ def _schedule_cleanup(job_id, is_in_lock_block=False):
 def _compute_graph_background(job_id, table_name, start_snapshot_id, end_snapshot_id):
     try:
         table_data = TableInventory(table_name, start_snapshot_id, end_snapshot_id).build()
+
+        table_data = SnapshotAnalyzer(table_data).analyze()
 
         result = GraphNormalizer(table_data).normalize()
 
