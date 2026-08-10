@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import logo from '../assets/icegraph.png'
-import CatalogTableList from '../components/CatalogTableList'
-import JSONbig from 'json-bigint'
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import logo from "../assets/icegraph.png";
+import CatalogTableList from "../components/CatalogTableList";
+import JSONbig from "json-bigint";
 import {
   UI_BODY_MUTED_CLASS,
   UI_ERROR_TEXT_SPACED_CLASS,
@@ -11,57 +11,61 @@ import {
   UI_LINK_BUTTON_CLASS,
   UI_PRIMARY_BUTTON_CLASS,
   UI_TEXT_INPUT_LG_CLASS,
-} from '../uiTypography'
+} from "../uiTypography";
 
 export default function HomePage() {
-  const [tableName, setTableName] = useState('')
-  const [history, setHistory] = useState([])
-  const [catalogTables, setCatalogTables] = useState(null)
-  const [includeNoneIcebergCatalogs, setIncludeNoneIcebergCatalogs] = useState(false)
-  const [catalogFilter, setCatalogFilter] = useState('')
-  const [catalogLoading, setCatalogLoading] = useState(false)
-  const [catalogError, setCatalogError] = useState(null)
-  const navigate = useNavigate()
+  const [tableName, setTableName] = useState("");
+  const [history, setHistory] = useState([]);
+  const [catalogTables, setCatalogTables] = useState(null);
+  const [includeNoneIcebergCatalogs, setIncludeNoneIcebergCatalogs] =
+    useState(false);
+  const [catalogFilter, setCatalogFilter] = useState("");
+  const [catalogLoading, setCatalogLoading] = useState(false);
+  const [catalogError, setCatalogError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const savedHistory = localStorage.getItem('tableHistory')
+    const savedHistory = localStorage.getItem("tableHistory");
     if (savedHistory) {
-      setHistory(JSONbig({ storeAsString: true }).parse(savedHistory))
+      setHistory(JSONbig({ storeAsString: true }).parse(savedHistory));
     }
-  }, [])
+  }, []);
 
   function handleSubmit(e) {
-    e.preventDefault()
+    e.preventDefault();
 
-    const updatedHistory = [...new Set([tableName, ...history])].slice(0, 5)
-    setHistory(updatedHistory)
-    localStorage.setItem('tableHistory', JSON.stringify(updatedHistory))
+    const updatedHistory = [...new Set([tableName, ...history])].slice(0, 5);
+    setHistory(updatedHistory);
+    localStorage.setItem("tableHistory", JSON.stringify(updatedHistory));
 
-    const params = new URLSearchParams({ table: tableName })
-    navigate(`/snapshots-selection?${params.toString()}`)
+    const params = new URLSearchParams({ table: tableName });
+    navigate(`/snapshots-selection?${params.toString()}`);
   }
 
   async function fetchCatalogTables() {
-    setCatalogLoading(true)
-    setCatalogError(null)
-    setCatalogFilter('')
+    setCatalogLoading(true);
+    setCatalogError(null);
+    setCatalogFilter("");
 
     try {
-      const res = await fetch('/api/v1/tables')
-      const data = await res.json()
-      if (!res.ok || data.error) throw new Error(data.error || 'Failed to fetch tables')
-      setCatalogTables(data.tables ?? [])
-      setIncludeNoneIcebergCatalogs(Boolean(data.include_none_iceberg_catalogs))
+      const res = await fetch("/api/v1/tables");
+      const data = await res.json();
+      if (!res.ok || data.error)
+        throw new Error(data.error || "Failed to fetch tables");
+      setCatalogTables(data.tables ?? []);
+      setIncludeNoneIcebergCatalogs(
+        Boolean(data.include_none_iceberg_catalogs),
+      );
     } catch (e) {
-      setCatalogError(e.message)
-      setCatalogTables(null)
+      setCatalogError(e.message);
+      setCatalogTables(null);
     } finally {
-      setCatalogLoading(false)
+      setCatalogLoading(false);
     }
   }
 
   function selectCatalogTable(name) {
-    setTableName(name)
+    setTableName(name);
   }
 
   return (
@@ -69,7 +73,11 @@ export default function HomePage() {
       <main className="flex-1 flex items-center justify-center p-8">
         <div className="bg-surface rounded-2xl shadow-xl p-10 w-full max-w-lg border border-edge">
           <div className="flex flex-col items-center mb-6">
-            <img src={logo} alt="IceGraph" className="h-20 w-20 object-contain mb-3" />
+            <img
+              src={logo}
+              alt="IceGraph"
+              className="h-20 w-20 object-contain mb-3"
+            />
             <h1 className="text-2xl font-bold text-ink">IceGraph</h1>
           </div>
 
@@ -81,16 +89,14 @@ export default function HomePage() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className={UI_FORM_LABEL_CLASS}>
-                  Table Name
-                </label>
+                <label className={UI_FORM_LABEL_CLASS}>Table Name</label>
                 <button
                   type="button"
                   onClick={fetchCatalogTables}
                   disabled={catalogLoading}
                   className={UI_LINK_BUTTON_CLASS}
                 >
-                  {catalogLoading ? 'Loading…' : 'Browse catalog'}
+                  {catalogLoading ? "Loading…" : "Browse catalog"}
                 </button>
               </div>
               <input
@@ -98,12 +104,12 @@ export default function HomePage() {
                 type="text"
                 required
                 value={tableName}
-                onChange={e => setTableName(e.target.value)}
+                onChange={(e) => setTableName(e.target.value)}
                 placeholder="default.my_table"
                 className={UI_TEXT_INPUT_LG_CLASS}
               />
               <datalist id="table-history">
-                {history.map(item => (
+                {history.map((item) => (
                   <option key={item} value={item} />
                 ))}
               </datalist>
@@ -122,10 +128,7 @@ export default function HomePage() {
               />
             </div>
 
-            <button
-              type="submit"
-              className={`${UI_PRIMARY_BUTTON_CLASS} mt-1`}
-            >
+            <button type="submit" className={`${UI_PRIMARY_BUTTON_CLASS} mt-1`}>
               Continue
             </button>
           </form>
@@ -136,5 +139,5 @@ export default function HomePage() {
         IceGraph — Apache Iceberg Metadata Visualizer
       </footer>
     </div>
-  )
+  );
 }

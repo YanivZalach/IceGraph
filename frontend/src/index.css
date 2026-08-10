@@ -44,7 +44,11 @@
 
 @utility bg-graph-grid {
   background-color: var(--color-canvas);
-  background-image: radial-gradient(circle, var(--color-edge) 1px, transparent 1px);
+  background-image: radial-gradient(
+    circle,
+    var(--color-edge) 1px,
+    transparent 1px
+  );
   background-size: 1.5rem 1.5rem;
 }
 
