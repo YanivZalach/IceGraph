@@ -1,17 +1,11 @@
 from dataclasses import dataclass
 from typing import FrozenSet, Tuple
 
-from constants import REPLACE_OPERATION
-
 
 @dataclass(frozen=True)
 class ReplaceSubOperation:
     label: str
     summary_keys: FrozenSet[str]
-
-    @property
-    def operation(self) -> str:
-        return f"{self.label} ({REPLACE_OPERATION})"
 
 
 REPLACE_SUB_OPERATIONS_BY_PRIORITY: Tuple[ReplaceSubOperation, ...] = (

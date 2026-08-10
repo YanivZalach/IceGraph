@@ -64,7 +64,7 @@ uv run icegraph --base-url http://localhost:5050 tables    # Run the CLI against
 - `collectors/` — Pull Iceberg metadata via Spark: snapshots → metadata files → manifests → data files
 - `table_inventory/` — Orchestrates collection into a unified inventory structure
 - `search_cutoff/` — Optimizes snapshot iteration range to avoid full scans
-- `snapshot_analyzer/` — Runs between inventory and normalization; rewrites the generic `replace` operation into its sub-type (`rewrite data files (replace)`, `rewrite delete files (replace)`, `rewrite manifests (replace)`) from the snapshot summary
+- `snapshot_analyzer/` — Runs between inventory and normalization; fills each snapshot's `operation_description` (a copy of `operation` by default) with the `replace` sub-type (`rewrite data files`, `rewrite delete files`, `rewrite manifests`) derived from the snapshot summary. `operation` itself is never modified; the Timeline node labels display `operation_description`
 - `graph_normalizer/` — Transforms inventory data into graph nodes/links for the frontend
 - `extractors/` — Extract useful information from specific file types (manifests, data files) via Spark Connect
 - `base_classes/` — Abstractions for files and Spark actions

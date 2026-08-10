@@ -669,7 +669,7 @@ export default function TimelinePage() {
             {events.map((event, i) => {
               const ts = formatTs(event.details.timestamp)
               const canShowOperation = event.type === 'A' || event.type === 'C' || event.type === 'init'
-              const operation = canShowOperation ? snapshotMap[event.snapshotId]?.operation : null
+              const operation = canShowOperation ? snapshotMap[event.snapshotId]?.operation_description : null
               return (
                 <div key={i} className="flex items-center">
                   {i > 0 && (

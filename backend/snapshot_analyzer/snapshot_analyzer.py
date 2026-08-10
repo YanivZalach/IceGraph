@@ -10,6 +10,6 @@ class SnapshotAnalyzer:
     def analyze(self) -> TableInventoryResult:
         for snapshot in self._table_data.snapshots:
             if snapshot.operation == REPLACE_OPERATION:
-                snapshot.operation = get_replace_operation_from_summary(snapshot.summary)
+                snapshot.operation_description = get_replace_operation_from_summary(snapshot.summary)
 
         return self._table_data
