@@ -1,6 +1,5 @@
 from base_classes.utils import column_to_string_utc
 import json
-from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
@@ -8,19 +7,13 @@ import pyspark.sql
 from arrow import Arrow
 from pyspark.sql import functions as F
 
-from base_classes.base_file import BaseFile, HiddenFile
+from base_classes.base_file import BaseFile
 from collectors.collect_snapshots import SnapshotRecord
 from collectors.collector import Collector, FilesCollection
 from constants import FileType, MAIN_BRANCH_ICEBERG_TABLE_NAME
 from icegraph_logger import logger
 from collectors.utils import get_metadata_row_slim_df_from_path
 from base_classes.utils import timed
-
-
-@dataclass
-class HiddenBranchMetadata(HiddenFile):
-    branch_files: Dict[str, str]
-    main_branch_file: str
 
 
 @dataclass
@@ -36,7 +29,6 @@ class MetadataFileRecord(BaseFile):
     properties: Dict[str, str]
     pointed_snapshots_files: Optional[List[Dict[str, str]]]
     pointed_metadata_log_count: int
-    hidden_branch_metadata: HiddenBranchMetadata
 
 
 class CollectMetadata(Collector):
@@ -111,35 +103,19 @@ class CollectMetadata(Collector):
         return json.loads(row["refs"]) if row.get("refs") else {}
 
     @staticmethod
-    def _build_branch_files(refs: dict, snap_id_to_path: dict) -> dict:
-        branches = {
-            name: attrs["snapshot-id"] for name, attrs in refs.items() if attrs.get("type") == "branch" and name != MAIN_BRANCH_ICEBERG_TABLE_NAME
-        }
+    def _build_branches_child_files(refs: dict, snap_id_to_path: dict) -> List[str]:
+        branch_snapshot_ids = dict.fromkeys(
+            attrs["snapshot-id"] for name, attrs in refs.items() if attrs.get("type") == "branch" and name != MAIN_BRANCH_ICEBERG_TABLE_NAME
+        )
 
-        snapshot_to_branches = defaultdict(list)
-        for branch_name, snap_id in branches.items():
-            snapshot_to_branches[snap_id].append(branch_name)
-
-        child_files = []
-        branch_files = {}
-        for snap_id, branch_names in snapshot_to_branches.items():
-            snap_path = snap_id_to_path.get(snap_id)
-            if snap_path:
-                child_files.append(snap_path)
-                branch_files[snap_path] = ", ".join(branch_names)
-
-        return {"branches_child_files": child_files, "branch_files": branch_files}
+        return [snap_id_to_path[snap_id] for snap_id in branch_snapshot_ids if snap_id in snap_id_to_path]
 
     def _parse_metadata_row(self, index: int, row: dict, rows: list, snap_id_to_path: dict) -> MetadataFileRecord:
         number_of_rows = len(rows)
         file_type = FileType.MAIN_METADATA if index == 0 else FileType.METADATA
 
         refs = self._parse_refs(row)
-        branch_files_build = self._build_branch_files(refs, snap_id_to_path)
-        branches_child_files, branch_files = (
-            branch_files_build["branches_child_files"],
-            branch_files_build["branch_files"],
-        )
+        branches_child_files = self._build_branches_child_files(refs, snap_id_to_path)
 
         current_snap_path = snap_id_to_path.get(row["current-snapshot-id"])
         child_files = ([current_snap_path] if current_snap_path else []) + branches_child_files
@@ -159,5 +135,4 @@ class CollectMetadata(Collector):
             pointed_snapshots_files=json.loads(row["pointed_snapshots_files"]) if row.get("pointed_snapshots_files") else None,
             pointed_metadata_log_count=row["pointed_metadata_log_count"],
             child_files=child_files,
-            hidden_branch_metadata=HiddenBranchMetadata(branch_files=branch_files, main_branch_file=current_snap_path),
         )
