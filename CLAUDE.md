@@ -2,19 +2,30 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Code Change Policy
+## Before any work
 
-- Read [ARCHITECTURE_PHILOSOPHY.md](ARCHITECTURE_PHILOSOPHY.md) before proposing new dependencies, services, or persistent state — weigh every such change against its pillars.
-- Keep all changes as minimal as possible unless explicitly asked for more.
-- Never change behavior that was not explicitly requested.
+- **Never start coding immediately.** First ask clarifying questions, then present a plan and get my approval. Only implement after the plan is agreed.
+- If the task seems trivial and you think planning is overkill, say so and propose a one-line plan — but still wait for my go-ahead.
+
+## Bugs
+
+- **Never just apply a fix.** Explain the root cause first and let me decide how to proceed. Diagnosis before surgery.
+
+## Before presenting work
+
+- Run `lint` and `typecheck`; fix all violations before showing me anything. Never fix a violation by disabling a rule.
+
+## Scope & Code Change Policy
+
+- Don't refactor, rename, or "improve" code I didn't ask you to touch. Never change behavior that was not explicitly requested.
+- Keep all changes as minimal as possible unless explicitly asked for more. Prefer the simplest solution that works.
+- **Never add a dependency without asking me first** — present what it does, why hand-rolling is worse, and its cost. Read [ARCHITECTURE_PHILOSOPHY.md](ARCHITECTURE_PHILOSOPHY.md) before proposing new dependencies, services, or persistent state — weigh every such change against its pillars.
 - Apply DRY principles where possible.
 - Python files must not exceed 400 lines.
 - Never run git commands — only the user does.
-- When a change affects the user interface (behavior, navigation, interactions, views), update the relevant section in `frontend/src/pages/DocsPage.jsx`.
 - When `icegraph-client`'s public API or CLI commands change, update the CLI section in `frontend/src/pages/DocsPage.jsx` and the Python Client & CLI bullet in `README.md` to match.
-- When a change affects the frontend's URL structure (routes, path params, query params), update `claude-plugin/skills/icegraph/SKILL.md` to match.
-- The Issues panel content (errors and warnings) is driven entirely by the backend response (`data.errors`, `data.warnings`). UI changes to this panel must be coordinated with backend error/warning emission logic.
 - Whenever creating a constant that is settable via an environment variable, define its default value in `backend/constants.py` and add its description to `README.md`.
+- Frontend work has its own rules, philosophy, and styling conventions in [frontend/CLAUDE.md](frontend/CLAUDE.md) and [frontend/PHILOSOPHY.md](frontend/PHILOSOPHY.md).
 
 ## Project Overview
 
@@ -69,15 +80,7 @@ uv run icegraph --base-url http://localhost:5050 tables    # Run the CLI against
 - `extractors/` — Extract useful information from specific file types (manifests, data files) via Spark Connect
 - `base_classes/` — Abstractions for files and Spark actions
 
-**Frontend** (`/frontend/src/`) — React SPA:
-
-- Pages: `GraphPage` (force-graph visualization), `MetadataPage`, `TimelinePage`, `FileTreePage`, `SnapshotSelectionPage`
-- `TableLayout.jsx` wraps all table-specific pages; `TableSpecsContext.jsx` shares table state
-- `graphConstants.js` defines node/link visual constants and `fileTypeLabel()` for human-readable node types
-- `uiTypography.js` — shared Tailwind class tokens for labels, body text, inputs, buttons, and toolbar controls
-- `components/PanelContent.jsx` — side-panel components (`PanelHeader`, `PanelDetailRow`, `PanelSectionTitle`) and panel-specific typography tokens
-- `components/ResizableSidePanel.jsx` — draggable side panel shell used by Graph and Timeline
-- `mocks/` — MSW handlers used in the GitHub Pages demo (no real backend)
+**Frontend** (`/frontend/src/`) — React SPA (Vite + Tailwind v4, no TypeScript). Page/component layout, dev notes, and styling conventions live in [frontend/CLAUDE.md](frontend/CLAUDE.md).
 
 **icegraph-client** (`/icegraph-client/`) — Python client + CLI for the backend API, published to PyPI:
 
@@ -91,31 +94,6 @@ uv run icegraph --base-url http://localhost:5050 tables    # Run the CLI against
 2. `GET /api/v1/snapshot-map/<table>` — load snapshot history for UI selection
 3. `POST /api/v1/graph-data` — submit async job with table name + snapshot range
 4. `GET /api/v1/graph-data/<job_id>` — poll until complete, returns graph JSON
-
-## Frontend Styling Conventions
-
-Typography and repeated UI patterns live in `frontend/src/uiTypography.js`. Prefer importing tokens from there instead of duplicating Tailwind class strings.
-
-**Token layers:**
-
-| File | Role |
-|---|---|
-| `uiTypography.js` | App-wide tokens: form labels, muted body text, inputs, primary/toolbar buttons, mono text |
-| `PanelContent.jsx` | Side-panel tokens and components; re-exports field-label tokens from `uiTypography.js` |
-| `graphConstants.js` | Graph-specific visuals (`NODE_STYLE_MAP`, `fileTypeLabel`) |
-
-**Common tokens:**
-
-- `UI_BODY_MUTED_CLASS` — secondary paragraph text (`text-sm text-slate-400`)
-- `UI_FIELD_LABEL_CLASS` — uppercase field labels in panels and metadata rows (caption size, slate-500)
-- `UI_FORM_LABEL_CLASS` — uppercase form labels (xs size, slate-400, block)
-- `UI_TOOLBAR_BUTTON_BASE` — standard graph toolbar button with `py-2.5`
-- `UI_TOOLBAR_BUTTON_LAYOUT` — same toolbar look **without** vertical padding; use for split buttons (e.g. Inspect/Locked) where inner spans supply `py-2.5`
-- `toolbarButtonClass(active)` — active/inactive toolbar button variant
-
-**Side panel:** Graph and Timeline both use `ResizableSidePanel` + `PanelContent`. Panel headers call `fileTypeLabel(nodeType)` from `graphConstants.js`. Timeline diff rows use `PANEL_DIFF_*` tokens for Before/After labels and values.
-
-**When adding UI:** check `uiTypography.js` first; add a new token only when the pattern is reused or is a composed variant (base + modifier). Avoid aliasing identical classes under different names.
 
 ## Table Catalog (Backend)
 
@@ -148,3 +126,17 @@ Backend environment variables (set in `backend/.env`):
 - The same `v*` tag also publishes `icegraph-client` to PyPI (`.github/workflows/publish-icegraph-client.yml`); its version is derived from the tag itself via `setuptools_scm` in `icegraph-client/pyproject.toml`, so it always matches the server version — `icegraph-client` is only guaranteed compatible with the IceGraph server at the same version
 - GitHub Pages demo uses MSW to mock API responses (no backend); enabled via `VITE_ENABLE_MSW=true` in the deploy workflow
 - The Vite `base` path is `/IceGraph/` for GitHub Pages but `/` for Docker
+
+## Agent skills
+
+### Issue tracker
+
+Issues are tracked in GitHub Issues (YanivZalach/IceGraph) via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default label vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
