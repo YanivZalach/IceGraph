@@ -29,6 +29,8 @@ JOB_TOKEN_FIELD = "X-IceGraph-Job-Token"
 
 STANDART_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss.SSSSSS"
 
+REPLACE_OPERATION = "replace"
+
 
 class FileType(Enum):
     MAIN_METADATA = "main_metadata"

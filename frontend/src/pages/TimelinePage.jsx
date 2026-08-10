@@ -144,6 +144,9 @@ const ZOOM_MIN = 0.35
 const ZOOM_MAX = 3
 const DEFAULT_VIEW = { zoom: 1, panX: 0, panY: 0 }
 
+const TITLE_MAX_LINES = 3
+const TITLE_LINE_HEIGHT = 1.25
+
 function timelineSizes(zoom) {
   return {
     padY: 48 * zoom,
@@ -152,9 +155,11 @@ function timelineSizes(zoom) {
     connector: 56 * zoom,
     gap: 8 * zoom,
     textMax: 160 * zoom,
+    titleMax: 110 * zoom,
     fontMicro: 9.6 * zoom,
     fontDetail: 11.2 * zoom,
     fontXs: 12 * zoom,
+    titleHeight: 12 * TITLE_LINE_HEIGHT * TITLE_MAX_LINES * zoom,
     arrowTop: 4 * zoom,
     arrowBottom: 4 * zoom,
     arrowLeft: 7 * zoom,
@@ -664,7 +669,7 @@ export default function TimelinePage() {
             {events.map((event, i) => {
               const ts = formatTs(event.details.timestamp)
               const canShowOperation = event.type === 'A' || event.type === 'C' || event.type === 'init'
-              const operation = canShowOperation ? snapshotMap[event.snapshotId]?.operation : null
+              const operation = canShowOperation ? snapshotMap[event.snapshotId]?.operation_description : null
               return (
                 <div key={i} className="flex items-center">
                   {i > 0 && (
@@ -687,13 +692,16 @@ export default function TimelinePage() {
                     </div>
                   )}
                   <div
-                    className="flex flex-col items-center cursor-pointer select-none"
-                    style={{ gap: tl.gap }}
+                    className="relative flex flex-col items-center cursor-pointer select-none"
+                    style={{ gap: tl.gap, paddingTop: tl.titleHeight + tl.gap }}
                     onClick={() => selectEvent(event)}
                   >
-                    <div className="text-center" style={{ maxWidth: tl.textMax }}>
+                    <div
+                      className="absolute top-0 left-1/2 -translate-x-1/2 text-center flex flex-col justify-end"
+                      style={{ width: tl.titleMax, height: tl.titleHeight }}
+                    >
                       <div
-                        className="font-mono font-bold leading-tight break-all capitalize"
+                        className="font-mono font-bold leading-tight break-words capitalize line-clamp-3"
                         style={{ fontSize: tl.fontXs, color: colorFor(event.type) }}
                         title={event.details.file_path ?? ''}
                       >
