@@ -63,18 +63,20 @@ etc.) go to stderr, so stdout is always safe to parse directly.
 - `snapshots <table>` → a JSON array of `{timestamp, snapshot_id, operation}` objects (timestamp is
   ISO 8601, converted to local time).
 - `graph <table>` → `{nodes: [...], metadata: {...}, issues: {errors: {...}, warnings: {...}}}`.
-  Each entry in `nodes` is a file's `details` dict; its identity for linking purposes is the
-  underlying Iceberg file's storage path. **If you call `graph` with no start/end snapshot id, it
-  auto-selects only the latest snapshot** (the CLI prints which one to stderr) — don't assume it
-  covers full history unless you passed a range.
+  Each entry in `nodes` is one file's fields as a flat dict, with no wrapper object around them, so
+  a field is read directly as `node["summary"]`. Every node carries `file_path`, `type`, and
+  `child_files`, plus fields specific to its type. A node's identity for
+  linking purposes is its `file_path`, the underlying Iceberg file's storage path. **If you call
+  `graph` with no start/end snapshot id, it auto-selects only the latest snapshot** (the CLI prints
+  which one to stderr) — don't assume it covers full history unless you passed a range.
   When summarizing a `graph` result to the user, lead with `issues.errors`, then `issues.warnings`,
   before general structure/counts — errors are what the Issues panel in the UI leads with too.
 
 **For "what's my table's schema/properties/partition spec" questions, use the top-level `metadata`
-key, not a node's `details`.** `metadata` is close to a raw dump of the table's current
+key, not a node's own fields.** `metadata` is close to a raw dump of the table's current
 `metadata.json` (original Iceberg field names, hyphenated) — `schemas` (full column definitions),
 `partition-specs`, `sort-orders`, `properties`, `refs`, `format-version`, `location`, `table-uuid`,
-`current-schema-id`, `default-spec-id`, etc. A metadata-file *node*'s own `details`, by contrast,
+`current-schema-id`, `default-spec-id`, etc. A metadata-file *node*, by contrast,
 only carries IDs (`current_schema_id`, `partition_spec_id`, `sort_order_id`) plus `properties`/
 `refs` — it does **not** contain the actual schema or partition-spec definitions, so it's the wrong
 place to look for those.
@@ -168,10 +170,10 @@ browser tab isn't a substitute for giving the user something they can re-open, c
 
 ## 5. Tracing a snapshot back to the Spark job that wrote it
 
-A `graph` node with `type: "snapshot"` has a `details.summary` dict — a raw, unfiltered passthrough
+A `graph` node with `type: "snapshot"` has a `summary` dict — a raw, unfiltered passthrough
 of whatever Iceberg/Spark put in that snapshot's summary map. If it contains a `spark.app.id` key,
 that's the actual Spark application that produced that snapshot's data. This key isn't always
-present — don't assume it exists; check `details.summary` for it before saying anything about it.
+present — don't assume it exists; check `summary` for it before saying anything about it.
 
 If the user asks who/what wrote a snapshot's data (or asks about `spark.app.id` directly) and it's
 present: tell them they can look up that application in their **Spark History Server** — IceGraph
@@ -187,7 +189,7 @@ The first time you fetch a table's data with `snapshots` or `graph` in a convers
 raw JSON to a tmp file (session scratch/tmp directory if one is available, otherwise a plain
 system tmp path — name it so it's identifiable, e.g. `icegraph_<database>_<table>.json`). For any
 follow-up question about that same table and range — schema, properties, partition spec, a
-specific node's details, errors/warnings, tracing a `spark.app.id` — read back from that file
+specific node's fields, errors/warnings, tracing a `spark.app.id` — read back from that file
 instead of re-running the CLI. This data doesn't change from one question to the next within a
 session, so re-fetching it is wasted round-trips to a remote server.
 
@@ -214,7 +216,7 @@ usually isn't.
 4. "What's the schema/properties/partition spec of `sales.orders`?"
    → `icegraph --base-url https://ice.example.com graph sales.orders` (no range needed — the current
    metadata is what matters here, and an unset range already defaults to the latest snapshot, say
-   `snap-789`). Read the answer from the top-level `metadata` key, **not** any node's `details`:
+   `snap-789`). Read the answer from the top-level `metadata` key, **not** any node's own fields:
    `metadata.schemas` for columns, `metadata.properties` for table properties,
    `metadata["partition-specs"]`/`metadata["default-spec-id"]` for the active partition spec,
    `metadata["format-version"]` for the table format version. Summarize the relevant fields rather
@@ -222,7 +224,7 @@ usually isn't.
    resolved snapshot (`select_node_id` doesn't apply on `/table/metadata`, so omit it):
    `https://ice.example.com/table/metadata?table=sales.orders&start_snapshot_id=snap-789&end_snapshot_id=snap-789`
 5. "Which job wrote this snapshot's data?"
-   → find the `snapshot`-type node for it in a `graph` result, check `details.summary` for
+   → find the `snapshot`-type node for it in a `graph` result, check its `summary` for
    `spark.app.id`. If present, ask the user for an example Spark History Server URL (e.g. one
    they already have for another job), then give them that same URL with just the app-id swapped
    for this snapshot's `spark.app.id`. If it's absent, say so rather than guessing at a job.
