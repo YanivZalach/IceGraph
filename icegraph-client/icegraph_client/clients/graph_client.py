@@ -1,11 +1,10 @@
-from contextlib import suppress
 import time
 from dataclasses import dataclass
 
-import arrow
 import requests
 
 from icegraph_client.utils.http_utils import raise_for_status
+from icegraph_client.utils.time_utils import to_local_time
 
 JOB_TOKEN_HEADER = "X-IceGraph-Job-Token"
 
@@ -42,8 +41,7 @@ class GraphClient:
         for node in nodes:
             for key, value in node.items():
                 if value and "timestamp" in key.lower():
-                    with suppress(Exception):
-                        node[key] = arrow.get(value).to("local")
+                    node[key] = to_local_time(value, key)
 
     def _get_graph(self, table: str, start_snapshot_id: str, end_snapshot_id: str, poll_interval_seconds: float) -> dict:
         job_id, token = self._submit_graph_job(table, start_snapshot_id, end_snapshot_id)
