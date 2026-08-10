@@ -104,11 +104,16 @@ class CollectMetadata(Collector):
 
     @staticmethod
     def _build_branches_child_files(refs: dict, snap_id_to_path: dict) -> List[str]:
-        branch_snapshot_ids = dict.fromkeys(
-            attrs["snapshot-id"] for name, attrs in refs.items() if attrs.get("type") == "branch" and name != MAIN_BRANCH_ICEBERG_TABLE_NAME
-        )
+        child_files = []
+        for branch_name, attrs in refs.items():
+            if attrs.get("type") != "branch" or branch_name == MAIN_BRANCH_ICEBERG_TABLE_NAME:
+                continue
 
-        return [snap_id_to_path[snap_id] for snap_id in branch_snapshot_ids if snap_id in snap_id_to_path]
+            snap_path = snap_id_to_path.get(attrs["snapshot-id"])
+            if snap_path and snap_path not in child_files:
+                child_files.append(snap_path)
+
+        return child_files
 
     def _parse_metadata_row(self, index: int, row: dict, rows: list, snap_id_to_path: dict) -> MetadataFileRecord:
         number_of_rows = len(rows)
