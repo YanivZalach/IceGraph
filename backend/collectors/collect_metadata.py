@@ -18,8 +18,7 @@ from base_classes.utils import timed
 
 
 @dataclass
-class HiddenMetadata2(HiddenFile):
-    color_shift: float
+class HiddenBranchMetadata(HiddenFile):
     branch_files: Dict[str, str]
     main_branch_file: str
 
@@ -37,7 +36,7 @@ class MetadataFileRecord(BaseFile):
     properties: Dict[str, str]
     pointed_snapshots_files: Optional[List[Dict[str, str]]]
     pointed_metadata_log_count: int
-    hidden_metadata: HiddenMetadata2
+    hidden_branch_metadata: HiddenBranchMetadata
 
 
 class CollectMetadata(Collector):
@@ -160,7 +159,5 @@ class CollectMetadata(Collector):
             pointed_snapshots_files=json.loads(row["pointed_snapshots_files"]) if row.get("pointed_snapshots_files") else None,
             pointed_metadata_log_count=row["pointed_metadata_log_count"],
             child_files=child_files,
-            hidden_metadata=HiddenMetadata2(
-                color_shift=1 - index / (1.5 * number_of_rows), branch_files=branch_files, main_branch_file=current_snap_path
-            ),
+            hidden_branch_metadata=HiddenBranchMetadata(branch_files=branch_files, main_branch_file=current_snap_path),
         )

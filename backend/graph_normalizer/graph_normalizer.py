@@ -1,6 +1,5 @@
 import os
 
-from collectors.collect_metadata import MetadataFileRecord
 from table_inventory.table_inventory import TableInventoryResult
 from graph_normalizer.utils import to_json_safe
 
@@ -30,15 +29,10 @@ class GraphNormalizer:
     def _build_nodes(self):
         for file in self._files:
             file_path = file.file_path
-            color_shift = 1
-
-            if isinstance(file, MetadataFileRecord):
-                color_shift = file.hidden_metadata.color_shift
 
             self._path_to_nodes[file_path] = {
                 "id": file_path,
                 "label": os.path.basename(file_path),
                 "details": file.to_dict(),
                 "type": file.type.value,
-                "color_shift": color_shift,
             }
