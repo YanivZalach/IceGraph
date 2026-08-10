@@ -1,3 +1,4 @@
+from contextlib import suppress
 import time
 from dataclasses import dataclass
 
@@ -29,19 +30,20 @@ class GraphClient:
 
     def get_graph(self, table: str, start_snapshot_id: str = None, end_snapshot_id: str = None, poll_interval_seconds: float = 1.0) -> GraphResult:
         data = self._get_graph(table, start_snapshot_id, end_snapshot_id, poll_interval_seconds)
-        nodes = self._localize_timestamps(data["nodes"])
+        nodes = data["nodes"]
         metadata = data["metadata"]
         issues = Issues(errors=data["errors"], warnings=data["warnings"])
 
+        self._localize_timestamps(nodes)
+
         return GraphResult(nodes=nodes, metadata=metadata, issues=issues)
 
-    def _localize_timestamps(self, nodes: list) -> list:
+    def _localize_timestamps(self, nodes: list):
         for node in nodes:
             for key, value in node.items():
                 if value and "timestamp" in key.lower():
-                    node[key] = arrow.get(value).to("local")
-
-        return nodes
+                    with suppress(Exception):
+                        node[key] = arrow.get(value).to("local")
 
     def _get_graph(self, table: str, start_snapshot_id: str, end_snapshot_id: str, poll_interval_seconds: float) -> dict:
         job_id, token = self._submit_graph_job(table, start_snapshot_id, end_snapshot_id)
