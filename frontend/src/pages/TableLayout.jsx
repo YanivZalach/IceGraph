@@ -64,14 +64,16 @@ const localizeNodeTimestamps = (details) => {
 
 const METADATA_COLOR_SHIFT_SPREAD = 1.5
 
-const buildMetadataColorShifts = (nodes) => {
-  const metadataNodes = nodes
-    .filter(n => n.type === FileType.MAIN_METADATA || n.type === FileType.METADATA)
-    .map(n => ({ id: n.id, time: parseUtcDate(n.details?.timestamp)?.getTime() ?? 0 }))
+const fileNameFromPath = (filePath) => String(filePath ?? '').split('/').pop()
+
+const buildMetadataColorShifts = (nodeDetails) => {
+  const metadataDetails = nodeDetails
+    .filter(d => d.type === FileType.MAIN_METADATA || d.type === FileType.METADATA)
+    .map(d => ({ filePath: d.file_path, time: parseUtcDate(d.timestamp)?.getTime() ?? 0 }))
     .sort((a, b) => b.time - a.time)
 
   return new Map(
-    metadataNodes.map((n, index) => [n.id, 1 - index / (METADATA_COLOR_SHIFT_SPREAD * metadataNodes.length)])
+    metadataDetails.map((d, index) => [d.filePath, 1 - index / (METADATA_COLOR_SHIFT_SPREAD * metadataDetails.length)])
   )
 }
 
@@ -190,18 +192,25 @@ export default function TableLayout() {
   }, [selectionDetail])
 
   const buildGraphData = (data) => {
-    const colorShiftByNodeId = buildMetadataColorShifts(data.nodes)
+    const nodeDetails = data.nodes || []
+    const colorShiftByFilePath = buildMetadataColorShifts(nodeDetails)
 
-    const styledNodes = data.nodes.map((node) => {
-      const style = NODE_STYLE_MAP[node.type] || { rgb: [100, 100, 100], level: 0 }
+    const styledNodes = nodeDetails.map((details) => {
+      const style = NODE_STYLE_MAP[details.type] || { rgb: [100, 100, 100], level: 0 }
       const [r, g, b] = style.rgb
-      const colorShift = colorShiftByNodeId.get(node.id) ?? 1
+      const colorShift = colorShiftByFilePath.get(details.file_path) ?? 1
 
-      node.details = localizeNodeTimestamps(node.details)
-
-      return { ...node, shape: 'box', color: `rgba(${r},${g},${b},${colorShift})`, level: style.level }
+      return {
+        id: details.file_path,
+        label: fileNameFromPath(details.file_path),
+        type: details.type,
+        details: localizeNodeTimestamps(details),
+        shape: 'box',
+        color: `rgba(${r},${g},${b},${colorShift})`,
+        level: style.level,
+      }
     })
-    const styledEdges = buildEdgesFromNodes(data.nodes || []).map((edge) => {
+    const styledEdges = buildEdgesFromNodes(styledNodes).map((edge) => {
       const newEdge = { ...edge }
       if (edge.is_deleted) {
         newEdge.color = DELETED_DATA_FILE_CONNECTION_COLOR
