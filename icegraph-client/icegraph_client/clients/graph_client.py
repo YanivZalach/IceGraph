@@ -1,10 +1,10 @@
 import time
 from dataclasses import dataclass
 
-import arrow
 import requests
 
 from icegraph_client.utils.http_utils import raise_for_status
+from icegraph_client.utils.time_utils import to_local_time
 
 JOB_TOKEN_HEADER = "X-IceGraph-Job-Token"
 
@@ -29,22 +29,19 @@ class GraphClient:
 
     def get_graph(self, table: str, start_snapshot_id: str = None, end_snapshot_id: str = None, poll_interval_seconds: float = 1.0) -> GraphResult:
         data = self._get_graph(table, start_snapshot_id, end_snapshot_id, poll_interval_seconds)
-        nodes = self._extract_node_details(data["nodes"])
+        nodes = data["nodes"]
         metadata = data["metadata"]
         issues = Issues(errors=data["errors"], warnings=data["warnings"])
 
+        self._localize_timestamps(nodes)
+
         return GraphResult(nodes=nodes, metadata=metadata, issues=issues)
 
-    def _extract_node_details(self, nodes: list) -> list:
-        details_list = []
+    def _localize_timestamps(self, nodes: list):
         for node in nodes:
-            details = node.get("details", {})
-            for key, value in details.items():
+            for key, value in node.items():
                 if value and "timestamp" in key.lower():
-                    details[key] = arrow.get(value).to("local")
-            details_list.append(details)
-
-        return details_list
+                    node[key] = to_local_time(value, key)
 
     def _get_graph(self, table: str, start_snapshot_id: str, end_snapshot_id: str, poll_interval_seconds: float) -> dict:
         job_id, token = self._submit_graph_job(table, start_snapshot_id, end_snapshot_id)

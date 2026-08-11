@@ -1,14 +1,16 @@
 from dataclasses import dataclass
+from typing import Union
 
 import requests
 import arrow
 
 from icegraph_client.utils.http_utils import raise_for_status
+from icegraph_client.utils.time_utils import to_local_time
 
 
 @dataclass
 class SnapshotInfo:
-    timestamp: arrow.Arrow
+    timestamp: Union[arrow.Arrow, str]
     snapshot_id: str
     operation: str
 
@@ -24,6 +26,6 @@ class SnapshotsClient:
         data = response.json()
 
         return [
-            SnapshotInfo(timestamp=arrow.get(timestamp).to("local"), snapshot_id=snapshot["snapshot_id"], operation=snapshot["operation"])
+            SnapshotInfo(timestamp=to_local_time(timestamp, "timestamp"), snapshot_id=snapshot["snapshot_id"], operation=snapshot["operation"])
             for timestamp, snapshot in data.items()
         ]
