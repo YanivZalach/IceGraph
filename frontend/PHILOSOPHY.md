@@ -18,6 +18,7 @@ React + TypeScript. Guiding principle: **minimum cognitive load** — understand
 
 - **ESLint + Prettier** in CI — failing lint fails the build. The linter is this document made executable; if they disagree, fix one — never silently disable.
 - `eslint-disable` and `@ts-expect-error` require a linked issue. `@ts-ignore` is banned.
+- **Tried and tested beats bespoke.** Tooling config (tsconfig, ESLint, Prettier, CI workflows) starts from the official or de-facto community template (Vite `react-ts` template, `typescript-eslint` presets) and deviates only where this document demands it. When this document and an established community default conflict for no articulated reason, prefer the community default and amend this document.
 
 ## tsconfig
 

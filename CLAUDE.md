@@ -80,7 +80,7 @@ uv run icegraph --base-url http://localhost:5050 tables    # Run the CLI against
 - `extractors/` — Extract useful information from specific file types (manifests, data files) via Spark Connect
 - `base_classes/` — Abstractions for files and Spark actions
 
-**Frontend** (`/frontend/src/`) — React SPA (Vite + Tailwind v4, no TypeScript). Page/component layout, dev notes, and styling conventions live in [frontend/CLAUDE.md](frontend/CLAUDE.md).
+**Frontend** (`/frontend/src/`) — React SPA (Vite + Tailwind v4), migrating from legacy JSX to strict TypeScript per [frontend/PHILOSOPHY.md](frontend/PHILOSOPHY.md). Page/component layout, dev notes, and styling conventions live in [frontend/CLAUDE.md](frontend/CLAUDE.md).
 
 **icegraph-client** (`/icegraph-client/`) — Python client + CLI for the backend API, published to PyPI:
 
@@ -124,7 +124,7 @@ Backend environment variables (set in `backend/.env`):
 
 - CI publishes Docker image to Docker Hub and deploys frontend to GitHub Pages on version tags (`v*`)
 - The same `v*` tag also publishes `icegraph-client` to PyPI (`.github/workflows/publish-icegraph-client.yml`); its version is derived from the tag itself via `setuptools_scm` in `icegraph-client/pyproject.toml`, so it always matches the server version — `icegraph-client` is only guaranteed compatible with the IceGraph server at the same version
-- GitHub Pages demo uses MSW to mock API responses (no backend); enabled via `VITE_ENABLE_MSW=true` in the deploy workflow
+- GitHub Pages demo uses MSW to mock API responses (no backend); enabled via `VITE_USE_MSW=true` in the deploy workflow
 - The Vite `base` path is `/IceGraph/` for GitHub Pages but `/` for Docker
 
 ## Agent skills

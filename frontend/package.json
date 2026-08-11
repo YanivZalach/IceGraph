@@ -16,16 +16,20 @@
     "msw:init": "msw init public/"
   },
   "dependencies": {
+    "clsx": "^2.1.1",
     "json-bigint": "^1.0.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-force-graph-2d": "^1.29.1",
-    "react-router-dom": "^6.30.4"
+    "react-router-dom": "^6.30.4",
+    "tailwind-merge": "^3.6.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@eslint-community/eslint-plugin-eslint-comments": "^4.7.2",
     "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.0.0",
+    "@types/json-bigint": "^1.0.4",
     "@types/node": "^26.2.0",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",

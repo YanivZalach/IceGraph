@@ -24,7 +24,7 @@ All frontend code conventions live in the project philosophy and are mandatory:
 ## Dev Notes
 
 - `npm run dev` / `npm run build` run `copy-skill` first, which copies `claude-plugin/skills/icegraph/SKILL.md` into `public/` — `public/SKILL.md` is generated, never edit it directly.
-- Set `VITE_ENABLE_MSW=true` to run against `mocks/` instead of a live backend (this is how the GitHub Pages demo works). New or changed API responses must be reflected in `mocks/` or the demo breaks.
+- Set `VITE_USE_MSW=true` to run against `mocks/` instead of a live backend (this is how the GitHub Pages demo works). New or changed API responses must be reflected in `mocks/` or the demo breaks.
 - The Vite `base` path is `/IceGraph/` for GitHub Pages but `/` for Docker — never hardcode absolute asset or route paths.
 - Vite dev server runs on port 3000 and proxies `/api` to the backend on port 5000.
 

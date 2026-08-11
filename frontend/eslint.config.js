@@ -34,6 +34,11 @@ const philosophyRules = {
       message:
         "Type assertions are banned except `as const` — see PHILOSOPHY.md 'TypeScript'.",
     },
+    {
+      selector: 'TSAsExpression:not([typeAnnotation.typeName.name="const"])',
+      message:
+        "Type assertions are banned except `as const` — see PHILOSOPHY.md 'TypeScript'.",
+    },
   ],
 };
 
