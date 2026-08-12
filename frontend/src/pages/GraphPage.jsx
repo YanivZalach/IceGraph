@@ -239,7 +239,7 @@ export default function GraphPage() {
     setHighlightNodes(getLineage(node.id, graphDataRef.current.links));
     setIsFullView(false);
     fgRef.current?.centerAt(node.fx ?? node.x, node.fy ?? node.y, 300);
-    history.pushState({ graphSelection: node.id }, "");
+    history.pushState({ ...history.state, graphSelection: node.id }, "");
     stickyScrollTargetRef.current = 0;
     if (stickyPanelRef.current) stickyPanelRef.current.scrollTop = 0;
   }, []);
@@ -255,7 +255,7 @@ export default function GraphPage() {
   const deselectNode = useCallback(() => {
     setHighlightNodes(new Set());
     closeStickyPanel();
-    history.replaceState({ graphSelection: null }, "");
+    history.replaceState({ ...history.state, graphSelection: null }, "");
   }, [closeStickyPanel]);
 
   const resetView = useCallback(() => {
@@ -449,7 +449,7 @@ export default function GraphPage() {
 
   useEffect(() => {
     if (!history.state || !("graphSelection" in history.state)) {
-      history.replaceState({ graphSelection: null }, "");
+      history.replaceState({ ...history.state, graphSelection: null }, "");
     }
 
     const handlePopState = (e) => {
@@ -508,7 +508,10 @@ export default function GraphPage() {
             search: (prev) => ({ ...prev, [SELECT_NODE_ID_PARAM]: undefined }),
             replace: true,
           });
-          history.replaceState({ graphSelection: targetNodeId }, "");
+          history.replaceState(
+            { ...history.state, graphSelection: targetNodeId },
+            "",
+          );
         }
 
         setTimeout(() => {
@@ -555,7 +558,7 @@ export default function GraphPage() {
         fgRef.current.centerAt(node.fx ?? node.x, node.fy ?? node.y, 500);
       }
       setStickyNode(node);
-      history.pushState({ graphSelection: node.id }, "");
+      history.pushState({ ...history.state, graphSelection: node.id }, "");
     },
     [graphData],
   );
