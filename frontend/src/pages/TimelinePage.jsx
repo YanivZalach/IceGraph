@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useTableGraphData } from "../features/table/tableGraphData";
 import CopyIconButton from "../components/CopyIconButton";
 import { useViewInGraph } from "../hooks/useViewInGraph";
 import {
@@ -433,7 +433,7 @@ function DiffList({ diff }) {
 }
 
 export default function TimelinePage() {
-  const { nodes } = useOutletContext();
+  const { nodes } = useTableGraphData();
   const { viewInGraph, duplicatingNodeId, canViewInGraph } = useViewInGraph();
   const [selected, setSelected] = useState(null);
   const [view, setView] = useState(DEFAULT_VIEW);

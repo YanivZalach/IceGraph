@@ -1,22 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  NavLink,
+  Link,
   useLocation,
-  useMatch,
+  useMatchRoute,
   useNavigate,
-  useSearchParams,
-} from "react-router-dom";
+  useSearch,
+} from "@tanstack/react-router";
 import logo from "../assets/icegraph.png";
 import CatalogTableList from "./CatalogTableList";
 import { useTableSpecs } from "../context/TableSpecsContext";
 import { cacheData, clearCachedData } from "../utils/cacheUtils";
-import {
-  BASE_PATH,
-  IS_MOCK,
-  MOCK_HOME,
-  MOCK_HOME_ROUTE,
-  MOCK_TABLE,
-} from "../appConstants";
+import { BASE_PATH, IS_MOCK, MOCK_HOME, MOCK_TABLE } from "../appConstants";
 import {
   UI_ERROR_TEXT_SPACED_CLASS,
   UI_FORM_LABEL_CLASS,
@@ -28,10 +22,11 @@ import {
 
 export default function NavBar() {
   const location = useLocation();
-  const [searchParams] = useSearchParams();
+  const search = useSearch({ strict: false });
   const navigate = useNavigate();
-  const isTablePage = useMatch("/table/*");
-  const tableName = searchParams.get("table");
+  const matchRoute = useMatchRoute();
+  const isTablePage = Boolean(matchRoute({ to: "/table", fuzzy: true }));
+  const tableName = search.table ?? null;
   const {
     detailsOpen,
     setDetailsOpen,
@@ -73,7 +68,7 @@ export default function NavBar() {
   useEffect(() => {
     setMenuOpen(false);
     setTablePickerOpen(false);
-  }, [location.pathname, location.search]);
+  }, [location.pathname, location.searchStr]);
 
   useEffect(() => {
     if (!tablePickerOpen) return;
@@ -97,14 +92,12 @@ export default function NavBar() {
       const idx = parseInt(e.key) - 1;
       if (idx >= 0 && idx < tabs.length) {
         e.preventDefault();
-        navigate(`/table/${tabs[idx]}${location.search}`);
+        navigate({ to: `/table/${tabs[idx]}`, search: (prev) => prev });
       }
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [isTablePage, navigate, location.search]);
-
-  const tabSearch = location.search;
+  }, [isTablePage, navigate]);
 
   function openTablePicker() {
     setPickerTableName(tableName || "");
@@ -241,19 +234,23 @@ export default function NavBar() {
     }, 2000);
   };
 
-  const tabClass = ({ isActive }) =>
-    `text-sm font-medium px-1 py-0.5 border-b-2 transition ${
-      isActive
-        ? "border-accent text-white"
-        : "border-transparent text-slate-400 hover:text-white hover:border-slate-500"
-    }`;
+  const tabActiveProps = {
+    className:
+      "text-sm font-medium px-1 py-0.5 border-b-2 transition border-accent text-white",
+  };
+  const tabInactiveProps = {
+    className:
+      "text-sm font-medium px-1 py-0.5 border-b-2 transition border-transparent text-slate-400 hover:text-white hover:border-slate-500",
+  };
 
-  const mobileTabClass = ({ isActive }) =>
-    `text-sm font-medium px-3 py-2 rounded-md transition text-left ${
-      isActive
-        ? "bg-accent-muted text-white"
-        : "text-slate-400 hover:text-white hover:bg-surface-hover"
-    }`;
+  const mobileTabActiveProps = {
+    className:
+      "text-sm font-medium px-3 py-2 rounded-md transition text-left bg-accent-muted text-white",
+  };
+  const mobileTabInactiveProps = {
+    className:
+      "text-sm font-medium px-3 py-2 rounded-md transition text-left text-slate-400 hover:text-white hover:bg-surface-hover",
+  };
 
   return (
     <nav
@@ -261,7 +258,7 @@ export default function NavBar() {
       className="h-16 bg-surface text-white shadow-lg shrink-0 sticky top-0 z-[1200]"
     >
       <div className="px-4 sm:px-6 py-3 flex items-center gap-4">
-        <NavLink
+        <Link
           to="/docs"
           target={isTablePage ? "_blank" : undefined}
           rel={isTablePage ? "noopener noreferrer" : undefined}
@@ -275,20 +272,26 @@ export default function NavBar() {
             aria-hidden="true"
           />
           <span className="text-lg font-bold tracking-tight">IceGraph</span>
-        </NavLink>
+        </Link>
 
         {!isTablePage && (
           <>
-            <NavLink
-              to={IS_MOCK ? MOCK_HOME_ROUTE : "/"}
-              end
-              className={tabClass}
+            <Link
+              to={IS_MOCK ? "/table/timeline" : "/"}
+              search={IS_MOCK ? { table: MOCK_TABLE } : undefined}
+              activeOptions={{ exact: true }}
+              activeProps={tabActiveProps}
+              inactiveProps={tabInactiveProps}
             >
               Home
-            </NavLink>
-            <NavLink to="/docs" className={tabClass}>
+            </Link>
+            <Link
+              to="/docs"
+              activeProps={tabActiveProps}
+              inactiveProps={tabInactiveProps}
+            >
               Docs
-            </NavLink>
+            </Link>
           </>
         )}
 
@@ -319,18 +322,38 @@ export default function NavBar() {
 
             <div className="w-px h-4 bg-slate-700" />
 
-            <NavLink to={`/table/timeline${tabSearch}`} className={tabClass}>
+            <Link
+              to="/table/timeline"
+              search={(prev) => prev}
+              activeProps={tabActiveProps}
+              inactiveProps={tabInactiveProps}
+            >
               Timeline
-            </NavLink>
-            <NavLink to={`/table/metadata${tabSearch}`} className={tabClass}>
+            </Link>
+            <Link
+              to="/table/metadata"
+              search={(prev) => prev}
+              activeProps={tabActiveProps}
+              inactiveProps={tabInactiveProps}
+            >
               Metadata
-            </NavLink>
-            <NavLink to={`/table/filetree${tabSearch}`} className={tabClass}>
+            </Link>
+            <Link
+              to="/table/filetree"
+              search={(prev) => prev}
+              activeProps={tabActiveProps}
+              inactiveProps={tabInactiveProps}
+            >
               FileTree
-            </NavLink>
-            <NavLink to={`/table/graph${tabSearch}`} className={tabClass}>
+            </Link>
+            <Link
+              to="/table/graph"
+              search={(prev) => prev}
+              activeProps={tabActiveProps}
+              inactiveProps={tabInactiveProps}
+            >
               Graph
-            </NavLink>
+            </Link>
 
             {((errors && Object.keys(errors).length > 0) ||
               (warnings && Object.keys(warnings).length > 0)) && (
@@ -384,14 +407,14 @@ export default function NavBar() {
 
               <div className="w-px h-4 bg-slate-700" />
 
-              <NavLink
+              <Link
                 to="/docs"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-sm font-medium text-slate-400 hover:text-white border border-slate-600 hover:border-slate-400 px-3 py-1 rounded-md transition"
               >
                 Docs
-              </NavLink>
+              </Link>
 
               <button
                 className="text-sm font-medium text-slate-400 hover:text-white border border-slate-600 hover:border-slate-400 px-3 py-1 rounded-md transition"
@@ -449,27 +472,38 @@ export default function NavBar() {
 
           <div className="h-px bg-edge my-1" />
 
-          <NavLink
-            to={`/table/timeline${tabSearch}`}
-            className={mobileTabClass}
+          <Link
+            to="/table/timeline"
+            search={(prev) => prev}
+            activeProps={mobileTabActiveProps}
+            inactiveProps={mobileTabInactiveProps}
           >
             Timeline
-          </NavLink>
-          <NavLink
-            to={`/table/metadata${tabSearch}`}
-            className={mobileTabClass}
+          </Link>
+          <Link
+            to="/table/metadata"
+            search={(prev) => prev}
+            activeProps={mobileTabActiveProps}
+            inactiveProps={mobileTabInactiveProps}
           >
             Metadata
-          </NavLink>
-          <NavLink
-            to={`/table/filetree${tabSearch}`}
-            className={mobileTabClass}
+          </Link>
+          <Link
+            to="/table/filetree"
+            search={(prev) => prev}
+            activeProps={mobileTabActiveProps}
+            inactiveProps={mobileTabInactiveProps}
           >
             FileTree
-          </NavLink>
-          <NavLink to={`/table/graph${tabSearch}`} className={mobileTabClass}>
+          </Link>
+          <Link
+            to="/table/graph"
+            search={(prev) => prev}
+            activeProps={mobileTabActiveProps}
+            inactiveProps={mobileTabInactiveProps}
+          >
             Graph
-          </NavLink>
+          </Link>
 
           {((errors && Object.keys(errors).length > 0) ||
             (warnings && Object.keys(warnings).length > 0)) && (
@@ -531,7 +565,7 @@ export default function NavBar() {
             {isDuplicating ? "Duplicating..." : "Duplicate tab"}
           </button>
 
-          <NavLink
+          <Link
             to="/docs"
             target="_blank"
             rel="noopener noreferrer"
@@ -539,7 +573,7 @@ export default function NavBar() {
             className="text-sm font-medium text-slate-400 hover:text-white border border-slate-600 hover:border-slate-400 px-3 py-2 rounded-md transition text-left"
           >
             Docs
-          </NavLink>
+          </Link>
 
           <button
             className="text-sm font-medium text-slate-400 hover:text-white border border-slate-600 hover:border-slate-400 px-3 py-2 rounded-md transition text-left"

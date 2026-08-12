@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 import logo from "../assets/icegraph.png";
 import CatalogTableList from "../components/CatalogTableList";
 import JSONbig from "json-bigint";
@@ -38,8 +38,7 @@ export default function HomePage() {
     setHistory(updatedHistory);
     localStorage.setItem("tableHistory", JSON.stringify(updatedHistory));
 
-    const params = new URLSearchParams({ table: tableName });
-    navigate(`/snapshots-selection?${params.toString()}`);
+    navigate({ to: "/snapshots-selection", search: { table: tableName } });
   }
 
   async function fetchCatalogTables() {

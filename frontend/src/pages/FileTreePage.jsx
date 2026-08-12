@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useTableGraphData } from "../features/table/tableGraphData";
 import { FileType } from "../graphConstants";
 import { useViewInGraph } from "../hooks/useViewInGraph";
 import {
@@ -373,7 +373,7 @@ function TreeNode({
 }
 
 export default function FileTreePage() {
-  const { nodes, edges, metadata } = useOutletContext();
+  const { nodes, edges, metadata } = useTableGraphData();
   const { viewInGraph, duplicatingNodeId } = useViewInGraph();
   const [search, setSearch] = useState("");
   const [selectedBranch, setSelectedBranch] = useState(null);

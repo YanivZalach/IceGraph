@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import {
   UI_BODY_MUTED_CLASS,
   UI_FORM_LABEL_MB_CLASS,
@@ -65,8 +65,8 @@ function SnapshotItem({ ts, id, operation, selectedId, onClick }) {
 }
 
 export default function SnapshotSelectionPage() {
-  const [searchParams] = useSearchParams();
-  const tableName = searchParams.get("table");
+  const search = useSearch({ strict: false });
+  const tableName = search.table ?? null;
 
   const startListRef = useRef(null);
   const endListRef = useRef(null);
@@ -160,18 +160,21 @@ export default function SnapshotSelectionPage() {
       }
     }
 
-    const params = new URLSearchParams({ table: tableName });
-    if (startSnapshot) params.set("start_snapshot_id", startSnapshot);
-    if (endSnapshot) params.set("end_snapshot_id", endSnapshot);
-    navigate(`/table/timeline?${params.toString()}`);
+    navigate({
+      to: "/table/timeline",
+      search: {
+        table: tableName,
+        ...(startSnapshot ? { start_snapshot_id: startSnapshot } : {}),
+        ...(endSnapshot ? { end_snapshot_id: endSnapshot } : {}),
+      },
+    });
   }
 
   function handleJumpToLatest(latestSnapshotId) {
-    const params = new URLSearchParams({
-      table: tableName,
-      start_snapshot_id: latestSnapshotId,
+    navigate({
+      to: "/table/metadata",
+      search: { table: tableName, start_snapshot_id: latestSnapshotId },
     });
-    navigate(`/table/metadata?${params.toString()}`);
   }
 
   if (error) {
@@ -181,7 +184,7 @@ export default function SnapshotSelectionPage() {
           <h2 className="font-bold mb-2">Failed to Load Snapshots</h2>
           <p className="text-sm mb-4">{error}</p>
           <button
-            onClick={() => navigate("/")}
+            onClick={() => navigate({ to: "/" })}
             className="text-slate-400 hover:text-white text-sm"
           >
             Go Back

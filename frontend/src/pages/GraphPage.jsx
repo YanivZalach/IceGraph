@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
-import { useOutletContext, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearch } from "@tanstack/react-router";
+import { useTableGraphData } from "../features/table/tableGraphData";
 import ForceGraph2D from "react-force-graph-2d";
 import {
   isEmptyValue,
@@ -82,9 +83,10 @@ function getLineage(nodeId, links) {
 }
 
 export default function GraphPage() {
-  const { nodes: rawNodes, edges: rawEdges, errors } = useOutletContext();
+  const { nodes: rawNodes, edges: rawEdges, errors } = useTableGraphData();
 
-  const [searchParams, setSearchParams] = useSearchParams();
+  const search = useSearch({ strict: false });
+  const navigate = useNavigate();
   const fgRef = useRef();
   const hasInitialized = useRef(false);
   const isResettingRef = useRef(false);
@@ -473,6 +475,8 @@ export default function GraphPage() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, [graphData, resetView]);
 
+  const selectNodeIdFromSearch = search[SELECT_NODE_ID_PARAM] ?? null;
+
   useEffect(() => {
     if (
       !fgRef.current ||
@@ -484,7 +488,7 @@ export default function GraphPage() {
     fgRef.current.d3ReheatSimulation();
 
     const historyId = history.state?.graphSelection;
-    const queryId = searchParams.get(SELECT_NODE_ID_PARAM);
+    const queryId = selectNodeIdFromSearch;
     const sessionId = sessionStorage.getItem("last_graph_selection");
     const targetNodeId = historyId || queryId || sessionId;
 
@@ -499,9 +503,11 @@ export default function GraphPage() {
         setIsFullView(false);
 
         if (queryId) {
-          const nextParams = new URLSearchParams(searchParams);
-          nextParams.delete(SELECT_NODE_ID_PARAM);
-          setSearchParams(nextParams, { replace: true });
+          navigate({
+            to: ".",
+            search: (prev) => ({ ...prev, [SELECT_NODE_ID_PARAM]: undefined }),
+            replace: true,
+          });
           history.replaceState({ graphSelection: targetNodeId }, "");
         }
 
@@ -516,7 +522,7 @@ export default function GraphPage() {
     } else {
       setTimeout(() => resetView(), 100);
     }
-  }, [graphData, searchParams, resetView]);
+  }, [graphData, selectNodeIdFromSearch, resetView]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
