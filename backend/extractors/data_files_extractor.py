@@ -1,13 +1,14 @@
 import os
 from typing import List
 
+import pyspark
 from pyspark.sql import Window, functions as F
 from pyspark.sql.types import LongType, StringType, StructField, StructType
 
 from collectors.collect_manifests import ManifestRecord
 from constants import MAX_DATA_FILES_TO_COLLECT
 from extractors.constants import MANIFEST_SOURCE_ERROR_PREFIX
-from extractors.extractor import ExtractionResult, Extractor
+from extractors.extractor import Extractor
 
 max_data_files_to_collect = int(os.getenv("MAX_DATA_FILES_TO_COLLECT", MAX_DATA_FILES_TO_COLLECT))
 
@@ -46,7 +47,7 @@ class DataFilesExtractor(Extractor):
         super().__init__(table_name)
         self._manifest_entries = manifest_entries
 
-    def extract_dataframe(self) -> ExtractionResult:
+    def extract_dataframe(self) -> pyspark.sql.DataFrame:
         data_files_df = self._collect_data_files_from_manifests(self._manifest_entries)
         data_files_with_latest_ts_df = self._match_data_file_to_latest_snapshot(data_files_df)
 
@@ -57,9 +58,7 @@ class DataFilesExtractor(Extractor):
 
         snapshot_timestamp_cutoff_df = self._find_cutoff_snapshot_timestamp(data_files_limited_df)
 
-        included_data_files_df = self._find_included_data_files(data_files_limited_df, snapshot_timestamp_cutoff_df)
-
-        return ExtractionResult(included_data_files_df, self._errors)
+        return self._find_included_data_files(data_files_limited_df, snapshot_timestamp_cutoff_df)
 
     @staticmethod
     def _group_data_files_by_manifests(avro_df):
@@ -142,7 +141,7 @@ class DataFilesExtractor(Extractor):
     def _collect_data_files_from_manifests(self, manifest_rows):
         avro_df = None
         for manifest_entry in manifest_rows:
-            df = self._read_source(manifest_entry.file_path, lambda: self._collect_data_files_from_manifest(manifest_entry))
+            df = self._read_source(manifest_entry, lambda: self._collect_data_files_from_manifest(manifest_entry))
             if df is None:
                 continue
 

@@ -4,7 +4,7 @@ from pyspark.sql.types import LongType, StringType, StructField, StructType
 
 from collectors.collect_snapshots import SnapshotRecord
 from extractors.constants import MANIFEST_LIST_SOURCE_ERROR_PREFIX
-from extractors.extractor import ExtractionResult, Extractor
+from extractors.extractor import Extractor
 
 SNAPSHOT_TO_TIMESTAMP_SCHEMA = StructType(
     [
@@ -35,17 +35,13 @@ class ManifestsExtractor(Extractor):
         self._snapshots = snapshots
         self._manifests_to_ignore_df = manifests_to_ignore_df
 
-    def extract_dataframe(self) -> ExtractionResult:
+    def extract_dataframe(self) -> pyspark.sql.DataFrame:
         manifests_df = self._union_manifests_for_snapshots()
         manifests_with_timestamps_df = self._enrich_manifests_with_timestamps(manifests_df)
 
         valid_manifests_df = self._filter_ignored_manifests(manifests_with_timestamps_df)
-        manifests_df = self._aggregate_snapshots_by_manifests_sorted(valid_manifests_df)
 
-        return ExtractionResult(
-            manifests_df,
-            self._errors,
-        )
+        return self._aggregate_snapshots_by_manifests_sorted(valid_manifests_df)
 
     def _union_manifests_for_snapshots(self) -> pyspark.sql.DataFrame:
         result = None
@@ -53,7 +49,7 @@ class ManifestsExtractor(Extractor):
             snap_id = snapshot.snapshot_id
             manifest_list_path = snapshot.file_path
 
-            df = self._read_source(manifest_list_path, lambda: self._read_manifests_for_snapshot(manifest_list_path, snap_id))
+            df = self._read_source(snapshot, lambda: self._read_manifests_for_snapshot(manifest_list_path, snap_id))
             if df is None:
                 continue
 

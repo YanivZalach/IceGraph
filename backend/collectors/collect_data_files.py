@@ -38,19 +38,17 @@ class CollectDataFiles(Collector):
     ):
         super().__init__(full_table_name)
         self._manifests = manifests
-        self._errors: Dict[str, str] = {}
 
         self._data_files: List[DataFileRecord] = []
 
     @timed
     def collect(self) -> FilesCollection:
         extractor = DataFilesExtractor(self._table_name, self._manifests)
-        data_files_collection = self._collect_rows_isolating_failures(extractor)
-        self._errors = data_files_collection.errors
+        data_files_rows = self._collect_rows_isolating_failures(extractor)
 
-        self._data_files = [self._process_data_file_row(data_file_row) for data_file_row in data_files_collection.rows]
+        self._data_files = [self._process_data_file_row(data_file_row) for data_file_row in data_files_rows]
 
-        return FilesCollection(files=self._data_files, errors=self._errors)
+        return FilesCollection(files=self._data_files)
 
     def _process_data_file_row(self, data_file_row) -> DataFileRecord:
         data_file_dict = data_file_row.asDict(recursive=True)

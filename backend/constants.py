@@ -9,7 +9,7 @@ MAX_SNAPSHOTS_TO_COMPUTE = 50
 
 COMPUTE_CLEANUP_TIME_SECONDS = 12
 
-MAX_DATA_FILES_TO_COLLECT = 5_000
+MAX_DATA_FILES_TO_COLLECT = 5
 
 TABLE_LIST_CACHE_TTL_SECONDS = 60
 
@@ -52,4 +52,8 @@ Timestamp: {added_snapshot_timestamp} UTC
 The cutoff is applied at the snapshot boundary — all data files belonging to cut-off snapshots are excluded,
 unless a newer visible snapshot also references them, in which case they are included.
 Every data file you see is referenced by at least one snapshot that is newer than the cut-off snapshot.
+""")
+
+DATA_FILES_CUTOFF_MANIFEST_WARNING = inspect.cleandoc("""
+The data files of this manifest were not loaded because the limit of {max_data_files_to_collect} data files was reached.
 """)
