@@ -7,7 +7,6 @@ from pyspark.sql.types import LongType, StringType, StructField, StructType
 
 from collectors.collect_manifests import ManifestRecord
 from constants import MAX_DATA_FILES_TO_COLLECT
-from extractors.constants import MANIFEST_SOURCE_ERROR_PREFIX
 from extractors.extractor import Extractor
 
 max_data_files_to_collect = int(os.getenv("MAX_DATA_FILES_TO_COLLECT", MAX_DATA_FILES_TO_COLLECT))
@@ -41,8 +40,6 @@ DATA_FILE_RECORD_SCHEMA = StructType(
 
 
 class DataFilesExtractor(Extractor):
-    SOURCE_ERROR_PREFIX = MANIFEST_SOURCE_ERROR_PREFIX
-
     def __init__(self, table_name: str, manifest_entries: List[ManifestRecord]):
         super().__init__(table_name)
         self._manifest_entries = manifest_entries

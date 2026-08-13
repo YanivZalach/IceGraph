@@ -3,7 +3,6 @@ from pyspark.sql import functions as F
 from pyspark.sql.types import LongType, StringType, StructField, StructType
 
 from collectors.collect_snapshots import SnapshotRecord
-from extractors.constants import MANIFEST_LIST_SOURCE_ERROR_PREFIX
 from extractors.extractor import Extractor
 
 SNAPSHOT_TO_TIMESTAMP_SCHEMA = StructType(
@@ -23,8 +22,6 @@ MANIFEST_BASE_SCHEMA = StructType(
 
 
 class ManifestsExtractor(Extractor):
-    SOURCE_ERROR_PREFIX = MANIFEST_LIST_SOURCE_ERROR_PREFIX
-
     def __init__(
         self,
         table_name: str,

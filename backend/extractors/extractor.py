@@ -5,13 +5,10 @@ import pyspark
 
 from base_classes.base_file import BaseFile
 from base_classes.spark_table_action import SparkTableAction
-from extractors.constants import DEFAULT_SOURCE_ERROR_PREFIX
 from icegraph_logger import logger
 
 
 class Extractor(SparkTableAction, ABC):
-    SOURCE_ERROR_PREFIX = DEFAULT_SOURCE_ERROR_PREFIX
-
     @abstractmethod
     def extract_dataframe(self) -> pyspark.sql.DataFrame:
         pass
@@ -25,6 +22,6 @@ class Extractor(SparkTableAction, ABC):
 
         except Exception as e:
             logger.warning(f"[{self._table_name}] Skipping unreadable file {source_file.file_path}", exc_info=True)
-            source_file.error = f"{self.SOURCE_ERROR_PREFIX}: {e}"
+            source_file.error = str(e)
 
             return None
