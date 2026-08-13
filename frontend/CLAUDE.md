@@ -9,7 +9,7 @@ All frontend code conventions live in the project philosophy and are mandatory:
 ## Hard rules most often violated
 
 - No `any`, ever.
-- No `useEffect` without justifying it to me first.
+- No `useEffect` without justifying it to the user first.
 - No `memo` / `useMemo` / `useCallback` — React Compiler handles it.
 - `useSuspenseQuery` by default; plain `useQuery` needs justification.
 - No what-comments; why-comments must carry a URL/issue number.
