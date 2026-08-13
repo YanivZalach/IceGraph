@@ -251,7 +251,9 @@ export default function TableLayout() {
         level: 0,
       };
       const [r, g, b] = details.error ? ERROR_NODE_RGB : style.rgb;
-      const colorShift = colorShiftByFilePath.get(details.file_path) ?? 1;
+      const colorShift = details.error
+        ? 1
+        : (colorShiftByFilePath.get(details.file_path) ?? 1);
 
       return {
         id: details.file_path,

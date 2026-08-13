@@ -448,7 +448,9 @@ const SECTIONS = [
             </li>
             <li>
               <strong className="text-white">Data file</strong> — the actual
-              Parquet, ORC, or Avro file containing your rows
+              Parquet, ORC, or Avro file containing your rows. IceGraph is not
+              reading the data file: all of the data shown comes from the manifest
+              entries that point at it
             </li>
             <li>
               <strong className="text-red-400">Unreadable file</strong> — a file
