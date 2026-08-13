@@ -1,4 +1,3 @@
-from google.protobuf.internal import message_listener
 from base_classes.utils import column_to_string_utc
 import json
 from dataclasses import dataclass
