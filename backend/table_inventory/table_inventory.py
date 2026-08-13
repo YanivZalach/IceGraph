@@ -70,6 +70,7 @@ class TableInventory(SparkTableAction):
         self._warn_if_data_cutoff_happened()
 
         self._set_current_table_specs()
+        self._collect_file_errors()
 
         return TableInventoryResult(
             errors=self._errors,
@@ -221,6 +222,11 @@ class TableInventory(SparkTableAction):
                 added_snapshot_id=max_manifest_added_snapshot_id,
                 added_snapshot_timestamp=max_manifest_added_snapshot_timestamp,
             )
+
+    def _collect_file_errors(self):
+        file_groups = (self._metadata_files, self._snapshots, self._manifests, self._data_files)
+        for files in file_groups:
+            self._errors.update({file.file_path: file.error for file in files if file.error})
 
     def _set_current_table_specs(self):
         self._current_table_specs = {"table-name": self._table_name}

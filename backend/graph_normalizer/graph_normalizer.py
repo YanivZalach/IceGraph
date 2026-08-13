@@ -24,6 +24,3 @@ class GraphNormalizer:
                 "warnings": self._table_warnings,
             }
         )
-
-    def _file_issues(self, get_issue: Callable[[BaseFile], Optional[str]]) -> Dict[str, str]:
-        return {file.file_path: get_issue(file) for file in self._files if get_issue(file)}
