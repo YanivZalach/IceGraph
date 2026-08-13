@@ -9,7 +9,12 @@ from collectors.collect_data_files import CollectDataFiles, DataFileRecord
 from collectors.collect_manifests import CollectManifests, ManifestRecord
 from collectors.collect_metadata import CollectMetadata, MetadataFileRecord
 from collectors.collect_snapshots import CollectSnapshots, SnapshotRecord
-from constants import DATA_FILES_CUTOFF_MANIFEST_WARNING, DATA_FILES_CUTOFF_WARNING, FileType, MAX_DATA_FILES_TO_COLLECT
+from constants import (
+    DATA_FILES_CUTOFF_MANIFEST_WARNING,
+    DATA_FILES_CUTOFF_WARNING,
+    FileType,
+    MAX_DATA_FILES_TO_COLLECT,
+)
 from icegraph_logger import logger
 from search_cutoff.find_search_cutoff import SearchCutoff, find_search_cutoff
 from table_inventory.utils import format_schemas_to_full_dict, get_json_metadata_from_path, parse_json_string_fields
@@ -202,6 +207,9 @@ class TableInventory(SparkTableAction):
         for manifest in self._manifests:
             if len(manifest.child_files) == 0:
                 manifest.warning = DATA_FILES_CUTOFF_MANIFEST_WARNING.format(max_data_files_to_collect=max_data_files_to_collect)
+
+                if manifest.added_snapshot_timestamp is None:
+                    continue
 
                 if max_manifest_added_snapshot_timestamp is None or max_manifest_added_snapshot_timestamp < manifest.added_snapshot_timestamp:
                     max_manifest_added_snapshot_timestamp = manifest.added_snapshot_timestamp
