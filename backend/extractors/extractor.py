@@ -15,13 +15,13 @@ class Extractor(SparkTableAction, ABC):
 
     def _read_source(self, source_file: BaseFile, read_source: Callable[[], pyspark.sql.DataFrame]) -> Optional[pyspark.sql.DataFrame]:
         try:
-            source_dataframe = read_source()
-            source_dataframe.count()
+            data = read_source()
+            data.schema  # Trigger the file metadata read
 
-            return source_dataframe
+            return data
 
         except Exception as e:
-            logger.warning(f"[{self._table_name}] Skipping unreadable file {source_file.file_path}", exc_info=True)
+            logger.error(f"[{self._table_name}] Failed to read file {source_file.file_path}", exc_info=True)
             source_file.error = str(e)
 
             return None
