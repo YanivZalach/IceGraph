@@ -134,7 +134,19 @@ npm run dev
 
 Go to `http://localhost:3000` and explore your tables.
 
-### 4. icegraph-client
+### 4. Before Every Commit
+
+CI fails the build on any violation, so run all three from the `frontend` directory before you commit:
+
+```bash
+npm run format
+npm run lint
+npm run typecheck
+```
+
+Each one catches a different class of problem, so all three are needed.
+
+### 5. icegraph-client
 
 To work on the CLI/client itself:
 
