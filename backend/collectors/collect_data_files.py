@@ -43,8 +43,7 @@ class CollectDataFiles(Collector):
 
     @timed
     def collect(self) -> FilesCollection:
-        extractor = DataFilesExtractor(self._table_name, self._manifests)
-        data_files_rows = self._collect_rows_isolating_failures(extractor)
+        data_files_rows = DataFilesExtractor(self._table_name, self._manifests).extract_dataframe().collect()
 
         self._data_files = [self._process_data_file_row(data_file_row) for data_file_row in data_files_rows]
 

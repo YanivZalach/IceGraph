@@ -42,8 +42,7 @@ class CollectManifests(Collector):
 
     @timed
     def collect(self) -> FilesCollection:
-        extractor = ManifestsExtractor(self._table_name, self._snapshots, self._manifests_to_ignore_df)
-        manifests_rows = self._collect_rows_isolating_failures(extractor)
+        manifests_rows = ManifestsExtractor(self._table_name, self._snapshots, self._manifests_to_ignore_df).extract_dataframe().collect()
 
         self._manifests = [self._process_manifest_row(manifest_row) for manifest_row in manifests_rows]
 
