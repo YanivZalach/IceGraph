@@ -453,7 +453,7 @@ const SECTIONS = [
               entries that point at it
             </li>
             <li>
-              <strong className="text-red-400">Unreadable file</strong> — a file
+              <strong className="text-white">Unreadable file</strong> — a file
               whose metadata could not be obtained is drawn in red and shows the
               reason in its details panel. The rest of the graph still loads
             </li>
