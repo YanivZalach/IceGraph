@@ -2,6 +2,7 @@ from google.protobuf.internal import message_listener
 from base_classes.utils import column_to_string_utc
 import json
 from dataclasses import dataclass
+from functools import cached_property
 from typing import Any, Dict, List, Optional
 
 import pyspark.sql
@@ -76,7 +77,7 @@ class CollectMetadata(Collector):
 
         return FilesCollection(files=self._metadata_files, errors=self._errors)
 
-    @property
+    @cached_property
     def _ordered_metadata_paths(self) -> list[str]:
         return list(self._ordered_metadata_to_timestamp.keys())
 
