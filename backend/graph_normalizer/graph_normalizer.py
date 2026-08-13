@@ -20,8 +20,8 @@ class GraphNormalizer:
             {
                 "nodes": nodes,
                 "metadata": self._current_table_metadata,
-                "errors": self._file_issues(lambda file: file.error) | self._table_errors,
-                "warnings": self._file_issues(lambda file: file.warning) | self._table_warnings,
+                "errors": self._table_errors,
+                "warnings": self._table_warnings,
             }
         )
 
