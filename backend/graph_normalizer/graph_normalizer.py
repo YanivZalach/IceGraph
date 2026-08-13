@@ -1,6 +1,3 @@
-from typing import Callable, Dict, Optional
-
-from base_classes.base_file import BaseFile
 from table_inventory.table_inventory import TableInventoryResult
 from graph_normalizer.utils import to_json_safe
 
