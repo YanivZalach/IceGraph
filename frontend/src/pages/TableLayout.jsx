@@ -1,7 +1,8 @@
 import JSONbig from "json-bigint";
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { Outlet, useNavigate, useSearch } from "@tanstack/react-router";
 import { TableGraphDataContext } from "../features/table/tableGraphData";
+import PageLoader from "../components/PageLoader";
 import { formatLocaleDateTime, parseUtcDate } from "../utils/dateUtils";
 import { IS_MOCK, MOCK_TABLE } from "../appConstants";
 import {
@@ -482,7 +483,12 @@ export default function TableLayout() {
   return (
     <div className="flex-1 flex overflow-hidden relative">
       <TableGraphDataContext.Provider value={graphData}>
-        <Outlet />
+        {/* Boundary below TableLayout: a suspending tab chunk must not
+            reach the root Suspense, which would unmount TableLayout and
+            wipe the graph selection (sessionStorage cleared on mount). */}
+        <Suspense fallback={<PageLoader />}>
+          <Outlet />
+        </Suspense>
       </TableGraphDataContext.Provider>
 
       {detailsOpen && metadata && (
