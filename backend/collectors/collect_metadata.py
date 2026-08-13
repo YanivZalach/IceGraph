@@ -58,9 +58,9 @@ class CollectMetadata(Collector):
                 snap_id_to_path = self._get_snap_id_to_path()
 
                 rows = metadata_files_df.orderBy(F.desc("metadata_timestamp")).collect()
-                self._metadata_files = [
+                self._metadata_files.extend(
                     self._parse_metadata_row(index, row.asDict(recursive=True), rows, snap_id_to_path) for index, row in enumerate(rows)
-                ]
+                )
 
         except Exception as e:
             logger.error(f"[{self._table_name}] metadata collection failed", exc_info=True)
@@ -91,7 +91,7 @@ class CollectMetadata(Collector):
                     f"[{self._table_name}] Metadata file read error for {file}",
                     exc_info=True,
                 )
-                self._errors[file] = f"Metadata file read error: {e}"
+                self._metadata_files.append(BaseFile(type=FileType.METADATA, file_path=file, child_files=[], error=str(e)))
 
         return metadata_files_df
 
