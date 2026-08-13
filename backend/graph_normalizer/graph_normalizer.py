@@ -11,6 +11,8 @@ class GraphNormalizer:
         self._current_table_metadata = table_data.current_table_specs
 
     def normalize(self):
+        self._attach_errors_to_files()
+
         nodes = [file.to_dict() for file in self._files]
 
         return to_json_safe(
@@ -21,3 +23,7 @@ class GraphNormalizer:
                 "warnings": self._warnings,
             }
         )
+
+    def _attach_errors_to_files(self):
+        for file in self._files:
+            file.error = self._errors.get(file.file_path)

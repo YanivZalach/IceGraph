@@ -450,6 +450,11 @@ const SECTIONS = [
               <strong className="text-white">Data file</strong> — the actual
               Parquet, ORC, or Avro file containing your rows
             </li>
+            <li>
+              <strong className="text-red-400">Unreadable file</strong> — a file
+              that could not be read is drawn in red and shows the reason in its
+              details panel. The rest of the graph still loads
+            </li>
           </ul>
         </div>
         <div className="space-y-2">

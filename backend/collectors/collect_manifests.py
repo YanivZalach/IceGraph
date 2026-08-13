@@ -43,11 +43,11 @@ class CollectManifests(Collector):
 
     @timed
     def collect(self) -> FilesCollection:
-        manifest_extraction_result = ManifestsExtractor(self._table_name, self._snapshots, self._manifests_to_ignore_df).extract_dataframe()
-        self._errors = manifest_extraction_result.errors
+        extractor = ManifestsExtractor(self._table_name, self._snapshots, self._manifests_to_ignore_df)
+        manifests_collection = self._collect_rows_isolating_failures(extractor)
+        self._errors = manifests_collection.errors
 
-        manifests_rows = manifest_extraction_result.dataframe.collect()
-        self._manifests = [self._process_manifest_row(manifest_row) for manifest_row in manifests_rows]
+        self._manifests = [self._process_manifest_row(manifest_row) for manifest_row in manifests_collection.rows]
 
         return FilesCollection(files=self._manifests, errors=self._errors)
 

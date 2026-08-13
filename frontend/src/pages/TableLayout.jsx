@@ -19,6 +19,7 @@ import { useTableSpecs } from "../context/TableSpecsContext";
 import {
   BRANCH_CONNECTION_COLOR,
   DELETED_DATA_FILE_CONNECTION_COLOR,
+  ERROR_NODE_RGB,
   FileType,
   MAIN_BRANCH_NAME,
   NODE_STYLE_MAP,
@@ -249,7 +250,7 @@ export default function TableLayout() {
         rgb: [100, 100, 100],
         level: 0,
       };
-      const [r, g, b] = style.rgb;
+      const [r, g, b] = details.error ? ERROR_NODE_RGB : style.rgb;
       const colorShift = colorShiftByFilePath.get(details.file_path) ?? 1;
 
       return {

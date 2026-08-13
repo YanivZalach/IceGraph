@@ -6,6 +6,7 @@ from pyspark.sql.types import LongType, StringType, StructField, StructType
 
 from collectors.collect_manifests import ManifestRecord
 from constants import MAX_DATA_FILES_TO_COLLECT
+from extractors.constants import MANIFEST_SOURCE_ERROR_PREFIX
 from extractors.extractor import ExtractionResult, Extractor
 
 max_data_files_to_collect = int(os.getenv("MAX_DATA_FILES_TO_COLLECT", MAX_DATA_FILES_TO_COLLECT))
@@ -39,10 +40,11 @@ DATA_FILE_RECORD_SCHEMA = StructType(
 
 
 class DataFilesExtractor(Extractor):
+    SOURCE_ERROR_PREFIX = MANIFEST_SOURCE_ERROR_PREFIX
+
     def __init__(self, table_name: str, manifest_entries: List[ManifestRecord]):
         super().__init__(table_name)
         self._manifest_entries = manifest_entries
-        self._errors = {}
 
     def extract_dataframe(self) -> ExtractionResult:
         data_files_df = self._collect_data_files_from_manifests(self._manifest_entries)
@@ -140,16 +142,14 @@ class DataFilesExtractor(Extractor):
     def _collect_data_files_from_manifests(self, manifest_rows):
         avro_df = None
         for manifest_entry in manifest_rows:
-            try:
-                df = self._collect_data_files_from_manifest(manifest_entry)
+            df = self._read_source(manifest_entry.file_path, lambda: self._collect_data_files_from_manifest(manifest_entry))
+            if df is None:
+                continue
 
-                if avro_df is None:
-                    avro_df = df
-                else:
-                    avro_df = avro_df.unionByName(df, allowMissingColumns=True)
-
-            except Exception as e:
-                self._errors[manifest_entry.file_path] = f"Avro read error: {e}"
+            if avro_df is None:
+                avro_df = df
+            else:
+                avro_df = avro_df.unionByName(df, allowMissingColumns=True)
 
         if avro_df is None:
             return self._spark.createDataFrame([], DATA_FILE_RECORD_SCHEMA)
