@@ -1,4 +1,4 @@
-import { UI_FILTER_INPUT_CLASS, UI_HELPER_TEXT_CLASS } from '../uiTypography'
+import { UI_FILTER_INPUT_CLASS, UI_HELPER_TEXT_CLASS } from "../uiTypography";
 
 export default function CatalogTableList({
   tables,
@@ -6,17 +6,22 @@ export default function CatalogTableList({
   onSelect,
   filter,
   onFilterChange,
-  listClassName = 'max-h-48',
+  listClassName = "max-h-48",
   includeNoneIcebergCatalogs = false,
 }) {
-  const filteredTables = tables?.filter(name =>
-    name.toLowerCase().includes(filter.trim().toLowerCase()),
-  ) ?? []
+  const filteredTables =
+    tables?.filter((name) =>
+      name.toLowerCase().includes(filter.trim().toLowerCase()),
+    ) ?? [];
 
-  if (!tables) return null
+  if (!tables) return null;
 
   if (tables.length === 0) {
-    return <p className={`mt-2 ${UI_HELPER_TEXT_CLASS}`}>No tables found in the catalog.</p>
+    return (
+      <p className={`mt-2 ${UI_HELPER_TEXT_CLASS}`}>
+        No tables found in the catalog.
+      </p>
+    );
   }
 
   return (
@@ -25,7 +30,7 @@ export default function CatalogTableList({
         <input
           type="text"
           value={filter}
-          onChange={e => onFilterChange(e.target.value)}
+          onChange={(e) => onFilterChange(e.target.value)}
           placeholder="Filter tables…"
           className={UI_FILTER_INPUT_CLASS}
         />
@@ -36,18 +41,21 @@ export default function CatalogTableList({
         </p>
       )}
       {filteredTables.length === 0 ? (
-        <p className={`px-3 py-2 ${UI_HELPER_TEXT_CLASS}`}>No tables match your filter.</p>
+        <p className={`px-3 py-2 ${UI_HELPER_TEXT_CLASS}`}>
+          No tables match your filter.
+        </p>
       ) : (
         <ul className={`overflow-y-auto divide-y divide-edge ${listClassName}`}>
-          {filteredTables.map(name => (
+          {filteredTables.map((name) => (
             <li key={name}>
               <button
                 type="button"
                 onClick={() => onSelect(name)}
-                className={`w-full text-left px-3 py-2 text-sm font-mono transition ${selectedName === name
-                    ? 'bg-accent-muted text-ink'
-                    : 'text-slate-300 hover:bg-surface-hover hover:text-ink'
-                  }`}
+                className={`w-full text-left px-3 py-2 text-sm font-mono transition ${
+                  selectedName === name
+                    ? "bg-accent-muted text-ink"
+                    : "text-slate-300 hover:bg-surface-hover hover:text-ink"
+                }`}
               >
                 {name}
               </button>
@@ -56,5 +64,5 @@ export default function CatalogTableList({
         </ul>
       )}
     </div>
-  )
+  );
 }

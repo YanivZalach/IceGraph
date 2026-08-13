@@ -1,151 +1,198 @@
-import JSONbig from 'json-bigint'
-import { useEffect, useRef, useState } from 'react'
-import { Outlet, useNavigate, useSearchParams } from 'react-router-dom'
-import { formatLocaleDateTime, parseUtcDate } from '../utils/dateUtils'
-import { IS_MOCK, MOCK_HOME_ROUTE } from '../appConstants'
-import { UI_BODY_MUTED_CLASS, UI_DIALOG_TITLE_CLASS, UI_MONO_MUTED_CLASS } from '../uiTypography'
+import JSONbig from "json-bigint";
+import { useEffect, useRef, useState } from "react";
+import { Outlet, useNavigate, useSearchParams } from "react-router-dom";
+import { formatLocaleDateTime, parseUtcDate } from "../utils/dateUtils";
+import { IS_MOCK, MOCK_HOME_ROUTE } from "../appConstants";
+import {
+  UI_BODY_MUTED_CLASS,
+  UI_DIALOG_TITLE_CLASS,
+  UI_MONO_MUTED_CLASS,
+} from "../uiTypography";
 
-import MetadataStructured from '../components/MetadataStructured'
-import PartitionSpecList, { PartitionDiffView } from '../components/PartitionSpecList'
-import SchemaFieldList, { SchemaDiffView } from '../components/SchemaFieldList'
-import SortOrderList, { SortDiffView } from '../components/SortOrderList'
-import { useTableSpecs } from '../context/TableSpecsContext'
+import MetadataStructured from "../components/MetadataStructured";
+import PartitionSpecList, {
+  PartitionDiffView,
+} from "../components/PartitionSpecList";
+import SchemaFieldList, { SchemaDiffView } from "../components/SchemaFieldList";
+import SortOrderList, { SortDiffView } from "../components/SortOrderList";
+import { useTableSpecs } from "../context/TableSpecsContext";
 import {
   BRANCH_CONNECTION_COLOR,
   DELETED_DATA_FILE_CONNECTION_COLOR,
   FileType,
   MAIN_BRANCH_NAME,
   NODE_STYLE_MAP,
-} from '../graphConstants'
-import { getCachedData } from '../utils/cacheUtils'
-import { diffFieldLists } from '../utils/diffFieldLists'
+} from "../graphConstants";
+import { getCachedData } from "../utils/cacheUtils";
+import { diffFieldLists } from "../utils/diffFieldLists";
 
 const DETAIL_TYPE_CONFIG = {
   schema: {
-    listKey: 'schemas',
-    idKey: 'schema-id',
-    fieldIdKey: f => f['field-id'] ?? f.id,
-    noPrevLabel: 'No previous schema',
+    listKey: "schemas",
+    idKey: "schema-id",
+    fieldIdKey: (f) => f["field-id"] ?? f.id,
+    noPrevLabel: "No previous schema",
   },
   spec: {
-    listKey: 'partition-specs',
-    idKey: 'spec-id',
-    fieldIdKey: f => f['field-id'],
-    noPrevLabel: 'No previous partition spec',
+    listKey: "partition-specs",
+    idKey: "spec-id",
+    fieldIdKey: (f) => f["field-id"],
+    noPrevLabel: "No previous partition spec",
   },
   order: {
-    listKey: 'sort-orders',
-    idKey: 'order-id',
-    fieldIdKey: f => f['source-id'],
-    noPrevLabel: 'No previous sort order',
+    listKey: "sort-orders",
+    idKey: "order-id",
+    fieldIdKey: (f) => f["source-id"],
+    noPrevLabel: "No previous sort order",
   },
-}
+};
 
 const localizeNodeTimestamps = (details) => {
-  if (!details) return {}
+  if (!details) return {};
 
-  const result = { ...details }
+  const result = { ...details };
 
   for (const key of Object.keys(result)) {
-    if (!key.includes('timestamp')) continue
+    if (!key.includes("timestamp")) continue;
 
     try {
-      const dateObj = parseUtcDate(result[key])
+      const dateObj = parseUtcDate(result[key]);
       if (dateObj) {
-        result[key] = formatLocaleDateTime(dateObj)
+        result[key] = formatLocaleDateTime(dateObj);
       }
     } catch (e) {
-      console.error('Failed to parse timestamp key:', key, 'value:', result[key], 'error:', e)
+      console.error(
+        "Failed to parse timestamp key:",
+        key,
+        "value:",
+        result[key],
+        "error:",
+        e,
+      );
     }
   }
 
-  return result
-}
+  return result;
+};
 
-const METADATA_COLOR_SHIFT_SPREAD = 1.5
+const METADATA_COLOR_SHIFT_SPREAD = 1.5;
 
-const fileNameFromPath = (filePath) => String(filePath ?? '').split('/').pop()
+const fileNameFromPath = (filePath) =>
+  String(filePath ?? "")
+    .split("/")
+    .pop();
 
 const buildMetadataColorShifts = (nodeDetails) => {
   const metadataDetails = nodeDetails
-    .filter(d => d.type === FileType.MAIN_METADATA || d.type === FileType.METADATA)
-    .map(d => ({ filePath: d.file_path, time: parseUtcDate(d.timestamp)?.getTime() ?? 0 }))
-    .sort((a, b) => b.time - a.time)
+    .filter(
+      (d) => d.type === FileType.MAIN_METADATA || d.type === FileType.METADATA,
+    )
+    .map((d) => ({
+      filePath: d.file_path,
+      time: parseUtcDate(d.timestamp)?.getTime() ?? 0,
+    }))
+    .sort((a, b) => b.time - a.time);
 
   return new Map(
-    metadataDetails.map((d, index) => [d.filePath, 1 - index / (METADATA_COLOR_SHIFT_SPREAD * metadataDetails.length)])
-  )
-}
+    metadataDetails.map((d, index) => [
+      d.filePath,
+      1 - index / (METADATA_COLOR_SHIFT_SPREAD * metadataDetails.length),
+    ]),
+  );
+};
 
 const buildEdgesFromNodes = (nodes) => {
-  const nodeIds = new Set(nodes.map(n => n.id))
-  const snapshotPathById = {}
-  nodes.forEach(n => {
+  const nodeIds = new Set(nodes.map((n) => n.id));
+  const snapshotPathById = {};
+  nodes.forEach((n) => {
     if (n.type === FileType.SNAPSHOT && n.details?.snapshot_id != null) {
-      snapshotPathById[String(n.details.snapshot_id)] = n.id
+      snapshotPathById[String(n.details.snapshot_id)] = n.id;
     }
-  })
+  });
 
-  const edges = []
-  nodes.forEach(node => {
-    const details = node.details || {}
+  const edges = [];
+  nodes.forEach((node) => {
+    const details = node.details || {};
 
-    if (node.type === FileType.MAIN_METADATA || node.type === FileType.METADATA) {
-      const mainPath = details.snapshot_id != null ? snapshotPathById[String(details.snapshot_id)] : null
+    if (
+      node.type === FileType.MAIN_METADATA ||
+      node.type === FileType.METADATA
+    ) {
+      const mainPath =
+        details.snapshot_id != null
+          ? snapshotPathById[String(details.snapshot_id)]
+          : null;
       if (mainPath && nodeIds.has(mainPath)) {
-        edges.push({ from: node.id, to: mainPath })
+        edges.push({ from: node.id, to: mainPath });
       }
 
-      const branchNamesBySnapId = {}
+      const branchNamesBySnapId = {};
       Object.entries(details.refs || {}).forEach(([name, attrs]) => {
-        if (attrs?.type === 'branch' && name !== MAIN_BRANCH_NAME) {
-          const snapId = String(attrs['snapshot-id'])
-          if (!branchNamesBySnapId[snapId]) branchNamesBySnapId[snapId] = []
-          branchNamesBySnapId[snapId].push(name)
+        if (attrs?.type === "branch" && name !== MAIN_BRANCH_NAME) {
+          const snapId = String(attrs["snapshot-id"]);
+          if (!branchNamesBySnapId[snapId]) branchNamesBySnapId[snapId] = [];
+          branchNamesBySnapId[snapId].push(name);
         }
-      })
+      });
       Object.entries(branchNamesBySnapId).forEach(([snapId, names]) => {
-        const branchPath = snapshotPathById[snapId]
+        const branchPath = snapshotPathById[snapId];
         if (branchPath && nodeIds.has(branchPath)) {
-          edges.push({ from: node.id, to: branchPath, branch_names: names.join(', ') })
+          edges.push({
+            from: node.id,
+            to: branchPath,
+            branch_names: names.join(", "),
+          });
         }
-      })
-      return
+      });
+      return;
     }
 
-    const deleted = new Set(details.deleted_child_files || [])
-    const childFiles = details.child_files || []
-    childFiles.forEach(childPath => {
-      if (!nodeIds.has(childPath)) return
-      const edge = { from: node.id, to: childPath }
-      if (node.type === FileType.MANIFEST && deleted.has(childPath)) edge.is_deleted = true
-      edges.push(edge)
-    })
-  })
-  return edges
-}
+    const deleted = new Set(details.deleted_child_files || []);
+    const childFiles = details.child_files || [];
+    childFiles.forEach((childPath) => {
+      if (!nodeIds.has(childPath)) return;
+      const edge = { from: node.id, to: childPath };
+      if (node.type === FileType.MANIFEST && deleted.has(childPath))
+        edge.is_deleted = true;
+      edges.push(edge);
+    });
+  });
+  return edges;
+};
 
 export default function TableLayout() {
-  const [searchParams, setSearchParams] = useSearchParams()
-  const navigate = useNavigate()
-  const { detailsOpen, setDetailsOpen, selectionDetail, setSelectionDetail, setRawData, setErrors, setWarnings, issuesOpen, setIssuesOpen, errors, warnings } = useTableSpecs()
-  const detailPanelRef = useRef(null)
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const {
+    detailsOpen,
+    setDetailsOpen,
+    selectionDetail,
+    setSelectionDetail,
+    setRawData,
+    setErrors,
+    setWarnings,
+    issuesOpen,
+    setIssuesOpen,
+    errors,
+    warnings,
+  } = useTableSpecs();
+  const detailPanelRef = useRef(null);
 
   useEffect(() => {
-    sessionStorage.removeItem('last_graph_selection');
+    sessionStorage.removeItem("last_graph_selection");
   }, []);
 
   useEffect(() => {
     const handleKey = (e) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         setDetailsOpen(false);
         setSelectionDetail(null);
         setIssuesOpen(false);
       }
-    }
-    window.addEventListener('keydown', handleKey)
-    return () => window.removeEventListener('keydown', handleKey)
-  }, [setDetailsOpen, setSelectionDetail, setIssuesOpen])
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [setDetailsOpen, setSelectionDetail, setIssuesOpen]);
 
   useEffect(() => {
     const hasErrors = errors && Object.keys(errors).length > 0;
@@ -155,197 +202,203 @@ export default function TableLayout() {
     }
   }, [errors, warnings, setIssuesOpen]);
 
-  const tableName = searchParams.get('table') || ''
-  const startSnapshot = searchParams.get('start_snapshot_id') || ''
-  const endSnapshot = searchParams.get('end_snapshot_id') || ''
-  const isDup = searchParams.get('dup') === '1'
+  const tableName = searchParams.get("table") || "";
+  const startSnapshot = searchParams.get("start_snapshot_id") || "";
+  const endSnapshot = searchParams.get("end_snapshot_id") || "";
+  const isDup = searchParams.get("dup") === "1";
   const cacheKey = isDup
     ? window.location.href
-    : `graphData_${tableName}_${startSnapshot}_${endSnapshot}`
+    : `graphData_${tableName}_${startSnapshot}_${endSnapshot}`;
 
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [graphData, setGraphData] = useState(null)
-  const [jobId, setJobId] = useState(null)
-  const [jobToken, setJobToken] = useState(null)
-  const [showDiff, setShowDiff] = useState(false)
-  const [specJsonCopied, setSpecJsonCopied] = useState(false)
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [graphData, setGraphData] = useState(null);
+  const [jobId, setJobId] = useState(null);
+  const [jobToken, setJobToken] = useState(null);
+  const [showDiff, setShowDiff] = useState(false);
+  const [specJsonCopied, setSpecJsonCopied] = useState(false);
 
-  const pollIntervalRef = useRef(null)
+  const pollIntervalRef = useRef(null);
 
   const clearPolling = () => {
     if (pollIntervalRef.current) {
-      clearInterval(pollIntervalRef.current)
-      pollIntervalRef.current = null
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
     }
-  }
-
+  };
 
   useEffect(() => {
-    setShowDiff(false)
-  }, [selectionDetail])
+    setShowDiff(false);
+  }, [selectionDetail]);
 
   useEffect(() => {
     if (selectionDetail && detailPanelRef.current) {
-      detailPanelRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      detailPanelRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
     }
-  }, [selectionDetail])
+  }, [selectionDetail]);
 
   const buildGraphData = (data) => {
-    const nodeDetails = data.nodes || []
-    const colorShiftByFilePath = buildMetadataColorShifts(nodeDetails)
+    const nodeDetails = data.nodes || [];
+    const colorShiftByFilePath = buildMetadataColorShifts(nodeDetails);
 
     const styledNodes = nodeDetails.map((details) => {
-      const style = NODE_STYLE_MAP[details.type] || { rgb: [100, 100, 100], level: 0 }
-      const [r, g, b] = style.rgb
-      const colorShift = colorShiftByFilePath.get(details.file_path) ?? 1
+      const style = NODE_STYLE_MAP[details.type] || {
+        rgb: [100, 100, 100],
+        level: 0,
+      };
+      const [r, g, b] = style.rgb;
+      const colorShift = colorShiftByFilePath.get(details.file_path) ?? 1;
 
       return {
         id: details.file_path,
         label: fileNameFromPath(details.file_path),
         type: details.type,
         details: localizeNodeTimestamps(details),
-        shape: 'box',
+        shape: "box",
         color: `rgba(${r},${g},${b},${colorShift})`,
         level: style.level,
-      }
-    })
+      };
+    });
     const styledEdges = buildEdgesFromNodes(styledNodes).map((edge) => {
-      const newEdge = { ...edge }
+      const newEdge = { ...edge };
       if (edge.is_deleted) {
-        newEdge.color = DELETED_DATA_FILE_CONNECTION_COLOR
-        newEdge.title = 'deleted'
+        newEdge.color = DELETED_DATA_FILE_CONNECTION_COLOR;
+        newEdge.title = "deleted";
       } else if (edge.branch_names) {
-        newEdge.dashes = [15, 20, 5, 20]
-        newEdge.color = BRANCH_CONNECTION_COLOR
-        newEdge.title = edge.branch_names
+        newEdge.dashes = [15, 20, 5, 20];
+        newEdge.color = BRANCH_CONNECTION_COLOR;
+        newEdge.title = edge.branch_names;
       }
-      return newEdge
-    })
-    return { nodes: styledNodes, edges: styledEdges, metadata: data.metadata, errors: data.errors || {} }
-  }
+      return newEdge;
+    });
+    return {
+      nodes: styledNodes,
+      edges: styledEdges,
+      metadata: data.metadata,
+      errors: data.errors || {},
+    };
+  };
 
   const submitGraphJob = async (table, start, end) => {
     try {
-      const body = new URLSearchParams()
-      body.append('table_name', table)
-      if (start) body.append('start_snapshot_id', start)
-      if (end) body.append('end_snapshot_id', end)
+      const body = new URLSearchParams();
+      body.append("table_name", table);
+      if (start) body.append("start_snapshot_id", start);
+      if (end) body.append("end_snapshot_id", end);
 
-      const res = await fetch('/api/v1/graph-data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      const res = await fetch("/api/v1/graph-data", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: body.toString(),
-      })
+      });
 
       if (!res.ok) {
-        throw new Error('Failed to submit job')
+        throw new Error("Failed to submit job");
       }
 
-      const result = await res.json()
-      setJobToken(result['X-IceGraph-Job-Token'])
-      setJobId(result.key)
-
+      const result = await res.json();
+      setJobToken(result["X-IceGraph-Job-Token"]);
+      setJobId(result.key);
     } catch (err) {
-      setError(err.message || 'Failed to submit job')
-      setLoading(false)
+      setError(err.message || "Failed to submit job");
+      setLoading(false);
     }
-  }
+  };
 
   const pollJobStatus = async (jid, token) => {
     try {
       const res = await fetch(`/api/v1/graph-data/${jid}`, {
-        headers: { 'X-IceGraph-Job-Token': token },
-      })
+        headers: { "X-IceGraph-Job-Token": token },
+      });
       if (res.status === 200) {
-        const text = await res.text()
-        setRawData(text)
-        const data = JSONbig({ storeAsString: true }).parse(text)
-        console.log(JSONbig({ storeAsString: true }).parse(text))
+        const text = await res.text();
+        setRawData(text);
+        const data = JSONbig({ storeAsString: true }).parse(text);
+        console.log(JSONbig({ storeAsString: true }).parse(text));
 
-        setGraphData(buildGraphData(data))
-        setErrors(data.errors || {})
-        setWarnings(data.warnings || {})
-        setLoading(false)
-        setJobId(null)
-        setJobToken(null)
+        setGraphData(buildGraphData(data));
+        setErrors(data.errors || {});
+        setWarnings(data.warnings || {});
+        setLoading(false);
+        setJobId(null);
+        setJobToken(null);
 
-        clearPolling()
+        clearPolling();
       } else if (res.status !== 202) {
-        const data = await res.json()
-        setError(data.error || 'Job failed')
-        setLoading(false)
-        setJobId(null)
-        setJobToken(null)
+        const data = await res.json();
+        setError(data.error || "Job failed");
+        setLoading(false);
+        setJobId(null);
+        setJobToken(null);
 
-        clearPolling()
+        clearPolling();
       }
-
     } catch (err) {
-      setError(err.message || 'Failed to check job status')
-      setLoading(false)
-      setJobId(null)
-      setJobToken(null)
+      setError(err.message || "Failed to check job status");
+      setLoading(false);
+      setJobId(null);
+      setJobToken(null);
 
-      clearPolling()
+      clearPolling();
     }
-  }
+  };
 
   useEffect(() => {
     if (!tableName) {
-      setError('No table name provided.')
-      setLoading(false)
-      return
+      setError("No table name provided.");
+      setLoading(false);
+      return;
     }
 
     if (isDup) {
       (async () => {
         try {
-          const cached = await getCachedData(cacheKey)
+          const cached = await getCachedData(cacheKey);
           if (cached) {
-            setRawData(cached)
-            const data = JSONbig({ storeAsString: true }).parse(cached)
-            setGraphData(buildGraphData(data))
-            setErrors(data.errors || {})
-            setWarnings(data.warnings || {})
-            setLoading(false)
+            setRawData(cached);
+            const data = JSONbig({ storeAsString: true }).parse(cached);
+            setGraphData(buildGraphData(data));
+            setErrors(data.errors || {});
+            setWarnings(data.warnings || {});
+            setLoading(false);
 
-            const nextParams = new URLSearchParams(searchParams)
-            nextParams.delete('dup')
-            nextParams.delete('cache_id')
-            setSearchParams(nextParams, { replace: true })
-            return
-          }
-          else {
-            throw new Error('No cached data found.')
+            const nextParams = new URLSearchParams(searchParams);
+            nextParams.delete("dup");
+            nextParams.delete("cache_id");
+            setSearchParams(nextParams, { replace: true });
+            return;
+          } else {
+            throw new Error("No cached data found.");
           }
         } catch (err) {
-          console.error('Failed to restore from cache:', err)
-          setError('No cached data found.')
-          setLoading(false)
+          console.error("Failed to restore from cache:", err);
+          setError("No cached data found.");
+          setLoading(false);
         }
-      })()
-      return
+      })();
+      return;
     }
 
-    setError(null)
-    setErrors({})
-    setWarnings({})
-    submitGraphJob(tableName, startSnapshot, endSnapshot)
-
-  }, [tableName, startSnapshot, endSnapshot])
+    setError(null);
+    setErrors({});
+    setWarnings({});
+    submitGraphJob(tableName, startSnapshot, endSnapshot);
+  }, [tableName, startSnapshot, endSnapshot]);
 
   useEffect(() => {
-    if (!jobId || !jobToken) return
+    if (!jobId || !jobToken) return;
 
-    pollJobStatus(jobId, jobToken)
+    pollJobStatus(jobId, jobToken);
 
     pollIntervalRef.current = setInterval(() => {
-      pollJobStatus(jobId, jobToken)
-    }, 1000)
+      pollJobStatus(jobId, jobToken);
+    }, 1000);
 
-    return clearPolling
-  }, [jobId, jobToken])
+    return clearPolling;
+  }, [jobId, jobToken]);
 
   if (loading) {
     return (
@@ -355,13 +408,13 @@ export default function TableLayout() {
           Loading data for <strong>{tableName}</strong>…
         </p>
       </div>
-    )
+    );
   }
 
   if (error) {
-    let errorDisplay
+    let errorDisplay;
     try {
-      const parsed = JSONbig({ storeAsString: true }).parse(error)
+      const parsed = JSONbig({ storeAsString: true }).parse(error);
       errorDisplay = (
         <div className="text-left mt-4 text-xs font-mono space-y-1">
           {Object.entries(parsed).map(([key, val]) => (
@@ -371,9 +424,9 @@ export default function TableLayout() {
             </div>
           ))}
         </div>
-      )
+      );
     } catch {
-      errorDisplay = <p className="text-sm">{error}</p>
+      errorDisplay = <p className="text-sm">{error}</p>;
     }
 
     return (
@@ -383,35 +436,35 @@ export default function TableLayout() {
           {errorDisplay}
           <button
             className="mt-6 px-5 py-2.5 rounded-lg border-2 border-accent bg-accent text-white font-bold text-sm cursor-pointer hover:bg-accent-dark transition"
-            onClick={() => navigate(IS_MOCK ? MOCK_HOME_ROUTE : '/')}
+            onClick={() => navigate(IS_MOCK ? MOCK_HOME_ROUTE : "/")}
           >
             ← Back to Home
           </button>
         </div>
       </div>
-    )
+    );
   }
 
-  const metadata = graphData.metadata
+  const metadata = graphData.metadata;
 
   const showDetail = (type, id) => {
-    if (!metadata) return
-    let data = null
-    let label = ''
+    if (!metadata) return;
+    let data = null;
+    let label = "";
 
-    if (type === 'schema') {
-      data = metadata.schemas?.find(s => s['schema-id'] === id)
-      label = `Schema ID: ${id}`
-    } else if (type === 'spec') {
-      data = metadata['partition-specs']?.find(s => s['spec-id'] === id)
-      label = `Partition ID: ${id}`
-    } else if (type === 'order') {
-      data = metadata['sort-orders']?.find(s => s['order-id'] === id)
-      label = `Order ID: ${id}`
+    if (type === "schema") {
+      data = metadata.schemas?.find((s) => s["schema-id"] === id);
+      label = `Schema ID: ${id}`;
+    } else if (type === "spec") {
+      data = metadata["partition-specs"]?.find((s) => s["spec-id"] === id);
+      label = `Partition ID: ${id}`;
+    } else if (type === "order") {
+      data = metadata["sort-orders"]?.find((s) => s["order-id"] === id);
+      label = `Order ID: ${id}`;
     }
 
-    if (data) setSelectionDetail({ label, data, type, id })
-  }
+    if (data) setSelectionDetail({ label, data, type, id });
+  };
 
   return (
     <div className="flex-1 flex overflow-hidden relative">
@@ -420,20 +473,28 @@ export default function TableLayout() {
       {detailsOpen && metadata && (
         <div
           className="fixed inset-0 z-[9999] bg-black/50 flex items-center justify-center font-sans"
-          onClick={() => { setDetailsOpen(false); setSelectionDetail(null) }}
+          onClick={() => {
+            setDetailsOpen(false);
+            setSelectionDetail(null);
+          }}
         >
           <div
             className="w-1/2 min-w-85 max-w-3xl bg-surface rounded-xl shadow-2xl border border-edge max-h-[80dvh] flex flex-col"
-            onClick={e => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-6 py-4 border-b border-edge shrink-0">
               <div>
                 <div className={UI_DIALOG_TITLE_CLASS}>Table Specification</div>
-                <div className={`${UI_MONO_MUTED_CLASS} mt-0.5`}>{metadata?.['table-name']}</div>
+                <div className={`${UI_MONO_MUTED_CLASS} mt-0.5`}>
+                  {metadata?.["table-name"]}
+                </div>
               </div>
               <button
                 className="w-7 h-7 rounded-full bg-edge text-slate-400 flex items-center justify-center text-base cursor-pointer hover:bg-edge-hover hover:text-slate-200 transition"
-                onClick={() => { setDetailsOpen(false); setSelectionDetail(null) }}
+                onClick={() => {
+                  setDetailsOpen(false);
+                  setSelectionDetail(null);
+                }}
               >
                 ✕
               </button>
@@ -446,74 +507,104 @@ export default function TableLayout() {
                 selectedId={selectionDetail?.label}
               />
 
-              {selectionDetail && (() => {
-                const config = DETAIL_TYPE_CONFIG[selectionDetail.type]
-                const list = metadata?.[config.listKey] ?? []
-                const idx = list.findIndex(s => s[config.idKey] === selectionDetail.id)
-                const prevItem = idx > 0 ? list[idx - 1] : null
-                const hasPrev = prevItem !== null
+              {selectionDetail &&
+                (() => {
+                  const config = DETAIL_TYPE_CONFIG[selectionDetail.type];
+                  const list = metadata?.[config.listKey] ?? [];
+                  const idx = list.findIndex(
+                    (s) => s[config.idKey] === selectionDetail.id,
+                  );
+                  const prevItem = idx > 0 ? list[idx - 1] : null;
+                  const hasPrev = prevItem !== null;
 
-                const diff = showDiff && hasPrev
-                  ? diffFieldLists(prevItem.fields, selectionDetail.data.fields, config.fieldIdKey)
-                  : null
+                  const diff =
+                    showDiff && hasPrev
+                      ? diffFieldLists(
+                          prevItem.fields,
+                          selectionDetail.data.fields,
+                          config.fieldIdKey,
+                        )
+                      : null;
 
-                return (
-                  <div ref={detailPanelRef} className="rounded-lg border-2 border-accent">
-                    <div className="flex items-center justify-between px-4 py-2 bg-accent">
-                      <span className="text-sm font-bold text-white">{selectionDetail.label}</span>
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-0">
+                  return (
+                    <div
+                      ref={detailPanelRef}
+                      className="rounded-lg border-2 border-accent"
+                    >
+                      <div className="flex items-center justify-between px-4 py-2 bg-accent">
+                        <span className="text-sm font-bold text-white">
+                          {selectionDetail.label}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-0">
+                            <button
+                              className={`text-xs font-bold px-2 py-0.5 rounded-l-full border border-white/30 transition ${!showDiff ? "bg-white text-accent" : "bg-transparent text-white/70 hover:text-white"}`}
+                              onClick={() => setShowDiff(false)}
+                            >
+                              Full
+                            </button>
+                            <button
+                              disabled={!hasPrev}
+                              title={
+                                !hasPrev
+                                  ? config.noPrevLabel
+                                  : "Show diff to previous version"
+                              }
+                              className={`text-xs font-bold px-2 py-0.5 rounded-r-full border border-white/30 transition ${showDiff ? "bg-white text-accent" : !hasPrev ? "bg-transparent text-white/30 cursor-not-allowed" : "bg-transparent text-white/70 hover:text-white cursor-pointer"}`}
+                              onClick={() => hasPrev && setShowDiff(true)}
+                            >
+                              Diff
+                            </button>
+                          </div>
                           <button
-                            className={`text-xs font-bold px-2 py-0.5 rounded-l-full border border-white/30 transition ${!showDiff ? 'bg-white text-accent' : 'bg-transparent text-white/70 hover:text-white'}`}
-                            onClick={() => setShowDiff(false)}
+                            className="text-xs font-bold px-2 py-0.5 rounded-full border border-white/30 bg-transparent text-white/70 hover:text-white transition cursor-pointer"
+                            onClick={() => {
+                              navigator.clipboard.writeText(
+                                JSON.stringify(selectionDetail.data, null, 2),
+                              );
+                              setSpecJsonCopied(true);
+                              setTimeout(() => setSpecJsonCopied(false), 2000);
+                            }}
                           >
-                            Full
+                            {specJsonCopied ? "✓ Copied" : "Copy JSON"}
                           </button>
                           <button
-                            disabled={!hasPrev}
-                            title={!hasPrev ? config.noPrevLabel : 'Show diff to previous version'}
-                            className={`text-xs font-bold px-2 py-0.5 rounded-r-full border border-white/30 transition ${showDiff ? 'bg-white text-accent' : !hasPrev ? 'bg-transparent text-white/30 cursor-not-allowed' : 'bg-transparent text-white/70 hover:text-white cursor-pointer'}`}
-                            onClick={() => hasPrev && setShowDiff(true)}
+                            className="text-white/70 hover:text-white text-xl leading-none cursor-pointer transition"
+                            onClick={() => setSelectionDetail(null)}
                           >
-                            Diff
+                            ×
                           </button>
                         </div>
-                        <button
-                          className="text-xs font-bold px-2 py-0.5 rounded-full border border-white/30 bg-transparent text-white/70 hover:text-white transition cursor-pointer"
-                          onClick={() => {
-                            navigator.clipboard.writeText(JSON.stringify(selectionDetail.data, null, 2))
-                            setSpecJsonCopied(true)
-                            setTimeout(() => setSpecJsonCopied(false), 2000)
-                          }}
-                        >
-                          {specJsonCopied ? '✓ Copied' : 'Copy JSON'}
-                        </button>
-                        <button
-                          className="text-white/70 hover:text-white text-xl leading-none cursor-pointer transition"
-                          onClick={() => setSelectionDetail(null)}
-                        >
-                          ×
-                        </button>
+                      </div>
+                      <div className="px-4 py-3 max-h-[300px] overflow-y-auto">
+                        {!showDiff && selectionDetail.type === "schema" && (
+                          <SchemaFieldList schema={selectionDetail.data} />
+                        )}
+                        {!showDiff && selectionDetail.type === "spec" && (
+                          <PartitionSpecList spec={selectionDetail.data} />
+                        )}
+                        {!showDiff && selectionDetail.type === "order" && (
+                          <SortOrderList order={selectionDetail.data} />
+                        )}
+                        {showDiff &&
+                          diff &&
+                          selectionDetail.type === "schema" && (
+                            <SchemaDiffView diff={diff} />
+                          )}
+                        {showDiff &&
+                          diff &&
+                          selectionDetail.type === "spec" && (
+                            <PartitionDiffView diff={diff} />
+                          )}
+                        {showDiff &&
+                          diff &&
+                          selectionDetail.type === "order" && (
+                            <SortDiffView diff={diff} />
+                          )}
                       </div>
                     </div>
-                    <div className="px-4 py-3 max-h-[300px] overflow-y-auto">
-                      {!showDiff && selectionDetail.type === 'schema' && (
-                        <SchemaFieldList schema={selectionDetail.data} />
-                      )}
-                      {!showDiff && selectionDetail.type === 'spec' && (
-                        <PartitionSpecList spec={selectionDetail.data} />
-                      )}
-                      {!showDiff && selectionDetail.type === 'order' && (
-                        <SortOrderList order={selectionDetail.data} />
-                      )}
-                      {showDiff && diff && selectionDetail.type === 'schema' && <SchemaDiffView diff={diff} />}
-                      {showDiff && diff && selectionDetail.type === 'spec' && <PartitionDiffView diff={diff} />}
-                      {showDiff && diff && selectionDetail.type === 'order' && <SortDiffView diff={diff} />}
-                    </div>
-                  </div>
-                )
-              })()}
-
+                  );
+                })()}
             </div>
           </div>
         </div>
@@ -525,11 +616,13 @@ export default function TableLayout() {
         >
           <div
             className="w-1/2 min-w-100 max-w-4xl bg-surface rounded-xl shadow-2xl border border-slate-800 max-h-[80dvh] flex flex-col overflow-hidden"
-            onClick={e => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/30 bg-slate-800/20 shrink-0">
               <div className="flex items-center gap-3">
-                <span className="font-bold text-ink text-base tracking-tight">System Issues</span>
+                <span className="font-bold text-ink text-base tracking-tight">
+                  System Issues
+                </span>
               </div>
               <button
                 className="w-7 h-7 rounded-full bg-slate-800/30 text-slate-400 flex items-center justify-center text-base cursor-pointer hover:bg-slate-800/50 hover:text-slate-200 transition"
@@ -544,17 +637,30 @@ export default function TableLayout() {
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center gap-2 px-1">
                     <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                    <h3 className="text-red-400 text-xs font-bold uppercase tracking-widest">Critical Errors</h3>
+                    <h3 className="text-red-400 text-xs font-bold uppercase tracking-widest">
+                      Critical Errors
+                    </h3>
                   </div>
                   {Object.entries(errors).map(([op, err], i) => (
-                    <div key={`err-${i}`} className="bg-red-950/10 rounded-xl border border-red-900/30 overflow-hidden flex flex-col">
+                    <div
+                      key={`err-${i}`}
+                      className="bg-red-950/10 rounded-xl border border-red-900/30 overflow-hidden flex flex-col"
+                    >
                       <div className="px-5 py-3 border-b border-red-900/10 bg-red-900/5">
-                        <span className="text-base font-bold text-red-500/70 uppercase tracking-tighter block mb-1">Source</span>
-                        <div className="text-xs font-mono text-red-200 break-all">{op}</div>
+                        <span className="text-base font-bold text-red-500/70 uppercase tracking-tighter block mb-1">
+                          Source
+                        </span>
+                        <div className="text-xs font-mono text-red-200 break-all">
+                          {op}
+                        </div>
                       </div>
                       <div className="px-5 py-4">
-                        <span className="text-base font-bold text-red-500/70 uppercase tracking-tighter block mb-1">Message</span>
-                        <div className="text-xs text-red-300 font-semibold whitespace-pre-wrap leading-relaxed overflow-y-auto tracking-wide">{err}</div>
+                        <span className="text-base font-bold text-red-500/70 uppercase tracking-tighter block mb-1">
+                          Message
+                        </span>
+                        <div className="text-xs text-red-300 font-semibold whitespace-pre-wrap leading-relaxed overflow-y-auto tracking-wide">
+                          {err}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -565,17 +671,30 @@ export default function TableLayout() {
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center gap-2 px-1">
                     <div className="w-2 h-2 rounded-full bg-amber-500" />
-                    <h3 className="text-amber-400 text-xs font-bold uppercase tracking-widest">Processing Warnings</h3>
+                    <h3 className="text-amber-400 text-xs font-bold uppercase tracking-widest">
+                      Processing Warnings
+                    </h3>
                   </div>
                   {Object.entries(warnings).map(([op, msg], i) => (
-                    <div key={`warn-${i}`} className="bg-amber-950/10 rounded-xl border border-amber-900/30 overflow-hidden flex flex-col">
+                    <div
+                      key={`warn-${i}`}
+                      className="bg-amber-950/10 rounded-xl border border-amber-900/30 overflow-hidden flex flex-col"
+                    >
                       <div className="px-5 py-3 border-b border-amber-900/10 bg-amber-900/5">
-                        <span className="text-base font-bold text-amber-500/70 uppercase tracking-tighter block mb-1">Context</span>
-                        <div className="text-xs font-mono text-amber-200 break-all">{op}</div>
+                        <span className="text-base font-bold text-amber-500/70 uppercase tracking-tighter block mb-1">
+                          Context
+                        </span>
+                        <div className="text-xs font-mono text-amber-200 break-all">
+                          {op}
+                        </div>
                       </div>
                       <div className="px-5 py-4">
-                        <span className="text-base font-bold text-amber-500/70 uppercase tracking-tighter block mb-1">Notice</span>
-                        <div className="text-xs text-amber-300 font-semibold whitespace-pre-wrap leading-relaxed overflow-y-auto tracking-wide">{msg}</div>
+                        <span className="text-base font-bold text-amber-500/70 uppercase tracking-tighter block mb-1">
+                          Notice
+                        </span>
+                        <div className="text-xs text-amber-300 font-semibold whitespace-pre-wrap leading-relaxed overflow-y-auto tracking-wide">
+                          {msg}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -586,5 +705,5 @@ export default function TableLayout() {
         </div>
       )}
     </div>
-  )
+  );
 }
