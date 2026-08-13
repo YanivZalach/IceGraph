@@ -4,22 +4,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Before any work
 
-- **Never start coding immediately.** First ask clarifying questions, then present a plan and get my approval. Only implement after the plan is agreed.
-- If the task seems trivial and you think planning is overkill, say so and propose a one-line plan — but still wait for my go-ahead.
+- **Never start coding immediately.** First ask the user clarifying questions, then present a plan and get their approval. Only implement after the plan is agreed.
+- If the task seems trivial and you think planning is overkill, say so and propose a one-line plan, but still wait for the user's go-ahead.
 
 ## Bugs
 
-- **Never just apply a fix.** Explain the root cause first and let me decide how to proceed. Diagnosis before surgery.
+- **Never just apply a fix.** Explain the root cause first and let the user decide how to proceed. Diagnosis before surgery.
 
 ## Before presenting work
 
-- Run `lint` and `typecheck`; fix all violations before showing me anything. Never fix a violation by disabling a rule.
+- Run `format`, `lint`, and `typecheck`; fix all violations before showing the user anything. Never fix a violation by disabling a rule.
 
 ## Scope & Code Change Policy
 
-- Don't refactor, rename, or "improve" code I didn't ask you to touch. Never change behavior that was not explicitly requested.
+- Don't refactor, rename, or "improve" code the user didn't ask you to touch. Never change behavior that was not explicitly requested.
 - Keep all changes as minimal as possible unless explicitly asked for more. Prefer the simplest solution that works.
-- **Never add a dependency without asking me first** — present what it does, why hand-rolling is worse, and its cost. Read [ARCHITECTURE_PHILOSOPHY.md](ARCHITECTURE_PHILOSOPHY.md) before proposing new dependencies, services, or persistent state — weigh every such change against its pillars.
+- **Never add a dependency without asking the user first** — present what it does, why hand-rolling is worse, and its cost. Read [ARCHITECTURE_PHILOSOPHY.md](ARCHITECTURE_PHILOSOPHY.md) before proposing new dependencies, services, or persistent state — weigh every such change against its pillars.
 - Apply DRY principles where possible.
 - Python files must not exceed 400 lines.
 - Never run git commands — only the user does.
