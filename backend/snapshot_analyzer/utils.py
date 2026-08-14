@@ -7,8 +7,10 @@ from snapshot_analyzer.constants import REPLACE_SUB_OPERATIONS_BY_PRIORITY
 
 
 def build_action_link(summary: Dict[str, str]) -> Optional[str]:
-    app_id = summary.get("app-id")
-    if not Env.SPARK_HISTORY_SERVER_URL or summary.get("engine-name") != "spark" or not app_id:
+    app_id = summary.get("app-id") if summary.get("engine-name") == "spark" else None
+    app_id = app_id or summary.get("spark.app.id")
+
+    if not Env.SPARK_HISTORY_SERVER_URL or not app_id:
         return None
 
     return f"{Env.SPARK_HISTORY_SERVER_URL.rstrip('/')}/history/{app_id}/"
