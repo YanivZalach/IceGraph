@@ -1,8 +1,8 @@
 import { lazy } from "react";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { IS_MOCK, MOCK_TABLE } from "../../appConstants";
+import { IS_MOCK, MOCK_TABLE } from "../appConstants";
 
-export const Route = createFileRoute("/_shell/")({
+export const Route = createFileRoute("/")({
   beforeLoad: () => {
     if (IS_MOCK) {
       throw redirect({
@@ -12,5 +12,5 @@ export const Route = createFileRoute("/_shell/")({
       });
     }
   },
-  component: lazy(() => import("../../pages/HomePage")),
+  component: lazy(() => import("../pages/HomePage")),
 });

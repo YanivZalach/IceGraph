@@ -1,9 +1,9 @@
 import { lazy } from "react";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { IS_MOCK, MOCK_TABLE } from "../../appConstants";
-import { snapshotSelectionSearchSchema } from "../../shared/lib/searchParams";
+import { IS_MOCK, MOCK_TABLE } from "../appConstants";
+import { snapshotSelectionSearchSchema } from "../shared/lib/searchParams";
 
-export const Route = createFileRoute("/_shell/snapshots-selection")({
+export const Route = createFileRoute("/snapshots-selection")({
   validateSearch: snapshotSelectionSearchSchema,
   beforeLoad: () => {
     if (IS_MOCK) {
@@ -14,5 +14,5 @@ export const Route = createFileRoute("/_shell/snapshots-selection")({
       });
     }
   },
-  component: lazy(() => import("../../pages/SnapshotSelectionPage")),
+  component: lazy(() => import("../pages/SnapshotSelectionPage")),
 });

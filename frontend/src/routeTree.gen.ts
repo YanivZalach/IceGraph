@@ -9,100 +9,94 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as ShellRouteImport } from './routes/_shell'
-import { Route as ShellIndexRouteImport } from './routes/_shell/index'
-import { Route as ShellDocsRouteImport } from './routes/_shell/docs'
-import { Route as ShellSnapshotsSelectionRouteImport } from './routes/_shell/snapshots-selection'
-import { Route as ShellTableRouteRouteImport } from './routes/_shell/table/route'
-import { Route as ShellTableIndexRouteImport } from './routes/_shell/table/index'
-import { Route as ShellTableFiletreeRouteImport } from './routes/_shell/table/filetree'
-import { Route as ShellTableGraphRouteImport } from './routes/_shell/table/graph'
-import { Route as ShellTableMetadataRouteImport } from './routes/_shell/table/metadata'
-import { Route as ShellTableTimelineRouteImport } from './routes/_shell/table/timeline'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as DocsRouteImport } from './routes/docs'
+import { Route as SnapshotsSelectionRouteImport } from './routes/snapshots-selection'
+import { Route as TableRouteRouteImport } from './routes/table/route'
+import { Route as TableIndexRouteImport } from './routes/table/index'
+import { Route as TableFiletreeRouteImport } from './routes/table/filetree'
+import { Route as TableGraphRouteImport } from './routes/table/graph'
+import { Route as TableMetadataRouteImport } from './routes/table/metadata'
+import { Route as TableTimelineRouteImport } from './routes/table/timeline'
 
-const ShellRoute = ShellRouteImport.update({
-  id: '/_shell',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ShellIndexRoute = ShellIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => ShellRoute,
-} as any)
-const ShellDocsRoute = ShellDocsRouteImport.update({
+const DocsRoute = DocsRouteImport.update({
   id: '/docs',
   path: '/docs',
-  getParentRoute: () => ShellRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-const ShellSnapshotsSelectionRoute = ShellSnapshotsSelectionRouteImport.update({
+const SnapshotsSelectionRoute = SnapshotsSelectionRouteImport.update({
   id: '/snapshots-selection',
   path: '/snapshots-selection',
-  getParentRoute: () => ShellRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-const ShellTableRouteRoute = ShellTableRouteRouteImport.update({
+const TableRouteRoute = TableRouteRouteImport.update({
   id: '/table',
   path: '/table',
-  getParentRoute: () => ShellRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-const ShellTableIndexRoute = ShellTableIndexRouteImport.update({
+const TableIndexRoute = TableIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => ShellTableRouteRoute,
+  getParentRoute: () => TableRouteRoute,
 } as any)
-const ShellTableFiletreeRoute = ShellTableFiletreeRouteImport.update({
+const TableFiletreeRoute = TableFiletreeRouteImport.update({
   id: '/filetree',
   path: '/filetree',
-  getParentRoute: () => ShellTableRouteRoute,
+  getParentRoute: () => TableRouteRoute,
 } as any)
-const ShellTableGraphRoute = ShellTableGraphRouteImport.update({
+const TableGraphRoute = TableGraphRouteImport.update({
   id: '/graph',
   path: '/graph',
-  getParentRoute: () => ShellTableRouteRoute,
+  getParentRoute: () => TableRouteRoute,
 } as any)
-const ShellTableMetadataRoute = ShellTableMetadataRouteImport.update({
+const TableMetadataRoute = TableMetadataRouteImport.update({
   id: '/metadata',
   path: '/metadata',
-  getParentRoute: () => ShellTableRouteRoute,
+  getParentRoute: () => TableRouteRoute,
 } as any)
-const ShellTableTimelineRoute = ShellTableTimelineRouteImport.update({
+const TableTimelineRoute = TableTimelineRouteImport.update({
   id: '/timeline',
   path: '/timeline',
-  getParentRoute: () => ShellTableRouteRoute,
+  getParentRoute: () => TableRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof ShellIndexRoute
-  '/table': typeof ShellTableRouteRouteWithChildren
-  '/docs': typeof ShellDocsRoute
-  '/snapshots-selection': typeof ShellSnapshotsSelectionRoute
-  '/table/filetree': typeof ShellTableFiletreeRoute
-  '/table/graph': typeof ShellTableGraphRoute
-  '/table/metadata': typeof ShellTableMetadataRoute
-  '/table/timeline': typeof ShellTableTimelineRoute
-  '/table/': typeof ShellTableIndexRoute
+  '/': typeof IndexRoute
+  '/table': typeof TableRouteRouteWithChildren
+  '/docs': typeof DocsRoute
+  '/snapshots-selection': typeof SnapshotsSelectionRoute
+  '/table/filetree': typeof TableFiletreeRoute
+  '/table/graph': typeof TableGraphRoute
+  '/table/metadata': typeof TableMetadataRoute
+  '/table/timeline': typeof TableTimelineRoute
+  '/table/': typeof TableIndexRoute
 }
 export interface FileRoutesByTo {
-  '/docs': typeof ShellDocsRoute
-  '/snapshots-selection': typeof ShellSnapshotsSelectionRoute
-  '/': typeof ShellIndexRoute
-  '/table/filetree': typeof ShellTableFiletreeRoute
-  '/table/graph': typeof ShellTableGraphRoute
-  '/table/metadata': typeof ShellTableMetadataRoute
-  '/table/timeline': typeof ShellTableTimelineRoute
-  '/table': typeof ShellTableIndexRoute
+  '/': typeof IndexRoute
+  '/docs': typeof DocsRoute
+  '/snapshots-selection': typeof SnapshotsSelectionRoute
+  '/table/filetree': typeof TableFiletreeRoute
+  '/table/graph': typeof TableGraphRoute
+  '/table/metadata': typeof TableMetadataRoute
+  '/table/timeline': typeof TableTimelineRoute
+  '/table': typeof TableIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/_shell': typeof ShellRouteWithChildren
-  '/_shell/table': typeof ShellTableRouteRouteWithChildren
-  '/_shell/docs': typeof ShellDocsRoute
-  '/_shell/snapshots-selection': typeof ShellSnapshotsSelectionRoute
-  '/_shell/': typeof ShellIndexRoute
-  '/_shell/table/filetree': typeof ShellTableFiletreeRoute
-  '/_shell/table/graph': typeof ShellTableGraphRoute
-  '/_shell/table/metadata': typeof ShellTableMetadataRoute
-  '/_shell/table/timeline': typeof ShellTableTimelineRoute
-  '/_shell/table/': typeof ShellTableIndexRoute
+  '/': typeof IndexRoute
+  '/table': typeof TableRouteRouteWithChildren
+  '/docs': typeof DocsRoute
+  '/snapshots-selection': typeof SnapshotsSelectionRoute
+  '/table/filetree': typeof TableFiletreeRoute
+  '/table/graph': typeof TableGraphRoute
+  '/table/metadata': typeof TableMetadataRoute
+  '/table/timeline': typeof TableTimelineRoute
+  '/table/': typeof TableIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -118,9 +112,9 @@ export interface FileRouteTypes {
     | '/table/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/'
     | '/docs'
     | '/snapshots-selection'
-    | '/'
     | '/table/filetree'
     | '/table/graph'
     | '/table/metadata'
@@ -128,135 +122,117 @@ export interface FileRouteTypes {
     | '/table'
   id:
     | '__root__'
-    | '/_shell'
-    | '/_shell/table'
-    | '/_shell/docs'
-    | '/_shell/snapshots-selection'
-    | '/_shell/'
-    | '/_shell/table/filetree'
-    | '/_shell/table/graph'
-    | '/_shell/table/metadata'
-    | '/_shell/table/timeline'
-    | '/_shell/table/'
+    | '/'
+    | '/table'
+    | '/docs'
+    | '/snapshots-selection'
+    | '/table/filetree'
+    | '/table/graph'
+    | '/table/metadata'
+    | '/table/timeline'
+    | '/table/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  ShellRoute: typeof ShellRouteWithChildren
+  IndexRoute: typeof IndexRoute
+  TableRouteRoute: typeof TableRouteRouteWithChildren
+  DocsRoute: typeof DocsRoute
+  SnapshotsSelectionRoute: typeof SnapshotsSelectionRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/_shell': {
-      id: '/_shell'
-      path: ''
+    '/': {
+      id: '/'
+      path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof ShellRouteImport
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_shell/': {
-      id: '/_shell/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof ShellIndexRouteImport
-      parentRoute: typeof ShellRoute
-    }
-    '/_shell/docs': {
-      id: '/_shell/docs'
+    '/docs': {
+      id: '/docs'
       path: '/docs'
       fullPath: '/docs'
-      preLoaderRoute: typeof ShellDocsRouteImport
-      parentRoute: typeof ShellRoute
+      preLoaderRoute: typeof DocsRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_shell/snapshots-selection': {
-      id: '/_shell/snapshots-selection'
+    '/snapshots-selection': {
+      id: '/snapshots-selection'
       path: '/snapshots-selection'
       fullPath: '/snapshots-selection'
-      preLoaderRoute: typeof ShellSnapshotsSelectionRouteImport
-      parentRoute: typeof ShellRoute
+      preLoaderRoute: typeof SnapshotsSelectionRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_shell/table': {
-      id: '/_shell/table'
+    '/table': {
+      id: '/table'
       path: '/table'
       fullPath: '/table'
-      preLoaderRoute: typeof ShellTableRouteRouteImport
-      parentRoute: typeof ShellRoute
+      preLoaderRoute: typeof TableRouteRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_shell/table/': {
-      id: '/_shell/table/'
+    '/table/': {
+      id: '/table/'
       path: '/'
       fullPath: '/table/'
-      preLoaderRoute: typeof ShellTableIndexRouteImport
-      parentRoute: typeof ShellTableRouteRoute
+      preLoaderRoute: typeof TableIndexRouteImport
+      parentRoute: typeof TableRouteRoute
     }
-    '/_shell/table/filetree': {
-      id: '/_shell/table/filetree'
+    '/table/filetree': {
+      id: '/table/filetree'
       path: '/filetree'
       fullPath: '/table/filetree'
-      preLoaderRoute: typeof ShellTableFiletreeRouteImport
-      parentRoute: typeof ShellTableRouteRoute
+      preLoaderRoute: typeof TableFiletreeRouteImport
+      parentRoute: typeof TableRouteRoute
     }
-    '/_shell/table/graph': {
-      id: '/_shell/table/graph'
+    '/table/graph': {
+      id: '/table/graph'
       path: '/graph'
       fullPath: '/table/graph'
-      preLoaderRoute: typeof ShellTableGraphRouteImport
-      parentRoute: typeof ShellTableRouteRoute
+      preLoaderRoute: typeof TableGraphRouteImport
+      parentRoute: typeof TableRouteRoute
     }
-    '/_shell/table/metadata': {
-      id: '/_shell/table/metadata'
+    '/table/metadata': {
+      id: '/table/metadata'
       path: '/metadata'
       fullPath: '/table/metadata'
-      preLoaderRoute: typeof ShellTableMetadataRouteImport
-      parentRoute: typeof ShellTableRouteRoute
+      preLoaderRoute: typeof TableMetadataRouteImport
+      parentRoute: typeof TableRouteRoute
     }
-    '/_shell/table/timeline': {
-      id: '/_shell/table/timeline'
+    '/table/timeline': {
+      id: '/table/timeline'
       path: '/timeline'
       fullPath: '/table/timeline'
-      preLoaderRoute: typeof ShellTableTimelineRouteImport
-      parentRoute: typeof ShellTableRouteRoute
+      preLoaderRoute: typeof TableTimelineRouteImport
+      parentRoute: typeof TableRouteRoute
     }
   }
 }
 
-interface ShellTableRouteRouteChildren {
-  ShellTableFiletreeRoute: typeof ShellTableFiletreeRoute
-  ShellTableGraphRoute: typeof ShellTableGraphRoute
-  ShellTableMetadataRoute: typeof ShellTableMetadataRoute
-  ShellTableTimelineRoute: typeof ShellTableTimelineRoute
-  ShellTableIndexRoute: typeof ShellTableIndexRoute
+interface TableRouteRouteChildren {
+  TableFiletreeRoute: typeof TableFiletreeRoute
+  TableGraphRoute: typeof TableGraphRoute
+  TableMetadataRoute: typeof TableMetadataRoute
+  TableTimelineRoute: typeof TableTimelineRoute
+  TableIndexRoute: typeof TableIndexRoute
 }
 
-const ShellTableRouteRouteChildren: ShellTableRouteRouteChildren = {
-  ShellTableFiletreeRoute: ShellTableFiletreeRoute,
-  ShellTableGraphRoute: ShellTableGraphRoute,
-  ShellTableMetadataRoute: ShellTableMetadataRoute,
-  ShellTableTimelineRoute: ShellTableTimelineRoute,
-  ShellTableIndexRoute: ShellTableIndexRoute,
+const TableRouteRouteChildren: TableRouteRouteChildren = {
+  TableFiletreeRoute: TableFiletreeRoute,
+  TableGraphRoute: TableGraphRoute,
+  TableMetadataRoute: TableMetadataRoute,
+  TableTimelineRoute: TableTimelineRoute,
+  TableIndexRoute: TableIndexRoute,
 }
 
-const ShellTableRouteRouteWithChildren = ShellTableRouteRoute._addFileChildren(
-  ShellTableRouteRouteChildren,
+const TableRouteRouteWithChildren = TableRouteRoute._addFileChildren(
+  TableRouteRouteChildren,
 )
 
-interface ShellRouteChildren {
-  ShellTableRouteRoute: typeof ShellTableRouteRouteWithChildren
-  ShellDocsRoute: typeof ShellDocsRoute
-  ShellSnapshotsSelectionRoute: typeof ShellSnapshotsSelectionRoute
-  ShellIndexRoute: typeof ShellIndexRoute
-}
-
-const ShellRouteChildren: ShellRouteChildren = {
-  ShellTableRouteRoute: ShellTableRouteRouteWithChildren,
-  ShellDocsRoute: ShellDocsRoute,
-  ShellSnapshotsSelectionRoute: ShellSnapshotsSelectionRoute,
-  ShellIndexRoute: ShellIndexRoute,
-}
-
-const ShellRouteWithChildren = ShellRoute._addFileChildren(ShellRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
-  ShellRoute: ShellRouteWithChildren,
+  IndexRoute: IndexRoute,
+  TableRouteRoute: TableRouteRouteWithChildren,
+  DocsRoute: DocsRoute,
+  SnapshotsSelectionRoute: SnapshotsSelectionRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -20,6 +20,37 @@ import {
   UI_TEXT_INPUT_CLASS,
 } from "../uiTypography";
 
+const tabClass = ({ isActive }) =>
+  `text-sm font-medium px-1 py-0.5 border-b-2 transition ${
+    isActive
+      ? "border-accent text-white"
+      : "border-transparent text-slate-400 hover:text-white hover:border-slate-500"
+  }`;
+
+const mobileTabClass = ({ isActive }) =>
+  `text-sm font-medium px-3 py-2 rounded-md transition text-left ${
+    isActive
+      ? "bg-accent-muted text-white"
+      : "text-slate-400 hover:text-white hover:bg-surface-hover"
+  }`;
+
+// Tab links carry the current search forward; active styling comes from the
+// class helpers above so the two variants share one source of truth.
+const TabLink = ({ to, children, mobile }) => (
+  <Link
+    to={to}
+    search={(prev) => prev}
+    activeProps={{
+      className: (mobile ? mobileTabClass : tabClass)({ isActive: true }),
+    }}
+    inactiveProps={{
+      className: (mobile ? mobileTabClass : tabClass)({ isActive: false }),
+    }}
+  >
+    {children}
+  </Link>
+);
+
 export default function NavBar() {
   const location = useLocation();
   const search = useSearch({ strict: false });
@@ -234,24 +265,6 @@ export default function NavBar() {
     }, 2000);
   };
 
-  const tabActiveProps = {
-    className:
-      "text-sm font-medium px-1 py-0.5 border-b-2 transition border-accent text-white",
-  };
-  const tabInactiveProps = {
-    className:
-      "text-sm font-medium px-1 py-0.5 border-b-2 transition border-transparent text-slate-400 hover:text-white hover:border-slate-500",
-  };
-
-  const mobileTabActiveProps = {
-    className:
-      "text-sm font-medium px-3 py-2 rounded-md transition text-left bg-accent-muted text-white",
-  };
-  const mobileTabInactiveProps = {
-    className:
-      "text-sm font-medium px-3 py-2 rounded-md transition text-left text-slate-400 hover:text-white hover:bg-surface-hover",
-  };
-
   return (
     <nav
       ref={navRef}
@@ -280,15 +293,15 @@ export default function NavBar() {
               to={IS_MOCK ? "/table/timeline" : "/"}
               search={IS_MOCK ? { table: MOCK_TABLE } : undefined}
               activeOptions={{ exact: true }}
-              activeProps={tabActiveProps}
-              inactiveProps={tabInactiveProps}
+              activeProps={{ className: tabClass({ isActive: true }) }}
+              inactiveProps={{ className: tabClass({ isActive: false }) }}
             >
               Home
             </Link>
             <Link
               to="/docs"
-              activeProps={tabActiveProps}
-              inactiveProps={tabInactiveProps}
+              activeProps={{ className: tabClass({ isActive: true }) }}
+              inactiveProps={{ className: tabClass({ isActive: false }) }}
             >
               Docs
             </Link>
@@ -322,38 +335,10 @@ export default function NavBar() {
 
             <div className="w-px h-4 bg-slate-700" />
 
-            <Link
-              to="/table/timeline"
-              search={(prev) => prev}
-              activeProps={tabActiveProps}
-              inactiveProps={tabInactiveProps}
-            >
-              Timeline
-            </Link>
-            <Link
-              to="/table/metadata"
-              search={(prev) => prev}
-              activeProps={tabActiveProps}
-              inactiveProps={tabInactiveProps}
-            >
-              Metadata
-            </Link>
-            <Link
-              to="/table/filetree"
-              search={(prev) => prev}
-              activeProps={tabActiveProps}
-              inactiveProps={tabInactiveProps}
-            >
-              FileTree
-            </Link>
-            <Link
-              to="/table/graph"
-              search={(prev) => prev}
-              activeProps={tabActiveProps}
-              inactiveProps={tabInactiveProps}
-            >
-              Graph
-            </Link>
+            <TabLink to="/table/timeline">Timeline</TabLink>
+            <TabLink to="/table/metadata">Metadata</TabLink>
+            <TabLink to="/table/filetree">FileTree</TabLink>
+            <TabLink to="/table/graph">Graph</TabLink>
 
             {((errors && Object.keys(errors).length > 0) ||
               (warnings && Object.keys(warnings).length > 0)) && (
@@ -472,38 +457,18 @@ export default function NavBar() {
 
           <div className="h-px bg-edge my-1" />
 
-          <Link
-            to="/table/timeline"
-            search={(prev) => prev}
-            activeProps={mobileTabActiveProps}
-            inactiveProps={mobileTabInactiveProps}
-          >
+          <TabLink to="/table/timeline" mobile>
             Timeline
-          </Link>
-          <Link
-            to="/table/metadata"
-            search={(prev) => prev}
-            activeProps={mobileTabActiveProps}
-            inactiveProps={mobileTabInactiveProps}
-          >
+          </TabLink>
+          <TabLink to="/table/metadata" mobile>
             Metadata
-          </Link>
-          <Link
-            to="/table/filetree"
-            search={(prev) => prev}
-            activeProps={mobileTabActiveProps}
-            inactiveProps={mobileTabInactiveProps}
-          >
+          </TabLink>
+          <TabLink to="/table/filetree" mobile>
             FileTree
-          </Link>
-          <Link
-            to="/table/graph"
-            search={(prev) => prev}
-            activeProps={mobileTabActiveProps}
-            inactiveProps={mobileTabInactiveProps}
-          >
+          </TabLink>
+          <TabLink to="/table/graph" mobile>
             Graph
-          </Link>
+          </TabLink>
 
           {((errors && Object.keys(errors).length > 0) ||
             (warnings && Object.keys(warnings).length > 0)) && (
