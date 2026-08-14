@@ -176,26 +176,27 @@ link to the user directly. Do not ask for the History Server base URL or an exam
 URL when the data already provides `action_link`.
 
 The node also has a `summary` dict, a raw, unfiltered passthrough of whatever Iceberg/Spark put in
-that snapshot's summary map. If it contains a `spark.app.id` key, that's the actual Spark
-application that produced that snapshot's data. This key isn't always present, so don't assume it
-exists; check `summary` for it before saying anything about it.
+that snapshot's summary map. When `action_link` is empty, resolve the Spark application ID in this
+order:
 
-If the user asks who/what wrote a snapshot's data (or asks about `spark.app.id` directly) and it's
-present but `action_link` is empty: tell them they can look up that application in their **Spark
-History Server**. Ask the user for an example URL to any application's page in their Spark History
-Server (they likely have one bookmarked, or can grab one from another job's logs). Then build the
-equivalent URL for *this* `spark.app.id` by substituting just the app-id portion of that example
-URL, leaving the rest of its structure (host, port, path shape) untouched. Don't assume a fixed
-Spark History Server URL scheme, since it varies by setup.
+1. Use `summary["app-id"]` when `summary["engine-name"]` is `"spark"`.
+2. Otherwise, use `summary["spark.app.id"]` when present.
+
+If either form provides an application ID, tell the user they can look up that application in
+their **Spark History Server**. Ask the user for an example URL to any application's page in their
+Spark History Server (they likely have one bookmarked, or can grab one from another job's logs).
+Then build the equivalent URL for this application ID by substituting just the app-id portion of
+that example URL, leaving the rest of its structure (host, port, path shape) untouched. Don't
+assume a fixed Spark History Server URL scheme, since it varies by setup.
 
 ## 6. Cache a table's data to a tmp file for the rest of the session
 
 The first time you fetch a table's data with `snapshots` or `graph` in a conversation, write the
 raw JSON to a tmp file (session scratch/tmp directory if one is available, otherwise a plain
 system tmp path — name it so it's identifiable, e.g. `icegraph_<database>_<table>.json`). For any
-follow-up question about that same table and range — schema, properties, partition spec, a
-specific node's fields, errors/warnings, tracing a `spark.app.id` — read back from that file
-instead of re-running the CLI. This data doesn't change from one question to the next within a
+follow-up question about that same table and range, including schema, properties, partition spec,
+a specific node's fields, errors/warnings, or tracing a Spark application ID, read back from that
+file instead of re-running the CLI. This data doesn't change from one question to the next within a
 session, so re-fetching it is wasted round-trips to a remote server.
 
 **Exception: never answer from the cache when the user is specifically asking about the table's
@@ -230,7 +231,8 @@ usually isn't.
    `https://ice.example.com/table/metadata?table=sales.orders&start_snapshot_id=snap-789&end_snapshot_id=snap-789`
 5. "Which job wrote this snapshot's data?"
    → find the `snapshot`-type node for it in a `graph` result. If `action_link` is populated, give
-   it to the user directly. Otherwise, check its `summary` for `spark.app.id`. If present, ask the
-   user for an example Spark History Server URL (e.g. one they already have for another job), then
-   give them that same URL with just the app-id swapped for this snapshot's `spark.app.id`. If both
-   fields are absent, say so rather than guessing at a job.
+   it to the user directly. Otherwise, use `summary["app-id"]` when `summary["engine-name"]` is
+   `"spark"`, falling back to `summary["spark.app.id"]`. If either provides an ID, ask the user for
+   an example Spark History Server URL (e.g. one they already have for another job), then give them
+   that same URL with just the app-id swapped. If neither key provides an ID, say so rather than
+   guessing at a job.
