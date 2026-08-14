@@ -24,7 +24,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Python files must not exceed 400 lines.
 - Never run git commands — only the user does.
 - When `icegraph-client`'s public API or CLI commands change, update the CLI section in `frontend/src/pages/DocsPage.jsx` and the Python Client & CLI bullet in `README.md` to match.
-- Whenever creating a constant that is settable via an environment variable, define its default value in `backend/constants.py` and add its description to `README.md`.
+- Whenever creating a setting that is configurable via an environment variable, define it in `backend/env.py`.
 - Frontend work has its own rules, philosophy, and styling conventions in [frontend/CLAUDE.md](frontend/CLAUDE.md) and [frontend/PHILOSOPHY.md](frontend/PHILOSOPHY.md).
 
 ## Project Overview
@@ -116,7 +116,7 @@ Backend environment variables (set in `backend/.env`):
 | `MAX_SNAPSHOTS_TO_COMPUTE` | 50 | Max snapshots processed per job |
 | `MAX_DATA_FILES_TO_COLLECT` | 5000 | Data file iteration limit |
 | `MAX_NUMBER_OF_GRAPHS_TO_COMPUTE` | 15 | Concurrent job limit |
-| `MAX_SNAPSHOTS_TO_SHOW` | 2000 | Snapshot selection UI limit |
+| `MAX_SNAPSHOTS_TO_SHOW` | 20 | Snapshot selection UI limit |
 | `INCLUDE_NONE_ICEBERG_CATALOGS` | `true` | Include non-Iceberg catalogs (e.g. Spark session catalog) in `/api/v1/tables` |
 | `TABLE_LIST_CACHE_TTL_SECONDS` | 60 | Cache TTL for table list endpoint |
 

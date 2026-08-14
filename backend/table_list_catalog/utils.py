@@ -1,13 +1,10 @@
-from typing import List
-from pyspark.sql import functions as F
-import os
 from contextlib import suppress
-from typing import Optional
+from typing import List, Optional
 
 from pyspark.sql import SparkSession
-from constants import INCLUDE_NONE_ICEBERG_CATALOGS
+from pyspark.sql import functions as F
 
-include_none_iceberg_catalogs = str(os.getenv("INCLUDE_NONE_ICEBERG_CATALOGS", INCLUDE_NONE_ICEBERG_CATALOGS)).lower() == "true"
+from env import Env
 
 
 def get_spark_default_catalog(spark: SparkSession) -> str:
@@ -32,7 +29,7 @@ def filter_catalogs_to_include(spark: SparkSession, catalogs: list[str]) -> list
     for catalog in catalogs:
         catalog_config_value = get_spark_catalog_config_value(spark, catalog)
 
-        if include_none_iceberg_catalogs or is_iceberg_spark_catalog(catalog_config_value):
+        if Env.INCLUDE_NONE_ICEBERG_CATALOGS or is_iceberg_spark_catalog(catalog_config_value):
             catalogs_to_include.append(catalog)
 
     return catalogs_to_include

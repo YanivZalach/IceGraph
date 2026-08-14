@@ -1,4 +1,3 @@
-import os
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
@@ -9,17 +8,11 @@ from collectors.collect_data_files import CollectDataFiles, DataFileRecord
 from collectors.collect_manifests import CollectManifests, ManifestRecord
 from collectors.collect_metadata import CollectMetadata, MetadataFileRecord
 from collectors.collect_snapshots import CollectSnapshots, SnapshotRecord
-from constants import (
-    DATA_FILES_CUTOFF_MANIFEST_WARNING,
-    DATA_FILES_CUTOFF_WARNING,
-    FileType,
-    MAX_DATA_FILES_TO_COLLECT,
-)
+from constants import DATA_FILES_CUTOFF_MANIFEST_WARNING, DATA_FILES_CUTOFF_WARNING, FileType
+from env import Env
 from icegraph_logger import logger
 from search_cutoff.find_search_cutoff import SearchCutoff, find_search_cutoff
 from table_inventory.utils import format_schemas_to_full_dict, get_json_metadata_from_path, parse_json_string_fields
-
-max_data_files_to_collect = int(os.getenv("MAX_DATA_FILES_TO_COLLECT", MAX_DATA_FILES_TO_COLLECT))
 
 
 @dataclass
@@ -208,7 +201,7 @@ class TableInventory(SparkTableAction):
             if manifest.child_files or manifest.error or manifest.added_snapshot_timestamp is None:
                 continue
 
-            manifest.warning = DATA_FILES_CUTOFF_MANIFEST_WARNING.format(max_data_files_to_collect=max_data_files_to_collect)
+            manifest.warning = DATA_FILES_CUTOFF_MANIFEST_WARNING.format(max_data_files_to_collect=Env.MAX_DATA_FILES_TO_COLLECT)
 
             if max_manifest_added_snapshot_timestamp is None or max_manifest_added_snapshot_timestamp < manifest.added_snapshot_timestamp:
                 max_manifest_added_snapshot_timestamp = manifest.added_snapshot_timestamp
@@ -216,7 +209,7 @@ class TableInventory(SparkTableAction):
 
         if max_manifest_added_snapshot_timestamp is not None:
             self._warnings["data_files_cutoff"] = DATA_FILES_CUTOFF_WARNING.format(
-                max_data_files_to_collect=max_data_files_to_collect,
+                max_data_files_to_collect=Env.MAX_DATA_FILES_TO_COLLECT,
                 added_snapshot_id=max_manifest_added_snapshot_id,
                 added_snapshot_timestamp=max_manifest_added_snapshot_timestamp,
             )
