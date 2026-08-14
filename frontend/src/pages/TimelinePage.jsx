@@ -600,12 +600,8 @@ export default function TimelinePage() {
 
       const snapshotId = type === "C" ? branchSnapId : details.snapshot_id;
       const referencedSnapshot = snapMap[snapshotId];
-      const isSnapshotMissing =
-        snapshotId != null &&
-        String(snapshotId) !== "-1" &&
-        (!referencedSnapshot || referencedSnapshot.error);
 
-      if (details.error || isSnapshotMissing) {
+      if (details.error || referencedSnapshot?.error) {
         type = "error";
       }
 
