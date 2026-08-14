@@ -401,6 +401,10 @@ const SECTIONS = [
           <li>Expand directories to see individual files</li>
           <li>Choose a branch, and within it, a snapshot to explore</li>
           <li>
+            If the selected snapshot or one of its included files could not be
+            read, an error notice identifies the file and explains why
+          </li>
+          <li>
             Many small files in one partition path often indicates a small-file
             problem
           </li>
