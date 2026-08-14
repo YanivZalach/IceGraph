@@ -61,7 +61,7 @@ class CollectMetadata(Collector):
             if metadata_files_df is not None:
                 snap_id_to_path = self._get_snap_id_to_path()
 
-                rows = metadata_files_df.orderBy(F.desc("metadata_timestamp")).collect()
+                rows = metadata_files_df.collect()
                 for index, row in enumerate(rows):
                     row_dict = row.asDict(recursive=True)
                     metadata_file_type = FileType.MAIN_METADATA if index == 0 else FileType.METADATA
@@ -87,6 +87,7 @@ class CollectMetadata(Collector):
             .select("file", "metadata_timestamp")
             .filter(F.col("metadata_timestamp") >= F.lit(str(self._start_metadata_cutoff)))
             .filter(F.col("metadata_timestamp") <= F.lit(str(self._end_metadata_cutoff)))
+            .orderBy(F.desc("metadata_timestamp"))
             .withColumn("metadata_timestamp", column_to_string_utc("metadata_timestamp"))
         )
         return {row.file: row.metadata_timestamp for row in metadata_df.collect()}
