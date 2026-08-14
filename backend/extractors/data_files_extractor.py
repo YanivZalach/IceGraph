@@ -1,15 +1,13 @@
-import os
 from typing import List
 
 import pyspark
-from pyspark.sql import Window, functions as F
+from pyspark.sql import Window
+from pyspark.sql import functions as F
 from pyspark.sql.types import LongType, StringType, StructField, StructType
 
 from collectors.collect_manifests import ManifestRecord
-from constants import MAX_DATA_FILES_TO_COLLECT
+from env import Env
 from extractors.extractor import Extractor
-
-max_data_files_to_collect = int(os.getenv("MAX_DATA_FILES_TO_COLLECT", MAX_DATA_FILES_TO_COLLECT))
 
 DATA_FILE_RECORD_SCHEMA = StructType(
     [
@@ -112,7 +110,7 @@ class DataFilesExtractor(Extractor):
 
     @staticmethod
     def _limit_and_rank_files_by_snapshot_timestamp(df):
-        df = df.orderBy(F.desc("latest_snapshot_timestamp")).limit(max_data_files_to_collect + 1)
+        df = df.orderBy(F.desc("latest_snapshot_timestamp")).limit(Env.MAX_DATA_FILES_TO_COLLECT + 1)
 
         row_num_window = Window.orderBy(F.desc("latest_snapshot_timestamp"))
         df = df.withColumn("row_num", F.row_number().over(row_num_window))
@@ -122,7 +120,7 @@ class DataFilesExtractor(Extractor):
     @staticmethod
     def _find_cutoff_snapshot_timestamp(df):
         return (
-            df.filter(F.col("row_num") == max_data_files_to_collect + 1)
+            df.filter(F.col("row_num") == Env.MAX_DATA_FILES_TO_COLLECT + 1)
             .agg(F.coalesce(F.first("latest_snapshot_timestamp"), F.lit(0).cast("timestamp")).alias("snapshot_timestamp_cutoff"))
             .select("snapshot_timestamp_cutoff")
         )

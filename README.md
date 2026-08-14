@@ -111,18 +111,7 @@ We will create an `.env` file in the root of the backend directory:
 SPARK_REMOTE=sc://localhost:15002 # Our local testing spark, If you use docker, change it to your ip.
 ```
 
-If you want to change the default values of the application, you can set the following environment variables:
-
-- `MAX_NUMBER_OF_GRAPHS_TO_COMPUTE`: The maximum number of graphs to compute in parallel. Default is 15.
-- `MAX_SNAPSHOTS_TO_SHOW`: The maximum number of snapshots to show in the snapshot selection page. Default is 2000.
-- `COMPUTE_CLEANUP_TIME_SECONDS`: The time to wait before cleaning up the computed graphs. Default is 12.
-- `MAX_DATA_FILES_TO_COLLECT`: The maximum number of data files to collect. Default is 5000.
-- `MAX_SNAPSHOTS_TO_COMPUTE`: The maximum number of snapshots to compute. Default is 50.
-- `MAX_GRACEFUL_SHUTDOWN_TIME_SECONDS`: The time to wait before forcing an exit of the application when shutting it down. Default is 10.
-- `INCLUDE_NONE_ICEBERG_CATALOGS`: Whether to include catalogs that are not exclusively Iceberg (such as the Spark session catalog) in the table selection autocompletion. Default is true.
-- `TABLE_LIST_CACHE_TTL_SECONDS`: The cache time-to-live for table selection autocompletion endpoint before refresh. Default is 60.
-- `PRODUCTION_MODE`: Whether to serve the app with the Waitress production WSGI server instead of Flask's development server. Always single-process (multi-threaded) so the in-memory job-polling state stays consistent. Default is false; the Docker image sets this to true.
-- `WSGI_THREADS`: The number of threads Waitress uses to handle concurrent requests when `PRODUCTION_MODE` is enabled. Default is 20.
+The supported environment variables, their defaults, and their descriptions are defined in the [`Env` class](backend/env.py).
 
 ### 3. Run
 

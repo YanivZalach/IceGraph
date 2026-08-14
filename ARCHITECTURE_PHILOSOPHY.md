@@ -12,7 +12,7 @@ Introduce no service or infrastructure component unless the feature is impossibl
 
 ## 3. Simple deployment
 
-`SPARK_REMOTE` is the only mandatory configuration. All other tunables default in `backend/constants.py`, overridable via environment variable. One Docker image serves both frontend and backend; no second service to provision or wire up.
+`SPARK_REMOTE` is the only mandatory configuration. All other tunables are defined in `backend/env.py` with defaults and can be overridden via environment variables. One Docker image serves both frontend and backend; no second service to provision or wire up.
 
 ## 4. The process is disposable
 
