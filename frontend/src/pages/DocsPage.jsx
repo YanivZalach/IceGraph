@@ -325,6 +325,12 @@ const SECTIONS = [
           Use the Timeline to pinpoint when a large write happened, spot
           unexpected deletes, or verify that a compaction job ran as expected.
         </p>
+        <p>
+          A red <strong className="text-white">Unknown Events</strong> marker
+          appears when metadata or snapshot data is missing. It indicates that
+          one or more events occurred in that part of the timeline, even when
+          the exact events cannot be determined.
+        </p>
         <div className="space-y-2">
           <h3 className="text-white font-semibold">Zoom &amp; pan</h3>
           <p>

@@ -30,6 +30,7 @@ const COLOR_A = "#1964B9";
 const COLOR_B = "#6437D2";
 const COLOR_C = "#0EA5E9";
 const COLOR_INIT = "#D97706";
+const COLOR_ERROR = "#B9233C";
 
 function formatTs(tsStr) {
   if (!tsStr) return null;
@@ -124,6 +125,7 @@ function colorFor(type) {
   if (type === "A") return COLOR_A;
   if (type === "B") return COLOR_B;
   if (type === "C") return COLOR_C;
+  if (type === "error") return COLOR_ERROR;
   return COLOR_INIT;
 }
 
@@ -131,6 +133,7 @@ function labelFor(type) {
   if (type === "A") return "Write";
   if (type === "B") return "Metadata Op";
   if (type === "C") return "Branch Write";
+  if (type === "error") return "Unknown Events";
   return "Init";
 }
 
@@ -594,6 +597,17 @@ export default function TimelinePage() {
         type = "C";
       }
 
+      const snapshotId = type === "C" ? branchSnapId : details.snapshot_id;
+      const referencedSnapshot = snapMap[snapshotId];
+      const isSnapshotMissing =
+        snapshotId != null &&
+        String(snapshotId) !== "-1" &&
+        (!referencedSnapshot || referencedSnapshot.error);
+
+      if (details.error || isSnapshotMissing) {
+        type = "error";
+      }
+
       const diff =
         (type === "B" || type === "C") && prev
           ? Object.keys(details)
@@ -605,7 +619,7 @@ export default function TimelinePage() {
         details,
         type,
         diff,
-        snapshotId: type === "C" ? branchSnapId : details.snapshot_id,
+        snapshotId,
         branchName,
         metadataNodeId,
       };
@@ -776,6 +790,7 @@ export default function TimelinePage() {
           ["A", "Write"],
           ["B", "Metadata Op"],
           ["C", "Branch Write"],
+          ["error", "Unknown Events"],
         ].map(([type, lbl]) => (
           <div key={type} className="flex items-center gap-1.5">
             <div
