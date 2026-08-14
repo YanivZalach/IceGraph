@@ -9,7 +9,7 @@ from snapshot_analyzer.constants import REPLACE_SUB_OPERATIONS_BY_PRIORITY
 def build_action_link(summary: Dict[str, str]) -> Optional[str]:
     app_id = summary.get("spark.app.id")
     if summary.get("engine-name") == "spark":
-        app_id = summary.get("app-id") or app_id
+        app_id = summary.get("app-id", app_id)
 
     if not Env.SPARK_HISTORY_SERVER_URL or not app_id:
         return None
