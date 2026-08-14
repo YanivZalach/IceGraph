@@ -414,7 +414,7 @@ const mockResponse = {
       parent_id: "3978455952979011601",
       operation: "overwrite",
       operation_description: "overwrite",
-      action_link: "http://spark-history:18080/history/local-1781259969606/",
+      action_link: "http://spark-history/history/local-1781259969606/",
       summary: {
         "spark.app.id": "local-1781259969606",
         "replace-partitions": "true",
@@ -448,7 +448,7 @@ const mockResponse = {
       parent_id: "3978455952979011601",
       operation: "overwrite",
       operation_description: "overwrite",
-      action_link: "http://spark-history:18080/history/local-1781259969606/",
+      action_link: "http://spark-history/history/local-1781259969606/",
       summary: {
         "spark.app.id": "local-1781259969606",
         "replace-partitions": "true",
@@ -480,7 +480,7 @@ const mockResponse = {
       parent_id: "3037121856853733940",
       operation: "overwrite",
       operation_description: "overwrite",
-      action_link: "http://spark-history:18080/history/local-1781259969606/",
+      action_link: "http://spark-history/history/local-1781259969606/",
       summary: {
         "spark.app.id": "local-1781259969606",
         "replace-partitions": "true",
@@ -514,7 +514,7 @@ const mockResponse = {
       parent_id: "2170216877480741855",
       operation: "append",
       operation_description: "append",
-      action_link: "http://spark-history:18080/history/local-1781259969606/",
+      action_link: "http://spark-history/history/local-1781259969606/",
       summary: {
         "spark.app.id": "local-1781259969606",
         "added-data-files": "2",
@@ -543,7 +543,7 @@ const mockResponse = {
       parent_id: "3200045318442131660",
       operation: "append",
       operation_description: "append",
-      action_link: "http://spark-history:18080/history/local-1781259969606/",
+      action_link: "http://spark-history/history/local-1781259969606/",
       summary: {
         "spark.app.id": "local-1781259969606",
         "added-data-files": "2",
@@ -571,7 +571,7 @@ const mockResponse = {
       parent_id: null,
       operation: "overwrite",
       operation_description: "overwrite",
-      action_link: "http://spark-history:18080/history/local-1781259969606/",
+      action_link: "http://spark-history/history/local-1781259969606/",
       summary: {
         "spark.app.id": "local-1781259969606",
         "replace-partitions": "true",
