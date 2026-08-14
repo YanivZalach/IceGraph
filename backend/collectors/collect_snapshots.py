@@ -17,10 +17,10 @@ from icegraph_logger import logger
 class SnapshotRecord(BaseFile):
     timestamp: str
     snapshot_id: int
+    action_link: Optional[str]
     parent_id: Optional[int]
     operation: Optional[str]
     operation_description: Optional[str]
-    action_link: Optional[str]
     summary: Dict[str, str]
 
 
