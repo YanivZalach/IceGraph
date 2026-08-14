@@ -64,8 +64,8 @@ class CollectMetadata(Collector):
                 for row in metadata_files_df.collect():
                     self._metadata_files.append(self._parse_metadata_row(row.asDict(recursive=True), snap_id_to_path))
 
-                self._metadata_files.extend(self._bad_metadata_files)
-                self._apply_metadata_order()
+            self._metadata_files.extend(self._bad_metadata_files)
+            self._apply_metadata_order()
 
         except Exception as e:
             logger.error(f"[{self._table_name}] metadata collection failed", exc_info=True)
@@ -124,6 +124,9 @@ class CollectMetadata(Collector):
         return metadata_files_df
 
     def _apply_metadata_order(self) -> None:
+        if not self._metadata_files:
+            return
+
         metadata_file_by_path = {metadata_file.file_path: metadata_file for metadata_file in self._metadata_files}
 
         self._metadata_files = [metadata_file_by_path[file_path] for file_path in self._ordered_metadata_paths]
