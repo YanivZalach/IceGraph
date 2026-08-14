@@ -24,5 +24,10 @@ root = ".."
 tag_regex = "^v(?P<version>.*)$"
 git_describe_command = ["git", "describe", "--dirty", "--tags", "--long", "--match", "v*"]
 
-[tool.black]
+[dependency-groups]
+dev = [
+    "ruff==0.16.0",
+]
+
+[tool.ruff]
 line-length = 150

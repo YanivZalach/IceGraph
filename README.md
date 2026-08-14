@@ -94,6 +94,11 @@ uv sync
 ```
 
 ```bash
+cd icegraph-client
+uv sync
+```
+
+```bash
 cd frontend
 npm i
 ```
@@ -136,9 +141,29 @@ Go to `http://localhost:3000` and explore your tables.
 
 ### 4. Before Every Commit
 
-CI fails the build on any violation, so run all three from the `frontend` directory before you commit:
+CI checks Python formatting and the frontend toolchain. Format each Python project from its own directory.
+
+Backend:
 
 ```bash
+cd backend
+
+uv run ruff format .
+```
+
+Python client:
+
+```bash
+cd icegraph-client
+
+uv run ruff format .
+```
+
+Run all three frontend checks from the `frontend` directory:
+
+```bash
+cd frontend
+
 npm run format
 npm run lint
 npm run typecheck

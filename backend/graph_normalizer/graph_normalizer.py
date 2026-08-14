@@ -3,7 +3,6 @@ from graph_normalizer.utils import to_json_safe
 
 
 class GraphNormalizer:
-
     def __init__(self, table_data: TableInventoryResult):
         self._files = table_data.metadata_files + table_data.snapshots + table_data.manifests + table_data.data_files
         self._table_errors = table_data.errors

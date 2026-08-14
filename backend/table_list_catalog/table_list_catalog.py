@@ -8,7 +8,12 @@ from typing import Optional
 from base_classes.utils import timed
 from constants import TABLE_LIST_CACHE_TTL_SECONDS
 from spark_connect import open_spark_connect_session
-from table_list_catalog.utils import collect_catalogs_tables_names, collect_databases_in_catalogs, list_catalog_names, filter_catalogs_to_include
+from table_list_catalog.utils import (
+    collect_catalogs_tables_names,
+    collect_databases_in_catalogs,
+    list_catalog_names,
+    filter_catalogs_to_include,
+)
 
 table_list_cache_ttl_seconds = int(os.getenv("TABLE_LIST_CACHE_TTL_SECONDS", TABLE_LIST_CACHE_TTL_SECONDS))
 

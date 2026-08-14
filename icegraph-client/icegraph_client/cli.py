@@ -33,7 +33,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="icegraph", description="CLI for the IceGraph server API")
     parser.add_argument("--base-url", default=None, help=f"IceGraph server URL. Falls back to the {BASE_URL_ENV_VAR} environment variable")
     parser.add_argument(
-        "--token", default=None, help=f"Bearer token, for servers that require authentication. Falls back to the {TOKEN_ENV_VAR} environment variable"
+        "--token",
+        default=None,
+        help=f"Bearer token, for servers that require authentication. Falls back to the {TOKEN_ENV_VAR} environment variable",
     )
     parser.add_argument(
         "--cookie",

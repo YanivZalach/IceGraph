@@ -163,7 +163,6 @@ class TableInventory(SparkTableAction):
 
         for manifest in self._manifests:
             for snapshot_id in manifest.hidden_manifest_data.pointing_snapshots:
-
                 snapshot = snapshot_id_to_snapshot_file_map.get(snapshot_id)
                 if not snapshot:
                     self._errors[f"Linking {snapshot_id} -> {manifest.file_path}"] = "Snapshot not found"
