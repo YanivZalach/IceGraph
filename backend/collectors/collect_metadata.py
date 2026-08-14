@@ -61,14 +61,11 @@ class CollectMetadata(Collector):
             if metadata_files_df is not None:
                 snap_id_to_path = self._get_snap_id_to_path()
 
-                rows = metadata_files_df.orderBy(F.desc("metadata_timestamp")).collect()
-                for index, row in enumerate(rows):
-                    row_dict = row.asDict(recursive=True)
-                    metadata_file_type = FileType.MAIN_METADATA if index == 0 else FileType.METADATA
+                for row in metadata_files_df.collect():
+                    self._metadata_files.append(self._parse_metadata_row(row.asDict(recursive=True), snap_id_to_path))
 
-                    self._metadata_files.append(self._parse_metadata_row(metadata_file_type, row_dict, snap_id_to_path))
-
-                self._add_bad_metadata_files()
+            self._metadata_files.extend(self._bad_metadata_files)
+            self._apply_metadata_order()
 
         except Exception as e:
             logger.error(f"[{self._table_name}] metadata collection failed", exc_info=True)
@@ -87,6 +84,7 @@ class CollectMetadata(Collector):
             .select("file", "metadata_timestamp")
             .filter(F.col("metadata_timestamp") >= F.lit(str(self._start_metadata_cutoff)))
             .filter(F.col("metadata_timestamp") <= F.lit(str(self._end_metadata_cutoff)))
+            .orderBy(F.desc("metadata_timestamp"))
             .withColumn("metadata_timestamp", column_to_string_utc("metadata_timestamp"))
         )
         return {row.file: row.metadata_timestamp for row in metadata_df.collect()}
@@ -111,7 +109,7 @@ class CollectMetadata(Collector):
                         error=str(e),
                         timestamp=timestamp,
                         snapshot_id=None,
-                        previous_file=None,
+                        previous_file=self._get_previous_metadata_file(file),
                         last_sequence_number=None,
                         partition_spec_id=None,
                         current_schema_id=None,
@@ -125,24 +123,22 @@ class CollectMetadata(Collector):
 
         return metadata_files_df
 
-    def _add_bad_metadata_files(self) -> None:
-        for bad_file in self._bad_metadata_files:
-            index_to_insert = len(self._metadata_files)
+    def _apply_metadata_order(self) -> None:
+        if not self._metadata_files:
+            return
 
-            for index, metadata_file in enumerate(self._metadata_files):
-                if metadata_file.previous_file == bad_file.file_path:
-                    index_to_insert = index + 1
-                    break
+        metadata_file_by_path = {metadata_file.file_path: metadata_file for metadata_file in self._metadata_files}
 
-            self._metadata_files.insert(index_to_insert, bad_file)
+        self._metadata_files = [metadata_file_by_path[file_path] for file_path in self._ordered_metadata_paths]
+        self._metadata_files[0].type = FileType.MAIN_METADATA
 
     def _get_snap_id_to_path(self) -> Dict[int, str]:
         return {s.snapshot_id: s.file_path for s in (self._snapshots or [])}
 
     def _get_previous_metadata_file(self, file_path: str) -> Optional[str]:
-        file_index = self._ordered_metadata_paths.index(file_path)
+        older_index = self._ordered_metadata_paths.index(file_path) + 1
 
-        return self._ordered_metadata_paths[file_index - 1] if file_index - 1 >= 0 else None
+        return self._ordered_metadata_paths[older_index] if older_index < len(self._ordered_metadata_paths) else None
 
     @staticmethod
     def _parse_refs(row: dict) -> dict:
@@ -161,7 +157,7 @@ class CollectMetadata(Collector):
 
         return branches_child_files
 
-    def _parse_metadata_row(self, file_type: FileType, row: dict, snap_id_to_path: dict) -> MetadataFileRecord:
+    def _parse_metadata_row(self, row: dict, snap_id_to_path: dict) -> MetadataFileRecord:
         refs = self._parse_refs(row)
         branches_child_files = self._build_branches_child_files(refs, snap_id_to_path)
 
@@ -169,7 +165,7 @@ class CollectMetadata(Collector):
         child_files = ([current_snap_path] if current_snap_path else []) + branches_child_files
 
         return MetadataFileRecord(
-            type=file_type,
+            type=FileType.METADATA,
             file_path=row["file"],
             timestamp=str(row["metadata_timestamp"]),
             snapshot_id=row["current-snapshot-id"],
