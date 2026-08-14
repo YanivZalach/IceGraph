@@ -20,6 +20,7 @@ class SnapshotRecord(BaseFile):
     parent_id: Optional[int]
     operation: Optional[str]
     operation_description: Optional[str]
+    action_link: Optional[str]
     summary: Dict[str, str]
 
 
@@ -76,6 +77,7 @@ class CollectSnapshots(Collector):
             parent_id=snapshot.parent_id,
             operation=snapshot.operation,
             operation_description=snapshot.operation,
+            action_link=None,
             summary=self._format_summary(snapshot.summary or {}),
             child_files=[],
         )

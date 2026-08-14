@@ -1,5 +1,5 @@
 from constants import REPLACE_OPERATION
-from snapshot_analyzer.utils import get_replace_operation_from_summary
+from snapshot_analyzer.utils import build_action_link, get_replace_operation_from_summary
 from table_inventory.table_inventory import TableInventoryResult
 
 
@@ -9,6 +9,8 @@ class SnapshotAnalyzer:
 
     def analyze(self) -> TableInventoryResult:
         for snapshot in self._table_data.snapshots:
+            snapshot.action_link = build_action_link(snapshot.summary)
+
             if snapshot.operation == REPLACE_OPERATION:
                 snapshot.operation_description = get_replace_operation_from_summary(snapshot.summary)
 

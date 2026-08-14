@@ -1,8 +1,18 @@
 from contextlib import suppress
-from typing import Dict, FrozenSet
+from typing import Dict, FrozenSet, Optional
 
 from constants import REPLACE_OPERATION
+from env import Env
 from snapshot_analyzer.constants import REPLACE_SUB_OPERATIONS_BY_PRIORITY
+
+
+def build_action_link(summary: Dict[str, str]) -> Optional[str]:
+    """Spark History Server URL for the application that wrote the snapshot, or None."""
+    app_id = summary.get("app-id")
+    if not Env.SPARK_HISTORY_SERVER_URL or summary.get("engine-name") != "spark" or not app_id:
+        return None
+
+    return f"{Env.SPARK_HISTORY_SERVER_URL.rstrip('/')}/history/{app_id}/"
 
 
 def get_replace_operation_from_summary(summary: Dict[str, str]) -> str:

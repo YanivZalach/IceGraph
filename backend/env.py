@@ -26,6 +26,9 @@ class Env:
     # Cache lifetime for the table selection endpoint.
     TABLE_LIST_CACHE_TTL_SECONDS = int(os.getenv("TABLE_LIST_CACHE_TTL_SECONDS", "60"))
 
+    # Base URL used to link Spark snapshots to their History Server applications.
+    SPARK_HISTORY_SERVER_URL = os.getenv("SPARK_HISTORY_SERVER_URL", "")
+
     # Whether non-Iceberg catalogs are included in table selection.
     INCLUDE_NONE_ICEBERG_CATALOGS = os.getenv("INCLUDE_NONE_ICEBERG_CATALOGS", "true").lower() == "true"
 
