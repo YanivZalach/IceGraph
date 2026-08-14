@@ -141,9 +141,9 @@ class CollectMetadata(Collector):
         return {s.snapshot_id: s.file_path for s in (self._snapshots or [])}
 
     def _get_previous_metadata_file(self, file_path: str) -> Optional[str]:
-        file_index = self._ordered_metadata_paths.index(file_path)
+        older_index = self._ordered_metadata_paths.index(file_path) + 1
 
-        return self._ordered_metadata_paths[file_index - 1] if file_index - 1 >= 0 else None
+        return self._ordered_metadata_paths[older_index] if older_index < len(self._ordered_metadata_paths) else None
 
     @staticmethod
     def _parse_refs(row: dict) -> dict:
