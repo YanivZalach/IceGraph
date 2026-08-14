@@ -329,7 +329,10 @@ const SECTIONS = [
           A red <strong className="text-white">Unknown Events</strong> marker
           appears when metadata or snapshot data is missing. It indicates that
           one or more events occurred in that part of the timeline, even when
-          the exact events cannot be determined.
+          the exact events cannot be determined. The next readable event is
+          compared with the previous readable metadata. Its details show the
+          metadata changes, and when the snapshot changed they also show that
+          snapshot's operation.
         </p>
         <div className="space-y-2">
           <h3 className="text-white font-semibold">Zoom &amp; pan</h3>

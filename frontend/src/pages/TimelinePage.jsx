@@ -565,26 +565,27 @@ export default function TimelinePage() {
         }
       });
 
-    const timeline = metaNodes.map(({ details, id: metadataNodeId }, i) => {
-      const prev = i > 0 ? metaNodes[i - 1].details : null;
-      let type = !prev
+    let previousValidDetails = null;
+    const timeline = metaNodes.map(({ details, id: metadataNodeId }) => {
+      const previousDetails = previousValidDetails;
+      let type = !previousDetails
         ? "init"
-        : details.snapshot_id !== prev.snapshot_id
+        : details.snapshot_id !== previousDetails.snapshot_id
           ? "A"
           : "B";
 
       let branchSnapId = null;
       let branchName = null;
 
-      if (prev && details.refs && prev.refs) {
+      if (previousDetails && details.refs && previousDetails.refs) {
         const currentRefs = details.refs;
-        const prevRefs = prev.refs;
+        const previousRefs = previousDetails.refs;
 
-        for (const key of Object.keys(prevRefs)) {
-          if (currentRefs[key] && prevRefs[key]) {
+        for (const key of Object.keys(previousRefs)) {
+          if (currentRefs[key] && previousRefs[key]) {
             const currentSnapId = currentRefs[key]["snapshot-id"];
-            const prevSnapId = prevRefs[key]["snapshot-id"];
-            if (currentSnapId !== prevSnapId) {
+            const previousSnapId = previousRefs[key]["snapshot-id"];
+            if (currentSnapId !== previousSnapId) {
               branchSnapId = currentSnapId;
               branchName = key;
               break;
@@ -609,13 +610,24 @@ export default function TimelinePage() {
       }
 
       const diff =
-        (type === "B" || type === "C") && prev
-          ? Object.keys(details)
-              .filter((k) => hasFieldChanged(details[k], prev[k]))
-              .map((k) => ({ key: k, before: prev[k], after: details[k] }))
+        type !== "error" && previousDetails
+          ? Array.from(
+              new Set([
+                ...Object.keys(previousDetails),
+                ...Object.keys(details),
+              ]),
+            )
+              .filter((key) =>
+                hasFieldChanged(previousDetails[key], details[key]),
+              )
+              .map((key) => ({
+                key,
+                before: previousDetails[key],
+                after: details[key],
+              }))
           : [];
 
-      return {
+      const event = {
         details,
         type,
         diff,
@@ -623,6 +635,12 @@ export default function TimelinePage() {
         branchName,
         metadataNodeId,
       };
+
+      if (type !== "error") {
+        previousValidDetails = details;
+      }
+
+      return event;
     });
 
     return {
@@ -985,6 +1003,12 @@ export default function TimelinePage() {
                   <SnapSummary summary={selectedSnap.summary} />
                 </>
               )}
+              <div className="mt-2 border-t border-edge pt-4">
+                <PanelSectionTitle className="mb-3">
+                  Metadata Changes
+                </PanelSectionTitle>
+                <DiffList diff={selected.diff} />
+              </div>
             </>
           )}
 
