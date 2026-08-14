@@ -1,19 +1,27 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from typing import Dict
+from typing import Callable, Optional
 
 import pyspark
 
+from base_classes.base_file import BaseFile
 from base_classes.spark_table_action import SparkTableAction
-
-
-@dataclass(frozen=True)
-class ExtractionResult:
-    dataframe: pyspark.sql.DataFrame
-    errors: Dict[str, str] = field(default_factory=dict)
+from icegraph_logger import logger
 
 
 class Extractor(SparkTableAction, ABC):
     @abstractmethod
-    def extract_dataframe(self) -> ExtractionResult:
+    def extract_dataframe(self) -> pyspark.sql.DataFrame:
         pass
+
+    def _read_source(self, source_file: BaseFile, read_source: Callable[[], pyspark.sql.DataFrame]) -> Optional[pyspark.sql.DataFrame]:
+        try:
+            data = read_source()
+            data.schema  # Trigger the file metadata read
+
+            return data
+
+        except Exception as e:
+            logger.error(f"[{self._table_name}] Failed to read file {source_file.file_path}", exc_info=True)
+            source_file.error = str(e)
+
+            return None

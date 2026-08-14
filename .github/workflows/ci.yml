@@ -7,6 +7,23 @@ on:
     branches: [master]
 
 jobs:
+  python-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check backend formatting
+        uses: astral-sh/ruff-action@v4.1.0
+        with:
+          version: "0.16.0"
+          args: format --check --diff
+          src: backend
+      - name: Check icegraph-client formatting
+        uses: astral-sh/ruff-action@v4.1.0
+        with:
+          version: "0.16.0"
+          args: format --check --diff
+          src: icegraph-client
+
   frontend:
     runs-on: ubuntu-latest
     defaults:

@@ -53,3 +53,7 @@ The cutoff is applied at the snapshot boundary — all data files belonging to c
 unless a newer visible snapshot also references them, in which case they are included.
 Every data file you see is referenced by at least one snapshot that is newer than the cut-off snapshot.
 """)
+
+DATA_FILES_CUTOFF_MANIFEST_WARNING = inspect.cleandoc("""
+The data files of the manifest were not loaded/attached because the limit of {max_data_files_to_collect} data files was reached.
+""")

@@ -30,6 +30,7 @@ const COLOR_A = "#1964B9";
 const COLOR_B = "#6437D2";
 const COLOR_C = "#0EA5E9";
 const COLOR_INIT = "#D97706";
+const COLOR_ERROR = "#B9233C";
 
 function formatTs(tsStr) {
   if (!tsStr) return null;
@@ -124,6 +125,7 @@ function colorFor(type) {
   if (type === "A") return COLOR_A;
   if (type === "B") return COLOR_B;
   if (type === "C") return COLOR_C;
+  if (type === "error") return COLOR_ERROR;
   return COLOR_INIT;
 }
 
@@ -131,6 +133,7 @@ function labelFor(type) {
   if (type === "A") return "Write";
   if (type === "B") return "Metadata Op";
   if (type === "C") return "Branch Write";
+  if (type === "error") return "Unknown Events";
   return "Init";
 }
 
@@ -562,26 +565,27 @@ export default function TimelinePage() {
         }
       });
 
-    const timeline = metaNodes.map(({ details, id: metadataNodeId }, i) => {
-      const prev = i > 0 ? metaNodes[i - 1].details : null;
-      let type = !prev
+    let previousValidDetails = null;
+    const timeline = metaNodes.map(({ details, id: metadataNodeId }) => {
+      const previousDetails = previousValidDetails;
+      let type = !previousDetails
         ? "init"
-        : details.snapshot_id !== prev.snapshot_id
+        : details.snapshot_id !== previousDetails.snapshot_id
           ? "A"
           : "B";
 
       let branchSnapId = null;
       let branchName = null;
 
-      if (prev && details.refs && prev.refs) {
+      if (previousDetails && details.refs && previousDetails.refs) {
         const currentRefs = details.refs;
-        const prevRefs = prev.refs;
+        const previousRefs = previousDetails.refs;
 
-        for (const key of Object.keys(prevRefs)) {
-          if (currentRefs[key] && prevRefs[key]) {
+        for (const key of Object.keys(previousRefs)) {
+          if (currentRefs[key] && previousRefs[key]) {
             const currentSnapId = currentRefs[key]["snapshot-id"];
-            const prevSnapId = prevRefs[key]["snapshot-id"];
-            if (currentSnapId !== prevSnapId) {
+            const previousSnapId = previousRefs[key]["snapshot-id"];
+            if (currentSnapId !== previousSnapId) {
               branchSnapId = currentSnapId;
               branchName = key;
               break;
@@ -594,21 +598,49 @@ export default function TimelinePage() {
         type = "C";
       }
 
+      const snapshotId = type === "C" ? branchSnapId : details.snapshot_id;
+      const referencedSnapshot = snapMap[snapshotId];
+      const isSnapshotMissing =
+        snapshotId != null &&
+        String(snapshotId) !== "-1" &&
+        (!referencedSnapshot || referencedSnapshot.error);
+
+      if (details.error || isSnapshotMissing) {
+        type = "error";
+      }
+
       const diff =
-        (type === "B" || type === "C") && prev
-          ? Object.keys(details)
-              .filter((k) => hasFieldChanged(details[k], prev[k]))
-              .map((k) => ({ key: k, before: prev[k], after: details[k] }))
+        type !== "error" && previousDetails
+          ? Array.from(
+              new Set([
+                ...Object.keys(previousDetails),
+                ...Object.keys(details),
+              ]),
+            )
+              .filter((key) =>
+                hasFieldChanged(previousDetails[key], details[key]),
+              )
+              .map((key) => ({
+                key,
+                before: previousDetails[key],
+                after: details[key],
+              }))
           : [];
 
-      return {
+      const event = {
         details,
         type,
         diff,
-        snapshotId: type === "C" ? branchSnapId : details.snapshot_id,
+        snapshotId,
         branchName,
         metadataNodeId,
       };
+
+      if (type !== "error") {
+        previousValidDetails = details;
+      }
+
+      return event;
     });
 
     return {
@@ -776,6 +808,7 @@ export default function TimelinePage() {
           ["A", "Write"],
           ["B", "Metadata Op"],
           ["C", "Branch Write"],
+          ["error", "Unknown Events"],
         ].map(([type, lbl]) => (
           <div key={type} className="flex items-center gap-1.5">
             <div
@@ -970,6 +1003,12 @@ export default function TimelinePage() {
                   <SnapSummary summary={selectedSnap.summary} />
                 </>
               )}
+              <div className="mt-2 border-t border-edge pt-4">
+                <PanelSectionTitle className="mb-3">
+                  Metadata Changes
+                </PanelSectionTitle>
+                <DiffList diff={selected.diff} />
+              </div>
             </>
           )}
 

@@ -68,7 +68,7 @@ class CollectSnapshots(Collector):
 
     @staticmethod
     def _format_summary(summary: dict) -> dict:
-        return {k: (f"{(int(v) / (1024 ** 3)):.5f} GB" if k.endswith("files-size") else v) for k, v in summary.items()}
+        return {k: (f"{(int(v) / (1024**3)):.5f} GB" if k.endswith("files-size") else v) for k, v in summary.items()}
 
     def _parse_snapshot_row(self, snapshot) -> SnapshotRecord:
         return SnapshotRecord(
