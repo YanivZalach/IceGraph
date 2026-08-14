@@ -206,15 +206,14 @@ class TableInventory(SparkTableAction):
         max_manifest_added_snapshot_id = None
 
         for manifest in self._manifests:
-            if len(manifest.child_files) == 0:
-                manifest.warning = DATA_FILES_CUTOFF_MANIFEST_WARNING.format(max_data_files_to_collect=max_data_files_to_collect)
+            if manifest.child_files or manifest.error or manifest.added_snapshot_timestamp is None:
+                continue
 
-                if manifest.added_snapshot_timestamp is None:
-                    continue
+            manifest.warning = DATA_FILES_CUTOFF_MANIFEST_WARNING.format(max_data_files_to_collect=max_data_files_to_collect)
 
-                if max_manifest_added_snapshot_timestamp is None or max_manifest_added_snapshot_timestamp < manifest.added_snapshot_timestamp:
-                    max_manifest_added_snapshot_timestamp = manifest.added_snapshot_timestamp
-                    max_manifest_added_snapshot_id = manifest.added_snapshot_id
+            if max_manifest_added_snapshot_timestamp is None or max_manifest_added_snapshot_timestamp < manifest.added_snapshot_timestamp:
+                max_manifest_added_snapshot_timestamp = manifest.added_snapshot_timestamp
+                max_manifest_added_snapshot_id = manifest.added_snapshot_id
 
         if max_manifest_added_snapshot_timestamp is not None:
             self._warnings["data_files_cutoff"] = DATA_FILES_CUTOFF_WARNING.format(
