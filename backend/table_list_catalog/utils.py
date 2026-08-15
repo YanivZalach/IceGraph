@@ -61,7 +61,12 @@ def collect_databases_in_catalogs(spark: SparkSession, catalogs: List[str]) -> L
 
 def get_database_views_df(spark: SparkSession, database: str) -> Optional[DataFrame]:
     try:
-        return spark.sql(f"show views in {database}").withColumn("table", F.concat(F.lit(f"{database}."), F.col("viewName"))).select("table")
+        return (
+            spark.sql(f"show views in {database}")
+            .filter(~F.col("isTemporary"))
+            .withColumn("table", F.concat(F.lit(f"{database}."), F.col("viewName")))
+            .select("table")
+        )
 
     except PySparkException as error:
         logger.warning(f"Could not list views in {database}: {error}")
