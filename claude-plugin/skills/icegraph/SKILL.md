@@ -34,8 +34,25 @@ suggesting a local URL reasonable.
 
 Once you have it, reuse it for the rest of the task instead of re-asking per command.
 
+**Remember the URL across sessions.** The moment the user gives you a base URL, save it to memory
+(one entry, e.g. "IceGraph server base URL: `<url>`", along with any token/cookie *source*, but
+never the secret value itself). In a later session, treat that saved URL as the server the user
+means and use it without re-asking. Only assume a different server when the user actually says so:
+a new URL in the prompt, or an explicit "different/other server". When they do, use the new one and
+update the saved entry to match. Don't quietly swap servers, and don't re-ask for a URL you already
+have.
+
 ## 1. Prerequisites
 
+- **Check the server version once at the start of every session**, before running real commands.
+  The server may have been upgraded since the last session, and the client is only guaranteed
+  compatible with the matching server release. Read it from `<base_url>/docs` → Overview →
+  **Version** (open it with browser automation if available; otherwise fetch the page and grep the
+  served JS bundle for the version string). Compare it against the installed client
+  (`pip show icegraph-client`). If they differ, tell the user and suggest
+  `pip install icegraph-client==<server version>`, but don't install it yourself. If the version
+  isn't reachable, say so once and continue rather than blocking. Do this check once per session,
+  not per command.
 - Confirm `icegraph` is on PATH with `icegraph --help` before relying on it.
 - **If it's not installed, don't just suggest a bare `pip install icegraph-client`.** Check
   `<base_url>/docs` first — the Overview section shows a **Version** field — and suggest the
