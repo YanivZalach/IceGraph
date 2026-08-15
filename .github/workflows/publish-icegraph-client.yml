@@ -1,14 +1,17 @@
 name: Publish icegraph-client to PyPI
 
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_call:
+    secrets:
+      PYPI_API_TOKEN:
+        required: true
 
 jobs:
   publish:
     name: Build and publish to PyPI
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
