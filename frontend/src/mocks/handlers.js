@@ -414,8 +414,9 @@ const mockResponse = {
       parent_id: "3978455952979011601",
       operation: "overwrite",
       operation_description: "overwrite",
+      action_link: "http://spark-history/history/local-1781260348782/",
       summary: {
-        "spark.app.id": "local-1781259969606",
+        "spark.app.id": "local-1781260348782",
         "replace-partitions": "true",
         my_custom_key:
           "If you have found me, you are searching through IceGraph and doing a great job!",
@@ -447,8 +448,9 @@ const mockResponse = {
       parent_id: "3978455952979011601",
       operation: "overwrite",
       operation_description: "overwrite",
+      action_link: "http://spark-history/history/local-1781260337777/",
       summary: {
-        "spark.app.id": "local-1781259969606",
+        "spark.app.id": "local-1781260337777",
         "replace-partitions": "true",
         "added-data-files": "2",
         "added-records": "3",
@@ -478,8 +480,9 @@ const mockResponse = {
       parent_id: "3037121856853733940",
       operation: "overwrite",
       operation_description: "overwrite",
+      action_link: "http://spark-history/history/local-1781260332316/",
       summary: {
-        "spark.app.id": "local-1781259969606",
+        "spark.app.id": "local-1781260332316",
         "replace-partitions": "true",
         "added-data-files": "2",
         "deleted-data-files": "1",
@@ -511,8 +514,9 @@ const mockResponse = {
       parent_id: "2170216877480741855",
       operation: "append",
       operation_description: "append",
+      action_link: "http://spark-history/history/local-1781260329809/",
       summary: {
-        "spark.app.id": "local-1781259969606",
+        "spark.app.id": "local-1781260329809",
         "added-data-files": "2",
         "added-records": "2",
         "added-files-size": "0.00000 GB",
@@ -539,8 +543,9 @@ const mockResponse = {
       parent_id: "3200045318442131660",
       operation: "append",
       operation_description: "append",
+      action_link: "http://spark-history/history/local-1781260329646/",
       summary: {
-        "spark.app.id": "local-1781259969606",
+        "spark.app.id": "local-1781260329646",
         "added-data-files": "2",
         "added-records": "2",
         "added-files-size": "0.00000 GB",
@@ -566,8 +571,9 @@ const mockResponse = {
       parent_id: null,
       operation: "overwrite",
       operation_description: "overwrite",
+      action_link: "http://spark-history/history/local-1781260317678/",
       summary: {
-        "spark.app.id": "local-1781259969606",
+        "spark.app.id": "local-1781260317678",
         "replace-partitions": "true",
         "added-data-files": "2",
         "added-records": "3",

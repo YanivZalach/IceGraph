@@ -170,27 +170,33 @@ browser tab isn't a substitute for giving the user something they can re-open, c
 
 ## 5. Tracing a snapshot back to the Spark job that wrote it
 
-A `graph` node with `type: "snapshot"` has a `summary` dict — a raw, unfiltered passthrough
-of whatever Iceberg/Spark put in that snapshot's summary map. If it contains a `spark.app.id` key,
-that's the actual Spark application that produced that snapshot's data. This key isn't always
-present — don't assume it exists; check `summary` for it before saying anything about it.
+A `graph` node with `type: "snapshot"` may have an `action_link` that points directly to the Spark
+History Server application that wrote it. Check `action_link` first. If it is populated, give that
+link to the user directly. Do not ask for the History Server base URL or an example application
+URL when the data already provides `action_link`.
 
-If the user asks who/what wrote a snapshot's data (or asks about `spark.app.id` directly) and it's
-present: tell them they can look up that application in their **Spark History Server** — IceGraph
-has no access to it and doesn't know its address. Ask the user for an example URL to any
-application's page in their Spark History Server (they likely have one bookmarked, or can grab one
-from another job's logs). Then build the equivalent URL for *this* `spark.app.id` by substituting
-just the app-id portion of that example URL, leaving the rest of its structure (host, port, path
-shape) untouched — don't assume a fixed Spark History Server URL scheme, since it varies by setup.
+The node also has a `summary` dict, a raw, unfiltered passthrough of whatever Iceberg/Spark put in
+that snapshot's summary map. When `action_link` is empty, resolve the Spark application ID in this
+order:
+
+1. Use `summary["app-id"]` when `summary["engine-name"]` is `"spark"`.
+2. Otherwise, use `summary["spark.app.id"]` when present.
+
+If either form provides an application ID, tell the user they can look up that application in
+their **Spark History Server**. Ask the user for an example URL to any application's page in their
+Spark History Server (they likely have one bookmarked, or can grab one from another job's logs).
+Then build the equivalent URL for this application ID by substituting just the app-id portion of
+that example URL, leaving the rest of its structure (host, port, path shape) untouched. Don't
+assume a fixed Spark History Server URL scheme, since it varies by setup.
 
 ## 6. Cache a table's data to a tmp file for the rest of the session
 
 The first time you fetch a table's data with `snapshots` or `graph` in a conversation, write the
 raw JSON to a tmp file (session scratch/tmp directory if one is available, otherwise a plain
 system tmp path — name it so it's identifiable, e.g. `icegraph_<database>_<table>.json`). For any
-follow-up question about that same table and range — schema, properties, partition spec, a
-specific node's fields, errors/warnings, tracing a `spark.app.id` — read back from that file
-instead of re-running the CLI. This data doesn't change from one question to the next within a
+follow-up question about that same table and range, including schema, properties, partition spec,
+a specific node's fields, errors/warnings, or tracing a Spark application ID, read back from that
+file instead of re-running the CLI. This data doesn't change from one question to the next within a
 session, so re-fetching it is wasted round-trips to a remote server.
 
 **Exception: never answer from the cache when the user is specifically asking about the table's
@@ -224,7 +230,9 @@ usually isn't.
    resolved snapshot (`select_node_id` doesn't apply on `/table/metadata`, so omit it):
    `https://ice.example.com/table/metadata?table=sales.orders&start_snapshot_id=snap-789&end_snapshot_id=snap-789`
 5. "Which job wrote this snapshot's data?"
-   → find the `snapshot`-type node for it in a `graph` result, check its `summary` for
-   `spark.app.id`. If present, ask the user for an example Spark History Server URL (e.g. one
-   they already have for another job), then give them that same URL with just the app-id swapped
-   for this snapshot's `spark.app.id`. If it's absent, say so rather than guessing at a job.
+   → find the `snapshot`-type node for it in a `graph` result. If `action_link` is populated, give
+   it to the user directly. Otherwise, use `summary["app-id"]` when `summary["engine-name"]` is
+   `"spark"`, falling back to `summary["spark.app.id"]`. If either provides an ID, ask the user for
+   an example Spark History Server URL (e.g. one they already have for another job), then give them
+   that same URL with just the app-id swapped. If neither key provides an ID, say so rather than
+   guessing at a job.
