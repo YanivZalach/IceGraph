@@ -1,10 +1,12 @@
 from contextlib import suppress
 from typing import List, Optional
 
-from pyspark.sql import SparkSession
+from pyspark.errors import PySparkException
+from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
 
 from env import Env
+from icegraph_logger import logger
 
 
 def get_spark_default_catalog(spark: SparkSession) -> str:
@@ -57,14 +59,34 @@ def collect_databases_in_catalogs(spark: SparkSession, catalogs: List[str]) -> L
     return [row.database for row in databases_df.collect()]
 
 
+def get_database_views_df(spark: SparkSession, database: str) -> Optional[DataFrame]:
+    try:
+        return (
+            spark.sql(f"show views in {database}")
+            .filter(~F.col("isTemporary"))
+            .withColumn("table", F.concat(F.lit(f"{database}."), F.col("viewName")))
+            .select("table")
+        )
+
+    except PySparkException as error:
+        logger.warning(f"Could not list views in {database}: {error}")
+        return None
+
+
 def collect_catalogs_tables_names(spark: SparkSession, databases: List[str]) -> List[str]:
     tables_df = None
     for database in databases:
         df = (
             spark.sql(f"show tables in {database}")
+            .filter(~F.col("isTemporary"))
             .withColumn("table", F.concat(F.lit(f"{database}."), F.col("tableName")))
-            .select("table", "isTemporary")
+            .select("table")
         )
+
+        views_df = get_database_views_df(spark, database)
+        if views_df is not None:
+            df = df.subtract(views_df)
+
         if tables_df is None:
             tables_df = df
         else:
@@ -73,4 +95,4 @@ def collect_catalogs_tables_names(spark: SparkSession, databases: List[str]) -> 
     if tables_df is None:
         return []
 
-    return [row.table for row in tables_df.filter(F.col("isTemporary") == False).select("table").collect()]
+    return [row.table for row in tables_df.collect()]
