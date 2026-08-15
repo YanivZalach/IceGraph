@@ -1,0 +1,70 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  docker:
+    name: Docker image
+    uses: ./.github/workflows/docker-publish.yml
+    secrets: inherit
+
+  pypi:
+    name: Python client
+    uses: ./.github/workflows/publish-icegraph-client.yml
+    secrets: inherit
+
+  pages:
+    name: Frontend demo
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit
+
+  release-notes:
+    name: Write release notes
+    runs-on: ubuntu-latest
+    needs: [docker, pypi, pages]
+    steps:
+      - name: Build notes and publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+          DOCKER_IMAGE: yanivzalach/icegraph
+          DEMO_URL: https://yanivzalach.github.io/IceGraph/
+        run: |
+          set -euo pipefail
+
+          VERSION="${TAG#v}"
+          NOTES_FILE="$RUNNER_TEMP/release-notes.md"
+
+          GENERATED="$(gh api "repos/$REPO/releases/generate-notes" -f tag_name="$TAG" --jq .body)"
+          CONTRIBUTORS="$(printf '%s\n' "$GENERATED" | grep -oE '@[A-Za-z0-9-]+' | sort -u | paste -sd , - | sed 's/,/, /g' || true)"
+
+          cat > "$NOTES_FILE" <<EOF
+          ## Artifacts
+
+          | Artifact | Get it |
+          | --- | --- |
+          | 🐳 Docker image | \`docker pull $DOCKER_IMAGE:$TAG\`<br>[Docker Hub](https://hub.docker.com/r/$DOCKER_IMAGE/tags?name=$TAG) |
+          | 🐍 Python client | \`pip install icegraph-client==$VERSION\`<br>[PyPI](https://pypi.org/project/icegraph-client/$VERSION/) |
+          | 🌐 Live demo | [$DEMO_URL]($DEMO_URL) |
+          | 📖 Docs | [${DEMO_URL}docs](${DEMO_URL}docs) |
+
+          EOF
+
+          printf '%s\n' "$GENERATED" >> "$NOTES_FILE"
+
+          if [ -n "$CONTRIBUTORS" ]; then
+            printf '\n## Contributors\n\nThanks to %s 🧊\n' "$CONTRIBUTORS" >> "$NOTES_FILE"
+          fi
+
+          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            gh release edit "$TAG" --repo "$REPO" --notes-file "$NOTES_FILE" --latest
+          else
+            gh release create "$TAG" --repo "$REPO" --title "IceGraph $TAG" --notes-file "$NOTES_FILE" --latest
+          fi
