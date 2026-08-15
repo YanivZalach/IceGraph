@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTableGraphData } from "../features/table/tableGraphData";
-import { FileType } from "../graphConstants";
-import { useOutletContext } from "react-router-dom";
 import PanelIssueNotice from "../components/PanelIssueNotice";
 import { FileType, fileTypeLabel } from "../graphConstants";
 import { useViewInGraph } from "../hooks/useViewInGraph";
