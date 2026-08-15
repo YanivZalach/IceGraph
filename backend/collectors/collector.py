@@ -10,7 +10,6 @@ from base_classes.spark_table_action import SparkTableAction
 class FilesCollection:
     files: List[BaseFile] = field(default_factory=list)
     errors: Dict[str, str] = field(default_factory=dict)
-    warnings: Dict[str, str] = field(default_factory=dict)
 
 
 class Collector(SparkTableAction, ABC):

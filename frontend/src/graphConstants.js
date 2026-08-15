@@ -18,9 +18,11 @@ export const NODE_STYLE_MAP = {
   [FileType.SNAPSHOT]: { rgb: [25, 100, 185], level: 0 },
   [FileType.MANIFEST]: { rgb: [25, 145, 185], level: 1 },
   [FileType.DATA]: { rgb: [25, 150, 115], level: 2 },
-  [FileType.POSITION_DELETE]: { rgb: [185, 35, 60], level: 2 },
-  [FileType.EQUALITY_DELETE]: { rgb: [185, 35, 60], level: 2 },
+  [FileType.POSITION_DELETE]: { rgb: [230, 145, 30], level: 2 },
+  [FileType.EQUALITY_DELETE]: { rgb: [230, 145, 30], level: 2 },
 };
+
+export const ERROR_NODE_RGB = [185, 35, 60];
 const FILE_TYPE_LABELS = {
   [FileType.MAIN_METADATA]: "Main Metadata",
   [FileType.METADATA]: "Metadata",

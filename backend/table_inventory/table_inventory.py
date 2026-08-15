@@ -1,4 +1,3 @@
-import os
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
@@ -9,12 +8,11 @@ from collectors.collect_data_files import CollectDataFiles, DataFileRecord
 from collectors.collect_manifests import CollectManifests, ManifestRecord
 from collectors.collect_metadata import CollectMetadata, MetadataFileRecord
 from collectors.collect_snapshots import CollectSnapshots, SnapshotRecord
-from constants import DATA_FILES_CUTOFF_WARNING, FileType, MAX_DATA_FILES_TO_COLLECT
+from constants import DATA_FILES_CUTOFF_MANIFEST_WARNING, DATA_FILES_CUTOFF_WARNING, FileType
+from env import Env
 from icegraph_logger import logger
 from search_cutoff.find_search_cutoff import SearchCutoff, find_search_cutoff
 from table_inventory.utils import format_schemas_to_full_dict, get_json_metadata_from_path, parse_json_string_fields
-
-max_data_files_to_collect = int(os.getenv("MAX_DATA_FILES_TO_COLLECT", MAX_DATA_FILES_TO_COLLECT))
 
 
 @dataclass
@@ -65,6 +63,7 @@ class TableInventory(SparkTableAction):
         self._warn_if_data_cutoff_happened()
 
         self._set_current_table_specs()
+        self._collect_file_errors()
 
         return TableInventoryResult(
             errors=self._errors,
@@ -92,7 +91,6 @@ class TableInventory(SparkTableAction):
         ).collect()
 
         self._errors.update(snapshot_collection.errors)
-        self._warnings.update(snapshot_collection.warnings)
 
         self._snapshots = snapshot_collection.files
 
@@ -105,7 +103,6 @@ class TableInventory(SparkTableAction):
                 metadata_collection = metadata_future.result()
 
                 self._errors.update(metadata_collection.errors)
-                self._warnings.update(metadata_collection.warnings)
 
                 self._metadata_files = metadata_collection.files
 
@@ -118,8 +115,6 @@ class TableInventory(SparkTableAction):
 
                 self._errors.update(manifests_collection.errors)
                 self._errors.update(data_files_collection.errors)
-                self._warnings.update(manifests_collection.warnings)
-                self._warnings.update(data_files_collection.warnings)
 
                 self._manifests = manifests_collection.files
                 self._data_files = data_files_collection.files
@@ -161,7 +156,6 @@ class TableInventory(SparkTableAction):
 
         for manifest in self._manifests:
             for snapshot_id in manifest.hidden_manifest_data.pointing_snapshots:
-
                 snapshot = snapshot_id_to_snapshot_file_map.get(snapshot_id)
                 if not snapshot:
                     self._errors[f"Linking {snapshot_id} -> {manifest.file_path}"] = "Snapshot not found"
@@ -204,17 +198,26 @@ class TableInventory(SparkTableAction):
         max_manifest_added_snapshot_id = None
 
         for manifest in self._manifests:
-            if len(manifest.child_files) == 0:
-                if max_manifest_added_snapshot_timestamp is None or max_manifest_added_snapshot_timestamp < manifest.added_snapshot_timestamp:
-                    max_manifest_added_snapshot_timestamp = manifest.added_snapshot_timestamp
-                    max_manifest_added_snapshot_id = manifest.added_snapshot_id
+            if manifest.child_files or manifest.error or manifest.added_snapshot_timestamp is None:
+                continue
+
+            manifest.warning = DATA_FILES_CUTOFF_MANIFEST_WARNING.format(max_data_files_to_collect=Env.MAX_DATA_FILES_TO_COLLECT)
+
+            if max_manifest_added_snapshot_timestamp is None or max_manifest_added_snapshot_timestamp < manifest.added_snapshot_timestamp:
+                max_manifest_added_snapshot_timestamp = manifest.added_snapshot_timestamp
+                max_manifest_added_snapshot_id = manifest.added_snapshot_id
 
         if max_manifest_added_snapshot_timestamp is not None:
             self._warnings["data_files_cutoff"] = DATA_FILES_CUTOFF_WARNING.format(
-                max_data_files_to_collect=max_data_files_to_collect,
+                max_data_files_to_collect=Env.MAX_DATA_FILES_TO_COLLECT,
                 added_snapshot_id=max_manifest_added_snapshot_id,
                 added_snapshot_timestamp=max_manifest_added_snapshot_timestamp,
             )
+
+    def _collect_file_errors(self):
+        file_groups = (self._metadata_files, self._snapshots, self._manifests, self._data_files)
+        for files in file_groups:
+            self._errors.update({file.file_path: file.error for file in files if file.error})
 
     def _set_current_table_specs(self):
         self._current_table_specs = {"table-name": self._table_name}

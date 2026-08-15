@@ -16,5 +16,11 @@ dependencies = [
     "setuptools>=75.0.0",
     "waitress==3.0.2",
 ]
-[tool.black]
+
+[dependency-groups]
+dev = [
+    "ruff==0.16.0",
+]
+
+[tool.ruff]
 line-length = 150

@@ -1,6 +1,7 @@
 from base_classes.utils import column_to_string_utc
 import json
 from dataclasses import dataclass
+from functools import cached_property
 from typing import Any, Dict, List, Optional
 
 import pyspark.sql
@@ -18,17 +19,17 @@ from base_classes.utils import timed
 
 @dataclass
 class MetadataFileRecord(BaseFile):
-    timestamp: str
+    timestamp: Optional[str]
     snapshot_id: Optional[int]
     previous_file: Optional[str]
     last_sequence_number: Optional[int]
-    partition_spec_id: int
-    current_schema_id: int
-    sort_order_id: int
+    partition_spec_id: Optional[int]
+    current_schema_id: Optional[int]
+    sort_order_id: Optional[int]
     refs: Dict[str, Any]
     properties: Dict[str, str]
     pointed_snapshots_files: Optional[List[Dict[str, str]]]
-    pointed_metadata_log_count: int
+    pointed_metadata_log_count: Optional[int]
 
 
 class CollectMetadata(Collector):
@@ -45,28 +46,36 @@ class CollectMetadata(Collector):
         self._start_metadata_cutoff = start_metadata_cutoff
         self._end_metadata_cutoff = end_metadata_cutoff
 
+        self._ordered_metadata_to_timestamp: Dict[str, str] = {}
+
         self._metadata_files: List[MetadataFileRecord] = []
+        self._bad_metadata_files: List[MetadataFileRecord] = []
         self._errors: Dict[str, str] = {}
 
     @timed
     def collect(self) -> FilesCollection:
         try:
-            metadata_files = self._query_metadata_files()
-            metadata_files_df = self._build_metadata_files_df(metadata_files)
+            self._ordered_metadata_to_timestamp = self._query_metadata_files()
+            metadata_files_df = self._build_metadata_files_df()
 
             if metadata_files_df is not None:
                 snap_id_to_path = self._get_snap_id_to_path()
 
-                rows = metadata_files_df.orderBy(F.desc("metadata_timestamp")).collect()
-                self._metadata_files = [
-                    self._parse_metadata_row(index, row.asDict(recursive=True), rows, snap_id_to_path) for index, row in enumerate(rows)
-                ]
+                for row in metadata_files_df.collect():
+                    self._metadata_files.append(self._parse_metadata_row(row.asDict(recursive=True), snap_id_to_path))
+
+            self._metadata_files.extend(self._bad_metadata_files)
+            self._apply_metadata_order()
 
         except Exception as e:
             logger.error(f"[{self._table_name}] metadata collection failed", exc_info=True)
             self._errors["metadata_collection"] = str(e)
 
         return FilesCollection(files=self._metadata_files, errors=self._errors)
+
+    @cached_property
+    def _ordered_metadata_paths(self) -> list[str]:
+        return list(self._ordered_metadata_to_timestamp.keys())
 
     def _query_metadata_files(self) -> dict:
         metadata_df = (
@@ -75,13 +84,14 @@ class CollectMetadata(Collector):
             .select("file", "metadata_timestamp")
             .filter(F.col("metadata_timestamp") >= F.lit(str(self._start_metadata_cutoff)))
             .filter(F.col("metadata_timestamp") <= F.lit(str(self._end_metadata_cutoff)))
+            .orderBy(F.desc("metadata_timestamp"))
             .withColumn("metadata_timestamp", column_to_string_utc("metadata_timestamp"))
         )
         return {row.file: row.metadata_timestamp for row in metadata_df.collect()}
 
-    def _build_metadata_files_df(self, metadata_files: dict) -> Optional[pyspark.sql.DataFrame]:
+    def _build_metadata_files_df(self) -> Optional[pyspark.sql.DataFrame]:
         metadata_files_df = None
-        for file, timestamp in metadata_files.items():
+        for file, timestamp in self._ordered_metadata_to_timestamp.items():
             try:
                 df = get_metadata_row_slim_df_from_path(file).withColumn("metadata_timestamp", F.lit(timestamp)).withColumn("file", F.lit(file))
                 metadata_files_df = df if metadata_files_df is None else metadata_files_df.unionByName(df, allowMissingColumns=True)
@@ -91,12 +101,44 @@ class CollectMetadata(Collector):
                     f"[{self._table_name}] Metadata file read error for {file}",
                     exc_info=True,
                 )
-                self._errors[file] = f"Metadata file read error: {e}"
+                self._bad_metadata_files.append(
+                    MetadataFileRecord(
+                        type=FileType.METADATA,
+                        file_path=file,
+                        child_files=[],
+                        error=str(e),
+                        timestamp=timestamp,
+                        snapshot_id=None,
+                        previous_file=self._get_previous_metadata_file(file),
+                        last_sequence_number=None,
+                        partition_spec_id=None,
+                        current_schema_id=None,
+                        sort_order_id=None,
+                        refs={},
+                        properties={},
+                        pointed_snapshots_files=None,
+                        pointed_metadata_log_count=None,
+                    )
+                )
 
         return metadata_files_df
 
+    def _apply_metadata_order(self) -> None:
+        if not self._metadata_files:
+            return
+
+        metadata_file_by_path = {metadata_file.file_path: metadata_file for metadata_file in self._metadata_files}
+
+        self._metadata_files = [metadata_file_by_path[file_path] for file_path in self._ordered_metadata_paths]
+        self._metadata_files[0].type = FileType.MAIN_METADATA
+
     def _get_snap_id_to_path(self) -> Dict[int, str]:
         return {s.snapshot_id: s.file_path for s in (self._snapshots or [])}
+
+    def _get_previous_metadata_file(self, file_path: str) -> Optional[str]:
+        older_index = self._ordered_metadata_paths.index(file_path) + 1
+
+        return self._ordered_metadata_paths[older_index] if older_index < len(self._ordered_metadata_paths) else None
 
     @staticmethod
     def _parse_refs(row: dict) -> dict:
@@ -115,10 +157,7 @@ class CollectMetadata(Collector):
 
         return branches_child_files
 
-    def _parse_metadata_row(self, index: int, row: dict, rows: list, snap_id_to_path: dict) -> MetadataFileRecord:
-        number_of_rows = len(rows)
-        file_type = FileType.MAIN_METADATA if index == 0 else FileType.METADATA
-
+    def _parse_metadata_row(self, row: dict, snap_id_to_path: dict) -> MetadataFileRecord:
         refs = self._parse_refs(row)
         branches_child_files = self._build_branches_child_files(refs, snap_id_to_path)
 
@@ -126,11 +165,11 @@ class CollectMetadata(Collector):
         child_files = ([current_snap_path] if current_snap_path else []) + branches_child_files
 
         return MetadataFileRecord(
-            type=file_type,
+            type=FileType.METADATA,
             file_path=row["file"],
             timestamp=str(row["metadata_timestamp"]),
             snapshot_id=row["current-snapshot-id"],
-            previous_file=(rows[index + 1]["file"] if index + 1 < number_of_rows else None),
+            previous_file=self._get_previous_metadata_file(row["file"]),
             last_sequence_number=(row["last-sequence-number"] if "last-sequence-number" in row else None),
             partition_spec_id=row["default-spec-id"],
             current_schema_id=row["current-schema-id"],

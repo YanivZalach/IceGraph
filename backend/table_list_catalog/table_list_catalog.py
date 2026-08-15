@@ -1,16 +1,19 @@
-from table_list_catalog.utils import get_spark_default_catalog
-import os
 import threading
-import arrow
 from dataclasses import dataclass
 from typing import Optional
 
-from base_classes.utils import timed
-from constants import TABLE_LIST_CACHE_TTL_SECONDS
-from spark_connect import open_spark_connect_session
-from table_list_catalog.utils import collect_catalogs_tables_names, collect_databases_in_catalogs, list_catalog_names, filter_catalogs_to_include
+import arrow
 
-table_list_cache_ttl_seconds = int(os.getenv("TABLE_LIST_CACHE_TTL_SECONDS", TABLE_LIST_CACHE_TTL_SECONDS))
+from base_classes.utils import timed
+from env import Env
+from spark_connect import open_spark_connect_session
+from table_list_catalog.utils import (
+    collect_catalogs_tables_names,
+    collect_databases_in_catalogs,
+    filter_catalogs_to_include,
+    get_spark_default_catalog,
+    list_catalog_names,
+)
 
 
 @dataclass
@@ -46,7 +49,7 @@ class TableListCatalog:
     @staticmethod
     def _fresh_cached_tables() -> Optional[list[str]]:
         cache = TableListCatalog._cache
-        if cache and (arrow.utcnow() - cache.timestamp).total_seconds() < table_list_cache_ttl_seconds:
+        if cache and (arrow.utcnow() - cache.timestamp).total_seconds() < Env.TABLE_LIST_CACHE_TTL_SECONDS:
             return cache.tables
         return None
 

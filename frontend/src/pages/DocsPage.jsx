@@ -325,6 +325,16 @@ const SECTIONS = [
           Use the Timeline to pinpoint when a large write happened, spot
           unexpected deletes, or verify that a compaction job ran as expected.
         </p>
+        <p>
+          A red <strong className="text-white">Unknown Events</strong> marker
+          appears when metadata or snapshot data could not be read. Snapshots
+          that simply fall outside the selected range are not flagged. It
+          indicates that one or more events occurred in that part of the
+          timeline, even when the exact events cannot be determined. The next
+          readable event is compared with the previous readable metadata. Its
+          details show the metadata changes, and when the snapshot changed they
+          also show that snapshot's operation.
+        </p>
         <div className="space-y-2">
           <h3 className="text-white font-semibold">Zoom &amp; pan</h3>
           <p>
@@ -401,6 +411,10 @@ const SECTIONS = [
           <li>Expand directories to see individual files</li>
           <li>Choose a branch, and within it, a snapshot to explore</li>
           <li>
+            If the selected snapshot or one of its included files could not be
+            read, an error notice identifies the file and explains why
+          </li>
+          <li>
             Many small files in one partition path often indicates a small-file
             problem
           </li>
@@ -448,7 +462,14 @@ const SECTIONS = [
             </li>
             <li>
               <strong className="text-white">Data file</strong> — the actual
-              Parquet, ORC, or Avro file containing your rows
+              Parquet, ORC, or Avro file containing your rows. IceGraph is not
+              reading the data file: all of the data shown comes from the
+              manifest entries that point at it
+            </li>
+            <li>
+              <strong className="text-white">Unreadable file</strong> — a file
+              whose metadata could not be obtained is drawn in red and shows the
+              reason in its details panel. The rest of the graph still loads
             </li>
           </ul>
         </div>

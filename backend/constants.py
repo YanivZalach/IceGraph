@@ -1,27 +1,7 @@
 import inspect
 from enum import Enum
 
-MAX_NUMBER_OF_GRAPHS_TO_COMPUTE = 15
-
-MAX_SNAPSHOTS_TO_SHOW = 20
-
-MAX_SNAPSHOTS_TO_COMPUTE = 50
-
-COMPUTE_CLEANUP_TIME_SECONDS = 12
-
-MAX_DATA_FILES_TO_COLLECT = 5_000
-
-TABLE_LIST_CACHE_TTL_SECONDS = 60
-
-INCLUDE_NONE_ICEBERG_CATALOGS = "true"
-
-MAX_GRACEFUL_SHUTDOWN_TIME_SECONDS = 10
-
 APPLICATION_PORT = 5_050
-
-PRODUCTION_MODE = "false"
-
-WSGI_THREADS = 20
 
 MAIN_BRANCH_ICEBERG_TABLE_NAME = "main"
 
@@ -52,4 +32,8 @@ Timestamp: {added_snapshot_timestamp} UTC
 The cutoff is applied at the snapshot boundary — all data files belonging to cut-off snapshots are excluded,
 unless a newer visible snapshot also references them, in which case they are included.
 Every data file you see is referenced by at least one snapshot that is newer than the cut-off snapshot.
+""")
+
+DATA_FILES_CUTOFF_MANIFEST_WARNING = inspect.cleandoc("""
+The data files of the manifest were not loaded/attached because the limit of {max_data_files_to_collect} data files was reached.
 """)

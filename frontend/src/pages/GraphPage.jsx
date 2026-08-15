@@ -8,6 +8,7 @@ import {
   PanelHeader,
   PANEL_STATUS_BADGE_CLASS,
 } from "../components/PanelContent";
+import PanelIssueNotice from "../components/PanelIssueNotice";
 import {
   UI_DIALOG_SECTION_TITLE_CLASS,
   UI_POPUP_HINT_CLASS,
@@ -692,7 +693,10 @@ export default function GraphPage() {
   const sticky = stickyNode
     ? {
         rows: Object.entries(stickyNode.details)
-          .filter(([label]) => label.toLowerCase() !== "type")
+          .filter(
+            ([label]) =>
+              !["type", "error", "warning"].includes(label.toLowerCase()),
+          )
           .map(([label, value]) => ({
             label,
             value,
@@ -841,6 +845,12 @@ export default function GraphPage() {
           {isInspectMode && (
             <span className={PANEL_STATUS_BADGE_CLASS}>🔒 Locked View</span>
           )}
+          <PanelIssueNotice type="error">
+            {stickyNode.details.error}
+          </PanelIssueNotice>
+          <PanelIssueNotice type="warning">
+            {stickyNode.details.warning}
+          </PanelIssueNotice>
           {sticky.rows
             .filter((r) => !isEmptyValue(r.value))
             .map((r, i) => (

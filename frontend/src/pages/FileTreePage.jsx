@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTableGraphData } from "../features/table/tableGraphData";
 import { FileType } from "../graphConstants";
+import { useOutletContext } from "react-router-dom";
+import PanelIssueNotice from "../components/PanelIssueNotice";
+import { FileType, fileTypeLabel } from "../graphConstants";
 import { useViewInGraph } from "../hooks/useViewInGraph";
 import {
   UI_BODY_MUTED_ITALIC_CLASS,
@@ -113,6 +116,33 @@ function buildTree(partitions) {
     node.files.push(...files);
   }
   return root;
+}
+
+function getSnapshotFileErrors(snapshot, adjacency, nodeById) {
+  if (!snapshot) return [];
+
+  const errors = [];
+  const visited = new Set();
+  const queue = [snapshot.id];
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (visited.has(current)) continue;
+    visited.add(current);
+
+    const node = nodeById[current];
+    if (!node) continue;
+
+    if (node.details?.error) {
+      errors.push(
+        `${fileTypeLabel(node.type)} (${node.label || node.id}): ${node.details.error}`,
+      );
+    }
+
+    for (const { to } of adjacency[current] || []) queue.push(to);
+  }
+
+  return errors;
 }
 
 function FileRow({
@@ -612,6 +642,11 @@ export default function FileTreePage() {
   }
 
   const currentSnapshot = displayedSnapshots[effectiveIdx];
+  const snapshotFileErrors = getSnapshotFileErrors(
+    currentSnapshot,
+    adjacency,
+    nodeById,
+  );
 
   return (
     <div className="flex-1 flex flex-col bg-canvas overflow-hidden">
@@ -950,6 +985,12 @@ export default function FileTreePage() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-4 flex flex-col gap-2">
+        {snapshotFileErrors.length > 0 && (
+          <PanelIssueNotice type="error">
+            {snapshotFileErrors.join("\n")}
+          </PanelIssueNotice>
+        )}
+
         {totalPartitions === 0 && (
           <p className={`${UI_BODY_MUTED_ITALIC_CLASS} mt-4`}>
             {search

@@ -6,46 +6,27 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from dotenv import load_dotenv
 from flask import Flask, jsonify, request, send_from_directory
 from pyspark.errors import AnalysisException
 
-from constants import (
-    APPLICATION_PORT,
-    COMPUTE_CLEANUP_TIME_SECONDS,
-    JOB_TOKEN_FIELD,
-    MAX_NUMBER_OF_GRAPHS_TO_COMPUTE,
-    MAX_SNAPSHOTS_TO_SHOW,
-    MAX_GRACEFUL_SHUTDOWN_TIME_SECONDS,
-    INCLUDE_NONE_ICEBERG_CATALOGS,
-    PRODUCTION_MODE,
-    WSGI_THREADS,
-)
-from spark_connect import close_spark_connect_session
+from base_classes.utils import verify_iceberg_table
+from constants import APPLICATION_PORT, JOB_TOKEN_FIELD
+from env import Env
 from graph_normalizer.graph_normalizer import GraphNormalizer
 from icegraph_logger import logger
 from snapshot_analyzer.snapshot_analyzer import SnapshotAnalyzer
 from snapshot_map.snapshot_mapping import collect_snapshot_map
-from table_list_catalog.table_list_catalog import TableListCatalog
+from spark_connect import close_spark_connect_session
 from table_inventory.table_inventory import TableInventory
-from base_classes.utils import verify_iceberg_table
+from table_list_catalog.table_list_catalog import TableListCatalog
 
-load_dotenv()
 app = Flask(__name__, static_url_path="/static")
 app.json.sort_keys = False
 
 job_lock = threading.Lock()
 jobs: dict[str, dict] = {}
 
-max_number_of_graphs_to_compute = int(os.getenv("MAX_NUMBER_OF_GRAPHS_TO_COMPUTE", MAX_NUMBER_OF_GRAPHS_TO_COMPUTE))
-compute_cleanup_time_seconds = int(os.getenv("COMPUTE_CLEANUP_TIME_SECONDS", COMPUTE_CLEANUP_TIME_SECONDS))
-max_snapshots_to_show = int(os.getenv("MAX_SNAPSHOTS_TO_SHOW", MAX_SNAPSHOTS_TO_SHOW))
-max_graceful_shutdown_time_seconds = int(os.getenv("MAX_GRACEFUL_SHUTDOWN_TIME_SECONDS", MAX_GRACEFUL_SHUTDOWN_TIME_SECONDS))
-include_none_iceberg_catalogs = str(os.getenv("INCLUDE_NONE_ICEBERG_CATALOGS", INCLUDE_NONE_ICEBERG_CATALOGS)).lower() == "true"
-production_mode = str(os.getenv("PRODUCTION_MODE", PRODUCTION_MODE)).lower() == "true"
-wsgi_threads = int(os.getenv("WSGI_THREADS", WSGI_THREADS))
-
-executor_pool = ThreadPoolExecutor(max_workers=max_number_of_graphs_to_compute)
+executor_pool = ThreadPoolExecutor(max_workers=Env.MAX_NUMBER_OF_GRAPHS_TO_COMPUTE)
 
 
 def _safe_update_job(job_id, **fields):
@@ -62,7 +43,7 @@ def _cleanup_job(job_id):
 
 def _schedule_cleanup(job_id, is_in_lock_block=False):
     timer = threading.Timer(
-        compute_cleanup_time_seconds,
+        Env.COMPUTE_CLEANUP_TIME_SECONDS,
         lambda job_id=job_id: _cleanup_job(job_id),
     )
     timer.daemon = True
@@ -118,7 +99,7 @@ def list_tables():
         return jsonify(
             {
                 "tables": tables,
-                "include_none_iceberg_catalogs": include_none_iceberg_catalogs,
+                "include_none_iceberg_catalogs": Env.INCLUDE_NONE_ICEBERG_CATALOGS,
             }
         )
 
@@ -136,7 +117,7 @@ def snapshot_map(table_name):
     try:
         verify_iceberg_table(table_name)
 
-        result = collect_snapshot_map(table_name, max_snapshots_to_show)
+        result = collect_snapshot_map(table_name, Env.MAX_SNAPSHOTS_TO_SHOW)
 
         return jsonify(result)
 
@@ -228,21 +209,21 @@ def get_job_status(job_id):
 
 
 def _force_exit():
-    logger.error(f"Graceful shutdown timed out after {max_graceful_shutdown_time_seconds} seconds - forcing exit.")
+    logger.error(f"Graceful shutdown timed out after {Env.MAX_GRACEFUL_SHUTDOWN_TIME_SECONDS} seconds - forcing exit.")
     os._exit(1)
 
 
 if __name__ == "__main__":
     try:
-        if production_mode:
+        if Env.PRODUCTION_MODE:
             from waitress import serve
 
-            serve(app, host="0.0.0.0", port=APPLICATION_PORT, threads=wsgi_threads)
+            serve(app, host="0.0.0.0", port=APPLICATION_PORT, threads=Env.WSGI_THREADS)
         else:
             app.run(host="0.0.0.0", port=APPLICATION_PORT, debug=True)
 
     finally:
-        watchdog = threading.Timer(max_graceful_shutdown_time_seconds, _force_exit)
+        watchdog = threading.Timer(Env.MAX_GRACEFUL_SHUTDOWN_TIME_SECONDS, _force_exit)
         watchdog.daemon = True
         watchdog.start()
 

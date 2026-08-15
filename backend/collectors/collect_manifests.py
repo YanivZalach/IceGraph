@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 import pyspark
 
@@ -37,19 +37,16 @@ class CollectManifests(Collector):
         super().__init__(full_table_name)
         self._snapshots = snapshots
         self._manifests_to_ignore_df = manifests_to_ignore_df
-        self._errors: Dict[str, str] = {}
 
         self._manifests: List[ManifestRecord] = []
 
     @timed
     def collect(self) -> FilesCollection:
-        manifest_extraction_result = ManifestsExtractor(self._table_name, self._snapshots, self._manifests_to_ignore_df).extract_dataframe()
-        self._errors = manifest_extraction_result.errors
+        manifests_rows = ManifestsExtractor(self._table_name, self._snapshots, self._manifests_to_ignore_df).extract_dataframe().collect()
 
-        manifests_rows = manifest_extraction_result.dataframe.collect()
         self._manifests = [self._process_manifest_row(manifest_row) for manifest_row in manifests_rows]
 
-        return FilesCollection(files=self._manifests, errors=self._errors)
+        return FilesCollection(files=self._manifests)
 
     @staticmethod
     def _process_manifest_row(manifest_row) -> ManifestRecord:

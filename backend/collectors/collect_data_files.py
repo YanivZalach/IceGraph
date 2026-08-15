@@ -38,19 +38,16 @@ class CollectDataFiles(Collector):
     ):
         super().__init__(full_table_name)
         self._manifests = manifests
-        self._errors: Dict[str, str] = {}
 
         self._data_files: List[DataFileRecord] = []
 
     @timed
     def collect(self) -> FilesCollection:
-        data_files_extraction_result = DataFilesExtractor(self._table_name, self._manifests).extract_dataframe()
-        self._errors = data_files_extraction_result.errors
+        data_files_rows = DataFilesExtractor(self._table_name, self._manifests).extract_dataframe().collect()
 
-        data_files_rows = data_files_extraction_result.dataframe.collect()
         self._data_files = [self._process_data_file_row(data_file_row) for data_file_row in data_files_rows]
 
-        return FilesCollection(files=self._data_files, errors=self._errors)
+        return FilesCollection(files=self._data_files)
 
     def _process_data_file_row(self, data_file_row) -> DataFileRecord:
         data_file_dict = data_file_row.asDict(recursive=True)
@@ -59,7 +56,7 @@ class CollectDataFiles(Collector):
             type=self._detect_file_type(data_file_dict["content"]),
             file_path=data_file_dict["file_path"],
             format=data_file_dict["file_format"],
-            size_gb=f"{(data_file_dict['file_size_in_bytes'] / 1024 ** 3):.10f}",
+            size_gb=f"{(data_file_dict['file_size_in_bytes'] / 1024**3):.10f}",
             row_count=data_file_dict["record_count"],
             partition=format_partition(data_file_dict["partition"]),
             earliest_appearing_snapshot_id=data_file_dict["earliest_snapshot_id"],

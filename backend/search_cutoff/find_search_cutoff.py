@@ -65,11 +65,15 @@ def _get_start_cutoffs(
     table_name: str,
     start_snapshot_id: int,
 ) -> StartCutoffs:
-    row = spark.sql(f"""
+    row = (
+        spark.sql(f"""
         SELECT committed_at, parent_id
         FROM {table_name}.snapshots
         WHERE snapshot_id = {start_snapshot_id}
-    """).withColumn("committed_at", column_to_string_utc("committed_at")).first()
+    """)
+        .withColumn("committed_at", column_to_string_utc("committed_at"))
+        .first()
+    )
 
     if not row:
         return StartCutoffs(
@@ -80,11 +84,15 @@ def _get_start_cutoffs(
 
     snapshot_cutoff = to_arrow_utc(row.committed_at)
 
-    meta_row = spark.sql(f"""
+    meta_row = (
+        spark.sql(f"""
         SELECT MIN(timestamp) AS ts
         FROM {table_name}.metadata_log_entries
         WHERE latest_snapshot_id = {start_snapshot_id}
-    """).withColumn("ts", column_to_string_utc("ts")).first()
+    """)
+        .withColumn("ts", column_to_string_utc("ts"))
+        .first()
+    )
 
     metadata_cutoff = to_arrow_utc(meta_row.ts) if meta_row and meta_row.ts else snapshot_cutoff
 
@@ -102,11 +110,15 @@ def _get_end_cutoffs(
     table_name: str,
     end_snapshot_id: int,
 ) -> EndCutoffs:
-    row = spark.sql(f"""
+    row = (
+        spark.sql(f"""
         SELECT committed_at
         FROM {table_name}.snapshots
         WHERE snapshot_id = {end_snapshot_id}
-    """).withColumn("committed_at", column_to_string_utc("committed_at")).first()
+    """)
+        .withColumn("committed_at", column_to_string_utc("committed_at"))
+        .first()
+    )
 
     if not row:
         return EndCutoffs(
@@ -116,11 +128,15 @@ def _get_end_cutoffs(
 
     snapshot_cutoff = to_arrow_utc(row.committed_at)
 
-    meta_row = spark.sql(f"""
+    meta_row = (
+        spark.sql(f"""
         SELECT MAX(timestamp) AS ts
         FROM {table_name}.metadata_log_entries
         WHERE latest_snapshot_id = {end_snapshot_id}
-    """).withColumn("ts", column_to_string_utc("ts")).first()
+    """)
+        .withColumn("ts", column_to_string_utc("ts"))
+        .first()
+    )
 
     metadata_cutoff = to_arrow_utc(meta_row.ts) if meta_row and meta_row.ts else snapshot_cutoff
 

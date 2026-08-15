@@ -3,7 +3,7 @@ from pyspark.sql import functions as F
 from pyspark.sql.types import LongType, StringType, StructField, StructType
 
 from collectors.collect_snapshots import SnapshotRecord
-from extractors.extractor import ExtractionResult, Extractor
+from extractors.extractor import Extractor
 
 SNAPSHOT_TO_TIMESTAMP_SCHEMA = StructType(
     [
@@ -31,34 +31,29 @@ class ManifestsExtractor(Extractor):
         super().__init__(table_name)
         self._snapshots = snapshots
         self._manifests_to_ignore_df = manifests_to_ignore_df
-        self._errors = {}
 
-    def extract_dataframe(self) -> ExtractionResult:
+    def extract_dataframe(self) -> pyspark.sql.DataFrame:
         manifests_df = self._union_manifests_for_snapshots()
         manifests_with_timestamps_df = self._enrich_manifests_with_timestamps(manifests_df)
 
         valid_manifests_df = self._filter_ignored_manifests(manifests_with_timestamps_df)
-        manifests_df = self._aggregate_snapshots_by_manifests_sorted(valid_manifests_df)
 
-        return ExtractionResult(
-            manifests_df,
-            self._errors,
-        )
+        return self._aggregate_snapshots_by_manifests_sorted(valid_manifests_df)
 
     def _union_manifests_for_snapshots(self) -> pyspark.sql.DataFrame:
         result = None
         for snapshot in self._snapshots:
             snap_id = snapshot.snapshot_id
             manifest_list_path = snapshot.file_path
-            try:
-                df = self._read_manifests_for_snapshot(manifest_list_path, snap_id)
-                if result is None:
-                    result = df
-                else:
-                    result = result.unionByName(df, allowMissingColumns=True)
 
-            except Exception as e:
-                self._errors[manifest_list_path] = f"Failed to read/union manifest list: {e}"
+            df = self._read_source(snapshot, lambda: self._read_manifests_for_snapshot(manifest_list_path, snap_id))
+            if df is None:
+                continue
+
+            if result is None:
+                result = df
+            else:
+                result = result.unionByName(df, allowMissingColumns=True)
 
         if result is None:
             result = self._spark.createDataFrame([], MANIFEST_BASE_SCHEMA)

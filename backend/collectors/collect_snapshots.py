@@ -1,5 +1,3 @@
-from base_classes.utils import column_to_string_utc
-import os
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
@@ -8,12 +6,11 @@ from arrow import Arrow
 from pyspark.sql import functions as F
 
 from base_classes.base_file import BaseFile
+from base_classes.utils import column_to_string_utc, timed
 from collectors.collector import Collector, FilesCollection
-from constants import FileType, MAX_SNAPSHOTS_TO_COMPUTE
+from constants import FileType
+from env import Env
 from icegraph_logger import logger
-from base_classes.utils import timed
-
-max_snapshots_to_compute = int(os.getenv("MAX_SNAPSHOTS_TO_COMPUTE", MAX_SNAPSHOTS_TO_COMPUTE))
 
 
 @dataclass
@@ -63,12 +60,12 @@ class CollectSnapshots(Collector):
 
     @staticmethod
     def _validate_snapshot_count(snapshots_df: pyspark.sql.DataFrame) -> None:
-        if snapshots_df.count() > max_snapshots_to_compute:
-            raise ValueError(f"Too many snapshots to compute. Maximum is {max_snapshots_to_compute}.")
+        if snapshots_df.count() > Env.MAX_SNAPSHOTS_TO_COMPUTE:
+            raise ValueError(f"Too many snapshots to compute. Maximum is {Env.MAX_SNAPSHOTS_TO_COMPUTE}.")
 
     @staticmethod
     def _format_summary(summary: dict) -> dict:
-        return {k: (f"{(int(v) / (1024 ** 3)):.5f} GB" if k.endswith("files-size") else v) for k, v in summary.items()}
+        return {k: (f"{(int(v) / (1024**3)):.5f} GB" if k.endswith("files-size") else v) for k, v in summary.items()}
 
     def _parse_snapshot_row(self, snapshot) -> SnapshotRecord:
         return SnapshotRecord(
