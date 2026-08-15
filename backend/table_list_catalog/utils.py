@@ -1,6 +1,7 @@
 from contextlib import suppress
 from typing import List, Optional
 
+from pyspark.errors import PySparkException
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
 
@@ -59,11 +60,11 @@ def collect_databases_in_catalogs(spark: SparkSession, catalogs: List[str]) -> L
 
 
 def get_database_views_df(spark: SparkSession, database: str) -> Optional[DataFrame]:
-    with suppress(Exception):
+    try:
         return spark.sql(f"show views in {database}").withColumn("table", F.concat(F.lit(f"{database}."), F.col("viewName"))).select("table")
-
-    logger.warning(f"Could not list views in {database}")
-    return None
+    except PySparkException as error:
+        logger.warning(f"Could not list views in {database}: {error}")
+        return None
 
 
 def collect_catalogs_tables_names(spark: SparkSession, databases: List[str]) -> List[str]:
