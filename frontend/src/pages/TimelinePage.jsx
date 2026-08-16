@@ -405,6 +405,35 @@ function DiffRow({ label, before, after }) {
   );
 }
 
+function SnapOperationDescription({ operation, operationDescription }) {
+  if (!operationDescription || operationDescription === operation) return null;
+  return (
+    <PanelDetailRow
+      label="Operation Description"
+      value={operationDescription}
+    />
+  );
+}
+
+function SnapActionLink({ actionLink }) {
+  if (!actionLink) return null;
+  return (
+    <div>
+      <span className={`block ${PANEL_FIELD_LABEL_CLASS} mb-1`}>
+        action_link
+      </span>
+      <a
+        href={actionLink}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block font-mono text-xs text-accent hover:text-accent-dark break-all"
+      >
+        {actionLink}
+      </a>
+    </div>
+  );
+}
+
 function SnapSummary({ summary }) {
   const entries = summary ? Object.entries(summary) : [];
   if (entries.length === 0) return null;
@@ -996,6 +1025,11 @@ export default function TimelinePage() {
                     label="Operation"
                     value={selectedSnap.operation}
                   />
+                  <SnapOperationDescription
+                    operation={selectedSnap.operation}
+                    operationDescription={selectedSnap.operation_description}
+                  />
+                  <SnapActionLink actionLink={selectedSnap.action_link} />
                   <SnapSummary summary={selectedSnap.summary} />
                 </>
               )}
@@ -1018,6 +1052,11 @@ export default function TimelinePage() {
                     label="Operation"
                     value={selectedSnap.operation}
                   />
+                  <SnapOperationDescription
+                    operation={selectedSnap.operation}
+                    operationDescription={selectedSnap.operation_description}
+                  />
+                  <SnapActionLink actionLink={selectedSnap.action_link} />
                   <SnapSummary summary={selectedSnap.summary} />
                 </>
               )}
@@ -1056,6 +1095,11 @@ export default function TimelinePage() {
                     label="Operation"
                     value={selectedSnap.operation}
                   />
+                  <SnapOperationDescription
+                    operation={selectedSnap.operation}
+                    operationDescription={selectedSnap.operation_description}
+                  />
+                  <SnapActionLink actionLink={selectedSnap.action_link} />
                   <SnapSummary summary={selectedSnap.summary} />
                 </>
               )}
