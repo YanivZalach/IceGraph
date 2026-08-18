@@ -5,6 +5,8 @@ import {
   buildFileTreeGraphIndex,
   calculateFileStatistics,
   formatSnapshotVersion,
+  getBranches,
+  getDisplayedSnapshots,
   getSnapshotFileErrors,
   getSnapshotFiles,
   groupFilesByPartition,
@@ -115,5 +117,64 @@ void test("snapshot labels expose the actual snapshot version", () => {
   assert.equal(
     formatSnapshotVersion(snapshot, true),
     "ID 3791262493104209104 · Append · 2026-08-15 13:45:59.674+03:00 · latest",
+  );
+});
+
+void test("discovers historical branches across metadata versions", () => {
+  const context = fileTreeContextSchema.parse({
+    edges: [],
+    metadata: {
+      refs: { main: { "snapshot-id": "3", type: "branch" } },
+    },
+    nodes: [
+      {
+        details: {
+          refs: { main: { "snapshot-id": "3", type: "branch" } },
+          timestamp: "2026-08-15T13:46:00Z",
+        },
+        id: "metadata-3",
+        type: "main_metadata",
+      },
+      {
+        details: {
+          refs: {
+            main: { "snapshot-id": "2", type: "branch" },
+            my_test_branch: { "snapshot-id": "2", type: "branch" },
+          },
+          timestamp: "2026-08-15T13:45:59Z",
+        },
+        id: "metadata-2",
+        type: "metadata",
+      },
+      {
+        details: { parent_id: "2", snapshot_id: "3", timestamp: 3 },
+        id: "snapshot-3",
+        type: "snapshot",
+      },
+      {
+        details: { parent_id: "1", snapshot_id: "2", timestamp: 2 },
+        id: "snapshot-2",
+        type: "snapshot",
+      },
+      {
+        details: { parent_id: null, snapshot_id: "1", timestamp: 1 },
+        id: "snapshot-1",
+        type: "snapshot",
+      },
+    ],
+  });
+  const branches = getBranches(context);
+
+  assert.deepEqual(branches, [
+    { headSnapshotId: "3", name: "main" },
+    { headSnapshotId: "2", name: "my_test_branch" },
+  ]);
+  assert.deepEqual(
+    getDisplayedSnapshots(
+      buildFileTreeGraphIndex(context),
+      branches,
+      "my_test_branch",
+    ).map((snapshot) => snapshot.details.snapshot_id),
+    ["1", "2"],
   );
 });

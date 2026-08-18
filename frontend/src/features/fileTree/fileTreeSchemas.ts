@@ -11,6 +11,13 @@ const numericValueSchema = z
   .transform((value) => Number(value))
   .pipe(z.number());
 
+const metadataReferenceSchema = z
+  .object({
+    type: z.string(),
+    "snapshot-id": identifierSchema,
+  })
+  .catchall(z.unknown());
+
 export const fileDetailsSchema = z
   .object({
     error: z.string().nullish(),
@@ -21,6 +28,7 @@ export const fileDetailsSchema = z
     earliest_appearing_snapshot_id: nullableIdentifierSchema,
     earliest_appearing_snapshot_timestamp: z.string().nullish(),
     format: z.string().optional(),
+    refs: z.record(z.string(), metadataReferenceSchema).optional(),
     size_gb: numericValueSchema.optional(),
     row_count: numericValueSchema.optional(),
   })
@@ -38,13 +46,6 @@ export const graphEdgeSchema = z.object({
   to: identifierSchema,
   is_deleted: z.boolean().optional(),
 });
-
-const metadataReferenceSchema = z
-  .object({
-    type: z.string(),
-    "snapshot-id": identifierSchema,
-  })
-  .catchall(z.unknown());
 
 const metadataSchema = z
   .object({

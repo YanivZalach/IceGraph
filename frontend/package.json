@@ -19,6 +19,7 @@
     "msw:init": "msw init public/"
   },
   "dependencies": {
+    "@tanstack/react-hotkeys": "^0.10.0",
     "@tanstack/react-router": "^1.170.25",
     "clsx": "^2.1.1",
     "json-bigint": "^1.0.0",

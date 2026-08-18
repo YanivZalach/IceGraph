@@ -1,13 +1,12 @@
 import { forwardRef, useCallback, useEffect, useState } from "react";
 import {
-  PANEL_ACCENT_BORDER_REM,
   PANEL_GUTTER_REM,
   PANEL_WIDTH_DEFAULT_REM,
   PANEL_WIDTH_MIN_REM,
   pxToRem,
   remToPx,
 } from "../layoutConstants";
-import SidePanelFrame from "./SidePanelFrame";
+import SidePanelFrame, { SidePanelResizeHandle } from "./SidePanelFrame";
 
 export { PANEL_WIDTH_RELAXED_REM as PANEL_WIDTH_RELAXED } from "../layoutConstants";
 
@@ -123,42 +122,11 @@ const ResizableSidePanel = forwardRef(function ResizableSidePanel(
   }, []);
 
   const resizeHandle = !isFullscreen ? (
-    <div
+    <SidePanelResizeHandle
+      accentColor={accentColor}
       onMouseDown={startResize}
-      className="relative z-10 w-7 shrink-0 cursor-ew-resize self-stretch rounded-l-xl group"
-      style={{
-        borderLeft: `${PANEL_ACCENT_BORDER_REM}rem solid ${accentColor}`,
-      }}
       title="Drag left to widen"
-    >
-      <div
-        className="pointer-events-none absolute inset-0 rounded-l-xl bg-transparent transition-colors group-hover:bg-[color-mix(in_srgb,var(--panel-accent)_25%,transparent)] group-active:bg-[color-mix(in_srgb,var(--panel-accent)_40%,transparent)]"
-        aria-hidden="true"
-      />
-      <div
-        className="pointer-events-none absolute left-0 top-1/2 flex w-7 -translate-y-1/2 items-center justify-center text-white/85 drop-shadow-sm transition-colors group-hover:text-white"
-        aria-hidden="true"
-      >
-        <svg
-          className="h-7 w-4"
-          viewBox="0 0 12 22"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-        >
-          <path
-            d="M8 11H2M2 11L4.5 8M2 11L4.5 14"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M4 11h6M10 11L7.5 8M10 11L7.5 14"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </div>
-    </div>
+    />
   ) : null;
 
   const fullscreenAction = (
