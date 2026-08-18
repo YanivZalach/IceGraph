@@ -4,6 +4,7 @@ import {
   buildFileTree,
   buildFileTreeGraphIndex,
   calculateFileStatistics,
+  formatSnapshotVersion,
   getSnapshotFileErrors,
   getSnapshotFiles,
   groupFilesByPartition,
@@ -90,4 +91,29 @@ void test("tree folders roll statistics up from descendant partitions", () => {
   assert.equal(regionFolder.statistics.fileCount, 2);
   assert.equal(regionFolder.statistics.totalRowCount, 30);
   assert.equal(regionFolder.children.length, 2);
+});
+
+void test("snapshot labels expose the actual snapshot version", () => {
+  const [snapshot] = buildFileTreeGraphIndex(
+    fileTreeContextSchema.parse({
+      edges: [],
+      nodes: [
+        {
+          details: {
+            operation_description: "Append",
+            snapshot_id: "3791262493104209104",
+            timestamp: "2026-08-15 13:45:59.674+03:00",
+          },
+          id: "snapshot-path",
+          type: "snapshot",
+        },
+      ],
+    }),
+  ).snapshots;
+
+  assert.ok(snapshot);
+  assert.equal(
+    formatSnapshotVersion(snapshot, true),
+    "ID 3791262493104209104 · Append · 2026-08-15 13:45:59.674+03:00 · latest",
+  );
 });

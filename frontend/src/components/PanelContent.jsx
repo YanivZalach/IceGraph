@@ -76,7 +76,16 @@ function renderBreakablePath(path) {
   ));
 }
 
-export function PanelHeader({ title, titleColor, subtitle, meta }) {
+/**
+ * @param {{ title: string, titleColor?: string, subtitle?: string, meta?: string, preserveSubtitleEnd?: boolean }} props
+ */
+export function PanelHeader({
+  title,
+  titleColor = null,
+  subtitle = null,
+  meta = null,
+  preserveSubtitleEnd = false,
+}) {
   const opaqueColor = stripAlpha(titleColor);
   return (
     <div className="min-w-0 pr-4">
@@ -87,9 +96,23 @@ export function PanelHeader({ title, titleColor, subtitle, meta }) {
         {title}
       </div>
       {subtitle ? (
-        <div className={PANEL_SUBTITLE_CLASS}>
-          {renderBreakablePath(subtitle)}
-        </div>
+        preserveSubtitleEnd ? (
+          <div
+            className={`${PANEL_SUBTITLE_CLASS} overflow-hidden text-ellipsis whitespace-nowrap text-left`}
+            style={{
+              direction: "rtl",
+              textAlign: "left",
+              textOverflow: "ellipsis",
+            }}
+            title={subtitle}
+          >
+            {"\u202A" + subtitle + "\u202C"}
+          </div>
+        ) : (
+          <div className={PANEL_SUBTITLE_CLASS}>
+            {renderBreakablePath(subtitle)}
+          </div>
+        )
       ) : null}
       {meta ? <div className={PANEL_META_CLASS}>{meta}</div> : null}
     </div>

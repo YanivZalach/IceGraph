@@ -30,7 +30,7 @@ interface FileTreeToolbarProps {
 }
 
 const ACTION_CLASS =
-  "cursor-pointer rounded-lg border border-edge px-3 py-1.5 text-sm text-slate-400 transition hover:border-edge-hover hover:text-ink disabled:cursor-not-allowed disabled:opacity-30";
+  "shrink-0 cursor-pointer rounded-lg border border-edge px-3 py-1.5 text-sm text-slate-400 transition hover:border-edge-hover hover:text-ink disabled:cursor-not-allowed disabled:opacity-30";
 
 const FileTreeToolbar = ({
   branches,
@@ -64,7 +64,7 @@ const FileTreeToolbar = ({
   };
 
   return (
-    <header className="flex shrink-0 flex-wrap items-center gap-2 border-b border-edge px-4 py-3 sm:px-6">
+    <header className="flex shrink-0 flex-wrap items-center gap-2 border-b border-edge px-3 py-2 sm:px-6 sm:py-3">
       <FileTreeViewSettings
         branches={branches}
         currentSnapshotId={currentSnapshotId}
@@ -86,9 +86,9 @@ const FileTreeToolbar = ({
         onChange={(event) => {
           onSearchChange(event.target.value);
         }}
-        className="min-w-44 flex-1 rounded-lg border border-edge bg-surface px-3 py-1.5 text-sm text-ink placeholder:text-slate-500 focus:border-accent focus:outline-none sm:max-w-xs"
+        className="min-w-0 flex-1 rounded-lg border border-edge bg-surface px-3 py-1.5 text-sm text-ink placeholder:text-slate-500 focus:border-accent focus:outline-none sm:min-w-44 sm:max-w-xs"
       />
-      <div className="ml-auto flex flex-wrap items-center gap-2">
+      <div className="flex w-full items-center gap-2 overflow-x-auto pb-1 sm:ml-auto sm:w-auto sm:flex-wrap sm:overflow-visible sm:pb-0">
         <button
           type="button"
           onClick={onExpandAll}
@@ -125,7 +125,7 @@ const FileTreeToolbar = ({
           type="button"
           onClick={() => void handleCopyPaths()}
           disabled={checkedFileIds.size === 0}
-          className="cursor-pointer rounded-lg border border-accent px-3 py-1.5 text-sm text-accent transition hover:bg-accent-muted disabled:cursor-not-allowed disabled:border-edge disabled:text-slate-600"
+          className="shrink-0 cursor-pointer rounded-lg border border-accent px-3 py-1.5 text-sm text-accent transition hover:bg-accent-muted disabled:cursor-not-allowed disabled:border-edge disabled:text-slate-600"
         >
           {isCopied ? "Copied" : `Copy paths (${String(checkedFileIds.size)})`}
         </button>
