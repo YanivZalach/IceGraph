@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useHotkey } from "@tanstack/react-hotkeys";
 import { cn } from "../../../shared/lib/cn";
 import { formatSnapshotVersion } from "../fileTreeModel";
 import type {
@@ -38,6 +39,8 @@ const FileTreeViewSettings = ({
 }: FileTreeViewSettingsProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  useHotkey("Escape", setIsOpen.bind(null, false), { enabled: isOpen });
+
   useEffect(() => {
     if (!isOpen) return;
     const handleOutsideClick = (event: globalThis.MouseEvent) => {
@@ -57,7 +60,6 @@ const FileTreeViewSettings = ({
       <button
         type="button"
         aria-expanded={isOpen}
-        aria-haspopup="dialog"
         onClick={() => {
           setIsOpen((current) => !current);
         }}
@@ -87,7 +89,7 @@ const FileTreeViewSettings = ({
         <div
           role="dialog"
           aria-label="File tree view settings"
-          className="absolute left-0 top-full z-50 mt-2 max-h-[calc(100dvh-8rem)] w-[min(20rem,calc(100vw-2rem))] overflow-y-auto rounded-xl border border-edge bg-surface p-4 shadow-2xl"
+          className="absolute left-0 top-full z-50 mt-2 max-h-[calc(100dvh-8rem)] w-[min(40rem,calc(100vw-2rem))] overflow-y-auto rounded-xl border border-edge bg-surface p-4 shadow-2xl"
         >
           <h2 className="mb-4 text-sm font-bold text-ink">View settings</h2>
           <div className="flex flex-col gap-4">

@@ -25,6 +25,15 @@ interface MutableFileTreeFolder {
   path: string;
 }
 
+interface BranchReference {
+  "snapshot-id": string;
+  type: string;
+}
+
+interface VersionedBranch extends Branch {
+  timestamp: number;
+}
+
 const isDataFileNode = (node: GraphNode): node is DataFileNode =>
   node.type === "data" ||
   node.type === "position_delete" ||
@@ -33,8 +42,8 @@ const isDataFileNode = (node: GraphNode): node is DataFileNode =>
 const isSnapshotNode = (node: GraphNode): node is SnapshotNode =>
   node.type === "snapshot";
 
-const getTimestampSortValue = (snapshot: SnapshotNode): number => {
-  const timestamp = snapshot.details.timestamp;
+const getTimestampSortValue = (node: GraphNode): number => {
+  const timestamp = node.details.timestamp;
   if (typeof timestamp === "number") return timestamp;
   if (typeof timestamp !== "string") return 0;
   const parsedTimestamp = Date.parse(timestamp);
@@ -74,14 +83,39 @@ export const buildFileTreeGraphIndex = (
   };
 };
 
-export const getBranches = (context: FileTreeContext): Branch[] =>
-  Object.entries(context.metadata?.refs ?? {})
-    .filter(([, reference]) => reference.type === "branch")
-    .map(([name, reference]) => ({
+export const getBranches = (context: FileTreeContext): Branch[] => {
+  const branchesByName = new Map<string, VersionedBranch>();
+  const recordBranch = (
+    name: string,
+    reference: BranchReference,
+    timestamp: number,
+  ) => {
+    if (reference.type !== "branch") return;
+    const existing = branchesByName.get(name);
+    if (existing !== undefined && existing.timestamp > timestamp) return;
+    branchesByName.set(name, {
       headSnapshotId: reference["snapshot-id"],
       name,
-    }))
+      timestamp,
+    });
+  };
+
+  for (const node of context.nodes) {
+    if (node.type !== "metadata" && node.type !== "main_metadata") continue;
+    for (const [name, reference] of Object.entries(node.details.refs ?? {})) {
+      recordBranch(name, reference, getTimestampSortValue(node));
+    }
+  }
+  for (const [name, reference] of Object.entries(
+    context.metadata?.refs ?? {},
+  )) {
+    recordBranch(name, reference, Number.POSITIVE_INFINITY);
+  }
+
+  return [...branchesByName.values()]
+    .map(({ headSnapshotId, name }) => ({ headSnapshotId, name }))
     .sort((first, second) => first.name.localeCompare(second.name));
+};
 
 export const getDisplayedSnapshots = (
   graphIndex: FileTreeGraphIndex,
