@@ -66,12 +66,12 @@ const FileTreePartition = ({
               onToggleExpanded(partition.id);
             }}
             className={cn(
-              "shrink-0 cursor-pointer text-accent transition-transform",
+              "flex size-8 shrink-0 cursor-pointer items-center justify-center rounded text-accent transition hover:bg-accent-muted",
               isExpanded ? "" : "-rotate-90",
             )}
           >
             <svg
-              className="size-3.5"
+              className="size-4"
               viewBox="0 0 16 16"
               fill="none"
               stroke="currentColor"
@@ -87,7 +87,7 @@ const FileTreePartition = ({
         </div>
         <div className="ml-4 flex shrink-0 items-center gap-3">
           {latestTimestamp !== null && (
-            <span className="whitespace-nowrap font-mono text-detail text-slate-500">
+            <span className="hidden whitespace-nowrap font-mono text-xs text-slate-500 sm:block">
               {latestTimestamp}
             </span>
           )}

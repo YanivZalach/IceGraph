@@ -63,17 +63,28 @@ const FileTreeFileRow = ({
       <div className="min-w-0 flex-1">
         <div
           className="overflow-hidden text-ellipsis whitespace-nowrap text-left font-mono text-xs text-slate-300"
-          dir="ltr"
+          style={{
+            direction: "rtl",
+            textAlign: "left",
+            textOverflow: "ellipsis",
+          }}
           title={file.id}
         >
-          {file.id}
+          {"\u202A" + file.id + "\u202C"}
         </div>
-        <div className="mt-0.5 text-caption font-semibold uppercase tracking-wide text-slate-600">
-          {FILE_TYPE_LABELS[file.type]}
+        <div className="mt-0.5 flex min-w-0 items-center gap-2 text-xs text-slate-600">
+          <span className="shrink-0 text-caption font-semibold uppercase tracking-wide">
+            {FILE_TYPE_LABELS[file.type]}
+          </span>
+          {timestamp != null && (
+            <span className="min-w-0 truncate whitespace-nowrap font-mono sm:hidden">
+              {timestamp}
+            </span>
+          )}
         </div>
       </div>
       {timestamp != null && (
-        <span className="shrink-0 whitespace-nowrap font-mono text-detail text-slate-500">
+        <span className="hidden shrink-0 whitespace-nowrap font-mono text-xs text-slate-500 sm:block">
           {timestamp}
         </span>
       )}

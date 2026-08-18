@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { cn } from "../../../shared/lib/cn";
+import { formatSnapshotVersion } from "../fileTreeModel";
 import type {
   Branch,
   FileTreeViewMode,
@@ -40,12 +41,10 @@ const FileTreeViewSettings = ({
   useEffect(() => {
     if (!isOpen) return;
     const handleOutsideClick = (event: globalThis.MouseEvent) => {
-      if (
+      const clickedInside =
         event.target instanceof Node &&
-        !containerRef.current?.contains(event.target)
-      ) {
-        setIsOpen(false);
-      }
+        containerRef.current?.contains(event.target);
+      if (!clickedInside) setIsOpen(false);
     };
     document.addEventListener("mousedown", handleOutsideClick);
     return () => {
@@ -88,11 +87,9 @@ const FileTreeViewSettings = ({
         <div
           role="dialog"
           aria-label="File tree view settings"
-          className="absolute left-0 top-full z-50 mt-2 w-80 rounded-xl border border-edge bg-surface p-4 shadow-2xl"
+          className="absolute left-0 top-full z-50 mt-2 max-h-[calc(100dvh-8rem)] w-[min(20rem,calc(100vw-2rem))] overflow-y-auto rounded-xl border border-edge bg-surface p-4 shadow-2xl"
         >
-          <div className="mb-4">
-            <h2 className="text-sm font-bold text-ink">View settings</h2>
-          </div>
+          <h2 className="mb-4 text-sm font-bold text-ink">View settings</h2>
           <div className="flex flex-col gap-4">
             {branches.length > 0 && (
               <label className="flex flex-col gap-1.5 text-xs font-bold uppercase tracking-wide text-slate-500">
@@ -129,8 +126,10 @@ const FileTreeViewSettings = ({
                     snapshot.details.snapshot_id ?? snapshot.id;
                   return (
                     <option key={snapshot.id} value={snapshotId}>
-                      Snapshot {index + 1}
-                      {index === snapshots.length - 1 ? " (latest)" : ""}
+                      {formatSnapshotVersion(
+                        snapshot,
+                        index === snapshots.length - 1,
+                      )}
                     </option>
                   );
                 })}

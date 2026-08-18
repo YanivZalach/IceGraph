@@ -188,6 +188,27 @@ export const calculateFileStatistics = (
   };
 };
 
+export const getFileSizeBytes = (file: DataFileNode): number =>
+  (file.details.size_gb ?? 0) * BYTES_PER_GIBIBYTE;
+
+export const formatSnapshotVersion = (
+  snapshot: SnapshotNode,
+  isLatest: boolean,
+): string => {
+  const snapshotId = snapshot.details.snapshot_id ?? snapshot.id;
+  const rawOperation = snapshot.details.operation_description;
+  const operation =
+    typeof rawOperation === "string" && rawOperation.trim() !== ""
+      ? rawOperation
+      : "Snapshot";
+  const timestamp = snapshot.details.timestamp;
+  const timestampLabel =
+    typeof timestamp === "string" || typeof timestamp === "number"
+      ? String(timestamp)
+      : "Unknown time";
+  return `ID ${snapshotId} · ${operation} · ${timestampLabel}${isLatest ? " · latest" : ""}`;
+};
+
 export const getLatestFileTimestamp = (files: DataFileNode[]): string | null =>
   files
     .map((file) => file.details.earliest_appearing_snapshot_timestamp)

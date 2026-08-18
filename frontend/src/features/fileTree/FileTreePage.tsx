@@ -85,7 +85,7 @@ const FileTreePage = () => {
       : null;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-canvas">
+    <div className="h-graph flex w-full min-h-0 flex-none flex-col overflow-hidden bg-canvas">
       <FileTreeToolbar
         branches={branches}
         checkedFileIds={pageState.checkedFileIds}
@@ -122,8 +122,13 @@ const FileTreePage = () => {
         snapshots={displayedSnapshots}
         viewMode={pageState.viewMode}
       />
-      <div className="flex min-h-0 flex-1">
-        <main className="min-w-0 flex-1 overflow-y-auto px-4 py-4 sm:px-8">
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+        <main
+          data-testid="file-tree-content-scroll"
+          className={`min-h-0 min-w-0 flex-1 overflow-y-auto px-3 py-3 sm:px-8 sm:py-4 ${
+            pageState.inspectedItem === null ? "" : "basis-[45%] md:basis-auto"
+          }`}
+        >
           {snapshotErrors.length > 0 && (
             <div className="mb-3">
               <PanelIssueNotice type="error">
