@@ -177,7 +177,7 @@ const FileTreeInspector = ({
                 onViewInGraph(event, inspectedItem.file.id);
               }}
               disabled={duplicatingNodeId !== null}
-              className="w-full cursor-pointer rounded-lg border border-accent px-3 py-2 text-sm text-accent hover:bg-accent-muted disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full cursor-pointer rounded-lg border border-accent px-3 py-2 text-xs font-bold uppercase tracking-wide text-accent hover:bg-accent-muted disabled:cursor-not-allowed disabled:opacity-50"
             >
               {duplicatingNodeId === inspectedItem.file.id
                 ? "Opening..."
