@@ -24,9 +24,9 @@ export interface FileStatistics {
   totalSizeBytes: number;
 }
 
-export interface FileTreeFolder {
+export interface PartitionPathNode {
   allFiles: DataFileNode[];
-  children: FileTreeFolder[];
+  children: PartitionPathNode[];
   directFiles: DataFileNode[];
   id: string;
   label: string;
@@ -60,5 +60,5 @@ export interface FileTreeGraphIndex {
 
 export type InspectedFileTreeItem =
   | { file: DataFileNode; kind: "file" }
-  | { folder: FileTreeFolder; kind: "folder" }
+  | { kind: "partition-path"; partitionPathNode: PartitionPathNode }
   | { kind: "partition"; partition: PartitionGroup };

@@ -1,31 +1,31 @@
 import type { MouseEvent } from "react";
 import type {
   DataFileNode,
-  FileTreeFolder,
   FileTreeViewMode,
   PartitionGroup,
+  PartitionPathNode,
 } from "../types";
-import FileTreeFolderComponent from "./FileTreeFolder";
 import FileTreePartition from "./FileTreePartition";
+import PartitionPathNodeComponent from "./PartitionPathNode";
 
 interface FileTreeContentProps {
   checkedFileIds: Set<string>;
   duplicatingNodeId: string | null;
   expandedItemIds: Set<string>;
-  folders: FileTreeFolder[];
   inspectedFileId: string | null;
-  inspectedFolderId: string | null;
+  inspectedPartitionPathNodeId: string | null;
   inspectedPartitionId: string | null;
-  onCollapseMany: (folderIds: string[]) => void;
-  onExpandMany: (folderIds: string[]) => void;
+  onCollapseMany: (itemIds: string[]) => void;
+  onExpandMany: (itemIds: string[]) => void;
   onInspectFile: (file: DataFileNode) => void;
-  onInspectFolder: (folder: FileTreeFolder) => void;
+  onInspectPartitionPathNode: (node: PartitionPathNode) => void;
   onInspectPartition: (partition: PartitionGroup) => void;
   onToggleChecked: (fileId: string) => void;
   onToggleExpanded: (itemId: string) => void;
   onToggleFiles: (files: DataFileNode[]) => void;
   onViewInGraph: (event: MouseEvent<HTMLButtonElement>, fileId: string) => void;
   partitions: PartitionGroup[];
+  partitionPathNodes: PartitionPathNode[];
   search: string;
   viewMode: FileTreeViewMode;
 }
@@ -34,20 +34,20 @@ const FileTreeContent = ({
   checkedFileIds,
   duplicatingNodeId,
   expandedItemIds,
-  folders,
   inspectedFileId,
-  inspectedFolderId,
+  inspectedPartitionPathNodeId,
   inspectedPartitionId,
   onCollapseMany,
   onExpandMany,
   onInspectFile,
-  onInspectFolder,
+  onInspectPartitionPathNode,
   onInspectPartition,
   onToggleChecked,
   onToggleExpanded,
   onToggleFiles,
   onViewInGraph,
   partitions,
+  partitionPathNodes,
   search,
   viewMode,
 }: FileTreeContentProps) => {
@@ -111,24 +111,24 @@ const FileTreeContent = ({
         aria-label="Data files by partition"
         className="flex flex-col gap-2"
       >
-        {folders.map((folder) => (
-          <FileTreeFolderComponent
-            key={folder.id}
+        {partitionPathNodes.map((partitionPathNode) => (
+          <PartitionPathNodeComponent
+            key={partitionPathNode.id}
             checkedFileIds={checkedFileIds}
             depth={1}
             duplicatingNodeId={duplicatingNodeId}
             expandedItemIds={expandedItemIds}
-            folder={folder}
             inspectedFileId={inspectedFileId}
-            inspectedFolderId={inspectedFolderId}
+            inspectedPartitionPathNodeId={inspectedPartitionPathNodeId}
             onCollapseMany={onCollapseMany}
             onExpandMany={onExpandMany}
             onInspectFile={onInspectFile}
-            onInspectFolder={onInspectFolder}
+            onInspectPartitionPathNode={onInspectPartitionPathNode}
             onToggleChecked={onToggleChecked}
             onToggleExpanded={onToggleExpanded}
             onToggleFiles={onToggleFiles}
             onViewInGraph={onViewInGraph}
+            partitionPathNode={partitionPathNode}
           />
         ))}
       </div>
