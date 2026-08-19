@@ -1,5 +1,5 @@
-import { formatByteSize } from "../fileTreeModel";
-import type { FileStatistics } from "../fileTreeTypes";
+import { formatByteSize } from "../model";
+import type { FileStatistics } from "../types";
 
 interface FileTreeStatisticsProps {
   statistics: FileStatistics;

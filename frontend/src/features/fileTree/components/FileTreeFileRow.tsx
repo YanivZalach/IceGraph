@@ -1,6 +1,6 @@
 import type { MouseEvent } from "react";
 import { cn } from "../../../shared/lib/cn";
-import type { DataFileNode } from "../fileTreeTypes";
+import type { DataFileNode } from "../types";
 
 interface FileTreeFileRowProps {
   checkedFileIds: Set<string>;

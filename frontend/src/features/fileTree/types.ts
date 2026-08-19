@@ -1,4 +1,4 @@
-import type { GraphNode } from "./fileTreeSchemas";
+import type { GraphNode } from "./schemas";
 
 export type DataFileType = "data" | "position_delete" | "equality_delete";
 export type FileTreeViewMode = "flat" | "tree";

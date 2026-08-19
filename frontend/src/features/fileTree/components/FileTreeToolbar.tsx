@@ -4,7 +4,7 @@ import type {
   FileTreeViewMode,
   SnapshotFileScope,
   SnapshotNode,
-} from "../fileTreeTypes";
+} from "../types";
 import FileTreeViewSettings from "./FileTreeViewSettings";
 
 interface FileTreeToolbarProps {

@@ -6,9 +6,9 @@ import type {
   InspectedFileTreeItem,
   PartitionGroup,
   SnapshotFileScope,
-} from "./fileTreeTypes";
+} from "./types";
 
-interface FileTreePageState {
+interface FileTreeState {
   checkedFileIds: Set<string>;
   closeInspector: () => void;
   collapseAll: () => void;
@@ -35,7 +35,7 @@ interface FileTreePageState {
   viewMode: FileTreeViewMode;
 }
 
-export const useFileTreePageState = (): FileTreePageState => {
+export const useFileTreeState = (): FileTreeState => {
   const [search, setSearchState] = useState("");
   const [requestedBranchName, setRequestedBranchName] = useState<string | null>(
     "main",
