@@ -12,7 +12,6 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
-    "test:filetree": "node --test --experimental-strip-types --experimental-specifier-resolution=node src/features/fileTree/fileTreeModel.test.ts",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
