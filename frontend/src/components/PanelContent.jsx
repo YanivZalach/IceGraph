@@ -76,9 +76,6 @@ function renderBreakablePath(path) {
   ));
 }
 
-/**
- * @param {{ title: string, titleColor?: string, subtitle?: string, meta?: string, preserveSubtitleEnd?: boolean }} props
- */
 export function PanelHeader({
   title,
   titleColor = null,
