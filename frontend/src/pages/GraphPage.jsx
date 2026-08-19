@@ -3,13 +3,13 @@ import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import { useTableGraphData } from "../features/table/tableGraphData";
 import ForceGraph2D from "react-force-graph-2d";
 import {
-  isEmptyValue,
   PanelDetailRow,
   PanelHeader,
   PANEL_STATUS_BADGE_CLASS,
 } from "../components/PanelContent";
 import PanelIssueNotice from "../components/PanelIssueNotice";
 import DataFileReadableMetricsTable from "../components/DataFileReadableMetricsTable";
+import { isEmptyValue } from "../shared/lib/isEmptyValue";
 import {
   UI_DIALOG_SECTION_TITLE_CLASS,
   UI_POPUP_HINT_CLASS,
