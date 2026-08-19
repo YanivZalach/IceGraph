@@ -64,14 +64,6 @@ const FileTreeView = ({ graphData }: FileTreeViewProps) => {
     void viewInGraph(event, fileId);
   };
 
-  if (currentSnapshot === undefined) {
-    return (
-      <div className="flex flex-1 items-center justify-center bg-canvas">
-        <p className="text-sm italic text-slate-500">No snapshots available.</p>
-      </div>
-    );
-  }
-
   const inspectedFileId =
     pageState.inspectedItem?.kind === "file"
       ? pageState.inspectedItem.file.id
@@ -130,34 +122,42 @@ const FileTreeView = ({ graphData }: FileTreeViewProps) => {
             pageState.inspectedItem === null ? "" : "basis-[45%] md:basis-auto"
           }`}
         >
-          {snapshotErrors.length > 0 && (
-            <div className="mb-3">
-              <PanelIssueNotice type="error">
-                {snapshotErrors.join("\n")}
-              </PanelIssueNotice>
-            </div>
+          {currentSnapshot === undefined ? (
+            <p className="flex h-full items-center justify-center text-sm italic text-slate-500">
+              No snapshots available for this branch in the loaded range.
+            </p>
+          ) : (
+            <>
+              {snapshotErrors.length > 0 && (
+                <div className="mb-3">
+                  <PanelIssueNotice type="error">
+                    {snapshotErrors.join("\n")}
+                  </PanelIssueNotice>
+                </div>
+              )}
+              <FileTreeContent
+                checkedFileIds={pageState.checkedFileIds}
+                duplicatingNodeId={activeDuplicatingNodeId}
+                expandedItemIds={pageState.expandedItemIds}
+                inspectedFileId={inspectedFileId}
+                inspectedPartitionPathNodeId={inspectedPartitionPathNodeId}
+                inspectedPartitionId={inspectedPartitionId}
+                onCollapseMany={pageState.collapseMany}
+                onExpandMany={pageState.expandItems}
+                onInspectFile={pageState.inspectFile}
+                onInspectPartitionPathNode={pageState.inspectPartitionPathNode}
+                onInspectPartition={pageState.inspectPartition}
+                onToggleChecked={pageState.toggleChecked}
+                onToggleExpanded={pageState.toggleExpanded}
+                onToggleFiles={pageState.toggleFiles}
+                onViewInGraph={handleViewInGraph}
+                partitions={partitions}
+                partitionPathNodes={partitionPathNodes}
+                search={pageState.search}
+                viewMode={pageState.viewMode}
+              />
+            </>
           )}
-          <FileTreeContent
-            checkedFileIds={pageState.checkedFileIds}
-            duplicatingNodeId={activeDuplicatingNodeId}
-            expandedItemIds={pageState.expandedItemIds}
-            inspectedFileId={inspectedFileId}
-            inspectedPartitionPathNodeId={inspectedPartitionPathNodeId}
-            inspectedPartitionId={inspectedPartitionId}
-            onCollapseMany={pageState.collapseMany}
-            onExpandMany={pageState.expandItems}
-            onInspectFile={pageState.inspectFile}
-            onInspectPartitionPathNode={pageState.inspectPartitionPathNode}
-            onInspectPartition={pageState.inspectPartition}
-            onToggleChecked={pageState.toggleChecked}
-            onToggleExpanded={pageState.toggleExpanded}
-            onToggleFiles={pageState.toggleFiles}
-            onViewInGraph={handleViewInGraph}
-            partitions={partitions}
-            partitionPathNodes={partitionPathNodes}
-            search={pageState.search}
-            viewMode={pageState.viewMode}
-          />
         </main>
         {pageState.inspectedItem !== null && (
           <FileTreeInspector

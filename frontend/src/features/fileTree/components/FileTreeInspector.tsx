@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { CSSProperties, MouseEvent } from "react";
+import { fileTypeLabel } from "../../../graphConstants.js";
 import {
   PanelDetailRow,
   PanelHeader,
@@ -82,7 +83,7 @@ const FileTreeInspector = ({
           inspectedItem.file.details.format === undefined
             ? null
             : ["Format", inspectedItem.file.details.format],
-          ["File type", humanizeKey(inspectedItem.file.type)],
+          ["File type", fileTypeLabel(inspectedItem.file.type)],
         ].filter((row): row is [string, string] => row !== null)
       : [];
   const fileDetailRows =
@@ -137,6 +138,7 @@ const FileTreeInspector = ({
       className="h-[55%] min-h-0 w-full shrink-0 border-t border-edge bg-surface md:h-auto md:w-[var(--file-tree-inspector-width)] md:min-w-[20rem] md:max-w-[70%] md:border-l-0 md:border-t-0"
       contentClassName="gap-5 overscroll-contain px-4 sm:px-5"
       contentTestId="file-tree-inspector-scroll"
+      enableScrollHotkeys
       header={
         <PanelHeader
           title={title}

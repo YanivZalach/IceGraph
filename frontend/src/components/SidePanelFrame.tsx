@@ -13,6 +13,7 @@ interface SidePanelFrameProps {
   closeLabel?: string;
   contentClassName?: string;
   contentTestId?: string;
+  enableScrollHotkeys?: boolean;
   header: ReactNode;
   headerActions?: ReactNode;
   headerClassName?: string;
@@ -85,6 +86,7 @@ const SidePanelFrame = forwardRef<HTMLDivElement, SidePanelFrameProps>(
       closeLabel = "Close panel",
       contentClassName,
       contentTestId,
+      enableScrollHotkeys = false,
       header,
       headerActions,
       headerClassName,
@@ -101,12 +103,20 @@ const SidePanelFrame = forwardRef<HTMLDivElement, SidePanelFrameProps>(
       if (typeof scrollRef === "function") scrollRef(node);
       else if (scrollRef !== null) scrollRef.current = node;
     };
-    useHotkey("J", () => {
-      contentRef.current?.scrollBy({ behavior: "smooth", top: 120 });
-    });
-    useHotkey("K", () => {
-      contentRef.current?.scrollBy({ behavior: "smooth", top: -120 });
-    });
+    useHotkey(
+      "J",
+      () => {
+        contentRef.current?.scrollBy({ behavior: "smooth", top: 120 });
+      },
+      { enabled: enableScrollHotkeys },
+    );
+    useHotkey(
+      "K",
+      () => {
+        contentRef.current?.scrollBy({ behavior: "smooth", top: -120 });
+      },
+      { enabled: enableScrollHotkeys },
+    );
 
     return (
       <aside

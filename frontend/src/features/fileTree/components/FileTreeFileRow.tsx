@@ -1,4 +1,5 @@
 import type { MouseEvent } from "react";
+import { fileTypeLabel } from "../../../graphConstants.js";
 import { cn } from "../../../shared/lib/cn";
 import type { DataFileNode } from "../types";
 
@@ -12,12 +13,6 @@ interface FileTreeFileRowProps {
   onToggleChecked: (fileId: string) => void;
   onViewInGraph: (event: MouseEvent<HTMLButtonElement>, fileId: string) => void;
 }
-
-const FILE_TYPE_LABELS = {
-  data: "Data",
-  equality_delete: "Equality delete",
-  position_delete: "Position delete",
-} as const;
 
 const FileTreeFileRow = ({
   checkedFileIds,
@@ -74,7 +69,7 @@ const FileTreeFileRow = ({
         </div>
         <div className="mt-0.5 flex min-w-0 items-center gap-2 text-xs text-slate-600">
           <span className="shrink-0 text-caption font-semibold uppercase tracking-wide">
-            {FILE_TYPE_LABELS[file.type]}
+            {fileTypeLabel(file.type)}
           </span>
           {timestamp != null && (
             <span className="min-w-0 truncate whitespace-nowrap font-mono sm:hidden">

@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { cn } from "../../../shared/lib/cn";
-import { formatSnapshotVersion } from "../model";
 import type {
   Branch,
   FileTreeViewMode,
   SnapshotFileScope,
   SnapshotNode,
 } from "../types";
+import FileTreeSnapshotSelect from "./FileTreeSnapshotSelect";
 
 interface FileTreeViewSettingsProps {
   branches: Branch[];
@@ -114,29 +114,12 @@ const FileTreeViewSettings = ({
                 </select>
               </label>
             )}
-            <label className="flex flex-col gap-1.5 text-xs font-bold uppercase tracking-wide text-slate-500">
-              Snapshot
-              <select
-                value={currentSnapshotId}
-                onChange={(event) => {
-                  onSnapshotChange(event.target.value);
-                }}
-                className={CONTROL_CLASS}
-              >
-                {snapshots.map((snapshot, index) => {
-                  const snapshotId =
-                    snapshot.details.snapshot_id ?? snapshot.id;
-                  return (
-                    <option key={snapshot.id} value={snapshotId}>
-                      {formatSnapshotVersion(
-                        snapshot,
-                        index === snapshots.length - 1,
-                      )}
-                    </option>
-                  );
-                })}
-              </select>
-            </label>
+            <FileTreeSnapshotSelect
+              className={CONTROL_CLASS}
+              currentSnapshotId={currentSnapshotId}
+              onChange={onSnapshotChange}
+              snapshots={snapshots}
+            />
             <fieldset>
               <legend className="mb-1.5 text-xs font-bold uppercase tracking-wide text-slate-500">
                 File scope

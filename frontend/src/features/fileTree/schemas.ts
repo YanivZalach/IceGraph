@@ -11,6 +11,17 @@ const numericValueSchema = z
   .transform((value) => Number(value))
   .pipe(z.number());
 
+const optionalTimestampSchema = z
+  .union([z.string(), z.number()])
+  .nullish()
+  .transform((value) => value ?? undefined)
+  .optional();
+
+const optionalNumericValueSchema = numericValueSchema
+  .nullish()
+  .transform((value) => value ?? undefined)
+  .optional();
+
 const referenceSchema = z
   .object({
     type: z.string(),
@@ -21,7 +32,7 @@ const referenceSchema = z
 export const fileDetailsSchema = z
   .object({
     error: z.string().nullish(),
-    timestamp: z.union([z.string(), z.number()]).optional(),
+    timestamp: optionalTimestampSchema,
     snapshot_id: nullableIdentifierSchema,
     parent_id: nullableIdentifierSchema,
     partition: z.string().optional(),
@@ -29,8 +40,8 @@ export const fileDetailsSchema = z
     earliest_appearing_snapshot_timestamp: z.string().nullish(),
     format: z.string().optional(),
     refs: z.record(z.string(), referenceSchema).optional(),
-    size_gb: numericValueSchema.optional(),
-    row_count: numericValueSchema.optional(),
+    size_gb: optionalNumericValueSchema,
+    row_count: optionalNumericValueSchema,
   })
   .catchall(z.unknown());
 

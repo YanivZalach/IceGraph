@@ -10,6 +10,7 @@ import type {
   SnapshotFileScope,
   SnapshotNode,
 } from "./types";
+import { fileTypeLabel } from "../../graphConstants.js";
 
 const BYTES_PER_GIBIBYTE = 1024 ** 3;
 const DATA_FILE_TYPES = new Set<DataFileType>([
@@ -149,7 +150,8 @@ export const getCurrentSnapshot = (
 ): SnapshotNode | undefined => {
   if (requestedSnapshotId !== null) {
     const requestedSnapshot = snapshots.find(
-      (snapshot) => snapshot.details.snapshot_id === requestedSnapshotId,
+      (snapshot) =>
+        (snapshot.details.snapshot_id ?? snapshot.id) === requestedSnapshotId,
     );
     if (requestedSnapshot !== undefined) return requestedSnapshot;
   }
@@ -384,7 +386,7 @@ export const getSnapshotFileErrors = (
     if (node === undefined) continue;
     if (node.details.error) {
       errors.push(
-        `${node.type} (${node.label ?? node.id}): ${node.details.error}`,
+        `${fileTypeLabel(node.type)} (${node.label ?? node.id}): ${node.details.error}`,
       );
     }
     for (const connection of graphIndex.adjacencyByNodeId[currentNodeId] ??
