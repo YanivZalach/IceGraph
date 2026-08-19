@@ -1,10 +1,10 @@
 import { useState } from "react";
 import type {
   DataFileNode,
-  FileTreeFolder,
   FileTreeViewMode,
   InspectedFileTreeItem,
   PartitionGroup,
+  PartitionPathNode,
   SnapshotFileScope,
 } from "./types";
 
@@ -17,7 +17,7 @@ interface FileTreeState {
   expandedItemIds: Set<string>;
   inspectFile: (file: DataFileNode) => void;
   inspectedItem: InspectedFileTreeItem | null;
-  inspectFolder: (folder: FileTreeFolder) => void;
+  inspectPartitionPathNode: (node: PartitionPathNode) => void;
   inspectPartition: (partition: PartitionGroup) => void;
   requestedBranchName: string | null;
   requestedSnapshotId: string | null;
@@ -125,8 +125,8 @@ export const useFileTreeState = (): FileTreeState => {
       setInspectedItem({ file, kind: "file" });
     },
     inspectedItem,
-    inspectFolder: (folder) => {
-      setInspectedItem({ folder, kind: "folder" });
+    inspectPartitionPathNode: (partitionPathNode) => {
+      setInspectedItem({ kind: "partition-path", partitionPathNode });
     },
     inspectPartition: (partition) => {
       setInspectedItem({ kind: "partition", partition });

@@ -4,9 +4,9 @@ import type {
   DataFileNode,
   DataFileType,
   FileStatistics,
-  FileTreeFolder,
   FileTreeGraphIndex,
   PartitionGroup,
+  PartitionPathNode,
   SnapshotFileScope,
   SnapshotNode,
 } from "./types";
@@ -18,8 +18,8 @@ const DATA_FILE_TYPES = new Set<DataFileType>([
   "equality_delete",
 ]);
 
-interface MutableFileTreeFolder {
-  children: Map<string, MutableFileTreeFolder>;
+interface MutablePartitionPathNode {
+  children: Map<string, MutablePartitionPathNode>;
   directFiles: DataFileNode[];
   label: string;
   path: string;
@@ -156,10 +156,9 @@ export const getCurrentSnapshot = (
   return snapshots.at(-1);
 };
 
-export const getSnapshotFiles = (
+const collectSnapshotFiles = (
   snapshot: SnapshotNode | undefined,
   graphIndex: FileTreeGraphIndex,
-  scope: SnapshotFileScope,
 ): DataFileNode[] => {
   if (snapshot === undefined) return [];
 
@@ -187,8 +186,30 @@ export const getSnapshotFiles = (
     }
   }
 
-  const snapshotFiles = [...filesById.values()];
+  return [...filesById.values()];
+};
+
+export const getSnapshotFiles = (
+  snapshot: SnapshotNode | undefined,
+  graphIndex: FileTreeGraphIndex,
+  scope: SnapshotFileScope,
+): DataFileNode[] => {
+  const snapshotFiles = collectSnapshotFiles(snapshot, graphIndex);
   if (scope === "snapshot") return snapshotFiles;
+  if (snapshot === undefined) return [];
+
+  const parentSnapshotId = snapshot.details.parent_id;
+  const parentSnapshot =
+    parentSnapshotId == null
+      ? undefined
+      : graphIndex.snapshotsBySnapshotId[parentSnapshotId];
+  if (parentSnapshot !== undefined) {
+    const parentFileIds = new Set(
+      collectSnapshotFiles(parentSnapshot, graphIndex).map(({ id }) => id),
+    );
+    return snapshotFiles.filter((file) => !parentFileIds.has(file.id));
+  }
+
   const snapshotId = snapshot.details.snapshot_id;
   return snapshotFiles.filter(
     (file) => file.details.earliest_appearing_snapshot_id === snapshotId,
@@ -278,31 +299,31 @@ export const groupFilesByPartition = (
     .sort((first, second) => second.name.localeCompare(first.name));
 };
 
-const convertMutableFolder = (
-  mutableFolder: MutableFileTreeFolder,
-): FileTreeFolder => {
-  const children = [...mutableFolder.children.values()]
-    .map(convertMutableFolder)
+const convertMutablePartitionPathNode = (
+  mutableNode: MutablePartitionPathNode,
+): PartitionPathNode => {
+  const children = [...mutableNode.children.values()]
+    .map(convertMutablePartitionPathNode)
     .sort((first, second) => second.label.localeCompare(first.label));
   const allFiles = [
-    ...mutableFolder.directFiles,
+    ...mutableNode.directFiles,
     ...children.flatMap((child) => child.allFiles),
   ];
   return {
     allFiles,
     children,
-    directFiles: mutableFolder.directFiles,
-    id: `folder:${mutableFolder.path}`,
-    label: mutableFolder.label,
-    path: mutableFolder.path,
+    directFiles: mutableNode.directFiles,
+    id: `partition-path:${mutableNode.path}`,
+    label: mutableNode.label,
+    path: mutableNode.path,
     statistics: calculateFileStatistics(allFiles),
   };
 };
 
-export const buildFileTree = (
+export const buildPartitionPathTree = (
   partitions: PartitionGroup[],
-): FileTreeFolder[] => {
-  const root: MutableFileTreeFolder = {
+): PartitionPathNode[] => {
+  const root: MutablePartitionPathNode = {
     children: new Map(),
     directFiles: [],
     label: "",
@@ -311,36 +332,39 @@ export const buildFileTree = (
 
   for (const partition of partitions) {
     if (partition.name === "(unpartitioned)") continue;
-    let currentFolder = root;
+    let currentNode = root;
     for (const segment of partition.name.split(", ")) {
       const path =
-        currentFolder.path === ""
-          ? segment
-          : `${currentFolder.path}/${segment}`;
-      const existingFolder = currentFolder.children.get(segment);
-      if (existingFolder !== undefined) {
-        currentFolder = existingFolder;
+        currentNode.path === "" ? segment : `${currentNode.path}/${segment}`;
+      const existingNode = currentNode.children.get(segment);
+      if (existingNode !== undefined) {
+        currentNode = existingNode;
         continue;
       }
-      const newFolder: MutableFileTreeFolder = {
+      const newNode: MutablePartitionPathNode = {
         children: new Map(),
         directFiles: [],
         label: segment,
         path,
       };
-      currentFolder.children.set(segment, newFolder);
-      currentFolder = newFolder;
+      currentNode.children.set(segment, newNode);
+      currentNode = newNode;
     }
-    currentFolder.directFiles.push(...partition.files);
+    currentNode.directFiles.push(...partition.files);
   }
 
   return [...root.children.values()]
-    .map(convertMutableFolder)
+    .map(convertMutablePartitionPathNode)
     .sort((first, second) => second.label.localeCompare(first.label));
 };
 
-export const getAllFolderIds = (folders: FileTreeFolder[]): string[] =>
-  folders.flatMap((folder) => [folder.id, ...getAllFolderIds(folder.children)]);
+export const getAllPartitionPathNodeIds = (
+  nodes: PartitionPathNode[],
+): string[] =>
+  nodes.flatMap((node) => [
+    node.id,
+    ...getAllPartitionPathNodeIds(node.children),
+  ]);
 
 export const getSnapshotFileErrors = (
   snapshot: SnapshotNode | undefined,

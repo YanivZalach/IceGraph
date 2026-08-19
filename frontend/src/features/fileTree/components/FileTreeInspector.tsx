@@ -52,18 +52,18 @@ const FileTreeInspector = ({
   const title =
     inspectedItem.kind === "file"
       ? "Data file"
-      : inspectedItem.kind === "folder"
-        ? "Folder statistics"
+      : inspectedItem.kind === "partition-path"
+        ? "Partition path statistics"
         : "Partition statistics";
   const subtitle =
     inspectedItem.kind === "file"
       ? inspectedItem.file.id
-      : inspectedItem.kind === "folder"
-        ? inspectedItem.folder.path
+      : inspectedItem.kind === "partition-path"
+        ? inspectedItem.partitionPathNode.path
         : inspectedItem.partition.name;
   const statistics =
-    inspectedItem.kind === "folder"
-      ? inspectedItem.folder.statistics
+    inspectedItem.kind === "partition-path"
+      ? inspectedItem.partitionPathNode.statistics
       : inspectedItem.kind === "partition"
         ? inspectedItem.partition.statistics
         : null;

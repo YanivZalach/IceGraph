@@ -1,78 +1,86 @@
 import type { MouseEvent } from "react";
 import { cn } from "../../../shared/lib/cn";
-import { getAllFolderIds, getLatestFileTimestamp } from "../model";
-import type { DataFileNode, FileTreeFolder as Folder } from "../types";
+import { getAllPartitionPathNodeIds, getLatestFileTimestamp } from "../model";
+import type {
+  DataFileNode,
+  PartitionPathNode as PartitionPathNodeData,
+} from "../types";
 import FileTreeFileRow from "./FileTreeFileRow";
+import PartitionPathIcon from "./PartitionPathIcon";
 
-interface FileTreeFolderProps {
+interface PartitionPathNodeProps {
   checkedFileIds: Set<string>;
   depth: number;
   duplicatingNodeId: string | null;
   expandedItemIds: Set<string>;
   inspectedFileId: string | null;
-  inspectedFolderId: string | null;
-  folder: Folder;
-  onCollapseMany: (folderIds: string[]) => void;
-  onExpandMany: (folderIds: string[]) => void;
+  inspectedPartitionPathNodeId: string | null;
+  onCollapseMany: (itemIds: string[]) => void;
+  onExpandMany: (itemIds: string[]) => void;
   onInspectFile: (file: DataFileNode) => void;
-  onInspectFolder: (folder: Folder) => void;
+  onInspectPartitionPathNode: (node: PartitionPathNodeData) => void;
   onToggleChecked: (fileId: string) => void;
   onToggleExpanded: (itemId: string) => void;
   onToggleFiles: (files: DataFileNode[]) => void;
   onViewInGraph: (event: MouseEvent<HTMLButtonElement>, fileId: string) => void;
+  partitionPathNode: PartitionPathNodeData;
 }
 
-const FileTreeFolder = ({
+const PartitionPathNode = ({
   checkedFileIds,
   depth,
   duplicatingNodeId,
   expandedItemIds,
   inspectedFileId,
-  inspectedFolderId,
-  folder,
+  inspectedPartitionPathNodeId,
   onCollapseMany,
   onExpandMany,
   onInspectFile,
-  onInspectFolder,
+  onInspectPartitionPathNode,
   onToggleChecked,
   onToggleExpanded,
   onToggleFiles,
   onViewInGraph,
-}: FileTreeFolderProps) => {
-  const isExpanded = expandedItemIds.has(folder.id);
+  partitionPathNode,
+}: PartitionPathNodeProps) => {
+  const isExpanded = expandedItemIds.has(partitionPathNode.id);
   const isAllChecked =
-    folder.allFiles.length > 0 &&
-    folder.allFiles.every((file) => checkedFileIds.has(file.id));
+    partitionPathNode.allFiles.length > 0 &&
+    partitionPathNode.allFiles.every((file) => checkedFileIds.has(file.id));
   const isSomeChecked =
     !isAllChecked &&
-    folder.allFiles.some((file) => checkedFileIds.has(file.id));
-  const descendantFolderIds = getAllFolderIds(folder.children);
-  const latestTimestamp = getLatestFileTimestamp(folder.allFiles);
+    partitionPathNode.allFiles.some((file) => checkedFileIds.has(file.id));
+  const descendantNodeIds = getAllPartitionPathNodeIds(
+    partitionPathNode.children,
+  );
+  const latestTimestamp = getLatestFileTimestamp(partitionPathNode.allFiles);
 
   return (
     <div
       role="treeitem"
       aria-expanded={isExpanded}
       aria-level={depth}
-      aria-selected={inspectedFolderId === folder.id}
+      aria-selected={inspectedPartitionPathNodeId === partitionPathNode.id}
       className={cn(
         "overflow-hidden rounded-lg border bg-surface",
-        inspectedFolderId === folder.id ? "border-accent" : "border-edge",
+        inspectedPartitionPathNodeId === partitionPathNode.id
+          ? "border-accent"
+          : "border-edge",
       )}
     >
       <div
         onClick={() => {
-          onInspectFolder(folder);
+          onInspectPartitionPathNode(partitionPathNode);
         }}
         className="flex cursor-pointer items-center px-4 py-2.5 transition hover:bg-surface-hover"
       >
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <button
             type="button"
-            aria-label={`${isExpanded ? "Collapse" : "Expand"} ${folder.label}`}
+            aria-label={`${isExpanded ? "Collapse" : "Expand"} partition path ${partitionPathNode.label}`}
             onClick={(event) => {
               event.stopPropagation();
-              onToggleExpanded(folder.id);
+              onToggleExpanded(partitionPathNode.id);
             }}
             className={cn(
               "flex size-8 shrink-0 cursor-pointer items-center justify-center rounded text-accent transition hover:bg-accent-muted",
@@ -90,16 +98,9 @@ const FileTreeFolder = ({
               <path d="M4 6l4 4 4-4" strokeLinecap="round" />
             </svg>
           </button>
-          <svg
-            className="size-4 shrink-0 text-slate-400"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            aria-hidden="true"
-          >
-            <path d="M2 6a2 2 0 012-2h4l2 2h6a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-          </svg>
+          <PartitionPathIcon />
           <span className="truncate font-mono text-xs text-slate-200">
-            {folder.label}
+            {partitionPathNode.label}
           </span>
         </div>
         <div className="ml-4 flex shrink-0 items-center gap-2">
@@ -109,17 +110,17 @@ const FileTreeFolder = ({
             </span>
           )}
           <span className="rounded bg-edge px-2 py-0.5 text-xs font-semibold text-slate-300">
-            {folder.allFiles.length}
+            {partitionPathNode.allFiles.length}
           </span>
-          {folder.children.length > 0 && (
+          {partitionPathNode.children.length > 0 && (
             <>
               <button
                 type="button"
-                title="Expand inner folders"
-                aria-label={`Expand all folders inside ${folder.label}`}
+                title="Expand nested partition paths"
+                aria-label={`Expand every partition path inside ${partitionPathNode.label}`}
                 onClick={(event) => {
                   event.stopPropagation();
-                  onExpandMany([folder.id, ...descendantFolderIds]);
+                  onExpandMany([partitionPathNode.id, ...descendantNodeIds]);
                 }}
                 className="flex size-8 cursor-pointer items-center justify-center rounded text-base text-slate-600 hover:bg-edge hover:text-slate-300"
               >
@@ -127,11 +128,11 @@ const FileTreeFolder = ({
               </button>
               <button
                 type="button"
-                title="Collapse inner folders"
-                aria-label={`Collapse all folders inside ${folder.label}`}
+                title="Collapse nested partition paths"
+                aria-label={`Collapse every partition path inside ${partitionPathNode.label}`}
                 onClick={(event) => {
                   event.stopPropagation();
-                  onCollapseMany([folder.id, ...descendantFolderIds]);
+                  onCollapseMany([partitionPathNode.id, ...descendantNodeIds]);
                 }}
                 className="flex size-8 cursor-pointer items-center justify-center rounded text-base text-slate-600 hover:bg-edge hover:text-slate-300"
               >
@@ -141,13 +142,13 @@ const FileTreeFolder = ({
           )}
           <input
             type="checkbox"
-            aria-label={`Select all files in ${folder.label}`}
+            aria-label={`Select all files in ${partitionPathNode.label}`}
             checked={isAllChecked}
             ref={(element) => {
               if (element !== null) element.indeterminate = isSomeChecked;
             }}
             onChange={() => {
-              onToggleFiles(folder.allFiles);
+              onToggleFiles(partitionPathNode.allFiles);
             }}
             onClick={(event) => {
               event.stopPropagation();
@@ -161,27 +162,27 @@ const FileTreeFolder = ({
           role="group"
           className="flex flex-col gap-2 border-t border-edge px-4 py-2"
         >
-          {folder.children.map((child) => (
-            <FileTreeFolder
+          {partitionPathNode.children.map((child) => (
+            <PartitionPathNode
               key={child.id}
               checkedFileIds={checkedFileIds}
               depth={depth + 1}
               duplicatingNodeId={duplicatingNodeId}
               expandedItemIds={expandedItemIds}
-              folder={child}
               inspectedFileId={inspectedFileId}
-              inspectedFolderId={inspectedFolderId}
+              inspectedPartitionPathNodeId={inspectedPartitionPathNodeId}
               onCollapseMany={onCollapseMany}
               onExpandMany={onExpandMany}
               onInspectFile={onInspectFile}
-              onInspectFolder={onInspectFolder}
+              onInspectPartitionPathNode={onInspectPartitionPathNode}
               onToggleChecked={onToggleChecked}
               onToggleExpanded={onToggleExpanded}
               onToggleFiles={onToggleFiles}
               onViewInGraph={onViewInGraph}
+              partitionPathNode={child}
             />
           ))}
-          {folder.directFiles.map((file) => (
+          {partitionPathNode.directFiles.map((file) => (
             <FileTreeFileRow
               key={file.id}
               checkedFileIds={checkedFileIds}
@@ -200,4 +201,4 @@ const FileTreeFolder = ({
   );
 };
 
-export default FileTreeFolder;
+export default PartitionPathNode;

@@ -5,9 +5,9 @@ import FileTreeContent from "./components/FileTreeContent";
 import FileTreeInspector from "./components/FileTreeInspector";
 import FileTreeToolbar from "./components/FileTreeToolbar";
 import {
-  buildFileTree,
+  buildPartitionPathTree,
   buildFileTreeGraphIndex,
-  getAllFolderIds,
+  getAllPartitionPathNodeIds,
   getBranches,
   getCurrentSnapshot,
   getDisplayedSnapshots,
@@ -53,7 +53,7 @@ const FileTreeView = ({ graphData }: FileTreeViewProps) => {
     pageState.scope,
   );
   const partitions = groupFilesByPartition(snapshotFiles, pageState.search);
-  const folders = buildFileTree(partitions);
+  const partitionPathNodes = buildPartitionPathTree(partitions);
   const visibleFiles = partitions.flatMap((partition) => partition.files);
   const snapshotErrors = getSnapshotFileErrors(currentSnapshot, graphIndex);
 
@@ -76,9 +76,9 @@ const FileTreeView = ({ graphData }: FileTreeViewProps) => {
     pageState.inspectedItem?.kind === "file"
       ? pageState.inspectedItem.file.id
       : null;
-  const inspectedFolderId =
-    pageState.inspectedItem?.kind === "folder"
-      ? pageState.inspectedItem.folder.id
+  const inspectedPartitionPathNodeId =
+    pageState.inspectedItem?.kind === "partition-path"
+      ? pageState.inspectedItem.partitionPathNode.id
       : null;
   const inspectedPartitionId =
     pageState.inspectedItem?.kind === "partition"
@@ -101,7 +101,7 @@ const FileTreeView = ({ graphData }: FileTreeViewProps) => {
           pageState.expandItems(
             pageState.viewMode === "tree"
               ? [
-                  ...getAllFolderIds(folders),
+                  ...getAllPartitionPathNodeIds(partitionPathNodes),
                   ...partitions
                     .filter(({ name }) => name === "(unpartitioned)")
                     .map(({ id }) => id),
@@ -141,20 +141,20 @@ const FileTreeView = ({ graphData }: FileTreeViewProps) => {
             checkedFileIds={pageState.checkedFileIds}
             duplicatingNodeId={activeDuplicatingNodeId}
             expandedItemIds={pageState.expandedItemIds}
-            folders={folders}
             inspectedFileId={inspectedFileId}
-            inspectedFolderId={inspectedFolderId}
+            inspectedPartitionPathNodeId={inspectedPartitionPathNodeId}
             inspectedPartitionId={inspectedPartitionId}
             onCollapseMany={pageState.collapseMany}
             onExpandMany={pageState.expandItems}
             onInspectFile={pageState.inspectFile}
-            onInspectFolder={pageState.inspectFolder}
+            onInspectPartitionPathNode={pageState.inspectPartitionPathNode}
             onInspectPartition={pageState.inspectPartition}
             onToggleChecked={pageState.toggleChecked}
             onToggleExpanded={pageState.toggleExpanded}
             onToggleFiles={pageState.toggleFiles}
             onViewInGraph={handleViewInGraph}
             partitions={partitions}
+            partitionPathNodes={partitionPathNodes}
             search={pageState.search}
             viewMode={pageState.viewMode}
           />
