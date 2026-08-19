@@ -4,7 +4,7 @@ import type {
   FileTreeFolder,
   FileTreeViewMode,
   PartitionGroup,
-} from "../fileTreeTypes";
+} from "../types";
 import FileTreeFolderComponent from "./FileTreeFolder";
 import FileTreePartition from "./FileTreePartition";
 

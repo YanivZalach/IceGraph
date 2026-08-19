@@ -1,7 +1,7 @@
 import type { MouseEvent } from "react";
 import { cn } from "../../../shared/lib/cn";
-import { getLatestFileTimestamp } from "../fileTreeModel";
-import type { DataFileNode, PartitionGroup } from "../fileTreeTypes";
+import { getLatestFileTimestamp } from "../model";
+import type { DataFileNode, PartitionGroup } from "../types";
 import FileTreeFileRow from "./FileTreeFileRow";
 
 interface FileTreePartitionProps {

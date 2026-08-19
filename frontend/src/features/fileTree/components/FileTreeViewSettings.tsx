@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { cn } from "../../../shared/lib/cn";
-import { formatSnapshotVersion } from "../fileTreeModel";
+import { formatSnapshotVersion } from "../model";
 import type {
   Branch,
   FileTreeViewMode,
   SnapshotFileScope,
   SnapshotNode,
-} from "../fileTreeTypes";
+} from "../types";
 
 interface FileTreeViewSettingsProps {
   branches: Branch[];

@@ -1,7 +1,7 @@
 import type { MouseEvent } from "react";
 import { cn } from "../../../shared/lib/cn";
-import { getAllFolderIds, getLatestFileTimestamp } from "../fileTreeModel";
-import type { DataFileNode, FileTreeFolder as Folder } from "../fileTreeTypes";
+import { getAllFolderIds, getLatestFileTimestamp } from "../model";
+import type { DataFileNode, FileTreeFolder as Folder } from "../types";
 import FileTreeFileRow from "./FileTreeFileRow";
 
 interface FileTreeFolderProps {

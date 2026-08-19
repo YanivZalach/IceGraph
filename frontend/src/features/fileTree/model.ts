@@ -1,4 +1,4 @@
-import type { FileTreeContext, GraphNode } from "./fileTreeSchemas";
+import type { FileTreeContext, GraphNode } from "./schemas";
 import type {
   Branch,
   DataFileNode,
@@ -9,7 +9,7 @@ import type {
   PartitionGroup,
   SnapshotFileScope,
   SnapshotNode,
-} from "./fileTreeTypes";
+} from "./types";
 
 const BYTES_PER_GIBIBYTE = 1024 ** 3;
 const DATA_FILE_TYPES = new Set<DataFileType>([

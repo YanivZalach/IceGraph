@@ -1,5 +1,4 @@
 import type { MouseEvent } from "react";
-import { useOutletContext } from "react-router-dom";
 import PanelIssueNotice from "../../components/PanelIssueNotice";
 import { useViewInGraph } from "../../hooks/useViewInGraph";
 import FileTreeContent from "./components/FileTreeContent";
@@ -15,21 +14,23 @@ import {
   getSnapshotFileErrors,
   getSnapshotFiles,
   groupFilesByPartition,
-} from "./fileTreeModel";
-import { fileTreeContextSchema } from "./fileTreeSchemas";
-import { useFileTreePageState } from "./useFileTreePageState";
+} from "./model";
+import type { FileTreeContext } from "./schemas";
+import { useFileTreeState } from "./useFileTreeState";
 
-const FileTreePage = () => {
-  const rawContext: unknown = useOutletContext();
-  const context = fileTreeContextSchema.parse(rawContext);
+interface FileTreeViewProps {
+  graphData: FileTreeContext;
+}
+
+const FileTreeView = ({ graphData }: FileTreeViewProps) => {
   const { duplicatingNodeId, viewInGraph } = useViewInGraph();
   const activeDuplicatingNodeId =
     typeof duplicatingNodeId === "string" ? duplicatingNodeId : null;
 
-  const pageState = useFileTreePageState();
+  const pageState = useFileTreeState();
 
-  const graphIndex = buildFileTreeGraphIndex(context);
-  const branches = getBranches(context);
+  const graphIndex = buildFileTreeGraphIndex(graphData);
+  const branches = getBranches(graphData);
   const selectedBranchName = branches.some(
     (branch) => branch.name === pageState.requestedBranchName,
   )
@@ -171,4 +172,4 @@ const FileTreePage = () => {
   );
 };
 
-export default FileTreePage;
+export default FileTreeView;

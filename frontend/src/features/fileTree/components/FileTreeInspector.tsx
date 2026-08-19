@@ -1,16 +1,16 @@
 import { useState } from "react";
 import type { CSSProperties, MouseEvent } from "react";
 import {
-  isEmptyValue,
   PanelDetailRow,
   PanelHeader,
   PanelSectionTitle,
 } from "../../../components/PanelContent";
+import { isEmptyValue } from "../../../shared/lib/isEmptyValue";
 import SidePanelFrame, {
   SidePanelResizeHandle,
 } from "../../../components/SidePanelFrame";
-import { formatByteSize, getFileSizeBytes } from "../fileTreeModel";
-import type { InspectedFileTreeItem } from "../fileTreeTypes";
+import { formatByteSize, getFileSizeBytes } from "../model";
+import type { InspectedFileTreeItem } from "../types";
 import FileTreeStatistics from "./FileTreeStatistics";
 
 interface FileTreeInspectorProps {
