@@ -37,6 +37,7 @@ jobs:
           VITE_BASE: "/IceGraph/"
           VITE_OUT_DIR: "dist"
           VITE_APP_VERSION: ${{ github.ref_name }}
+          VITE_SOURCE_URL: https://github.com/${{ github.repository }}/tree/${{ github.ref_name }}
         run: npm run build
 
       - name: Add 404 fallback for SPA routing

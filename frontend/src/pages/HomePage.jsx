@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import logo from "../assets/icegraph.png";
 import CatalogTableList from "../components/CatalogTableList";
 import JSONbig from "json-bigint";
+import { LICENSE_URL } from "../appConstants";
 import {
   UI_BODY_MUTED_CLASS,
   UI_ERROR_TEXT_SPACED_CLASS,
@@ -135,7 +136,16 @@ export default function HomePage() {
       </main>
 
       <footer className={UI_FOOTER_TEXT_CLASS}>
-        IceGraph — Apache Iceberg Metadata Visualizer
+        IceGraph, Apache Iceberg Metadata Visualizer. Licensed under{" "}
+        <a
+          href={LICENSE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-accent hover:text-blue-400 transition"
+        >
+          AGPL-3.0-only
+        </a>
+        .
       </footer>
     </div>
   );

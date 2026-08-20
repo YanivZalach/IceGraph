@@ -1,6 +1,8 @@
 FROM node:24-slim AS frontend-builder
 ARG APP_VERSION=dev
+ARG SOURCE_URL=https://github.com/YanivZalach/IceGraph
 ENV VITE_APP_VERSION=$APP_VERSION
+ENV VITE_SOURCE_URL=$SOURCE_URL
 WORKDIR /build
 
 COPY frontend/package*.json ./
@@ -23,11 +25,16 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 FROM python:3.12-slim
 WORKDIR /app
 
+LABEL org.opencontainers.image.title="IceGraph" \
+      org.opencontainers.image.source="https://github.com/YanivZalach/IceGraph" \
+      org.opencontainers.image.licenses="AGPL-3.0-only"
+
 COPY --from=builder /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
 
 COPY backend ./backend
 COPY images ./images
+COPY LICENSE LICENSE-MIT ./
 
 ENV PRODUCTION_MODE=true
 
