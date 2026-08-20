@@ -34,8 +34,6 @@ const mobileTabClass = ({ isActive }) =>
       : "text-slate-400 hover:text-white hover:bg-surface-hover"
   }`;
 
-// Tab links carry the current search forward; active styling comes from the
-// class helpers above so the two variants share one source of truth.
 const TabLink = ({ to, children, mobile }) => (
   <Link
     to={to}

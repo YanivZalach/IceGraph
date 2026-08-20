@@ -1,10 +1,10 @@
 import { z } from "zod";
 
-// Custom parse/stringify instead of TanStack's defaults, which JSON-parse each
-// value: snapshot IDs exceed Number.MAX_SAFE_INTEGER and would silently lose
-// precision (see claude-plugin/skills/icegraph/SKILL.md "URL structure").
-// URLSearchParams is the same serializer the legacy pages use to build URLs,
-// keeping router-emitted URLs byte-identical for the IndexedDB dup-cache key.
+// TanStack's default parse/stringify JSON-parses each value, which silently
+// rounds snapshot IDs above Number.MAX_SAFE_INTEGER. URLSearchParams also keeps
+// emitted URLs byte-identical to the legacy pages', which the dup-tab cache key
+// (window.location.href) depends on.
+// See claude-plugin/skills/icegraph/SKILL.md "URL structure".
 export const parseSearch = (searchString: string): Record<string, string> =>
   Object.fromEntries(
     new URLSearchParams(
@@ -27,7 +27,7 @@ export const stringifySearch = (search: Record<string, unknown>): string => {
 
 // z.looseObject is load-bearing: a plain z.object strips unknown params from
 // carry-forward navigations (search: (prev) => prev), silently dropping them
-// from the URL — see SKILL.md's contract that params round-trip untouched.
+// from the URL. SKILL.md contracts that params round-trip untouched.
 export const tableSearchSchema = z.looseObject({
   table: z.string().optional(),
   start_snapshot_id: z.string().optional(),

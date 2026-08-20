@@ -1,8 +1,5 @@
 import { createContext, useContext } from "react";
 
-// Fields stay `unknown`: producer and consumers are unchecked legacy .jsx.
-// A Zod-derived type replaces this when the pages migrate (PHILOSOPHY.md
-// "Zod at runtime boundaries").
 export interface TableGraphData {
   nodes: unknown[];
   edges: unknown[];
