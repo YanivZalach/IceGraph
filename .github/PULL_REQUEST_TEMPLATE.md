@@ -8,4 +8,4 @@
 
 ## Contribution rights
 
-- [ ] I have signed, or will sign, the IceGraph CLA when requested by the CLA check.
+- [ ] I have signed the IceGraph CLA.
