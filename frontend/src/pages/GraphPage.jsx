@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
-import { useNavigate, useSearch } from "@tanstack/react-router";
+import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import { useTableGraphData } from "../features/table/tableGraphData";
 import ForceGraph2D from "react-force-graph-2d";
 import {
@@ -88,9 +88,17 @@ export default function GraphPage() {
 
   const search = useSearch({ strict: false });
   const navigate = useNavigate();
+  const graphSelectionFromHistory = useLocation({
+    select: (location) =>
+      "graphSelection" in location.state
+        ? location.state.graphSelection
+        : undefined,
+  });
   const fgRef = useRef();
   const hasInitialized = useRef(false);
   const isResettingRef = useRef(false);
+  const appliedGraphSelectionRef = useRef(null);
+  const previousGraphSelectionRef = useRef(undefined);
 
   const [highlightNodes, setHighlightNodes] = useState(new Set());
   const [isInspectMode, setIsInspectMode] = useState(true);
@@ -235,15 +243,31 @@ export default function GraphPage() {
     }, 700);
   }, [graphData]);
 
-  const navigateTo = useCallback((node) => {
-    setStickyNode(node);
-    setHighlightNodes(getLineage(node.id, graphDataRef.current.links));
-    setIsFullView(false);
-    fgRef.current?.centerAt(node.fx ?? node.x, node.fy ?? node.y, 300);
-    history.pushState({ ...history.state, graphSelection: node.id }, "");
-    stickyScrollTargetRef.current = 0;
-    if (stickyPanelRef.current) stickyPanelRef.current.scrollTop = 0;
-  }, []);
+  const selectNodeInHistory = useCallback(
+    (nodeId, { replace = false } = {}) => {
+      appliedGraphSelectionRef.current = nodeId;
+      navigate({
+        to: ".",
+        search: (prev) => prev,
+        state: (prev) => ({ ...prev, graphSelection: nodeId }),
+        replace,
+      });
+    },
+    [navigate],
+  );
+
+  const navigateTo = useCallback(
+    (node) => {
+      setStickyNode(node);
+      setHighlightNodes(getLineage(node.id, graphDataRef.current.links));
+      setIsFullView(false);
+      fgRef.current?.centerAt(node.fx ?? node.x, node.fy ?? node.y, 300);
+      selectNodeInHistory(node.id);
+      stickyScrollTargetRef.current = 0;
+      if (stickyPanelRef.current) stickyPanelRef.current.scrollTop = 0;
+    },
+    [selectNodeInHistory],
+  );
 
   const closeStickyPanel = useCallback(() => {
     setStickyNode(null);
@@ -256,8 +280,8 @@ export default function GraphPage() {
   const deselectNode = useCallback(() => {
     setHighlightNodes(new Set());
     closeStickyPanel();
-    history.replaceState({ ...history.state, graphSelection: null }, "");
-  }, [closeStickyPanel]);
+    selectNodeInHistory(null, { replace: true });
+  }, [closeStickyPanel, selectNodeInHistory]);
 
   const resetView = useCallback(() => {
     deselectNode();
@@ -448,34 +472,6 @@ export default function GraphPage() {
     };
   }, [navigateTo, resetZoom, resetView, closeStickyPanel]);
 
-  useEffect(() => {
-    if (!history.state || !("graphSelection" in history.state)) {
-      history.replaceState({ ...history.state, graphSelection: null }, "");
-    }
-
-    const handlePopState = (e) => {
-      if (!e.state || !("graphSelection" in e.state)) return;
-      const nodeId = e.state.graphSelection;
-
-      if (nodeId === null) {
-        resetView();
-        return;
-      }
-
-      const node = graphData.nodes.find((n) => String(n.id) === String(nodeId));
-      if (node) {
-        const lineage = getLineage(node.id, graphData.links);
-        setHighlightNodes(lineage);
-        fgRef.current?.centerAt(node.fx ?? node.x, node.fy ?? node.y, 500);
-        setStickyNode(node);
-        setIsFullView(false);
-      }
-    };
-
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, [graphData, resetView]);
-
   const selectNodeIdFromSearch = search[SELECT_NODE_ID_PARAM] ?? null;
 
   useEffect(() => {
@@ -488,7 +484,7 @@ export default function GraphPage() {
     hasInitialized.current = true;
     fgRef.current.d3ReheatSimulation();
 
-    const historyId = history.state?.graphSelection;
+    const historyId = graphSelectionFromHistory;
     const queryId = selectNodeIdFromSearch;
     const sessionId = sessionStorage.getItem("last_graph_selection");
     const targetNodeId = historyId || queryId || sessionId;
@@ -502,17 +498,15 @@ export default function GraphPage() {
         setHighlightNodes(lineage);
         setStickyNode(node);
         setIsFullView(false);
+        appliedGraphSelectionRef.current = targetNodeId;
 
         if (queryId) {
           navigate({
             to: ".",
             search: (prev) => ({ ...prev, [SELECT_NODE_ID_PARAM]: undefined }),
+            state: (prev) => ({ ...prev, graphSelection: targetNodeId }),
             replace: true,
           });
-          history.replaceState(
-            { ...history.state, graphSelection: targetNodeId },
-            "",
-          );
         }
 
         setTimeout(() => {
@@ -526,7 +520,40 @@ export default function GraphPage() {
     } else {
       setTimeout(() => resetView(), 100);
     }
-  }, [graphData, selectNodeIdFromSearch, resetView]);
+  }, [
+    graphData,
+    graphSelectionFromHistory,
+    selectNodeIdFromSearch,
+    navigate,
+    resetView,
+  ]);
+
+  useEffect(() => {
+    if (graphSelectionFromHistory === undefined) return;
+
+    const hasHistoryMoved =
+      graphSelectionFromHistory !== previousGraphSelectionRef.current;
+    previousGraphSelectionRef.current = graphSelectionFromHistory;
+
+    if (!hasInitialized.current || !hasHistoryMoved) return;
+    if (graphSelectionFromHistory === appliedGraphSelectionRef.current) return;
+    appliedGraphSelectionRef.current = graphSelectionFromHistory;
+
+    if (graphSelectionFromHistory === null) {
+      resetView();
+      return;
+    }
+
+    const node = graphData.nodes.find(
+      (n) => String(n.id) === String(graphSelectionFromHistory),
+    );
+    if (node) {
+      setHighlightNodes(getLineage(node.id, graphData.links));
+      fgRef.current?.centerAt(node.fx ?? node.x, node.fy ?? node.y, 500);
+      setStickyNode(node);
+      setIsFullView(false);
+    }
+  }, [graphData, graphSelectionFromHistory, resetView, setStickyNode]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -559,9 +586,9 @@ export default function GraphPage() {
         fgRef.current.centerAt(node.fx ?? node.x, node.fy ?? node.y, 500);
       }
       setStickyNode(node);
-      history.pushState({ ...history.state, graphSelection: node.id }, "");
+      selectNodeInHistory(node.id);
     },
-    [graphData],
+    [graphData, selectNodeInHistory],
   );
 
   const paintNode = useCallback(
