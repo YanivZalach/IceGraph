@@ -4,7 +4,6 @@ const envSchema = z.object({
   BASE_URL: z.string().min(1),
   VITE_USE_MSW: z.enum(["true", "false"]).optional(),
   VITE_APP_VERSION: z.string().min(1).optional(),
-  VITE_SOURCE_URL: z.url().optional(),
 });
 
 const parsedEnv = envSchema.parse(import.meta.env);
@@ -14,7 +13,6 @@ interface Env {
   apiBaseUrl: string;
   isMock: boolean;
   appVersion: string;
-  sourceUrl: string;
 }
 
 export const env: Env = {
@@ -22,6 +20,4 @@ export const env: Env = {
   apiBaseUrl: "/api/v1",
   isMock: parsedEnv.VITE_USE_MSW === "true",
   appVersion: parsedEnv.VITE_APP_VERSION ?? "dev",
-  sourceUrl:
-    parsedEnv.VITE_SOURCE_URL ?? "https://github.com/YanivZalach/IceGraph",
 };

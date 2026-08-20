@@ -1,12 +1,6 @@
 import { useState, useRef, useEffect, cloneElement, Fragment } from "react";
 import { UI_DOCS_BODY_CLASS, UI_DOCS_NAV_TITLE_CLASS } from "../uiTypography";
-import {
-  APP_VERSION,
-  BASE_PATH,
-  COPYRIGHT_NOTICE,
-  LICENSE_URL,
-  SOURCE_URL,
-} from "../appConstants";
+import { APP_VERSION, BASE_PATH } from "../appConstants";
 
 const PIP_INSTALL_COMMAND =
   APP_VERSION === "dev"
@@ -171,31 +165,14 @@ const SECTIONS = [
               Source
             </span>
             <a
-              href={SOURCE_URL}
+              href="https://github.com/YanivZalach/IceGraph"
               target="_blank"
               rel="noopener noreferrer"
               className="text-accent hover:text-blue-400 transition font-mono"
             >
-              Source for this version
+              github.com/YanivZalach/IceGraph
             </a>
           </div>
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-slate-500 uppercase tracking-wider text-tiny font-semibold">
-              License
-            </span>
-            <a
-              href={LICENSE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-accent hover:text-blue-400 transition font-mono"
-            >
-              AGPL-3.0-only
-            </a>
-          </div>
-          <p className="text-slate-500 text-xs pt-2">
-            {COPYRIGHT_NOTICE}. This software comes with no warranty. You may
-            redistribute it under the license terms above.
-          </p>
         </div>
       </div>
     ),

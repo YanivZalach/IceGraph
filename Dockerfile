@@ -1,8 +1,6 @@
 FROM node:24-slim AS frontend-builder
 ARG APP_VERSION=dev
-ARG SOURCE_URL=https://github.com/YanivZalach/IceGraph
 ENV VITE_APP_VERSION=$APP_VERSION
-ENV VITE_SOURCE_URL=$SOURCE_URL
 WORKDIR /build
 
 COPY frontend/package*.json ./

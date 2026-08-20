@@ -78,9 +78,9 @@ Before contributing, read [ARCHITECTURE_PHILOSOPHY.md](ARCHITECTURE_PHILOSOPHY.m
 
 Work is tracked as tickets of three types: Frontend Refactor, Enrichments, and Bugs, on the [IceGraph Roadmap](https://github.com/users/YanivZalach/projects/3) board.
 
-All human contributors must sign the [Contributor License Agreement](CLA.md)
-before a pull request can be merged. See [CONTRIBUTING.md](CONTRIBUTING.md) for
-the contribution and licensing process.
+All contributors must sign the [Contributor License Agreement](CLA.md) before a
+pull request can be merged. See [CONTRIBUTING.md](CONTRIBUTING.md) for the
+contribution and licensing process.
 
 ### Prerequisites
 
@@ -183,8 +183,8 @@ offer a modified version to users over a network, the AGPL includes correspondin
 source obligations.
 
 Revisions released before the license change remain available under the
-[MIT License](LICENSE-MIT). See [LICENSING.md](LICENSING.md) for the exact
-license boundary, contribution terms, and information about possible commercial
-or enterprise licensing.
+[MIT License](LICENSE-MIT). Contributions require the
+[Contributor License Agreement](CLA.md), which permits future relicensing and
+separate commercial or enterprise licensing.
 
 Copyright (c) 2026 Yaniv Zalach.
