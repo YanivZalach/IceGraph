@@ -355,6 +355,13 @@ const SECTIONS = [
             expanded or collapsed with <strong className="text-white">▼</strong>{" "}
             / <strong className="text-white">▲</strong>.
           </p>
+          <p>
+            When the event's snapshot points at the job that wrote it, an{" "}
+            <strong className="text-white">
+              <code>action_link</code>
+            </strong>{" "}
+            row links out to it, opening in a new tab.
+          </p>
         </div>
       </div>
     ),
