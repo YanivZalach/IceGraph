@@ -1,8 +1,10 @@
 import JSONbig from "json-bigint";
-import { useEffect, useRef, useState } from "react";
-import { Outlet, useNavigate, useSearchParams } from "react-router-dom";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { Outlet, useNavigate, useSearch } from "@tanstack/react-router";
+import { TableGraphDataContext } from "../features/table/tableGraphData";
+import PageLoader from "../components/PageLoader";
 import { formatLocaleDateTime, parseUtcDate } from "../utils/dateUtils";
-import { IS_MOCK, MOCK_HOME_ROUTE } from "../appConstants";
+import { IS_MOCK, MOCK_TABLE } from "../appConstants";
 import {
   UI_BODY_MUTED_CLASS,
   UI_DIALOG_TITLE_CLASS,
@@ -162,7 +164,7 @@ const buildEdgesFromNodes = (nodes) => {
 };
 
 export default function TableLayout() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const search = useSearch({ strict: false });
   const navigate = useNavigate();
   const {
     detailsOpen,
@@ -203,10 +205,10 @@ export default function TableLayout() {
     }
   }, [errors, warnings, setIssuesOpen]);
 
-  const tableName = searchParams.get("table") || "";
-  const startSnapshot = searchParams.get("start_snapshot_id") || "";
-  const endSnapshot = searchParams.get("end_snapshot_id") || "";
-  const isDup = searchParams.get("dup") === "1";
+  const tableName = search.table || "";
+  const startSnapshot = search.start_snapshot_id || "";
+  const endSnapshot = search.end_snapshot_id || "";
+  const isDup = search.dup === "1";
   const cacheKey = isDup
     ? window.location.href
     : `graphData_${tableName}_${startSnapshot}_${endSnapshot}`;
@@ -368,10 +370,15 @@ export default function TableLayout() {
             setWarnings(data.warnings || {});
             setLoading(false);
 
-            const nextParams = new URLSearchParams(searchParams);
-            nextParams.delete("dup");
-            nextParams.delete("cache_id");
-            setSearchParams(nextParams, { replace: true });
+            navigate({
+              to: ".",
+              search: (prev) => ({
+                ...prev,
+                dup: undefined,
+                cache_id: undefined,
+              }),
+              replace: true,
+            });
             return;
           } else {
             throw new Error("No cached data found.");
@@ -439,7 +446,14 @@ export default function TableLayout() {
           {errorDisplay}
           <button
             className="mt-6 px-5 py-2.5 rounded-lg border-2 border-accent bg-accent text-white font-bold text-sm cursor-pointer hover:bg-accent-dark transition"
-            onClick={() => navigate(IS_MOCK ? MOCK_HOME_ROUTE : "/")}
+            onClick={() =>
+              IS_MOCK
+                ? navigate({
+                    to: "/table/timeline",
+                    search: { table: MOCK_TABLE },
+                  })
+                : navigate({ to: "/" })
+            }
           >
             ← Back to Home
           </button>
@@ -471,7 +485,14 @@ export default function TableLayout() {
 
   return (
     <div className="flex-1 flex overflow-hidden relative">
-      <Outlet context={graphData} />
+      <TableGraphDataContext.Provider value={graphData}>
+        {/* Boundary below TableLayout: a suspending tab chunk must not
+            reach the root Suspense, which would unmount TableLayout and
+            wipe the graph selection (sessionStorage cleared on mount). */}
+        <Suspense fallback={<PageLoader />}>
+          <Outlet />
+        </Suspense>
+      </TableGraphDataContext.Provider>
 
       {detailsOpen && metadata && (
         <div

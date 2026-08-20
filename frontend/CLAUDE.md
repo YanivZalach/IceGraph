@@ -36,8 +36,9 @@ The sections below describe the existing code, which predates [PHILOSOPHY.md](PH
 
 React SPA in `frontend/src/`:
 
+- Routing: TanStack Router, file-based under `src/routes/` — thin `.tsx` route files lazy-load the legacy pages. Search-param Zod schemas and the string-preserving `parseSearch`/`stringifySearch` (snapshot IDs must never be JSON-parsed) live in `shared/lib/searchParams.ts`
 - Pages: `GraphPage` (force-graph visualization), `MetadataPage`, `TimelinePage`, `FileTreePage`, `SnapshotSelectionPage`, `HomePage`, `DocsPage`
-- `TableLayout.jsx` wraps all table-specific pages; `context/TableSpecsContext.jsx` shares table state
+- `TableLayout.jsx` wraps all table-specific pages and provides graph data via `features/table/tableGraphData.ts`; `context/TableSpecsContext.jsx` shares table state
 - `graphConstants.js` defines node/link visual constants and `fileTypeLabel()` for human-readable node types
 - `uiTypography.js` — shared Tailwind class tokens for labels, body text, inputs, buttons, and toolbar controls
 - `layoutConstants.js` / `appConstants.js` — layout dimensions and app-wide constants

@@ -43,7 +43,7 @@ const philosophyRules = {
 };
 
 export default tseslint.config(
-  { ignores: ["dist", "public", "node_modules"] },
+  { ignores: ["dist", "public", "node_modules", "src/routeTree.gen.ts"] },
 
   // eslint-disable comments must carry a justification (PHILOSOPHY.md 'Tooling & enforcement')
   {
@@ -82,6 +82,20 @@ export default tseslint.config(
           "ts-expect-error": { descriptionFormat: "^.*(https?://|#\\d+).*$" },
         },
       ],
+    },
+  },
+
+  // TanStack Router file routes: exporting `Route` and throwing redirect()
+  // are the router's own documented pattern —
+  // https://tanstack.com/router/latest/docs/framework/react/routing/file-based-routing
+  {
+    files: ["src/routes/**/*.tsx"],
+    rules: {
+      "react-refresh/only-export-components": [
+        "error",
+        { allowExportNames: ["Route"] },
+      ],
+      "@typescript-eslint/only-throw-error": "off",
     },
   },
 

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useTableGraphData } from "../features/table/tableGraphData";
 import JSONbig from "json-bigint";
 import CopyableValue from "../components/CopyableValue";
 import {
@@ -84,7 +84,7 @@ function KV({ label, value, mono = false }) {
 }
 
 export default function MetadataPage() {
-  const { metadata, nodes } = useOutletContext();
+  const { metadata, nodes } = useTableGraphData();
   const [copied, setCopied] = useState(false);
   const scrollTargetRef = useRef(0);
   const rafRef = useRef(null);

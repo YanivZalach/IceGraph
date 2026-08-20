@@ -1,11 +1,15 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { tanstackRouter } from "@tanstack/router-plugin/vite";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   return {
     plugins: [
+      // Must precede react() so route-file transforms run before Babel:
+      // https://tanstack.com/router/latest/docs/framework/react/routing/installation-with-vite
+      tanstackRouter({ target: "react", autoCodeSplitting: false }),
       react({
         babel: {
           plugins: ["babel-plugin-react-compiler"],

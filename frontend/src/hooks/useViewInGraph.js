@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation } from "@tanstack/react-router";
 import { useTableSpecs } from "../context/TableSpecsContext";
 import { BASE_PATH, SELECT_NODE_ID_PARAM } from "../appConstants";
 import { cacheData, clearCachedData } from "../utils/cacheUtils";
 
 export function useViewInGraph() {
   const { rawData } = useTableSpecs();
-  const { search: tabSearch } = useLocation();
+  const tabSearch = useLocation({ select: (loc) => loc.searchStr });
   const [duplicatingNodeId, setDuplicatingNodeId] = useState(null);
 
   const viewInGraph = async (e, nodeId) => {
