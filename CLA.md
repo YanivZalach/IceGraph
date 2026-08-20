@@ -5,8 +5,8 @@ Version 1.0, effective 2026-08-20
 Thank you for contributing to IceGraph. This Contributor License Agreement
 ("Agreement") documents the rights granted by contributors to Yaniv Zalach
 ("Project Steward"). This is a legally binding agreement. You accept it by
-signing through the contribution-signing service configured for the IceGraph
-repository.
+personally recording Your acceptance on the GitHub pull request through which
+You submit a Contribution, as described in Section 10.
 
 ## 1. Definitions
 
@@ -111,9 +111,29 @@ minimum extent necessary, and the remaining provisions will continue in effect.
 
 ## 10. Acceptance
 
-Electronic acceptance through the repository's configured CLA service has the
-same effect as a handwritten signature. The signature record identifies You by
-Your authenticated account and records the Agreement version You accepted.
+If You are the pull request author, You electronically sign and accept this
+Agreement by personally checking the CLA acceptance box in the pull request
+body. The acceptance box must identify the Agreement version You accept and
+remain checked when the pull request is merged.
+
+Your acceptance applies to every Contribution included in that pull request.
+Each later pull request requires a separate acceptance of the Agreement
+version identified in that pull request.
+
+If Your Contribution is included in a pull request authored by someone else,
+You electronically sign and accept this Agreement by personally posting the
+following statement on that pull request:
+
+> I have read and agree to the IceGraph Contributor License Agreement, version
+> 1.0, and I confirm that I have authority to submit my contribution.
+
+Each author and co-author must accept separately. A Project Steward,
+maintainer, or other person may not record acceptance on Your behalf. Your
+authenticated GitHub account, the pull request, its recorded history, and the
+Agreement version identified in Your acceptance form the electronic signature
+record. You agree that this acceptance is Your electronic signature and has
+the same effect as a handwritten signature to the maximum extent permitted by
+applicable law.
 
 This Agreement is adapted from the Harmony Contributor Agreement Template,
 Version 1.0, using its broad outbound-license approach. The Harmony template is

@@ -78,8 +78,8 @@ Before contributing, read [ARCHITECTURE_PHILOSOPHY.md](ARCHITECTURE_PHILOSOPHY.m
 
 Work is tracked as tickets of three types: Frontend Refactor, Enrichments, and Bugs, on the [IceGraph Roadmap](https://github.com/users/YanivZalach/projects/3) board.
 
-All contributors must sign the [Contributor License Agreement](CLA.md) before a
-pull request can be merged. See [CONTRIBUTING.md](CONTRIBUTING.md) for the
+All contributors must accept the [Contributor License Agreement](CLA.md) before
+a pull request can be merged. See [CONTRIBUTING.md](CONTRIBUTING.md) for the
 contribution and licensing process.
 
 ### Prerequisites
