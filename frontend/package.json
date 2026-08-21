@@ -14,6 +14,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "msw:init": "msw init public/"
@@ -25,6 +26,7 @@
     "@tanstack/react-table": "^9.2.3",
     "@tanstack/react-virtual": "^3.14.10",
     "clsx": "^2.1.1",
+    "date-fns": "^4.4.0",
     "json-bigint": "^1.0.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
@@ -59,7 +61,8 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.67.0",
     "unist-util-visit": "^5.1.0",
-    "vite": "^7.0.0"
+    "vite": "^7.0.0",
+    "vitest": "^4.1.10"
   },
   "msw": {
     "workerDirectory": [
