@@ -1,6 +1,8 @@
 {
   "name": "icegraph-frontend",
   "private": true,
+  "author": "Yaniv Zalach",
+  "license": "AGPL-3.0-only",
   "type": "module",
   "scripts": {
     "copy-skill": "node -e \"require('fs').mkdirSync('public',{recursive:true});require('fs').copyFileSync('../claude-plugin/skills/icegraph/SKILL.md','public/SKILL.md')\"",

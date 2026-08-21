@@ -36,3 +36,10 @@ client.get_graph("database.table", start_snapshot_id, end_snapshot_id)
 ## Docs
 
 Full documentation, the IceGraph application, and the source code: [github.com/YanivZalach/IceGraph](https://github.com/YanivZalach/IceGraph)
+
+## License
+
+`icegraph-client` is licensed under the
+[GNU Affero General Public License version 3 only](https://github.com/YanivZalach/IceGraph/blob/master/LICENSE).
+
+Copyright (c) 2026 Yaniv Zalach and the IceGraph contributors.

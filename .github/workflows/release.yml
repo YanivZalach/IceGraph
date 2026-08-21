@@ -63,6 +63,8 @@ jobs:
           | 🐍 Python client | \`pip install icegraph-client==$VERSION\`<br>[PyPI](https://pypi.org/project/icegraph-client/$VERSION/) |
           | 🌐 Live demo | [$DEMO_URL]($DEMO_URL) |
           | 📖 Docs | [${DEMO_URL}docs](${DEMO_URL}docs) |
+          | Source | [GitHub](https://github.com/$REPO/tree/$TAG) |
+          | License | [AGPL-3.0-only](https://github.com/$REPO/blob/$TAG/LICENSE) |
 
           EOF
 

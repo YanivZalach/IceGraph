@@ -35,7 +35,9 @@ hours_data = [
     (23, "corrected_login", "2025-06-15 10:45:00"),
 ]
 df_hours = spark.createDataFrame(hours_data, ["event_id", "event_name", "event_ts_str"])
-df_hours = df_hours.withColumn("event_ts", F.to_timestamp("event_ts_str")).drop("event_ts_str")
+df_hours = df_hours.withColumn("event_ts", F.to_timestamp("event_ts_str")).drop(
+    "event_ts_str"
+)
 df_hours.writeTo("default.events").overwritePartitions()
 print("✅ Inserted 3 rows into hours 10 and 11 partition")
 spark.table("default.events").show(1000, False)
@@ -64,8 +66,12 @@ hour11_data = [
     (4, "logout", "2025-06-15 11:10:00", "mobile"),
     (5, "signup", "2025-06-15 11:30:00", "web"),
 ]
-df_hour11 = spark.createDataFrame(hour11_data, ["event_id", "event_type", "event_ts_str", "event_source"])
-df_hour11 = df_hour11.withColumn("event_ts", F.to_timestamp("event_ts_str")).drop("event_ts_str")
+df_hour11 = spark.createDataFrame(
+    hour11_data, ["event_id", "event_type", "event_ts_str", "event_source"]
+)
+df_hour11 = df_hour11.withColumn("event_ts", F.to_timestamp("event_ts_str")).drop(
+    "event_ts_str"
+)
 df_hour11.writeTo("default.events").append()
 df_hour11.writeTo("default.events").append()
 print("✅ Inserted 2 rows into hour 11 partition (with new columns)")
@@ -79,8 +85,12 @@ hour10_replacement = [
     (100, "corrected_login", "2025-06-15 10:05:00", "api"),
     (101, "corrected_purchase", "2025-06-15 10:45:00", "api"),
 ]
-df_hour10_new = spark.createDataFrame(hour10_replacement, ["event_id", "event_type", "event_ts_str", "event_source"])
-df_hour10_new = df_hour10_new.withColumn("event_ts", F.to_timestamp("event_ts_str")).drop("event_ts_str")
+df_hour10_new = spark.createDataFrame(
+    hour10_replacement, ["event_id", "event_type", "event_ts_str", "event_source"]
+)
+df_hour10_new = df_hour10_new.withColumn(
+    "event_ts", F.to_timestamp("event_ts_str")
+).drop("event_ts_str")
 df_hour10_new.writeTo("default.events").overwritePartitions()
 print("✅ Overwrote hour 10 partition with corrected data")
 print("   (Hour 11 remains untouched)\n")
@@ -100,8 +110,12 @@ branch_data = [
     (301, "audit_review", "2025-06-15 13:45:00", "audit"),
     (301, "audit_review", "2025-06-15 13:45:00", "audit"),
 ]
-df_branch = spark.createDataFrame(branch_data, ["event_id", "event_type", "event_ts_str", "event_source"])
-df_branch = df_branch.withColumn("event_ts", F.to_timestamp("event_ts_str")).drop("event_ts_str")
+df_branch = spark.createDataFrame(
+    branch_data, ["event_id", "event_type", "event_ts_str", "event_source"]
+)
+df_branch = df_branch.withColumn("event_ts", F.to_timestamp("event_ts_str")).drop(
+    "event_ts_str"
+)
 df_branch.writeTo("default.events.branch_my_test_branch").overwritePartitions()
 print("✅ Overwrote hour 13 partition on my_test_branch")
 
@@ -121,9 +135,13 @@ experimental_data = [
     (200, "experiment", "2025-06-15 12:01:00", "test"),
 ]
 
-df_exp = spark.createDataFrame(experimental_data, ["event_id", "event_type", "event_ts_str", "event_source"])
+df_exp = spark.createDataFrame(
+    experimental_data, ["event_id", "event_type", "event_ts_str", "event_source"]
+)
 
-df_exp = df_exp.withColumn("event_ts", F.to_timestamp("event_ts_str")).drop("event_ts_str")
+df_exp = df_exp.withColumn("event_ts", F.to_timestamp("event_ts_str")).drop(
+    "event_ts_str"
+)
 
 df_exp.writeTo("default.events").option(
     "snapshot-property.my_custom_key",
@@ -180,8 +198,12 @@ hour10_data = [
     (2, "click", "2025-06-15 10:20:00"),
     (3, "purchase", "2025-06-15 10:45:00"),
 ]
-df_hour10 = spark.createDataFrame(hour10_data, ["event_id", "event_name", "event_ts_str"])
-df_hour10 = df_hour10.withColumn("event_ts", F.to_timestamp("event_ts_str")).drop("event_ts_str")
+df_hour10 = spark.createDataFrame(
+    hour10_data, ["event_id", "event_name", "event_ts_str"]
+)
+df_hour10 = df_hour10.withColumn("event_ts", F.to_timestamp("event_ts_str")).drop(
+    "event_ts_str"
+)
 df_hour10.writeTo("default.logging").overwritePartitions()
 print("✅ Inserted 3 rows into hour 10 partition")
 spark.table("default.logging").show(1000, False)
@@ -210,8 +232,12 @@ hour11_data = [
     (4, "logout", "2025-06-15 11:10:00", "mobile"),
     (5, "signup", "2025-06-15 11:30:00", "web"),
 ]
-df_hour11 = spark.createDataFrame(hour11_data, ["event_id", "event_type", "event_ts_str", "event_source"])
-df_hour11 = df_hour11.withColumn("event_ts", F.to_timestamp("event_ts_str")).drop("event_ts_str")
+df_hour11 = spark.createDataFrame(
+    hour11_data, ["event_id", "event_type", "event_ts_str", "event_source"]
+)
+df_hour11 = df_hour11.withColumn("event_ts", F.to_timestamp("event_ts_str")).drop(
+    "event_ts_str"
+)
 df_hour11.writeTo("default.logging").append()
 print("✅ Inserted 2 rows into hour 11 partition (with new columns)")
 spark.table("default.logging").show(1000, False)
@@ -224,8 +250,12 @@ hour10_replacement = [
     (100, "corrected_login", "2025-06-15 10:05:00", "api"),
     (101, "corrected_login", "2025-06-15 10:45:00", "api"),
 ]
-df_hour10_new = spark.createDataFrame(hour10_replacement, ["event_id", "event_type", "event_ts_str", "event_source"])
-df_hour10_new = df_hour10_new.withColumn("event_ts", F.to_timestamp("event_ts_str")).drop("event_ts_str")
+df_hour10_new = spark.createDataFrame(
+    hour10_replacement, ["event_id", "event_type", "event_ts_str", "event_source"]
+)
+df_hour10_new = df_hour10_new.withColumn(
+    "event_ts", F.to_timestamp("event_ts_str")
+).drop("event_ts_str")
 df_hour10_new.writeTo("default.logging").overwritePartitions()
 print("✅ Overwrote hour 10 partition with corrected data")
 print("   (Hour 11 remains untouched)\n")

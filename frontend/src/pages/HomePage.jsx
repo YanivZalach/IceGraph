@@ -135,7 +135,7 @@ export default function HomePage() {
       </main>
 
       <footer className={UI_FOOTER_TEXT_CLASS}>
-        IceGraph — Apache Iceberg Metadata Visualizer
+        IceGraph, open source Apache Iceberg Metadata Visualizer
       </footer>
     </div>
   );

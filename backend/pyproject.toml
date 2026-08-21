@@ -3,6 +3,8 @@ name = "icegraph"
 version = "0.1.0"
 description = "Iceberg Metadata Visualizer"
 readme = "README.md"
+license = "AGPL-3.0-only"
+authors = [{ name = "Yaniv Zalach" }]
 requires-python = ">=3.12"
 dependencies = [
     "arrow==1.4.0",

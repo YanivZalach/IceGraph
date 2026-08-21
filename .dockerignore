@@ -12,5 +12,4 @@ tests/
 .coverage
 htmlcov/
 README.md
-LICENSE
 .github/

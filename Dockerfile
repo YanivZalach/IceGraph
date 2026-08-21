@@ -28,6 +28,7 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 COPY backend ./backend
 COPY images ./images
+COPY LICENSE LICENSE-MIT ./
 
 ENV PRODUCTION_MODE=true
 
