@@ -14,12 +14,8 @@ CLA_STATEMENT = (
 )
 STATUS_CONTEXT = "CLA"
 STEWARD_LOGIN = "yanivzalach"
-IGNORED_LOGINS = {"web-flow"}
-IGNORED_EMAILS = {
-    "131461377+yanivzalach@users.noreply.github.com",
-    "actions@github.com",
+CLA_EXEMPT_EMAILS = {
     "noreply@anthropic.com",
-    "noreply@github.com",
     "t3code@users.noreply.github.com",
     "yanivzalach@yanivs-air.lan",
     "yanivzalach@yanivs-macbook-air.local",
@@ -51,14 +47,14 @@ def required_login(account):
     login = account["login"]
     if account.get("type") == "Bot" or login.endswith("[bot]"):
         return None
-    if login.lower() == STEWARD_LOGIN or login.lower() in IGNORED_LOGINS:
+    if login.lower() == STEWARD_LOGIN:
         return None
     return login
 
 
 def add_email(required, unresolved, email):
     email = (email or "").strip().lower()
-    if email in IGNORED_EMAILS:
+    if email in CLA_EXEMPT_EMAILS:
         return
     match = NOREPLY_RE.fullmatch(email)
     if match:
