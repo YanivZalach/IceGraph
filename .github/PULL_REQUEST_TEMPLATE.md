@@ -8,7 +8,7 @@
 
 ## Contributor License Agreement
 
-Every pull request author, commit author, and co-author must accept the
+Every pull request author and commit author must accept the
 [IceGraph Individual Contributor License Agreement](https://github.com/YanivZalach/IceGraph/blob/master/CLA.md).
 
 After opening this pull request, copy the following exact statement and post it
@@ -19,5 +19,5 @@ I have read and agree to the IceGraph Individual Contributor License Agreement, 
 ```
 
 Do not place the statement only in this pull request description. The automated
-`CLA` check accepts it only as a separate comment from each contributor's own
-authenticated GitHub account.
+`CLA` check accepts it only as a separate comment from each pull request author
+and commit author's own authenticated GitHub account.

@@ -7,7 +7,7 @@ Thank you for your interest in contributing to IceGraph. In this Agreement,
 
 This contributor agreement ("Agreement") documents the rights granted by
 contributors to Us. To make this document effective, personally post the
-acceptance statement in Section 7 as a comment on the GitHub pull request that
+acceptance statement in Section 7 as a comment on a GitHub pull request that
 contains Your Contribution, following the instructions in
 [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -56,7 +56,7 @@ Based on the grant of rights in Sections 2.1 and 2.2, if We include Your Contrib
 
 2.6 Reservation of Rights. Any rights not expressly licensed under this section are expressly reserved by You.
 
-3. Agreement
+## 3. Agreement
 
 You confirm that:
 
@@ -99,18 +99,26 @@ Convention in its entirety to this Agreement.
 ## 7. Electronic Acceptance
 
 You execute and accept this Agreement by personally posting the following exact
-statement as a comment, from Your authenticated GitHub account, on each pull
+statement as a comment, from Your authenticated GitHub account, on a pull
 request that contains Your Contribution:
 
 > I have read and agree to the IceGraph Individual Contributor License
 > Agreement, Harmony HA-CLA-I-ANY version 1.0, and I confirm that I have
 > authority to submit my contribution.
 
-Your acceptance covers all of Your Contributions in that pull request. Each
-author and co-author must accept separately. No other person may accept on Your
-behalf. The comment must remain published when the pull request is merged. Your
-authenticated GitHub account, the comment, the pull request, and this identified
-Agreement version form the electronic signature record.
+Each pull request author and commit author must accept separately. No other
+person may accept on Your behalf, and the comment must remain published when
+the pull request is merged.
+
+Acceptance is required once for this version of the Agreement. After We record
+Your acceptance in `.github/cla-signers.json`, it covers Your later
+Contributions without a further comment. If We publish a new version of this
+Agreement, a recorded acceptance of an earlier version does not carry over, and
+You accept the new version the same way.
+
+Your authenticated GitHub account, the comment, the pull request, the recorded
+entry, and this identified Agreement version form the electronic signature
+record.
 
 This Agreement is derived from the Project Harmony contributor agreement
 template at [harmonyagreements.org](https://www.harmonyagreements.org/). The
