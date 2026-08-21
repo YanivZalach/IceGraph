@@ -22,7 +22,7 @@ This file provides guidance to coding agents working in this repository.
 - **Never add a dependency without asking the user first**: present what it does, why hand-rolling is worse, and its cost. Read [ARCHITECTURE_PHILOSOPHY.md](ARCHITECTURE_PHILOSOPHY.md) before proposing new dependencies, services, or persistent state: weigh every such change against its pillars.
 - Apply DRY principles where possible.
 - Python files must not exceed 400 lines.
-- Never run git commands: only the user does.
+- Agents may run read-only Git commands such as `git status` and `git diff`. Never run `git add`, `git commit`, or `git push`: those commands are reserved for the user.
 - When `icegraph-client`'s public API or CLI commands change, update the CLI section in `frontend/src/pages/DocsPage.jsx` and the Python Client & CLI bullet in `README.md` to match.
 - Whenever creating a setting that is configurable via an environment variable, define it in `backend/env.py`.
 - Before modifying anything under `frontend/`, read and follow [frontend/DEVELOPMENT.md](frontend/DEVELOPMENT.md) and [frontend/PHILOSOPHY.md](frontend/PHILOSOPHY.md).
