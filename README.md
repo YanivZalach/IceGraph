@@ -187,4 +187,4 @@ Revisions released before the license change remain available under the
 [Contributor License Agreement](CLA.md), which permits future relicensing and
 separate commercial or enterprise licensing.
 
-Copyright (c) 2026 Yaniv Zalach.
+Copyright (c) 2026 Yaniv Zalach and the IceGraph contributors.

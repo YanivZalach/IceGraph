@@ -1,141 +1,120 @@
-# IceGraph Contributor License Agreement
+# IceGraph Individual Contributor License Agreement
 
-Version 1.0, effective 2026-08-20
+IceGraph adaptation effective August 21, 2026.
 
-Thank you for contributing to IceGraph. This Contributor License Agreement
-("Agreement") documents the rights granted by contributors to Yaniv Zalach
-("Project Steward"). This is a legally binding agreement. You accept it by
-personally recording Your acceptance on the GitHub pull request through which
-You submit a Contribution, as described in Section 10.
+Thank you for your interest in contributing to IceGraph. In this Agreement,
+"We" or "Us" means Yaniv Zalach, the individual who manages IceGraph.
+
+This contributor agreement ("Agreement") documents the rights granted by
+contributors to Us. To make this document effective, personally post the
+acceptance statement in Section 7 as a comment on the GitHub pull request that
+contains Your Contribution, following the instructions in
+[CONTRIBUTING.md](CONTRIBUTING.md).
+
+This is a legally binding document, so please read it carefully before agreeing
+to it. This Agreement covers IceGraph.
 
 ## 1. Definitions
 
-"You" means the individual who submits a Contribution. If the Contribution is
-owned by a legal entity, "You" also means that entity, and you represent that
-you are authorized to bind it to this Agreement.
+"You" means the individual who Submits a Contribution to Us.
 
-"Contribution" means any original work of authorship, including source code,
-documentation, tests, designs, or other material, that You intentionally submit
-for inclusion in IceGraph. Material clearly marked "Not a Contribution" is
-excluded.
+"Contribution" means any work of authorship that is Submitted by You to Us in
+which You own or assert ownership of the Copyright. If You do not own the
+Copyright in the entire work of authorship, disclose the third-party material
+and all applicable license and attribution information in the pull request, as
+described in [CONTRIBUTING.md](CONTRIBUTING.md).
 
-"Material" means IceGraph and any related work maintained by the Project
-Steward in which a Contribution is included.
+"Copyright" means all rights protecting works of authorship owned or controlled by You, including copyright, moral and neighboring rights, as appropriate, for the full term of their existence including any extensions by You.
 
-"Submit" means communicating a Contribution through a pull request, commit,
-issue, electronic message, or another channel designated for contributions.
+"Material" means the work of authorship which is made available by Us to third parties. When this Agreement covers more than one software project, the Material means the work of authorship to which the Contribution was Submitted. After You Submit the Contribution, it may be included in the Material.
 
-## 2. Copyright license
+"Submit" means any form of electronic, verbal, or written communication sent to Us or our representatives, including but not limited to electronic mailing lists, source code control systems, and issue tracking systems that are managed by, or on behalf of, Us for the purpose of discussing and improving the Material, but excluding communication that is conspicuously marked or otherwise designated in writing by You as "Not a Contribution."
 
-You retain ownership of Your Contribution.
+"Submission Date" means the date on which You Submit a Contribution to Us.
 
-To the maximum extent permitted by law, You grant the Project Steward a
-perpetual, worldwide, non-exclusive, transferable, royalty-free, irrevocable
-copyright license, with the right to sublicense through multiple tiers, to use,
-reproduce, modify, prepare derivative works of, publicly display, publicly
-perform, make available, distribute, license, and otherwise exploit Your
-Contribution, in source or object form, as part of the Material or related
-products and services.
+"Effective Date" means the date You execute this Agreement or the date You first Submit a Contribution to Us, whichever is earlier.
 
-## 3. Patent license
+## 2. Grant of Rights
 
-You grant the Project Steward and recipients of software distributed by the
-Project Steward a perpetual, worldwide, non-exclusive, transferable,
-royalty-free, irrevocable patent license, with the right to sublicense through
-multiple tiers, to make, have made, use, offer to sell, sell, import, and
-otherwise transfer Your Contribution alone or in combination with the Material.
-This grant applies only to patent claims You can license that are necessarily
-infringed by Your Contribution alone or by its combination with the Material as
-it existed when You submitted the Contribution.
+2.1 Copyright License
 
-If You initiate patent litigation alleging that the Material or a Contribution
-infringes a patent, the patent licenses granted to You for that Material under
-this Agreement end as of the date the litigation is filed.
+(a) You retain ownership of the Copyright in Your Contribution and have the same rights to use or license the Contribution which You would have had without entering into the Agreement.
 
-## 4. Outbound licensing
+(b) To the maximum extent permitted by the relevant law, You grant to Us a perpetual, worldwide, non-exclusive, transferable, royalty-free, irrevocable license under the Copyright covering the Contribution, with the right to sublicense such rights through multiple tiers of sublicensees, to reproduce, modify, display, perform and distribute the Contribution as part of the Material; provided that this license is conditioned upon compliance with Section 2.3.
 
-The Project Steward may license Your Contribution under any license, including
-copyleft, permissive, source-available, commercial, or proprietary terms. As a
-condition of exercising this right, the Project Steward will also make Your
-Contribution available under the license or licenses applied to the Material on
-the date You submitted it.
+2.2 Patent License
 
-This section permits, among other things, dual licensing, commercial licensing,
-and future relicensing of the Material.
+For patent claims including, without limitation, method, process, and apparatus claims which You own, control or have the right to grant, now or in the future, You grant to Us a perpetual, worldwide, non-exclusive, transferable, royalty-free, irrevocable patent license, with the right to sublicense these rights to multiple tiers of sublicensees, to make, have made, use, sell, offer for sale, import and otherwise transfer the Contribution and the Contribution in combination with the Material (and portions of such combination). This license is granted only to the extent that the exercise of the licensed rights infringes such patent claims; and provided that this license is conditioned upon compliance with Section 2.3.
 
-## 5. Your representations
+2.3 Outbound License
 
-You represent that:
+Based on the grant of rights in Sections 2.1 and 2.2, if We include Your Contribution in a Material, We may license the Contribution under any license, including copyleft, permissive, commercial, or proprietary licenses. As a condition on the exercise of this right, We agree to also license the Contribution under the terms of the license or licenses which We are using for the Material on the Submission Date.
 
-1. You have the legal authority to enter into this Agreement.
-2. You created the Contribution, or You have sufficient rights to submit it and
-   grant the licenses in this Agreement.
-3. If an employer or another entity may own the Contribution, You have received
-   permission to submit it or are authorized to bind that entity.
-4. The Contribution includes complete details of any third-party license,
-   copyright, patent, or other restriction known to You.
-5. You are not knowingly submitting confidential information.
+2.4 Moral Rights. If moral rights apply to the Contribution, to the maximum extent permitted by law, You waive and agree not to assert such moral rights against Us or our successors in interest, or any of our licensees, either direct or indirect.
 
-You must notify the Project Steward promptly if any representation becomes
-inaccurate.
+2.5 Our Rights. You acknowledge that We are not obligated to use Your Contribution as part of the Material and may decide to include any Contribution We consider appropriate.
 
-## 6. Moral rights
+2.6 Reservation of Rights. Any rights not expressly licensed under this section are expressly reserved by You.
 
-To the maximum extent permitted by law, You waive and agree not to assert moral
-rights in Your Contribution against the Project Steward, successors, or
-licensees. Where waiver is not permitted, You agree not to enforce those rights
-to interfere with the permissions granted by this Agreement.
+3. Agreement
 
-## 7. No obligation and no warranty
+You confirm that:
 
-The Project Steward is not required to use or distribute Your Contribution.
-Unless separately agreed in writing, You provide the Contribution without
-support and without warranties or conditions of any kind.
+(a) You have the legal authority to enter into this Agreement.
 
-## 8. Assignment and successors
+(b) You own the Copyright and patent claims covering the Contribution which are required to grant the rights under Section 2.
 
-The Project Steward may assign this Agreement and the rights it grants to a
-person or entity that acquires IceGraph, substantially all related assets, or
-the business responsible for IceGraph. Any assignee must accept the Project
-Steward's obligations under this Agreement.
+(c) The grant of rights under Section 2 does not violate any grant of rights which You have made to third parties, including Your employer. If You are an employee, You have had Your employer approve this Agreement or sign the Entity version of this document. If You are less than eighteen years old, please have Your parents or guardian sign the Agreement.
 
-You may not assign this Agreement without the Project Steward's written
-consent, except that an entity may assign it as part of a merger, acquisition,
-or transfer of substantially all relevant assets.
+(d) You have followed the third-party material instructions in
+[CONTRIBUTING.md](CONTRIBUTING.md), if You do not own the Copyright in the
+entire work of authorship Submitted.
 
-## 9. Entire agreement and severability
+## 4. Disclaimer
 
-This Agreement is the complete agreement concerning Contributions You submit.
-If a provision is unenforceable, it will be limited or replaced only to the
-minimum extent necessary, and the remaining provisions will continue in effect.
+EXCEPT FOR THE EXPRESS WARRANTIES IN SECTION 3, THE CONTRIBUTION IS PROVIDED "AS IS". MORE PARTICULARLY, ALL EXPRESS OR IMPLIED WARRANTIES INCLUDING, WITHOUT LIMITATION, ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT ARE EXPRESSLY DISCLAIMED BY YOU TO US. TO THE EXTENT THAT ANY SUCH WARRANTIES CANNOT BE DISCLAIMED, SUCH WARRANTY IS LIMITED IN DURATION TO THE MINIMUM PERIOD PERMITTED BY LAW.
 
-## 10. Acceptance
+## 5. Consequential Damage Waiver
 
-If You are the pull request author, You electronically sign and accept this
-Agreement by personally checking the CLA acceptance box in the pull request
-body. The acceptance box must identify the Agreement version You accept and
-remain checked when the pull request is merged.
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT WILL YOU BE LIABLE FOR ANY LOSS OF PROFITS, LOSS OF ANTICIPATED SAVINGS, LOSS OF DATA, INDIRECT, SPECIAL, INCIDENTAL, CONSEQUENTIAL AND EXEMPLARY DAMAGES ARISING OUT OF THIS AGREEMENT REGARDLESS OF THE LEGAL OR EQUITABLE THEORY (CONTRACT, TORT OR OTHERWISE) UPON WHICH THE CLAIM IS BASED.
 
-Your acceptance applies to every Contribution included in that pull request.
-Each later pull request requires a separate acceptance of the Agreement
-version identified in that pull request.
+## 6. Miscellaneous
 
-If Your Contribution is included in a pull request authored by someone else,
-You electronically sign and accept this Agreement by personally posting the
-following statement on that pull request:
+6.1 This Agreement will be governed by and construed in accordance with the
+laws of the State of Israel excluding its conflicts of law provisions. Under
+certain circumstances, the governing law in this section might be superseded by
+the United Nations Convention on Contracts for the International Sale of Goods
+("UN Convention") and the parties intend to avoid the application of the UN
+Convention to this Agreement and, thus, exclude the application of the UN
+Convention in its entirety to this Agreement.
 
-> I have read and agree to the IceGraph Contributor License Agreement, version
-> 1.0, and I confirm that I have authority to submit my contribution.
+6.2 This Agreement sets out the entire agreement between You and Us for Your Contributions to Us and overrides all other agreements or understandings.
 
-Each author and co-author must accept separately. A Project Steward,
-maintainer, or other person may not record acceptance on Your behalf. Your
-authenticated GitHub account, the pull request, its recorded history, and the
-Agreement version identified in Your acceptance form the electronic signature
-record. You agree that this acceptance is Your electronic signature and has
-the same effect as a handwritten signature to the maximum extent permitted by
-applicable law.
+6.3 If You or We assign the rights or obligations received through this Agreement to a third party, as a condition of the assignment, that third party must agree in writing to abide by all the rights and obligations in the Agreement.
 
-This Agreement is adapted from the Harmony Contributor Agreement Template,
-Version 1.0, using its broad outbound-license approach. The Harmony template is
-available at https://www.harmonyagreements.org/agreements under CC BY 3.0. This
-version has been modified for IceGraph.
+6.4 The failure of either party to require performance by the other party of any provision of this Agreement in one situation shall not affect the right of a party to require such performance at any time in the future. A waiver of performance under a provision in one situation shall not be considered a waiver of the performance of the provision in the future or a waiver of the provision in its entirety.
+
+6.5 If any provision of this Agreement is found void and unenforceable, such provision will be replaced to the extent possible with a provision that comes closest to the meaning of the original provision and which is enforceable. The terms and conditions set forth in this Agreement shall apply notwithstanding any failure of essential purpose of this Agreement or any limited remedy to the maximum extent possible under law.
+
+## 7. Electronic Acceptance
+
+You execute and accept this Agreement by personally posting the following exact
+statement as a comment, from Your authenticated GitHub account, on each pull
+request that contains Your Contribution:
+
+> I have read and agree to the IceGraph Individual Contributor License
+> Agreement, Harmony HA-CLA-I-ANY version 1.0, and I confirm that I have
+> authority to submit my contribution.
+
+Your acceptance covers all of Your Contributions in that pull request. Each
+author and co-author must accept separately. No other person may accept on Your
+behalf. The comment must remain published when the pull request is merged. Your
+authenticated GitHub account, the comment, the pull request, and this identified
+Agreement version form the electronic signature record.
+
+This Agreement is derived from the Project Harmony contributor agreement
+template at [harmonyagreements.org](https://www.harmonyagreements.org/). The
+Harmony template is licensed under the [Creative Commons Attribution 3.0
+Unported License](https://creativecommons.org/licenses/by/3.0/).
+
+Harmony HA-CLA-I-ANY Version 1.0
