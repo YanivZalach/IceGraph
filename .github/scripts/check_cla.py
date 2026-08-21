@@ -13,6 +13,7 @@ CLA_STATEMENT = (
     "and I confirm that I have authority to submit my contribution."
 )
 STATUS_CONTEXT = "CLA"
+SIGNERS_PATH = ".github/cla-signers.json"
 STEWARD_LOGIN = "yanivzalach"
 CLA_EXEMPT_EMAILS = {
     "noreply@anthropic.com",
@@ -21,12 +22,18 @@ CLA_EXEMPT_EMAILS = {
     "yanivzalach@yanivs-macbook-air.local",
     "yzal2318@gmail.com",
 }
-COAUTHOR_RE = re.compile(r"^\s*co-authored-by:[^<]*<([^>]+)>", re.IGNORECASE | re.MULTILINE)
-NOREPLY_RE = re.compile(r"^(?:\d+\+)?([A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)@users\.noreply\.github\.com$")
+COAUTHOR_RE = re.compile(
+    r"^\s*co-authored-by:[^<]*<([^>]+)>", re.IGNORECASE | re.MULTILINE
+)
+NOREPLY_RE = re.compile(
+    r"^(?:\d+\+)?([A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)@users\.noreply\.github\.com$"
+)
 
 
 def gh(args):
-    result = subprocess.run(["gh", "api", *args], capture_output=True, text=True, check=False)
+    result = subprocess.run(
+        ["gh", "api", *args], capture_output=True, text=True, check=False
+    )
     if result.returncode:
         raise RuntimeError(result.stderr.strip())
     return result.stdout
@@ -41,6 +48,29 @@ def list_all(repo, path):
     return [json.loads(line) for line in output.splitlines() if line]
 
 
+def permanent_signers():
+    with open(SIGNERS_PATH) as file:
+        registry = json.load(file)
+    if registry.get("cla_version") != CLA_VERSION:
+        raise RuntimeError(f"{SIGNERS_PATH} does not match CLA version {CLA_VERSION}")
+    required_fields = {
+        "github_login",
+        "github_user_id",
+        "accepted_at",
+        "pull_request",
+        "comment_url",
+    }
+    signers = set()
+    for signer in registry.get("signers", []):
+        missing = required_fields - signer.keys()
+        if missing:
+            raise RuntimeError(
+                f"Incomplete signer record, missing: {', '.join(sorted(missing))}"
+            )
+        signers.add(signer["github_login"].lower())
+    return signers
+
+
 def required_login(account):
     if not account:
         return None
@@ -49,7 +79,7 @@ def required_login(account):
         return None
     if login.lower() == STEWARD_LOGIN:
         return None
-    return login
+    return login.lower()
 
 
 def add_email(required, unresolved, email):
@@ -78,7 +108,11 @@ def contributors(pr, commits):
         if login:
             required.add(login)
         elif not commit.get("author"):
-            add_email(required, unresolved, commit.get("commit", {}).get("author", {}).get("email"))
+            add_email(
+                required,
+                unresolved,
+                commit.get("commit", {}).get("author", {}).get("email"),
+            )
 
         for email in COAUTHOR_RE.findall(commit["commit"]["message"]):
             add_email(required, unresolved, email)
@@ -107,14 +141,16 @@ def set_status(repo, sha, state, description, target_url):
 def main():
     repo = os.environ["REPO"]
     number = os.environ["PR_NUMBER"]
-    target_url = f"{os.environ['SERVER_URL']}/{repo}/actions/runs/{os.environ['RUN_ID']}"
+    target_url = (
+        f"{os.environ['SERVER_URL']}/{repo}/actions/runs/{os.environ['RUN_ID']}"
+    )
     pr = get(repo, f"pulls/{number}")
     commits = list_all(repo, f"pulls/{number}/commits")
     comments = list_all(repo, f"issues/{number}/comments")
 
     required, unresolved = contributors(pr, commits)
-    accepted = {
-        comment["user"]["login"]
+    accepted = permanent_signers() | {
+        comment["user"]["login"].lower()
         for comment in comments
         if comment["body"].strip() == CLA_STATEMENT
     }
