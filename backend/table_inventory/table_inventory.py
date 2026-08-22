@@ -247,7 +247,7 @@ class TableInventory(SparkTableAction):
         try:
             current_schema_id = self._current_table_specs["current-schema-id"]
             current_schema = next(schema for schema in self._current_table_specs["schemas"] if str(schema["schema-id"]) == str(current_schema_id))
-            converter = ReadableMetricsConverter(current_schema)
+            converter = ReadableMetricsConverter(current_schema, self._current_table_specs["schemas"])
             converted_metrics = [converter.convert(data_file.hidden_data_file_metadata.raw_metrics) for data_file in self._data_files]
 
             for data_file, readable_metrics in zip(self._data_files, converted_metrics):

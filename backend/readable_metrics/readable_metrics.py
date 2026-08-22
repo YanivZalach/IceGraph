@@ -33,8 +33,13 @@ class PrimitiveField:
 
 
 class ReadableMetricsConverter:
-    def __init__(self, iceberg_schema: Dict[str, Any]):
+    def __init__(self, iceberg_schema: Dict[str, Any], historical_schemas: Optional[list[Dict[str, Any]]] = None):
         self._primitive_fields = sorted(self._collect_primitive_fields(iceberg_schema), key=lambda field: field.qualified_name)
+        self._historical_fields_by_id = {
+            field.field_id: field
+            for schema in sorted(historical_schemas or [], key=lambda schema: int(schema.get("schema-id", 0)))
+            for field in self._collect_primitive_fields(schema)
+        }
 
     def convert(self, metrics: RawFileMetrics) -> Dict[str, Dict[str, Any]]:
         column_sizes = self._normalize_metric_map(metrics.column_sizes)
@@ -43,6 +48,18 @@ class ReadableMetricsConverter:
         nan_value_counts = self._normalize_metric_map(metrics.nan_value_counts)
         lower_bounds = self._normalize_metric_map(metrics.lower_bounds)
         upper_bounds = self._normalize_metric_map(metrics.upper_bounds)
+
+        metric_maps = (
+            column_sizes,
+            value_counts,
+            null_value_counts,
+            nan_value_counts,
+            lower_bounds,
+            upper_bounds,
+        )
+        current_field_ids = {field.field_id for field in self._primitive_fields}
+        metric_field_ids = {field_id for metric_map in metric_maps if metric_map for field_id in metric_map}
+        deprecated_fields = [self._deprecated_field(field_id) for field_id in sorted(metric_field_ids - current_field_ids)]
 
         return {
             field.qualified_name: {
@@ -54,8 +71,13 @@ class ReadableMetricsConverter:
                 "lower_bound": self._decode_metric_bound(lower_bounds, field),
                 "upper_bound": self._decode_metric_bound(upper_bounds, field),
             }
-            for field in self._primitive_fields
+            for field in [*self._primitive_fields, *deprecated_fields]
         }
+
+    def _deprecated_field(self, field_id: int) -> PrimitiveField:
+        historical_field = self._historical_fields_by_id.get(field_id)
+        field_type = historical_field.field_type if historical_field else "unknown"
+        return PrimitiveField(field_id, f"__deprecated_column_id_{field_id}", field_type)
 
     def _collect_primitive_fields(self, iceberg_schema: Dict[str, Any]) -> list[PrimitiveField]:
         fields = []
