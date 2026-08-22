@@ -1,32 +1,10 @@
 import { PanelSectionTitle } from "./PanelContent";
-import { formatLocaleDateTime, parseUtcDate } from "../utils/dateUtils";
+import { formatReadableMetricValue } from "../utils/readableMetrics";
 
 const formatLabel = (label) =>
   label === "column_size_mib"
     ? "column size (MiB)"
     : label.replaceAll("_", " ");
-
-const formatValue = (value, metricName) => {
-  if (value == null || value === "") return "-";
-  if (metricName === "column_size_mib") {
-    const numericValue = Number(value);
-    if (Number.isFinite(numericValue)) {
-      return numericValue.toLocaleString("en-US", {
-        maximumFractionDigits: 20,
-        useGrouping: false,
-      });
-    }
-  }
-  if (
-    typeof value === "string" &&
-    ["lower_bound", "upper_bound"].includes(metricName)
-  ) {
-    const date = parseUtcDate(value);
-    if (date) return formatLocaleDateTime(date);
-  }
-  if (typeof value === "object") return JSON.stringify(value);
-  return String(value);
-};
 
 const DataFileReadableMetricsTable = ({ readableMetrics }) => {
   const columns = Object.entries(readableMetrics);
@@ -63,7 +41,11 @@ const DataFileReadableMetricsTable = ({ readableMetrics }) => {
                 </th>
                 {metricNames.map((metricName) => (
                   <td key={metricName} className="px-3 py-2 whitespace-nowrap">
-                    {formatValue(metrics?.[metricName], metricName)}
+                    {formatReadableMetricValue(
+                      metrics?.[metricName],
+                      metricName,
+                      metrics?.field_type,
+                    )}
                   </td>
                 ))}
               </tr>

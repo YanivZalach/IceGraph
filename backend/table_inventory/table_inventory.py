@@ -248,10 +248,14 @@ class TableInventory(SparkTableAction):
             current_schema_id = self._current_table_specs["current-schema-id"]
             current_schema = next(schema for schema in self._current_table_specs["schemas"] if str(schema["schema-id"]) == str(current_schema_id))
             converter = ReadableMetricsConverter(current_schema, self._current_table_specs["schemas"])
-            converted_metrics = [converter.convert(data_file.hidden_data_file_metadata.raw_metrics) for data_file in self._data_files]
 
-            for data_file, readable_metrics in zip(self._data_files, converted_metrics):
-                data_file.readable_metrics = readable_metrics
+            for data_file in self._data_files:
+                try:
+                    data_file.readable_metrics = converter.convert(data_file.hidden_data_file_metadata.raw_metrics)
+                except Exception as e:
+                    warning = f"Failed to build readable metrics: {type(e).__name__}: {e}"
+                    logger.error(f"[{self._table_name}] {warning} for {data_file.file_path}", exc_info=True)
+                    data_file.warning = warning
 
         except Exception as e:
             logger.error(f"[{self._table_name}] Failed to build readable data file metrics", exc_info=True)

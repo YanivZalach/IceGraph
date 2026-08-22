@@ -1,6 +1,7 @@
 # Ported from Apache Iceberg's MetricsUtil and Conversions implementations:
 # https://github.com/apache/iceberg/blob/7f879b11366e17a676a03f15247a821751415529/core/src/main/java/org/apache/iceberg/MetricsUtil.java
 # https://github.com/apache/iceberg/blob/7f879b11366e17a676a03f15247a821751415529/api/src/main/java/org/apache/iceberg/types/Conversions.java
+# https://github.com/apache/iceberg/blob/7f879b11366e17a676a03f15247a821751415529/core/src/main/java/org/apache/iceberg/MetadataColumns.java
 
 import base64
 import re
@@ -30,6 +31,12 @@ class PrimitiveField:
     field_id: int
     qualified_name: str
     field_type: str
+
+
+RESERVED_FIELDS_BY_ID = {
+    2_147_483_546: PrimitiveField(2_147_483_546, "file_path", "string"),
+    2_147_483_545: PrimitiveField(2_147_483_545, "pos", "long"),
+}
 
 
 class ReadableMetricsConverter:
@@ -64,6 +71,7 @@ class ReadableMetricsConverter:
         return {
             field.qualified_name: {
                 "source_id": field.field_id,
+                "field_type": field.field_type,
                 "column_size_mib": self._column_size_mib(column_sizes, field.field_id),
                 "value_count": self._metric_value(value_counts, field.field_id),
                 "null_value_count": self._metric_value(null_value_counts, field.field_id),
@@ -75,6 +83,10 @@ class ReadableMetricsConverter:
         }
 
     def _deprecated_field(self, field_id: int) -> PrimitiveField:
+        reserved_field = RESERVED_FIELDS_BY_ID.get(field_id)
+        if reserved_field:
+            return reserved_field
+
         historical_field = self._historical_fields_by_id.get(field_id)
         field_type = historical_field.field_type if historical_field else "unknown"
         return PrimitiveField(field_id, f"__deprecated_column_id_{field_id}", field_type)
@@ -106,7 +118,7 @@ class ReadableMetricsConverter:
             value_fields = self._primitive_fields_for_type(field_type["value-id"], f"{qualified_name}.value", field_type["value"])
             return key_fields + value_fields
 
-        raise ValueError(f"Unsupported Iceberg schema type: {type_name}")
+        return [PrimitiveField(field_id, qualified_name, "unknown")]
 
     @staticmethod
     def _normalize_metric_map(metric_map: RawMetricMap) -> Optional[Dict[int, Any]]:
