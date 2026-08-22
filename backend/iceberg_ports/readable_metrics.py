@@ -1,19 +1,15 @@
 # Converts encoded Iceberg file metrics into human-readable per-column values.
 # Ported from these Apache Iceberg implementations:
 # https://github.com/apache/iceberg/blob/7f879b11366e17a676a03f15247a821751415529/core/src/main/java/org/apache/iceberg/MetricsUtil.java
-# https://github.com/apache/iceberg/blob/7f879b11366e17a676a03f15247a821751415529/api/src/main/java/org/apache/iceberg/types/Conversions.java
 # https://github.com/apache/iceberg/blob/7f879b11366e17a676a03f15247a821751415529/core/src/main/java/org/apache/iceberg/MetadataColumns.java
 
-import base64
-import re
-import struct
 from dataclasses import dataclass
-from datetime import date, datetime, time, timedelta, timezone
-from decimal import Decimal
 from typing import Any, Dict, Optional
-from uuid import UUID
 
-RawMetricMap = Optional[Dict[int, Any] | list[Dict[str, Any]]]
+from iceberg_ports.iceberg_bound_decoder import decode_iceberg_bound
+
+RawMetricMap = Optional[list[Dict[str, Any]]]
+MetricMap = Optional[Dict[int, Any]]
 BYTES_PER_MIB = 1024 * 1024
 
 
@@ -25,6 +21,16 @@ class RawFileMetrics:
     nan_value_counts: RawMetricMap
     lower_bounds: RawMetricMap
     upper_bounds: RawMetricMap
+
+
+@dataclass(frozen=True)
+class NormalizedFileMetrics:
+    column_sizes: MetricMap
+    value_counts: MetricMap
+    null_value_counts: MetricMap
+    nan_value_counts: MetricMap
+    lower_bounds: MetricMap
+    upper_bounds: MetricMap
 
 
 @dataclass(frozen=True)
@@ -45,30 +51,12 @@ class ReadableMetricsConverter:
         schemas_by_id = {schema["schema-id"]: schema for schema in iceberg_schemas}
         current_schema = schemas_by_id[current_schema_id]
         self._primitive_fields = sorted(self._collect_primitive_fields(current_schema), key=lambda field: field.qualified_name)
-        self._historical_fields_by_id = {
-            field.field_id: field
-            for schema in sorted(iceberg_schemas, key=lambda schema: int(schema["schema-id"]))
-            for field in self._collect_primitive_fields(schema)
-        }
+        self._historical_fields_by_id = self._collect_latest_historical_fields_by_id(iceberg_schemas)
 
-    def convert(self, metrics: RawFileMetrics) -> Dict[str, Dict[str, Any]]:
-        column_sizes = self._normalize_metric_map(metrics.column_sizes)
-        value_counts = self._normalize_metric_map(metrics.value_counts)
-        null_value_counts = self._normalize_metric_map(metrics.null_value_counts)
-        nan_value_counts = self._normalize_metric_map(metrics.nan_value_counts)
-        lower_bounds = self._normalize_metric_map(metrics.lower_bounds)
-        upper_bounds = self._normalize_metric_map(metrics.upper_bounds)
-
-        metric_maps = (
-            column_sizes,
-            value_counts,
-            null_value_counts,
-            nan_value_counts,
-            lower_bounds,
-            upper_bounds,
-        )
+    def convert(self, raw_metrics: RawFileMetrics) -> Dict[str, Dict[str, Any]]:
+        metrics = self._normalize_metrics(raw_metrics)
         current_field_ids = {field.field_id for field in self._primitive_fields}
-        metric_field_ids = {field_id for metric_map in metric_maps if metric_map for field_id in metric_map}
+        metric_field_ids = self._metric_field_ids(metrics)
         current_fields = [field for field in self._primitive_fields if field.field_id in metric_field_ids]
         deprecated_fields = [self._deprecated_field(field_id) for field_id in sorted(metric_field_ids - current_field_ids)]
 
@@ -76,15 +64,58 @@ class ReadableMetricsConverter:
             field.qualified_name: {
                 "source_id": field.field_id,
                 "field_type": field.field_type,
-                "column_size_mib": self._column_size_mib(column_sizes, field.field_id),
-                "value_count": self._metric_value(value_counts, field.field_id),
-                "null_value_count": self._metric_value(null_value_counts, field.field_id),
-                "nan_value_count": self._metric_value(nan_value_counts, field.field_id),
-                "lower_bound": self._decode_metric_bound(lower_bounds, field),
-                "upper_bound": self._decode_metric_bound(upper_bounds, field),
+                "column_size_mib": self._column_size_mib(metrics.column_sizes, field.field_id),
+                "value_count": self._metric_value(metrics.value_counts, field.field_id),
+                "null_value_count": self._metric_value(metrics.null_value_counts, field.field_id),
+                "nan_value_count": self._metric_value(metrics.nan_value_counts, field.field_id),
+                "lower_bound": self._decode_metric_bound(metrics.lower_bounds, field),
+                "upper_bound": self._decode_metric_bound(metrics.upper_bounds, field),
             }
             for field in [*current_fields, *deprecated_fields]
         }
+
+    def _collect_latest_historical_fields_by_id(self, iceberg_schemas: list[Dict[str, Any]]) -> Dict[int, PrimitiveField]:
+        latest_fields_by_id = {}
+        for schema in sorted(iceberg_schemas, key=lambda schema: schema["schema-id"]):
+            for field in self._collect_primitive_fields(schema):
+                latest_fields_by_id[field.field_id] = field
+
+        return latest_fields_by_id
+
+    @classmethod
+    def _normalize_metrics(cls, metrics: RawFileMetrics) -> NormalizedFileMetrics:
+        return NormalizedFileMetrics(
+            column_sizes=cls._normalize_metric_map(metrics.column_sizes),
+            value_counts=cls._normalize_metric_map(metrics.value_counts),
+            null_value_counts=cls._normalize_metric_map(metrics.null_value_counts),
+            nan_value_counts=cls._normalize_metric_map(metrics.nan_value_counts),
+            lower_bounds=cls._normalize_metric_map(metrics.lower_bounds),
+            upper_bounds=cls._normalize_metric_map(metrics.upper_bounds),
+        )
+
+    @staticmethod
+    def _normalize_metric_map(metric_map: RawMetricMap) -> MetricMap:
+        if metric_map is None:
+            return None
+
+        return {entry["key"]: entry["value"] for entry in metric_map}
+
+    @staticmethod
+    def _metric_field_ids(metrics: NormalizedFileMetrics) -> set[int]:
+        metric_maps = (
+            metrics.column_sizes,
+            metrics.value_counts,
+            metrics.null_value_counts,
+            metrics.nan_value_counts,
+            metrics.lower_bounds,
+            metrics.upper_bounds,
+        )
+        field_ids = set()
+        for metric_map in metric_maps:
+            if metric_map:
+                field_ids.update(metric_map)
+
+        return field_ids
 
     def _deprecated_field(self, field_id: int) -> PrimitiveField:
         reserved_field = RESERVED_FIELDS_BY_ID.get(field_id)
@@ -126,111 +157,23 @@ class ReadableMetricsConverter:
         return [PrimitiveField(field_id, qualified_name, "unknown")]
 
     @staticmethod
-    def _normalize_metric_map(metric_map: RawMetricMap) -> Optional[Dict[int, Any]]:
-        if metric_map is None or isinstance(metric_map, dict):
-            return metric_map
-
-        return {entry["key"]: entry["value"] for entry in metric_map}
-
-    @staticmethod
-    def _metric_value(metric_map: Optional[Dict[int, Any]], field_id: int):
+    def _metric_value(metric_map: MetricMap, field_id: int):
         if metric_map is None:
             return None
 
         return metric_map.get(field_id)
 
     @classmethod
-    def _column_size_mib(cls, column_sizes: Optional[Dict[int, Any]], field_id: int):
+    def _column_size_mib(cls, column_sizes: MetricMap, field_id: int):
         column_size_bytes = cls._metric_value(column_sizes, field_id)
         if column_size_bytes is None:
             return None
 
         return column_size_bytes / BYTES_PER_MIB
 
-    def _decode_metric_bound(self, bounds: Optional[Dict[int, bytearray]], field: PrimitiveField):
+    def _decode_metric_bound(self, bounds: MetricMap, field: PrimitiveField):
         encoded_bound = self._metric_value(bounds, field.field_id)
         if encoded_bound is None:
             return None
 
-        return self._decode_bound(field.field_type, bytes(encoded_bound))
-
-    def _decode_bound(self, field_type: str, encoded_bound: bytes):
-        if field_type == "boolean":
-            return encoded_bound[0] != 0
-
-        if field_type in {"int", "date"}:
-            value = struct.unpack("<i", encoded_bound)[0]
-            return self._decode_date(value) if field_type == "date" else value
-
-        if field_type in {"long", "time", "timestamp", "timestamptz", "timestamp_ns", "timestamptz_ns"}:
-            value = self._decode_promoted_long(encoded_bound)
-            return self._decode_long_value(field_type, value)
-
-        if field_type == "float":
-            return struct.unpack("<f", encoded_bound)[0]
-
-        if field_type == "double":
-            return struct.unpack("<d", encoded_bound)[0] if len(encoded_bound) >= 8 else float(struct.unpack("<f", encoded_bound)[0])
-
-        if field_type == "string":
-            return encoded_bound.decode("utf-8")
-
-        if field_type == "uuid":
-            return str(UUID(bytes=encoded_bound))
-
-        if field_type == "binary" or field_type.startswith("fixed["):
-            return base64.b64encode(encoded_bound).decode("ascii")
-
-        decimal_match = re.fullmatch(r"decimal\(\s*\d+\s*,\s*(\d+)\s*\)", field_type)
-        if decimal_match:
-            scale = int(decimal_match.group(1))
-            unscaled_value = int.from_bytes(encoded_bound, byteorder="big", signed=True)
-            return str(Decimal(unscaled_value).scaleb(-scale))
-
-        if field_type == "unknown":
-            return None
-
-        raise ValueError(f"Unsupported Iceberg primitive type: {field_type}")
-
-    @staticmethod
-    def _decode_promoted_long(encoded_bound: bytes) -> int:
-        if len(encoded_bound) < 8:
-            return struct.unpack("<i", encoded_bound)[0]
-
-        return struct.unpack("<q", encoded_bound)[0]
-
-    def _decode_long_value(self, field_type: str, value: int):
-        if field_type == "long":
-            return value
-
-        if field_type == "time":
-            return self._decode_time(value)
-
-        if field_type in {"timestamp", "timestamptz"}:
-            return self._decode_timestamp(value)
-
-        return self._decode_nanosecond_timestamp(value)
-
-    @staticmethod
-    def _decode_date(days_since_epoch: int) -> str:
-        return (date(1970, 1, 1) + timedelta(days=days_since_epoch)).isoformat()
-
-    @staticmethod
-    def _decode_time(microseconds_since_midnight: int) -> str:
-        hours, remainder = divmod(microseconds_since_midnight, 3_600_000_000)
-        minutes, remainder = divmod(remainder, 60_000_000)
-        seconds, microseconds = divmod(remainder, 1_000_000)
-        return time(hours, minutes, seconds, microseconds).isoformat()
-
-    @staticmethod
-    def _decode_timestamp(microseconds_since_epoch: int) -> str:
-        epoch = datetime(1970, 1, 1, tzinfo=timezone.utc)
-        timestamp = epoch + timedelta(microseconds=microseconds_since_epoch)
-        return timestamp.isoformat()
-
-    @staticmethod
-    def _decode_nanosecond_timestamp(nanoseconds_since_epoch: int) -> str:
-        seconds, nanoseconds = divmod(nanoseconds_since_epoch, 1_000_000_000)
-        epoch = datetime(1970, 1, 1, tzinfo=timezone.utc)
-        timestamp = epoch + timedelta(seconds=seconds)
-        return f"{timestamp:%Y-%m-%dT%H:%M:%S}.{nanoseconds:09d}+00:00"
+        return decode_iceberg_bound(field.field_type, bytes(encoded_bound))

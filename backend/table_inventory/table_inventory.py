@@ -252,9 +252,9 @@ class TableInventory(SparkTableAction):
                 try:
                     data_file.readable_metrics = converter.convert(data_file.hidden_data_file_metadata.raw_metrics)
                 except Exception as e:
-                    warning = f"Failed to build readable metrics: {type(e).__name__}: {e}"
-                    logger.error(f"[{self._table_name}] {warning} for {data_file.file_path}", exc_info=True)
-                    data_file.warning = warning
+                    msg = f"Failed to build readable metrics: {type(e).__name__}: {e}"
+                    logger.error(f"[{self._table_name}] {msg} for {data_file.file_path}", exc_info=True)
+                    data_file.warning = msg
 
         except Exception as e:
             logger.error(f"[{self._table_name}] Failed to build readable data file metrics", exc_info=True)
