@@ -172,8 +172,10 @@ class DataFilesExtractor(Extractor):
                 ["file_path"]
             )
             summaries_df.schema
+
         except Exception:
             logger.warning(f"[{self._table_name}] Failed to enrich data files from all_files", exc_info=True)
+
             return data_files_df.withColumn("summary", F.lit(None))
 
         return data_files_df.join(summaries_df, on="file_path", how="left")
