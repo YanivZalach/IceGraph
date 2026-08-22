@@ -27,6 +27,7 @@ class DataFileRecord(BaseFile):
     split_offsets: List[int]
     key_metadata: str
     equality_ids: str
+    summary: dict
     hidden_data_file_metadata: HiddenDataFileMetadata
 
 
@@ -65,6 +66,7 @@ class CollectDataFiles(Collector):
             split_offsets=data_file_dict["split_offsets"] or [],
             key_metadata=data_file_dict["key_metadata"],
             equality_ids=data_file_dict["equality_ids"],
+            summary=data_file_dict["summary"] or {},
             child_files=[],
             hidden_data_file_metadata=HiddenDataFileMetadata(
                 pointing_manifests=data_file_dict["pointing_manifests"],

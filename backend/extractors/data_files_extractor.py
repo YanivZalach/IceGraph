@@ -8,6 +8,7 @@ from pyspark.sql.types import LongType, StringType, StructField, StructType
 from collectors.collect_manifests import ManifestRecord
 from env import Env
 from extractors.extractor import Extractor
+from icegraph_logger import logger
 
 DATA_FILE_RECORD_SCHEMA = StructType(
     [
@@ -53,7 +54,21 @@ class DataFilesExtractor(Extractor):
 
         snapshot_timestamp_cutoff_df = self._find_cutoff_snapshot_timestamp(data_files_limited_df)
 
-        return self._find_included_data_files(data_files_limited_df, snapshot_timestamp_cutoff_df)
+        included_data_files_df = self._find_included_data_files(data_files_limited_df, snapshot_timestamp_cutoff_df)
+
+        return self._enrich_data_files_with_summary(included_data_files_df)
+
+    def _enrich_data_files_with_summary(self, data_files_df):
+        try:
+            summaries_df = self._spark.sql(f"SELECT file_path, readable_metrics AS summary FROM {self._table_name}.all_files").dropDuplicates(
+                ["file_path"]
+            )
+            summaries_df.schema
+        except Exception:
+            logger.warning(f"[{self._table_name}] Failed to enrich data files from all_files", exc_info=True)
+            return data_files_df.withColumn("summary", F.lit(None))
+
+        return data_files_df.join(summaries_df, on="file_path", how="left")
 
     @staticmethod
     def _group_data_files_by_manifests(avro_df):

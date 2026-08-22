@@ -9,6 +9,7 @@ import {
   PANEL_STATUS_BADGE_CLASS,
 } from "../components/PanelContent";
 import PanelIssueNotice from "../components/PanelIssueNotice";
+import DataFileSummaryTable from "../components/DataFileSummaryTable";
 import {
   UI_DIALOG_SECTION_TITLE_CLASS,
   UI_POPUP_HINT_CLASS,
@@ -722,7 +723,9 @@ export default function GraphPage() {
         rows: Object.entries(stickyNode.details)
           .filter(
             ([label]) =>
-              !["type", "error", "warning"].includes(label.toLowerCase()),
+              !["type", "error", "warning", "summary"].includes(
+                label.toLowerCase(),
+              ),
           )
           .map(([label, value]) => ({
             label,
@@ -891,6 +894,9 @@ export default function GraphPage() {
                 }
               />
             ))}
+          {stickyNode.details.summary && (
+            <DataFileSummaryTable summary={stickyNode.details.summary} />
+          )}
         </ResizableSidePanel>
       )}
     </div>

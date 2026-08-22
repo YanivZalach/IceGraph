@@ -756,6 +756,24 @@ const mockResponse = {
       split_offsets: [4],
       key_metadata: null,
       equality_ids: null,
+      summary: {
+        event_id: {
+          column_size: 52,
+          value_count: 10,
+          null_value_count: 0,
+          nan_value_count: null,
+          lower_bound: 1,
+          upper_bound: 10,
+        },
+        event_name: {
+          column_size: 100,
+          value_count: 10,
+          null_value_count: 0,
+          nan_value_count: null,
+          lower_bound: "experiment",
+          upper_bound: "experiment",
+        },
+      },
       child_files: [],
     },
     {
