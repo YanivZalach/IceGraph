@@ -11,7 +11,7 @@ from collectors.collect_snapshots import CollectSnapshots, SnapshotRecord
 from constants import DATA_FILES_CUTOFF_MANIFEST_WARNING, DATA_FILES_CUTOFF_WARNING, FileType
 from env import Env
 from icegraph_logger import logger
-from readable_metrics.readable_metrics import ReadableMetricsConverter
+from iceberg_ports.readable_metrics import ReadableMetricsConverter
 from search_cutoff.find_search_cutoff import SearchCutoff, find_search_cutoff
 from table_inventory.utils import format_schemas_to_full_dict, get_json_metadata_from_path, parse_json_string_fields
 

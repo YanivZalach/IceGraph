@@ -8,7 +8,7 @@ from constants import FileType
 from extractors.data_files_extractor import DataFilesExtractor
 from collectors.utils import format_partition
 from base_classes.utils import timed
-from readable_metrics.readable_metrics import RawFileMetrics
+from iceberg_ports.readable_metrics import RawFileMetrics
 
 
 @dataclass
