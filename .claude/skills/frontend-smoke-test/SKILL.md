@@ -189,5 +189,3 @@ description) — don't leave test artifacts lying around in the working tree.
   Metadata page's Current Snapshot field, and check the FileTree snapshot dropdown's "latest"
   label. Matching URL params with unchanged rendered data would mean the param is silently
   ignored, which the URL check alone can't catch.
-- **`git status`/`git diff`/etc. are off-limits** — this repo's CLAUDE.md reserves git commands for
-  the user only, even read-only ones. Use `Read`/`Bash` (non-git) to inspect files/state instead.
