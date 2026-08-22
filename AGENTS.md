@@ -13,7 +13,7 @@ This file provides guidance to coding agents working in this repository.
 
 ## Before presenting work
 
-- Run `format`, `lint`, and `typecheck`; fix all violations before showing the user anything. Never fix a violation by disabling a rule.
+- Run `format`, `lint`, and `typecheck` (see **Commands**; the backend has formatting only); fix all violations before showing the user anything. Never fix a violation by disabling a rule.
 
 ## Scope & Code Change Policy
 
@@ -39,6 +39,7 @@ IceGraph is an interactive Apache Iceberg debugging and visualization platform. 
 cd backend
 uv sync                    # Install dependencies
 uv run python main.py      # Start Flask server on port 5050
+uv run ruff format .       # Format (CI enforces this)
 ```
 
 ### Frontend (Node/React)
@@ -48,6 +49,9 @@ cd frontend
 npm i                      # Install dependencies
 npm run dev                # Start Vite dev server on port 3000 (proxies /api to port 5050)
 npm run build              # Production build to /dist
+npm run lint               # ESLint
+npm run format             # Prettier
+npm run typecheck          # tsc --noEmit
 ```
 
 ### Docker
@@ -75,10 +79,13 @@ uv run icegraph --base-url http://localhost:5050 tables    # Run the CLI against
 - `collectors/`: Pull Iceberg metadata via Spark: snapshots → metadata files → manifests → data files
 - `table_inventory/`: Orchestrates collection into a unified inventory structure
 - `search_cutoff/`: Optimizes snapshot iteration range to avoid full scans
+- `snapshot_map/`: Builds the snapshot history served for UI selection
+- `table_list_catalog/`: Lists selectable tables (see **Table Catalog** below)
 - `snapshot_analyzer/`: Runs between inventory and normalization; fills each snapshot's `operation_description` (a copy of `operation` by default) with the `replace` sub-type (`rewrite data files`, `rewrite delete files`, `rewrite manifests`) derived from the snapshot summary. `operation` itself is never modified; the Timeline node labels display `operation_description`
 - `graph_normalizer/`: Transforms inventory data into graph nodes/links for the frontend
 - `extractors/`: Extract useful information from specific file types (manifests, data files) via Spark Connect
 - `base_classes/`: Abstractions for files and Spark actions
+- `env.py` / `constants.py`: Environment-backed settings and fixed constants
 
 **Frontend** (`/frontend/src/`): React SPA (Vite + Tailwind v4), migrating from legacy JSX to strict TypeScript per [frontend/PHILOSOPHY.md](frontend/PHILOSOPHY.md). Page/component layout, dev notes, and styling conventions live in [frontend/DEVELOPMENT.md](frontend/DEVELOPMENT.md).
 
@@ -94,18 +101,16 @@ uv run icegraph --base-url http://localhost:5050 tables    # Run the CLI against
 1. `GET /api/v1/tables`: list Iceberg tables from the Spark catalog (for Home and navbar picker)
 2. `GET /api/v1/snapshot-map/<table>`: load snapshot history for UI selection
 3. `POST /api/v1/graph-data`: submit async job with table name + snapshot range
-4. `GET /api/v1/graph-data/<job_id>`: poll until complete, returns graph JSON
+4. `GET /api/v1/graph-data/<job_id>`: poll until complete, returns graph JSON. The job token returned by step 3 must be sent in the `X-IceGraph-Job-Token` header; without it the endpoint answers 404
 
 ## Table Catalog (Backend)
 
-`backend/table_catalog/` serves `GET /api/v1/tables`:
+`backend/table_list_catalog/` (`TableListCatalog`) serves `GET /api/v1/tables`:
 
-- Uses Spark catalog API (`listCatalogs`, `listDatabases`, `listTables`) instead of raw `SHOW TABLES` SQL
-- For the default catalog, calls `listTables(database)` without a catalog argument (required for `spark_catalog`)
-- Filters to verified Iceberg tables via `verify_iceberg_table`
-- Caches results: see `TABLE_LIST_CACHE_TTL_SECONDS` in Key Configuration below
-
-See **Key Configuration** for related environment variables.
+- Walks the catalog with SQL: `SHOW CATALOGS`, `SHOW DATABASES IN <catalog>`, `SHOW TABLES IN <database>`
+- Keeps only catalogs whose `spark.sql.catalog.<name>` is `org.apache.iceberg.spark.SparkCatalog`, unless `INCLUDE_NONE_ICEBERG_CATALOGS` is on (the default)
+- Subtracts `SHOW VIEWS IN <database>` from the table list, and strips the default catalog's prefix from the returned names
+- Caches results: see `TABLE_LIST_CACHE_TTL_SECONDS` in **Key Configuration** below
 
 ## Key Configuration
 
@@ -113,8 +118,8 @@ See **Key Configuration** for related environment variables.
 
 ## Deployment Notes
 
-- CI publishes Docker image to Docker Hub and deploys frontend to GitHub Pages on version tags (`v*`)
-- The same `v*` tag also publishes `icegraph-client` to PyPI (`.github/workflows/publish-icegraph-client.yml`); its version is derived from the tag itself via `setuptools_scm` in `icegraph-client/pyproject.toml`, so it always matches the server version: `icegraph-client` is only guaranteed compatible with the IceGraph server at the same version
+- `.github/workflows/release.yml` is the only workflow triggered by version tags (`v*`); it calls `docker-publish.yml`, `deploy.yml`, and `publish-icegraph-client.yml` as reusable workflows, so a tag publishes the Docker image to Docker Hub, deploys the frontend to GitHub Pages, and publishes `icegraph-client` to PyPI together
+- The client's version is derived from the tag itself via `setuptools_scm` in `icegraph-client/pyproject.toml`, so it always matches the server version: `icegraph-client` is only guaranteed compatible with the IceGraph server at the same version
 - GitHub Pages demo uses MSW to mock API responses (no backend); enabled via `VITE_USE_MSW=true` in the deploy workflow
 - The Vite `base` path is `/IceGraph/` for GitHub Pages but `/` for Docker
 
