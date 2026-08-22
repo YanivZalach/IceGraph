@@ -76,21 +76,21 @@ class ReadableMetricsConverter:
 
     def _collect_latest_historical_fields_by_id(self, iceberg_schemas: list[Dict[str, Any]]) -> Dict[int, PrimitiveField]:
         latest_fields_by_id = {}
-        for schema in sorted(iceberg_schemas, key=lambda schema: schema["schema-id"]):
+        for schema in sorted(iceberg_schemas, key=lambda schema: schema["schema-id"], reverse=True):
             for field in self._collect_primitive_fields(schema):
-                latest_fields_by_id[field.field_id] = field
+                if field.field_id not in latest_fields_by_id:
+                    latest_fields_by_id[field.field_id] = field
 
         return latest_fields_by_id
 
-    @classmethod
-    def _normalize_metrics(cls, metrics: RawFileMetrics) -> NormalizedFileMetrics:
+    def _normalize_metrics(self, metrics: RawFileMetrics) -> NormalizedFileMetrics:
         return NormalizedFileMetrics(
-            column_sizes=cls._normalize_metric_map(metrics.column_sizes),
-            value_counts=cls._normalize_metric_map(metrics.value_counts),
-            null_value_counts=cls._normalize_metric_map(metrics.null_value_counts),
-            nan_value_counts=cls._normalize_metric_map(metrics.nan_value_counts),
-            lower_bounds=cls._normalize_metric_map(metrics.lower_bounds),
-            upper_bounds=cls._normalize_metric_map(metrics.upper_bounds),
+            column_sizes=self._normalize_metric_map(metrics.column_sizes),
+            value_counts=self._normalize_metric_map(metrics.value_counts),
+            null_value_counts=self._normalize_metric_map(metrics.null_value_counts),
+            nan_value_counts=self._normalize_metric_map(metrics.nan_value_counts),
+            lower_bounds=self._normalize_metric_map(metrics.lower_bounds),
+            upper_bounds=self._normalize_metric_map(metrics.upper_bounds),
         )
 
     @staticmethod
