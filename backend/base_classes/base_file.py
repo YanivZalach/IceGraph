@@ -1,24 +1,23 @@
-from dataclasses import dataclass, field, fields
 from typing import List, Optional
+
+from pydantic import BaseModel
 
 from constants import FileType
 
 
-@dataclass
-class HiddenFile:
+class HiddenFile(BaseModel):
     pass
 
 
-@dataclass
-class BaseFile:
+class BaseFile(BaseModel):
     type: FileType
     file_path: str
     child_files: List[str]
-    error: Optional[str] = field(default=None, kw_only=True)
-    warning: Optional[str] = field(default=None, kw_only=True)
+    error: Optional[str] = None
+    warning: Optional[str] = None
 
     def to_dict(self):
-        result_dict = {field.name: getattr(self, field.name) for field in fields(self) if not isinstance(getattr(self, field.name), HiddenFile)}
+        result_dict = {name: getattr(self, name) for name in type(self).model_fields if not isinstance(getattr(self, name), HiddenFile)}
         result_dict["type"] = result_dict["type"].value
 
         child_files = result_dict.pop("child_files")

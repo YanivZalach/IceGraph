@@ -1,8 +1,8 @@
 from base_classes.utils import column_to_string_utc
-from dataclasses import dataclass, field
 from typing import NamedTuple, Optional
 
 import arrow
+from pydantic import BaseModel, ConfigDict, SkipValidation
 from pyspark.sql import DataFrame, SparkSession, functions as F
 from pyspark.sql.types import StringType, StructField, StructType
 
@@ -10,13 +10,14 @@ from icegraph_logger import logger
 from base_classes.utils import timed, to_arrow_utc
 
 
-@dataclass
-class SearchCutoff:
+class SearchCutoff(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    manifests_to_ignore_df: SkipValidation[DataFrame]
     start_snapshot_cutoff: arrow.Arrow = arrow.Arrow.min
     end_snapshot_cutoff: arrow.Arrow = arrow.Arrow.max
     start_metadata_cutoff: arrow.Arrow = arrow.Arrow.min
     end_metadata_cutoff: arrow.Arrow = arrow.Arrow.max
-    manifests_to_ignore_df: DataFrame = field(default_factory=None)
 
     @classmethod
     def with_spark(cls, spark: SparkSession) -> "SearchCutoff":

@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from typing import Dict, List, Optional
 
 import pyspark.sql
@@ -13,7 +12,6 @@ from env import Env
 from icegraph_logger import logger
 
 
-@dataclass
 class SnapshotRecord(BaseFile):
     timestamp: str
     snapshot_id: int

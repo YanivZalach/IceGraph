@@ -1,8 +1,8 @@
 import threading
-from dataclasses import dataclass
 from typing import Optional
 
 import arrow
+from pydantic import BaseModel, ConfigDict
 
 from base_classes.utils import timed
 from env import Env
@@ -16,8 +16,9 @@ from table_list_catalog.utils import (
 )
 
 
-@dataclass
-class CacheEntry:
+class CacheEntry(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     timestamp: arrow.Arrow
     tables: list[str]
 
@@ -64,4 +65,4 @@ class TableListCatalog:
         spark_default_catalog = get_spark_default_catalog(self._spark)
         clean_tables = sorted([table.removeprefix(f"{spark_default_catalog}.") for table in tables])
 
-        return CacheEntry(run_time, clean_tables)
+        return CacheEntry(timestamp=run_time, tables=clean_tables)

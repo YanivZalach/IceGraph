@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from typing import List, Optional
 
 import pyspark
@@ -11,16 +10,14 @@ from constants import FileType
 from extractors.manifests_extractor import ManifestsExtractor
 
 
-@dataclass
 class HiddenManifestMetadata(HiddenFile):
     pointing_snapshots: list[int]
 
 
-@dataclass
 class ManifestRecord(BaseFile):
     added_snapshot_id: int
     added_snapshot_timestamp: Optional[str]
-    partitions: set
+    partitions: set[str]
     total_rows_in_downstream_files: int
     existing_child_files: list[str]
     deleted_child_files: list[str]

@@ -1,5 +1,6 @@
-from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import List, Optional
+
+from pydantic import BaseModel
 
 from base_classes.base_file import BaseFile, HiddenFile
 from collectors.collect_manifests import ManifestRecord
@@ -10,12 +11,15 @@ from collectors.utils import format_partition
 from base_classes.utils import timed
 
 
-@dataclass
+class PointingManifest(BaseModel):
+    path: str
+    status: int
+
+
 class HiddenDataFileMetadata(HiddenFile):
-    pointing_manifests: list[Dict[str, str]]
+    pointing_manifests: list[PointingManifest]
 
 
-@dataclass
 class DataFileRecord(BaseFile):
     format: str
     size_gb: str
@@ -23,10 +27,10 @@ class DataFileRecord(BaseFile):
     partition: str
     earliest_appearing_snapshot_id: int
     earliest_appearing_snapshot_timestamp: Optional[str]
-    sort_order_id: int
+    sort_order_id: Optional[int]
     split_offsets: List[int]
-    key_metadata: str
-    equality_ids: str
+    key_metadata: Optional[bytes]
+    equality_ids: Optional[List[int]]
     hidden_data_file_metadata: HiddenDataFileMetadata
 
 

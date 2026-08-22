@@ -13,6 +13,7 @@ dependencies = [
     "numpy<2.0.0",
     "pandas==2.3.3",
     "pyarrow==23.0.1",
+    "pydantic==2.13.4",
     "pyspark[connect]==3.5.4",
     "python-dotenv==1.2.1",
     "setuptools>=75.0.0",

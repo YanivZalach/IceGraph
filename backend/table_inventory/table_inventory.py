@@ -1,6 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel
 
 from base_classes.spark_table_action import SparkTableAction
 from base_classes.utils import timed
@@ -15,8 +16,7 @@ from search_cutoff.find_search_cutoff import SearchCutoff, find_search_cutoff
 from table_inventory.utils import format_schemas_to_full_dict, get_json_metadata_from_path, parse_json_string_fields
 
 
-@dataclass
-class TableInventoryResult:
+class TableInventoryResult(BaseModel):
     errors: Dict[str, str]
     warnings: Dict[str, str]
     snapshots: List[SnapshotRecord]
@@ -172,8 +172,8 @@ class TableInventory(SparkTableAction):
         for data_file in self._data_files:
             for pointing_manifest in data_file.hidden_data_file_metadata.pointing_manifests:
                 manifest_file_path, manifest_pointing_status = (
-                    pointing_manifest["path"],
-                    pointing_manifest["status"],
+                    pointing_manifest.path,
+                    pointing_manifest.status,
                 )
 
                 manifest = manifest_file_path_to_manifest_map.get(manifest_file_path)

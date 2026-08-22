@@ -1,6 +1,5 @@
 from base_classes.utils import column_to_string_utc
 import json
-from dataclasses import dataclass
 from functools import cached_property
 from typing import Any, Dict, List, Optional
 
@@ -17,7 +16,6 @@ from collectors.utils import get_metadata_row_slim_df_from_path
 from base_classes.utils import timed
 
 
-@dataclass
 class MetadataFileRecord(BaseFile):
     timestamp: Optional[str]
     snapshot_id: Optional[int]
@@ -26,7 +24,7 @@ class MetadataFileRecord(BaseFile):
     partition_spec_id: Optional[int]
     current_schema_id: Optional[int]
     sort_order_id: Optional[int]
-    refs: Dict[str, Any]
+    refs: Dict[str, Dict[str, Any]]
     properties: Dict[str, str]
     pointed_snapshots_files: Optional[List[Dict[str, str]]]
     pointed_metadata_log_count: Optional[int]
