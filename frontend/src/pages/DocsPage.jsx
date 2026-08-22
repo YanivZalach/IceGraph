@@ -473,8 +473,7 @@ const SECTIONS = [
               reading the data file: all of the data shown comes from the
               manifest entries that point at it. When available, the details
               panel also shows human-readable per-column metrics derived from
-              the manifest entry. Date bounds remain calendar dates, while
-              timestamp bounds are shown in your local timezone
+              the manifest entry
             </li>
             <li>
               <strong className="text-white">Unreadable file</strong> — a file

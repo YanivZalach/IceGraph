@@ -1,4 +1,5 @@
-# Ported from Apache Iceberg's MetricsUtil and Conversions implementations:
+# Converts encoded Iceberg file metrics into human-readable per-column values.
+# Ported from these Apache Iceberg implementations:
 # https://github.com/apache/iceberg/blob/7f879b11366e17a676a03f15247a821751415529/core/src/main/java/org/apache/iceberg/MetricsUtil.java
 # https://github.com/apache/iceberg/blob/7f879b11366e17a676a03f15247a821751415529/api/src/main/java/org/apache/iceberg/types/Conversions.java
 # https://github.com/apache/iceberg/blob/7f879b11366e17a676a03f15247a821751415529/core/src/main/java/org/apache/iceberg/MetadataColumns.java
@@ -40,11 +41,13 @@ RESERVED_FIELDS_BY_ID = {
 
 
 class ReadableMetricsConverter:
-    def __init__(self, iceberg_schema: Dict[str, Any], historical_schemas: Optional[list[Dict[str, Any]]] = None):
-        self._primitive_fields = sorted(self._collect_primitive_fields(iceberg_schema), key=lambda field: field.qualified_name)
+    def __init__(self, current_schema_id: int, iceberg_schemas: list[Dict[str, Any]]):
+        schemas_by_id = {schema["schema-id"]: schema for schema in iceberg_schemas}
+        current_schema = schemas_by_id[current_schema_id]
+        self._primitive_fields = sorted(self._collect_primitive_fields(current_schema), key=lambda field: field.qualified_name)
         self._historical_fields_by_id = {
             field.field_id: field
-            for schema in sorted(historical_schemas or [], key=lambda schema: int(schema.get("schema-id", 0)))
+            for schema in sorted(iceberg_schemas, key=lambda schema: int(schema["schema-id"]))
             for field in self._collect_primitive_fields(schema)
         }
 
