@@ -58,29 +58,35 @@ class DataFilesExtractor(Extractor):
 
         return self._enrich_data_files_with_summary(included_data_files_df)
 
-    def _enrich_data_files_with_summary(self, data_files_df):
-        try:
-            summaries_df = self._spark.sql(f"SELECT file_path, readable_metrics AS summary FROM {self._table_name}.all_files").dropDuplicates(
-                ["file_path"]
+    def _collect_data_files_from_manifests(self, manifest_rows):
+        avro_df = None
+        for manifest_entry in manifest_rows:
+            df = self._read_source(manifest_entry, lambda: self._collect_data_files_from_manifest(manifest_entry))
+            if df is None:
+                continue
+
+            if avro_df is None:
+                avro_df = df
+            else:
+                avro_df = avro_df.unionByName(df, allowMissingColumns=True)
+
+        if avro_df is None:
+            return self._spark.createDataFrame([], DATA_FILE_RECORD_SCHEMA)
+
+        return avro_df
+
+    def _collect_data_files_from_manifest(self, manifest_entry: ManifestRecord):
+        return (
+            self._spark.read.format("avro")
+            .load(manifest_entry.file_path)
+            .select("status", "data_file")
+            .withColumn("manifest_path", F.lit(manifest_entry.file_path))
+            .withColumn(
+                "added_snapshot_timestamp",
+                F.lit(manifest_entry.added_snapshot_timestamp),
             )
-            summaries_df.schema
-        except Exception:
-            logger.warning(f"[{self._table_name}] Failed to enrich data files from all_files", exc_info=True)
-            return data_files_df.withColumn("summary", F.lit(None))
-
-        return data_files_df.join(summaries_df, on="file_path", how="left")
-
-    @staticmethod
-    def _group_data_files_by_manifests(avro_df):
-        manifest_entries_df = avro_df.groupBy("data_file.file_path").agg(
-            F.collect_list(
-                F.struct(
-                    F.col("manifest_path").alias("path"),
-                    F.col("status").alias("status"),
-                )
-            ).alias("pointing_manifests")
+            .withColumn("added_snapshot_id", F.lit(manifest_entry.added_snapshot_id))
         )
-        return manifest_entries_df
 
     @staticmethod
     def _match_data_file_to_latest_snapshot(avro_df):
@@ -102,6 +108,18 @@ class DataFilesExtractor(Extractor):
             F.col("earliest_snapshot_id"),
         )
         return latest_df
+
+    @staticmethod
+    def _group_data_files_by_manifests(avro_df):
+        manifest_entries_df = avro_df.groupBy("data_file.file_path").agg(
+            F.collect_list(
+                F.struct(
+                    F.col("manifest_path").alias("path"),
+                    F.col("status").alias("status"),
+                )
+            ).alias("pointing_manifests")
+        )
+        return manifest_entries_df
 
     @staticmethod
     def _join_data_file_with_manifest_entries(latest_df, manifest_entries_df):
@@ -148,32 +166,14 @@ class DataFilesExtractor(Extractor):
             .drop("row_num", "snapshot_timestamp_cutoff", "latest_snapshot_timestamp", "latest_snapshot_id")
         )
 
-    def _collect_data_files_from_manifests(self, manifest_rows):
-        avro_df = None
-        for manifest_entry in manifest_rows:
-            df = self._read_source(manifest_entry, lambda: self._collect_data_files_from_manifest(manifest_entry))
-            if df is None:
-                continue
-
-            if avro_df is None:
-                avro_df = df
-            else:
-                avro_df = avro_df.unionByName(df, allowMissingColumns=True)
-
-        if avro_df is None:
-            return self._spark.createDataFrame([], DATA_FILE_RECORD_SCHEMA)
-
-        return avro_df
-
-    def _collect_data_files_from_manifest(self, manifest_entry: ManifestRecord):
-        return (
-            self._spark.read.format("avro")
-            .load(manifest_entry.file_path)
-            .select("status", "data_file")
-            .withColumn("manifest_path", F.lit(manifest_entry.file_path))
-            .withColumn(
-                "added_snapshot_timestamp",
-                F.lit(manifest_entry.added_snapshot_timestamp),
+    def _enrich_data_files_with_summary(self, data_files_df):
+        try:
+            summaries_df = self._spark.sql(f"SELECT file_path, readable_metrics AS summary FROM {self._table_name}.all_files").dropDuplicates(
+                ["file_path"]
             )
-            .withColumn("added_snapshot_id", F.lit(manifest_entry.added_snapshot_id))
-        )
+            summaries_df.schema
+        except Exception:
+            logger.warning(f"[{self._table_name}] Failed to enrich data files from all_files", exc_info=True)
+            return data_files_df.withColumn("summary", F.lit(None))
+
+        return data_files_df.join(summaries_df, on="file_path", how="left")
