@@ -472,8 +472,8 @@ const SECTIONS = [
               Parquet, ORC, or Avro file containing your rows. IceGraph is not
               reading the data file: all of the data shown comes from the
               manifest entries that point at it. When available, the details
-              panel also shows Spark&apos;s human-readable per-column metrics in
-              a summary table
+              panel also shows human-readable per-column metrics derived from
+              the manifest entry
             </li>
             <li>
               <strong className="text-white">Unreadable file</strong> — a file

@@ -3,12 +3,11 @@ from typing import List
 import pyspark
 from pyspark.sql import Window
 from pyspark.sql import functions as F
-from pyspark.sql.types import LongType, StringType, StructField, StructType
+from pyspark.sql.types import BinaryType, IntegerType, LongType, MapType, StringType, StructField, StructType
 
 from collectors.collect_manifests import ManifestRecord
 from env import Env
 from extractors.extractor import Extractor
-from icegraph_logger import logger
 
 DATA_FILE_RECORD_SCHEMA = StructType(
     [
@@ -27,6 +26,12 @@ DATA_FILE_RECORD_SCHEMA = StructType(
                     StructField("split_offsets", StringType(), True),
                     StructField("key_metadata", StringType(), True),
                     StructField("equality_ids", StringType(), True),
+                    StructField("column_sizes", MapType(IntegerType(), LongType()), True),
+                    StructField("value_counts", MapType(IntegerType(), LongType()), True),
+                    StructField("null_value_counts", MapType(IntegerType(), LongType()), True),
+                    StructField("nan_value_counts", MapType(IntegerType(), LongType()), True),
+                    StructField("lower_bounds", MapType(IntegerType(), BinaryType()), True),
+                    StructField("upper_bounds", MapType(IntegerType(), BinaryType()), True),
                 ]
             ),
             True,
@@ -54,9 +59,7 @@ class DataFilesExtractor(Extractor):
 
         snapshot_timestamp_cutoff_df = self._find_cutoff_snapshot_timestamp(data_files_limited_df)
 
-        included_data_files_df = self._find_included_data_files(data_files_limited_df, snapshot_timestamp_cutoff_df)
-
-        return self._enrich_data_files_with_summary(included_data_files_df)
+        return self._find_included_data_files(data_files_limited_df, snapshot_timestamp_cutoff_df)
 
     def _collect_data_files_from_manifests(self, manifest_rows):
         avro_df = None
@@ -139,6 +142,12 @@ class DataFilesExtractor(Extractor):
             "data_file.split_offsets",
             "data_file.key_metadata",
             "data_file.equality_ids",
+            "data_file.column_sizes",
+            "data_file.value_counts",
+            "data_file.null_value_counts",
+            "data_file.nan_value_counts",
+            "data_file.lower_bounds",
+            "data_file.upper_bounds",
         )
 
     @staticmethod
@@ -165,17 +174,3 @@ class DataFilesExtractor(Extractor):
             .filter(F.col("latest_snapshot_timestamp") > F.col("snapshot_timestamp_cutoff"))
             .drop("row_num", "snapshot_timestamp_cutoff", "latest_snapshot_timestamp", "latest_snapshot_id")
         )
-
-    def _enrich_data_files_with_summary(self, data_files_df):
-        try:
-            summaries_df = self._spark.sql(f"SELECT file_path, readable_metrics AS summary FROM {self._table_name}.all_files").dropDuplicates(
-                ["file_path"]
-            )
-            summaries_df.schema
-
-        except Exception:
-            logger.warning(f"[{self._table_name}] Failed to enrich data files from all_files", exc_info=True)
-
-            return data_files_df.withColumn("summary", F.lit(None))
-
-        return data_files_df.join(summaries_df, on="file_path", how="left")

@@ -11,6 +11,7 @@ from collectors.collect_snapshots import CollectSnapshots, SnapshotRecord
 from constants import DATA_FILES_CUTOFF_MANIFEST_WARNING, DATA_FILES_CUTOFF_WARNING, FileType
 from env import Env
 from icegraph_logger import logger
+from readable_metrics.readable_metrics import ReadableMetricsConverter
 from search_cutoff.find_search_cutoff import SearchCutoff, find_search_cutoff
 from table_inventory.utils import format_schemas_to_full_dict, get_json_metadata_from_path, parse_json_string_fields
 
@@ -63,6 +64,7 @@ class TableInventory(SparkTableAction):
         self._warn_if_data_cutoff_happened()
 
         self._set_current_table_specs()
+        self._set_data_file_readable_metrics()
         self._collect_file_errors()
 
         return TableInventoryResult(
@@ -237,3 +239,20 @@ class TableInventory(SparkTableAction):
                 exc_info=True,
             )
             self._errors["collect_current_table_specs"] = f"Metadata specs error: {e}"
+
+    def _set_data_file_readable_metrics(self):
+        if not self._data_files:
+            return
+
+        try:
+            current_schema_id = self._current_table_specs["current-schema-id"]
+            current_schema = next(schema for schema in self._current_table_specs["schemas"] if str(schema["schema-id"]) == str(current_schema_id))
+            converter = ReadableMetricsConverter(current_schema)
+            converted_metrics = [converter.convert(data_file.hidden_data_file_metadata.raw_metrics) for data_file in self._data_files]
+
+            for data_file, readable_metrics in zip(self._data_files, converted_metrics):
+                data_file.readable_metrics = readable_metrics
+
+        except Exception as e:
+            logger.error(f"[{self._table_name}] Failed to build readable data file metrics", exc_info=True)
+            self._errors["build_readable_metrics"] = str(e)

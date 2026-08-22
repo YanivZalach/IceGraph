@@ -756,9 +756,10 @@ const mockResponse = {
       split_offsets: [4],
       key_metadata: null,
       equality_ids: null,
-      summary: {
+      readable_metrics: {
         event_id: {
-          column_size: 40,
+          source_id: 1,
+          column_size_mib: 40,
           value_count: 10,
           null_value_count: 0,
           nan_value_count: null,
@@ -766,7 +767,8 @@ const mockResponse = {
           upper_bound: 109,
         },
         event_type: {
-          column_size: 100,
+          source_id: 2,
+          column_size_mib: 100,
           value_count: 10,
           null_value_count: 0,
           nan_value_count: null,
@@ -774,15 +776,17 @@ const mockResponse = {
           upper_bound: "experiment",
         },
         event_ts: {
-          column_size: 80,
+          source_id: 3,
+          column_size_mib: 80,
           value_count: 10,
           null_value_count: 0,
           nan_value_count: null,
-          lower_bound: "2025-06-15T12:00:00Z",
-          upper_bound: "2025-06-15T12:59:59Z",
+          lower_bound: "2025-06-15T12:00:00+00:00",
+          upper_bound: "2025-06-15T12:59:59+00:00",
         },
         event_source: {
-          column_size: 30,
+          source_id: 4,
+          column_size_mib: 30,
           value_count: 10,
           null_value_count: 0,
           nan_value_count: null,
@@ -807,9 +811,10 @@ const mockResponse = {
       split_offsets: [4],
       key_metadata: null,
       equality_ids: null,
-      summary: {
+      readable_metrics: {
         event_id: {
-          column_size: 4,
+          source_id: 1,
+          column_size_mib: 4,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -817,7 +822,8 @@ const mockResponse = {
           upper_bound: 110,
         },
         event_type: {
-          column_size: 11,
+          source_id: 2,
+          column_size_mib: 11,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -825,15 +831,17 @@ const mockResponse = {
           upper_bound: "experiment1",
         },
         event_ts: {
-          column_size: 8,
+          source_id: 3,
+          column_size_mib: 8,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
-          lower_bound: "2025-06-15T12:10:00Z",
-          upper_bound: "2025-06-15T12:10:00Z",
+          lower_bound: "2025-06-15T12:10:00+00:00",
+          upper_bound: "2025-06-15T12:10:00+00:00",
         },
         event_source: {
-          column_size: 3,
+          source_id: 4,
+          column_size_mib: 3,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -858,9 +866,10 @@ const mockResponse = {
       split_offsets: [4],
       key_metadata: null,
       equality_ids: null,
-      summary: {
+      readable_metrics: {
         event_id: {
-          column_size: 4,
+          source_id: 1,
+          column_size_mib: 4,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -868,7 +877,8 @@ const mockResponse = {
           upper_bound: 111,
         },
         event_type: {
-          column_size: 11,
+          source_id: 2,
+          column_size_mib: 11,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -876,15 +886,17 @@ const mockResponse = {
           upper_bound: "experiment2",
         },
         event_ts: {
-          column_size: 8,
+          source_id: 3,
+          column_size_mib: 8,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
-          lower_bound: "2025-06-15T12:20:00Z",
-          upper_bound: "2025-06-15T12:20:00Z",
+          lower_bound: "2025-06-15T12:20:00+00:00",
+          upper_bound: "2025-06-15T12:20:00+00:00",
         },
         event_source: {
-          column_size: 3,
+          source_id: 4,
+          column_size_mib: 3,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -909,9 +921,10 @@ const mockResponse = {
       split_offsets: [4],
       key_metadata: null,
       equality_ids: null,
-      summary: {
+      readable_metrics: {
         event_id: {
-          column_size: 4,
+          source_id: 1,
+          column_size_mib: 4,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -919,7 +932,8 @@ const mockResponse = {
           upper_bound: 300,
         },
         event_type: {
-          column_size: 9,
+          source_id: 2,
+          column_size_mib: 9,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -927,15 +941,17 @@ const mockResponse = {
           upper_bound: "audit_fix",
         },
         event_ts: {
-          column_size: 8,
+          source_id: 3,
+          column_size_mib: 8,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
-          lower_bound: "2025-06-15T13:15:00Z",
-          upper_bound: "2025-06-15T13:15:00Z",
+          lower_bound: "2025-06-15T13:15:00+00:00",
+          upper_bound: "2025-06-15T13:15:00+00:00",
         },
         event_source: {
-          column_size: 5,
+          source_id: 4,
+          column_size_mib: 5,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -960,9 +976,10 @@ const mockResponse = {
       split_offsets: [4],
       key_metadata: null,
       equality_ids: null,
-      summary: {
+      readable_metrics: {
         event_id: {
-          column_size: 8,
+          source_id: 1,
+          column_size_mib: 8,
           value_count: 2,
           null_value_count: 0,
           nan_value_count: null,
@@ -970,7 +987,8 @@ const mockResponse = {
           upper_bound: 302,
         },
         event_type: {
-          column_size: 24,
+          source_id: 2,
+          column_size_mib: 24,
           value_count: 2,
           null_value_count: 0,
           nan_value_count: null,
@@ -978,15 +996,17 @@ const mockResponse = {
           upper_bound: "audit_review",
         },
         event_ts: {
-          column_size: 16,
+          source_id: 3,
+          column_size_mib: 16,
           value_count: 2,
           null_value_count: 0,
           nan_value_count: null,
-          lower_bound: "2025-06-15T13:20:00Z",
-          upper_bound: "2025-06-15T13:25:00Z",
+          lower_bound: "2025-06-15T13:20:00+00:00",
+          upper_bound: "2025-06-15T13:25:00+00:00",
         },
         event_source: {
-          column_size: 10,
+          source_id: 4,
+          column_size_mib: 10,
           value_count: 2,
           null_value_count: 0,
           nan_value_count: null,
@@ -1011,9 +1031,10 @@ const mockResponse = {
       split_offsets: [4],
       key_metadata: null,
       equality_ids: null,
-      summary: {
+      readable_metrics: {
         event_id: {
-          column_size: 4,
+          source_id: 1,
+          column_size_mib: 4,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1021,7 +1042,8 @@ const mockResponse = {
           upper_bound: 201,
         },
         event_type: {
-          column_size: 15,
+          source_id: 2,
+          column_size_mib: 15,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1029,15 +1051,17 @@ const mockResponse = {
           upper_bound: "corrected_login",
         },
         event_ts: {
-          column_size: 8,
+          source_id: 3,
+          column_size_mib: 8,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
-          lower_bound: "2025-06-15T10:30:00Z",
-          upper_bound: "2025-06-15T10:30:00Z",
+          lower_bound: "2025-06-15T10:30:00+00:00",
+          upper_bound: "2025-06-15T10:30:00+00:00",
         },
         event_source: {
-          column_size: 10,
+          source_id: 4,
+          column_size_mib: 10,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1062,9 +1086,10 @@ const mockResponse = {
       split_offsets: [4],
       key_metadata: null,
       equality_ids: null,
-      summary: {
+      readable_metrics: {
         event_id: {
-          column_size: 8,
+          source_id: 1,
+          column_size_mib: 8,
           value_count: 2,
           null_value_count: 0,
           nan_value_count: null,
@@ -1072,7 +1097,8 @@ const mockResponse = {
           upper_bound: 2,
         },
         event_type: {
-          column_size: 30,
+          source_id: 2,
+          column_size_mib: 30,
           value_count: 2,
           null_value_count: 0,
           nan_value_count: null,
@@ -1080,15 +1106,17 @@ const mockResponse = {
           upper_bound: "corrected_login",
         },
         event_ts: {
-          column_size: 16,
+          source_id: 3,
+          column_size_mib: 16,
           value_count: 2,
           null_value_count: 0,
           nan_value_count: null,
-          lower_bound: "2025-06-15T10:05:00Z",
-          upper_bound: "2025-06-15T10:10:00Z",
+          lower_bound: "2025-06-15T10:05:00+00:00",
+          upper_bound: "2025-06-15T10:10:00+00:00",
         },
         event_source: {
-          column_size: 6,
+          source_id: 4,
+          column_size_mib: 6,
           value_count: 2,
           null_value_count: 0,
           nan_value_count: null,
@@ -1113,9 +1141,10 @@ const mockResponse = {
       split_offsets: [4],
       key_metadata: null,
       equality_ids: null,
-      summary: {
+      readable_metrics: {
         event_id: {
-          column_size: 4,
+          source_id: 1,
+          column_size_mib: 4,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1123,7 +1152,8 @@ const mockResponse = {
           upper_bound: 202,
         },
         event_type: {
-          column_size: 18,
+          source_id: 2,
+          column_size_mib: 18,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1131,15 +1161,17 @@ const mockResponse = {
           upper_bound: "corrected_purchase",
         },
         event_ts: {
-          column_size: 8,
+          source_id: 3,
+          column_size_mib: 8,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
-          lower_bound: "2025-06-15T10:35:00Z",
-          upper_bound: "2025-06-15T10:35:00Z",
+          lower_bound: "2025-06-15T10:35:00+00:00",
+          upper_bound: "2025-06-15T10:35:00+00:00",
         },
         event_source: {
-          column_size: 10,
+          source_id: 4,
+          column_size_mib: 10,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1163,9 +1195,10 @@ const mockResponse = {
       split_offsets: [4],
       key_metadata: null,
       equality_ids: null,
-      summary: {
+      readable_metrics: {
         event_id: {
-          column_size: 4,
+          source_id: 1,
+          column_size_mib: 4,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1173,7 +1206,8 @@ const mockResponse = {
           upper_bound: 3,
         },
         event_type: {
-          column_size: 5,
+          source_id: 2,
+          column_size_mib: 5,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1181,15 +1215,17 @@ const mockResponse = {
           upper_bound: "click",
         },
         event_ts: {
-          column_size: 8,
+          source_id: 3,
+          column_size_mib: 8,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
-          lower_bound: "2025-06-15T11:05:00Z",
-          upper_bound: "2025-06-15T11:05:00Z",
+          lower_bound: "2025-06-15T11:05:00+00:00",
+          upper_bound: "2025-06-15T11:05:00+00:00",
         },
         event_source: {
-          column_size: 3,
+          source_id: 4,
+          column_size_mib: 3,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1213,9 +1249,10 @@ const mockResponse = {
       split_offsets: [4],
       key_metadata: null,
       equality_ids: null,
-      summary: {
+      readable_metrics: {
         event_id: {
-          column_size: 4,
+          source_id: 1,
+          column_size_mib: 4,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1223,7 +1260,8 @@ const mockResponse = {
           upper_bound: 4,
         },
         event_type: {
-          column_size: 6,
+          source_id: 2,
+          column_size_mib: 6,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1231,15 +1269,17 @@ const mockResponse = {
           upper_bound: "logout",
         },
         event_ts: {
-          column_size: 8,
+          source_id: 3,
+          column_size_mib: 8,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
-          lower_bound: "2025-06-15T11:15:00Z",
-          upper_bound: "2025-06-15T11:15:00Z",
+          lower_bound: "2025-06-15T11:15:00+00:00",
+          upper_bound: "2025-06-15T11:15:00+00:00",
         },
         event_source: {
-          column_size: 6,
+          source_id: 4,
+          column_size_mib: 6,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1263,9 +1303,10 @@ const mockResponse = {
       split_offsets: [4],
       key_metadata: null,
       equality_ids: null,
-      summary: {
+      readable_metrics: {
         event_id: {
-          column_size: 4,
+          source_id: 1,
+          column_size_mib: 4,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1273,7 +1314,8 @@ const mockResponse = {
           upper_bound: 5,
         },
         event_type: {
-          column_size: 6,
+          source_id: 2,
+          column_size_mib: 6,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1281,15 +1323,17 @@ const mockResponse = {
           upper_bound: "signup",
         },
         event_ts: {
-          column_size: 8,
+          source_id: 3,
+          column_size_mib: 8,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
-          lower_bound: "2025-06-15T11:20:00Z",
-          upper_bound: "2025-06-15T11:20:00Z",
+          lower_bound: "2025-06-15T11:20:00+00:00",
+          upper_bound: "2025-06-15T11:20:00+00:00",
         },
         event_source: {
-          column_size: 6,
+          source_id: 4,
+          column_size_mib: 6,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1313,9 +1357,10 @@ const mockResponse = {
       split_offsets: [4],
       key_metadata: null,
       equality_ids: null,
-      summary: {
+      readable_metrics: {
         event_id: {
-          column_size: 4,
+          source_id: 1,
+          column_size_mib: 4,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1323,7 +1368,8 @@ const mockResponse = {
           upper_bound: 6,
         },
         event_type: {
-          column_size: 6,
+          source_id: 2,
+          column_size_mib: 6,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1331,15 +1377,17 @@ const mockResponse = {
           upper_bound: "logout",
         },
         event_ts: {
-          column_size: 8,
+          source_id: 3,
+          column_size_mib: 8,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
-          lower_bound: "2025-06-15T11:25:00Z",
-          upper_bound: "2025-06-15T11:25:00Z",
+          lower_bound: "2025-06-15T11:25:00+00:00",
+          upper_bound: "2025-06-15T11:25:00+00:00",
         },
         event_source: {
-          column_size: 3,
+          source_id: 4,
+          column_size_mib: 3,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1363,9 +1411,10 @@ const mockResponse = {
       split_offsets: [4],
       key_metadata: null,
       equality_ids: null,
-      summary: {
+      readable_metrics: {
         event_id: {
-          column_size: 4,
+          source_id: 1,
+          column_size_mib: 4,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1373,7 +1422,8 @@ const mockResponse = {
           upper_bound: 7,
         },
         event_type: {
-          column_size: 6,
+          source_id: 2,
+          column_size_mib: 6,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1381,15 +1431,17 @@ const mockResponse = {
           upper_bound: "signup",
         },
         event_ts: {
-          column_size: 8,
+          source_id: 3,
+          column_size_mib: 8,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
-          lower_bound: "2025-06-15T11:30:00Z",
-          upper_bound: "2025-06-15T11:30:00Z",
+          lower_bound: "2025-06-15T11:30:00+00:00",
+          upper_bound: "2025-06-15T11:30:00+00:00",
         },
         event_source: {
-          column_size: 3,
+          source_id: 4,
+          column_size_mib: 3,
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,

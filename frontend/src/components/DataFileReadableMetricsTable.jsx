@@ -1,15 +1,35 @@
 import { PanelSectionTitle } from "./PanelContent";
+import { formatLocaleDateTime, parseUtcDate } from "../utils/dateUtils";
 
-const formatLabel = (label) => label.replaceAll("_", " ");
+const formatLabel = (label) =>
+  label === "column_size_mib"
+    ? "column size (MiB)"
+    : label.replaceAll("_", " ");
 
-const formatValue = (value) => {
+const formatValue = (value, metricName) => {
   if (value == null || value === "") return "-";
+  if (metricName === "column_size_mib") {
+    const numericValue = Number(value);
+    if (Number.isFinite(numericValue)) {
+      return numericValue.toLocaleString("en-US", {
+        maximumFractionDigits: 20,
+        useGrouping: false,
+      });
+    }
+  }
+  if (
+    typeof value === "string" &&
+    ["lower_bound", "upper_bound"].includes(metricName)
+  ) {
+    const date = parseUtcDate(value);
+    if (date) return formatLocaleDateTime(date);
+  }
   if (typeof value === "object") return JSON.stringify(value);
   return String(value);
 };
 
-const DataFileSummaryTable = ({ summary }) => {
-  const columns = Object.entries(summary);
+const DataFileReadableMetricsTable = ({ readableMetrics }) => {
+  const columns = Object.entries(readableMetrics);
   if (columns.length === 0) return null;
 
   const metricNames = [
@@ -22,7 +42,7 @@ const DataFileSummaryTable = ({ summary }) => {
 
   return (
     <div>
-      <PanelSectionTitle>Summary</PanelSectionTitle>
+      <PanelSectionTitle>Readable Metrics</PanelSectionTitle>
       <div className="overflow-x-auto rounded-lg border border-edge">
         <table className="w-full text-left font-mono text-xs text-slate-200">
           <thead className="bg-surface text-slate-400">
@@ -43,7 +63,7 @@ const DataFileSummaryTable = ({ summary }) => {
                 </th>
                 {metricNames.map((metricName) => (
                   <td key={metricName} className="px-3 py-2 whitespace-nowrap">
-                    {formatValue(metrics?.[metricName])}
+                    {formatValue(metrics?.[metricName], metricName)}
                   </td>
                 ))}
               </tr>
@@ -55,4 +75,4 @@ const DataFileSummaryTable = ({ summary }) => {
   );
 };
 
-export default DataFileSummaryTable;
+export default DataFileReadableMetricsTable;
