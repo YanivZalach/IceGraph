@@ -66,6 +66,7 @@ class ReadableMetricsConverter:
         )
         current_field_ids = {field.field_id for field in self._primitive_fields}
         metric_field_ids = {field_id for metric_map in metric_maps if metric_map for field_id in metric_map}
+        current_fields = [field for field in self._primitive_fields if field.field_id in metric_field_ids]
         deprecated_fields = [self._deprecated_field(field_id) for field_id in sorted(metric_field_ids - current_field_ids)]
 
         return {
@@ -79,7 +80,7 @@ class ReadableMetricsConverter:
                 "lower_bound": self._decode_metric_bound(lower_bounds, field),
                 "upper_bound": self._decode_metric_bound(upper_bounds, field),
             }
-            for field in [*self._primitive_fields, *deprecated_fields]
+            for field in [*current_fields, *deprecated_fields]
         }
 
     def _deprecated_field(self, field_id: int) -> PrimitiveField:
@@ -89,7 +90,8 @@ class ReadableMetricsConverter:
 
         historical_field = self._historical_fields_by_id.get(field_id)
         field_type = historical_field.field_type if historical_field else "unknown"
-        return PrimitiveField(field_id, f"__deprecated_column_id_{field_id}", field_type)
+        field_name = f"{historical_field.qualified_name} (dropped)" if historical_field else f"__deprecated_column_id_{field_id}"
+        return PrimitiveField(field_id, field_name, field_type)
 
     def _collect_primitive_fields(self, iceberg_schema: Dict[str, Any]) -> list[PrimitiveField]:
         fields = []
