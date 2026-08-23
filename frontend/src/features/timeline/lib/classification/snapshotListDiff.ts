@@ -34,3 +34,14 @@ export const pickGainedSnapshotId = (
 
   return newCurrentId ?? refTargetId ?? newestId ?? null;
 };
+
+export const countExpiredSnapshots = (
+  previousFile: MetadataFileNode,
+  currentFile: MetadataFileNode,
+): number => {
+  const currentIds = new Set(listSnapshotIds(currentFile));
+
+  return listSnapshotIds(previousFile).filter(
+    (snapshotId) => !currentIds.has(snapshotId),
+  ).length;
+};

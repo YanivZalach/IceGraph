@@ -1,11 +1,28 @@
 import type { MetadataFileNode, SnapshotRefs } from "../../api/nodeSchemas";
 import type { TableMetadata } from "../../api/tableMetadataSchema";
 import type { CommitDescription } from "./commitDescription";
+import { impactText } from "../impactSegment";
+import {
+  sameTextChange,
+  type DescribedChange,
+} from "../definitionChanges/describedChange";
 import { describePartitionSpecChange } from "../definitionChanges/describePartitionSpecChange";
-import { describePropertyChanges } from "../definitionChanges/describePropertyChanges";
+import {
+  describeIgnoredPropertyChanges,
+  describePropertyChanges,
+} from "../definitionChanges/describePropertyChanges";
 import { describeRefChanges } from "../definitionChanges/describeRefChanges";
 import { describeSchemaChange } from "../definitionChanges/describeSchemaChange";
 import { describeSortOrderChange } from "../definitionChanges/describeSortOrderChange";
+
+const describeExpiredSnapshots = (count: number): DescribedChange[] => {
+  if (count === 0) {
+    return [];
+  }
+
+  const versions = count === 1 ? "version" : "versions";
+  return [sameTextChange(`${count.toString()} old ${versions} removed`)];
+};
 
 const isTagChange = (
   previousRefs: SnapshotRefs,
@@ -27,6 +44,7 @@ export const describeMetadataOnlyCommit = (
   previousFile: MetadataFileNode,
   currentFile: MetadataFileNode,
   tableMetadata: TableMetadata,
+  expiredSnapshotCount: number,
 ): CommitDescription => {
   const schemaChanges = describeSchemaChange(
     previousFile.current_schema_id,
@@ -43,11 +61,16 @@ export const describeMetadataOnlyCommit = (
     currentFile.sort_order_id,
     tableMetadata,
   );
-  const refChanges = describeRefChanges(previousFile.refs, currentFile.refs);
+  const refChanges = describeRefChanges(
+    previousFile.refs,
+    currentFile.refs,
+    null,
+  );
   const propertyChanges = describePropertyChanges(
     previousFile.properties,
     currentFile.properties,
   );
+  const expiryChanges = describeExpiredSnapshots(expiredSnapshotCount);
 
   const pickTitle = (): string => {
     if (schemaChanges.length > 0) {
@@ -67,19 +90,32 @@ export const describeMetadataOnlyCommit = (
     if (propertyChanges.length > 0) {
       return "Settings changed";
     }
+    if (expiryChanges.length > 0) {
+      return "History trimmed";
+    }
     return "Metadata updated";
   };
+
+  const changes = [
+    ...schemaChanges,
+    ...partitioningChanges,
+    ...sortOrderChanges,
+    ...refChanges,
+    ...propertyChanges,
+    ...expiryChanges,
+  ];
+  const shownChanges =
+    changes.length > 0
+      ? changes
+      : describeIgnoredPropertyChanges(
+          previousFile.properties,
+          currentFile.properties,
+        );
 
   return {
     kind: "metadata-only",
     title: pickTitle(),
-    impactSegments: [
-      ...schemaChanges,
-      ...partitioningChanges,
-      ...sortOrderChanges,
-      ...refChanges,
-      ...propertyChanges,
-    ].map((change) => change.impact),
+    impactSegments: shownChanges.map((change) => impactText(change.impact)),
     snapshotId: null,
     branchName: null,
     repointTargetId: null,

@@ -1,9 +1,6 @@
 import type { MetadataFileNode, SnapshotRefs } from "../api/nodeSchemas";
 import type { TableMetadata } from "../api/tableMetadataSchema";
-import {
-  buildSnapshotImpactSegments,
-  joinImpactSegments,
-} from "./format/buildImpactLine";
+import { readSnapshotImpact } from "./impactSegment";
 import type {
   CommitDescription,
   SnapshotsById,
@@ -44,9 +41,7 @@ const buildOldestRow = (
     ...boundaryRow(file),
     kind: "published-write",
     title: writeTitle(ownSnapshot.operation_description),
-    impact: joinImpactSegments(
-      buildSnapshotImpactSegments(ownSnapshot.summary),
-    ),
+    impact: readSnapshotImpact(ownSnapshot.summary),
     shortId: formatShortId(ownSnapshot.snapshot_id),
     snapshotId: ownSnapshot.snapshot_id,
   };
@@ -59,7 +54,7 @@ const toTimelineRow = (
   ...boundaryRow(file),
   kind: commit.kind,
   title: commit.title,
-  impact: joinImpactSegments(commit.impactSegments),
+  impact: commit.impactSegments,
   shortId: formatShortId(commit.snapshotId),
   snapshotId: commit.snapshotId,
   branchName: commit.branchName,
