@@ -9,7 +9,7 @@ from base_classes.base_file import BaseFile
 from base_classes.utils import column_to_string_utc, timed
 from collectors.collector import Collector, FilesCollection
 from collectors.utils import bytes_to_gib
-from constants import FileType, SnapshotSummary
+from constants import FileType
 from env import Env
 from icegraph_logger import logger
 
@@ -22,7 +22,7 @@ class SnapshotRecord(BaseFile):
     parent_id: Optional[int]
     operation: Optional[str]
     operation_description: Optional[str]
-    summary: SnapshotSummary
+    summary: Dict[str, str]
 
 
 class CollectSnapshots(Collector):
@@ -66,7 +66,7 @@ class CollectSnapshots(Collector):
             raise ValueError(f"Too many snapshots to compute. Maximum is {Env.MAX_SNAPSHOTS_TO_COMPUTE}.")
 
     @staticmethod
-    def _format_summary(summary: Dict[str, str]) -> SnapshotSummary:
+    def _format_summary(summary: Dict[str, str]) -> Dict[str, str]:
         formatted = {}
         for key, value in summary.items():
             if key.endswith("files-size"):
