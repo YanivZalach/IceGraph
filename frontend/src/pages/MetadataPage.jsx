@@ -74,6 +74,10 @@ function JsonPropertyValue({ data }) {
   );
 }
 
+function formatGib(value) {
+  return typeof value === "number" ? value.toFixed(5) : value;
+}
+
 function KV({ label, value, mono = false }) {
   return (
     <div className="flex flex-col gap-0.5 py-2 border-b border-edge last:border-0 [&:nth-last-child(2)]:border-0">
@@ -245,7 +249,10 @@ export default function MetadataPage() {
                 />
                 <KV label="Total Records" value={getStat("total-records")} />
                 <KV label="Data Files" value={getStat("total-data-files")} />
-                <KV label="Table Size" value={getStat("total-files-size")} />
+                <KV
+                  label="Table Size (GiB)"
+                  value={formatGib(getStat("total-files-size-gib"))}
+                />
                 <KV
                   label="Delete Files"
                   value={getStat("total-delete-files")}
