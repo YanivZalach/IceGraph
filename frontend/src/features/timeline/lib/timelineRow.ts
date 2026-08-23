@@ -1,4 +1,5 @@
 import type { MetadataFileNode } from "../api/nodeSchemas";
+import type { ImpactSegment } from "./impactSegment";
 
 export interface RefBadge {
   name: string;
@@ -13,7 +14,7 @@ export interface TimelineRow {
     | "metadata-only"
     | "boundary";
   title: string;
-  impact: string;
+  impact: ImpactSegment[];
   shortId: string;
   snapshotId: string | null;
   filePath: string;
@@ -33,7 +34,7 @@ export interface TimelineData {
 export const boundaryRow = (file: MetadataFileNode): TimelineRow => ({
   kind: "boundary",
   title: "",
-  impact: "",
+  impact: [],
   shortId: "",
   snapshotId: null,
   filePath: file.file_path,

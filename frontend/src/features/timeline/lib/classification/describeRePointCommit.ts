@@ -2,6 +2,7 @@ import type { MetadataFileNode, SnapshotRefs } from "../../api/nodeSchemas";
 import type { CommitDescription, SnapshotsById } from "./commitDescription";
 import { formatShortId } from "../format/formatShortId";
 import { formatDayAndMonth } from "../format/formatTimelineTime";
+import { impactText, type ImpactSegment } from "../impactSegment";
 
 type AncestrySearchResult = "ancestor" | "not-ancestor" | "lineage-broken";
 
@@ -86,7 +87,7 @@ const rePointTitle = (
 
   const branchHeadName = findBranchHeadName(previousFile.refs, targetId);
   if (branchHeadName !== null) {
-    return `branch main moved to ${branchHeadName}`;
+    return `main moved to ${branchHeadName}`;
   }
 
   return "Switched snapshots";
@@ -96,7 +97,7 @@ export const describeRePointCommit = (
   previousFile: MetadataFileNode,
   targetId: string,
   snapshotsById: SnapshotsById,
-  definitionImpacts: string[],
+  definitionImpacts: ImpactSegment[],
 ): CommitDescription => {
   const targetRecord = snapshotsById.get(targetId);
   const targetImpact =
@@ -107,7 +108,7 @@ export const describeRePointCommit = (
   return {
     kind: "re-point",
     title: rePointTitle(previousFile, targetId, snapshotsById),
-    impactSegments: [targetImpact, ...definitionImpacts],
+    impactSegments: [impactText(targetImpact), ...definitionImpacts],
     snapshotId: null,
     branchName: null,
     repointTargetId: targetId,

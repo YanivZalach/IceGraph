@@ -5,6 +5,7 @@ import { formatShortId } from "../format/formatShortId";
 export const describeRefChanges = (
   previousRefs: SnapshotRefs,
   currentRefs: SnapshotRefs,
+  rowSnapshotId: string | null,
 ): DescribedChange[] => {
   const changes: DescribedChange[] = [];
 
@@ -13,7 +14,12 @@ export const describeRefChanges = (
 
     if (previousRef === undefined) {
       changes.push(sameTextChange(`${currentRef.type} ${name} created`));
-    } else if (previousRef["snapshot-id"] !== currentRef["snapshot-id"]) {
+      continue;
+    }
+
+    const hasMoved = previousRef["snapshot-id"] !== currentRef["snapshot-id"];
+    const isTheRowsOwnEvent = currentRef["snapshot-id"] === rowSnapshotId;
+    if (hasMoved && !isTheRowsOwnEvent) {
       changes.push(
         sameTextChange(
           `${currentRef.type} ${name} moved to snapshot ${formatShortId(currentRef["snapshot-id"])}`,
