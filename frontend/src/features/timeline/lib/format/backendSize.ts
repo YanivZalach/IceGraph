@@ -2,10 +2,10 @@ const BACKEND_SIZE_PATTERN = /^(\d+(?:\.\d+)?) GB$/;
 const BYTES_PER_GIGABYTE = 1024 ** 3;
 
 const SIZE_UNITS = [
-  { unit: "TB", bytesPerUnit: 1024 ** 4 },
-  { unit: "GB", bytesPerUnit: 1024 ** 3 },
-  { unit: "MB", bytesPerUnit: 1024 ** 2 },
-  { unit: "KB", bytesPerUnit: 1024 },
+  { unit: "TiB", bytesPerUnit: 1024 ** 4 },
+  { unit: "GiB", bytesPerUnit: 1024 ** 3 },
+  { unit: "MiB", bytesPerUnit: 1024 ** 2 },
+  { unit: "KiB", bytesPerUnit: 1024 },
 ] as const;
 
 /**

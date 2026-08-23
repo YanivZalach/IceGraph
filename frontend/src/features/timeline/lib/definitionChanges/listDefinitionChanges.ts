@@ -11,6 +11,7 @@ export const listDefinitionChanges = (
   previousFile: MetadataFileNode,
   currentFile: MetadataFileNode,
   tableMetadata: TableMetadata,
+  rowSnapshotId: string | null,
 ): DescribedChange[] => [
   ...describeSchemaChange(
     previousFile.current_schema_id,
@@ -27,6 +28,6 @@ export const listDefinitionChanges = (
     currentFile.sort_order_id,
     tableMetadata,
   ),
-  ...describeRefChanges(previousFile.refs, currentFile.refs),
+  ...describeRefChanges(previousFile.refs, currentFile.refs, rowSnapshotId),
   ...describePropertyChanges(previousFile.properties, currentFile.properties),
 ];

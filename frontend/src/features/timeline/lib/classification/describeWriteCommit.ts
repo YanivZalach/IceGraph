@@ -1,5 +1,10 @@
 import type { MetadataFileNode, SnapshotRefs } from "../../api/nodeSchemas";
-import { buildSnapshotImpactSegments } from "../format/buildImpactLine";
+import { formatShortId } from "../format/formatShortId";
+import {
+  impactText,
+  readSnapshotImpact,
+  type ImpactSegment,
+} from "../impactSegment";
 import type { CommitDescription, SnapshotsById } from "./commitDescription";
 
 const WRITE_TITLES: Record<string, string> = {
@@ -33,14 +38,14 @@ export const describeWriteCommit = (
   gainedSnapshotId: string,
   currentFile: MetadataFileNode,
   snapshotsById: SnapshotsById,
-  definitionImpacts: string[],
+  definitionImpacts: ImpactSegment[],
 ): CommitDescription => {
   const snapshotRecord = snapshotsById.get(gainedSnapshotId);
-  const snapshotNumbers =
+  const snapshotImpact =
     snapshotRecord === undefined
-      ? []
-      : buildSnapshotImpactSegments(snapshotRecord.summary);
-  const impactSegments = [...snapshotNumbers, ...definitionImpacts];
+      ? [impactText(`snapshot ${formatShortId(gainedSnapshotId)} unavailable`)]
+      : readSnapshotImpact(snapshotRecord.summary);
+  const impactSegments = [...snapshotImpact, ...definitionImpacts];
 
   const isNewCurrent = currentFile.snapshot_id === gainedSnapshotId;
   const pointingBranchName = findRefNamePointingAt(

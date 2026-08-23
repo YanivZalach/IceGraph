@@ -2,10 +2,14 @@ import type { MetadataFileNode } from "../../api/nodeSchemas";
 import type { TableMetadata } from "../../api/tableMetadataSchema";
 import type { CommitDescription, SnapshotsById } from "./commitDescription";
 import { listDefinitionChanges } from "../definitionChanges/listDefinitionChanges";
+import { impactText } from "../impactSegment";
 import { describeMetadataOnlyCommit } from "./describeMetadataOnlyCommit";
 import { describeRePointCommit } from "./describeRePointCommit";
 import { describeWriteCommit } from "./describeWriteCommit";
-import { pickGainedSnapshotId } from "./pickGainedSnapshotId";
+import {
+  countExpiredSnapshots,
+  pickGainedSnapshotId,
+} from "./snapshotListDiff";
 
 export const describeCommit = (
   previousFile: MetadataFileNode,
@@ -13,13 +17,22 @@ export const describeCommit = (
   snapshotsById: SnapshotsById,
   tableMetadata: TableMetadata,
 ): CommitDescription => {
+  const gainedSnapshotId = pickGainedSnapshotId(previousFile, currentFile);
+  const newCurrentId = currentFile.snapshot_id;
+  const rePointTargetId =
+    gainedSnapshotId === null &&
+    newCurrentId !== null &&
+    newCurrentId !== previousFile.snapshot_id
+      ? newCurrentId
+      : null;
+
   const definitionImpacts = listDefinitionChanges(
     previousFile,
     currentFile,
     tableMetadata,
-  ).map((change) => change.impact);
+    gainedSnapshotId ?? rePointTargetId,
+  ).map((change) => impactText(change.impact));
 
-  const gainedSnapshotId = pickGainedSnapshotId(previousFile, currentFile);
   if (gainedSnapshotId !== null) {
     return describeWriteCommit(
       gainedSnapshotId,
@@ -29,15 +42,19 @@ export const describeCommit = (
     );
   }
 
-  const newCurrentId = currentFile.snapshot_id;
-  if (newCurrentId !== null && newCurrentId !== previousFile.snapshot_id) {
+  if (rePointTargetId !== null) {
     return describeRePointCommit(
       previousFile,
-      newCurrentId,
+      rePointTargetId,
       snapshotsById,
       definitionImpacts,
     );
   }
 
-  return describeMetadataOnlyCommit(previousFile, currentFile, tableMetadata);
+  return describeMetadataOnlyCommit(
+    previousFile,
+    currentFile,
+    tableMetadata,
+    countExpiredSnapshots(previousFile, currentFile),
+  );
 };
