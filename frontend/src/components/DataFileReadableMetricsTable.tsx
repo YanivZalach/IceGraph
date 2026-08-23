@@ -1,21 +1,26 @@
 import { PanelSectionTitle } from "./PanelContent";
-import { formatReadableMetricValue } from "../utils/readableMetrics";
+import {
+  formatReadableMetricValue,
+  type ReadableMetrics,
+} from "../utils/readableMetrics";
 
-const formatLabel = (label) =>
-  label === "column_size_mib"
+interface DataFileReadableMetricsTableProps {
+  readableMetrics: ReadableMetrics;
+}
+
+const formatMetricLabel = (metricName: string): string =>
+  metricName === "column_size_mib"
     ? "column size (MiB)"
-    : label.replaceAll("_", " ");
+    : metricName.replaceAll("_", " ");
 
-const DataFileReadableMetricsTable = ({ readableMetrics }) => {
+const DataFileReadableMetricsTable = ({
+  readableMetrics,
+}: DataFileReadableMetricsTableProps) => {
   const columns = Object.entries(readableMetrics);
   if (columns.length === 0) return null;
 
   const metricNames = [
-    ...new Set(
-      columns.flatMap(([, metrics]) =>
-        metrics && typeof metrics === "object" ? Object.keys(metrics) : [],
-      ),
-    ),
+    ...new Set(columns.flatMap(([, metrics]) => Object.keys(metrics))),
   ];
 
   return (
@@ -28,7 +33,7 @@ const DataFileReadableMetricsTable = ({ readableMetrics }) => {
               <th className="px-3 py-2 font-semibold">column</th>
               {metricNames.map((metricName) => (
                 <th key={metricName} className="px-3 py-2 font-semibold">
-                  {formatLabel(metricName)}
+                  {formatMetricLabel(metricName)}
                 </th>
               ))}
             </tr>
@@ -42,9 +47,9 @@ const DataFileReadableMetricsTable = ({ readableMetrics }) => {
                 {metricNames.map((metricName) => (
                   <td key={metricName} className="px-3 py-2 whitespace-nowrap">
                     {formatReadableMetricValue(
-                      metrics?.[metricName],
+                      metrics[metricName],
                       metricName,
-                      metrics?.field_type,
+                      metrics.field_type,
                     )}
                   </td>
                 ))}
