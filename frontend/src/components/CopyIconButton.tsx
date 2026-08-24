@@ -1,19 +1,33 @@
 import { useState } from "react";
 import { copyText } from "../shared/lib/clipboard";
 
-export default function CopyIconButton({
+interface CopyIconButtonProps {
+  text: string;
+  className?: string;
+  title?: string;
+}
+
+type CopyStatus = "idle" | "copied" | "failed";
+
+// Ported from JSX as-is, types only. This code is weird — hand-drawn SVGs
+// instead of lucide-react, class strings instead of cn(), and the "Copied!"
+// timer is never cleaned up. Out of scope to fix here, it goes with the
+// refactor: https://github.com/YanivZalach/IceGraph/issues/100
+const CopyIconButton = ({
   text,
   className = "",
   title = "Copy value",
-}) {
-  const [copyStatus, setCopyStatus] = useState("idle");
+}: CopyIconButtonProps) => {
+  const [copyStatus, setCopyStatus] = useState<CopyStatus>("idle");
 
   if (!text) return null;
 
-  const handleCopy = async () => {
-    const isCopied = await copyText(String(text));
+  const handleCopy = async (): Promise<void> => {
+    const isCopied = await copyText(text);
     setCopyStatus(isCopied ? "copied" : "failed");
-    setTimeout(() => setCopyStatus("idle"), 2000);
+    setTimeout(() => {
+      setCopyStatus("idle");
+    }, 2000);
   };
   const copied = copyStatus === "copied";
   const failed = copyStatus === "failed";
@@ -21,8 +35,10 @@ export default function CopyIconButton({
   return (
     <button
       type="button"
-      onClick={handleCopy}
-      onMouseDown={(e) => e.preventDefault()}
+      onClick={() => void handleCopy()}
+      onMouseDown={(event) => {
+        event.preventDefault();
+      }}
       title={copied ? "Copied!" : failed ? "Copy failed" : title}
       className={`p-1 rounded border border-edge bg-surface/90 ${failed ? "text-red-400" : "text-slate-500"} hover:text-slate-300 hover:border-slate-500 transition-colors cursor-pointer ${className}`}
     >
@@ -57,4 +73,6 @@ export default function CopyIconButton({
       )}
     </button>
   );
-}
+};
+
+export default CopyIconButton;
