@@ -65,7 +65,3 @@ def get_metadata_row_slim_df_from_path(metadata_path: str):
         *[F.col(column) for column in scalar_cols if column in existing],
         *[F.to_json(F.col(column)).alias(column) for column in json_cols if column in existing],
     )
-
-
-def bytes_to_gib(size_in_bytes: int) -> float:
-    return size_in_bytes / 1024**3

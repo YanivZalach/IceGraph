@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTableGraphData } from "../features/table/tableGraphData";
 import JSONbig from "json-bigint";
 import CopyableValue from "../components/CopyableValue";
+import { formatBytesAsGibibytes } from "../shared/lib/formatBytes";
 import {
   DEFAULT_COLLAPSE_LINES,
   PANEL_COLLAPSE_TOGGLE_CLASS,
@@ -72,10 +73,6 @@ function JsonPropertyValue({ data }) {
       </pre>
     </div>
   );
-}
-
-function formatGib(value) {
-  return typeof value === "number" ? value.toFixed(5) : value;
 }
 
 function KV({ label, value, mono = false }) {
@@ -250,8 +247,10 @@ export default function MetadataPage() {
                 <KV label="Total Records" value={getStat("total-records")} />
                 <KV label="Data Files" value={getStat("total-data-files")} />
                 <KV
-                  label="Table Size (GiB)"
-                  value={formatGib(getStat("total-files-size-gib"))}
+                  label="Table Size"
+                  value={formatBytesAsGibibytes(
+                    getStat("total-files-size-bytes"),
+                  )}
                 />
                 <KV
                   label="Delete Files"

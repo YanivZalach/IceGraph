@@ -8,7 +8,6 @@ from pyspark.sql import functions as F
 from base_classes.base_file import BaseFile
 from base_classes.utils import column_to_string_utc, timed
 from collectors.collector import Collector, FilesCollection
-from collectors.utils import bytes_to_gib
 from constants import FileType
 from env import Env
 from icegraph_logger import logger
@@ -67,18 +66,7 @@ class CollectSnapshots(Collector):
 
     @staticmethod
     def _format_summary(summary: Dict[str, str]) -> Dict[str, str]:
-        formatted = {}
-        for key, value in summary.items():
-            if key.endswith("files-size"):
-                try:
-                    formatted[f"{key}-gib"] = bytes_to_gib(int(value))
-                except Exception:
-                    formatted[key] = value
-
-            else:
-                formatted[key] = value
-
-        return formatted
+        return {(f"{key}-bytes" if key.endswith("files-size") else key): value for key, value in summary.items()}
 
     def _parse_snapshot_row(self, snapshot) -> SnapshotRecord:
         return SnapshotRecord(

@@ -1,6 +1,10 @@
 import { useState } from "react";
 import CopyIconButton from "./CopyIconButton";
 import {
+  formatBytesAsGibibytes,
+  isByteFieldName,
+} from "../shared/lib/formatBytes";
+import {
   UI_BODY_MUTED_ITALIC_CLASS,
   UI_FIELD_LABEL_CLASS,
   UI_FIELD_LABEL_WIDE_CLASS,
@@ -115,7 +119,9 @@ export function PanelDetailRow({
   const displayValue =
     typeof value === "object" && value !== null
       ? JSON.stringify(value, null, 2)
-      : value;
+      : isByteFieldName(String(label))
+        ? formatBytesAsGibibytes(value)
+        : value;
 
   const textToCopy =
     displayValue != null && displayValue !== "" ? String(displayValue) : "";

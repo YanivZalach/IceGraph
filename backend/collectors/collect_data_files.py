@@ -6,7 +6,7 @@ from collectors.collect_manifests import ManifestRecord
 from collectors.collector import Collector, FilesCollection
 from constants import FileType
 from extractors.data_files_extractor import DataFilesExtractor
-from collectors.utils import bytes_to_gib, format_partition
+from collectors.utils import format_partition
 from base_classes.utils import timed
 from iceberg_ports.readable_metrics import RawFileMetrics
 
@@ -20,7 +20,7 @@ class HiddenDataFileMetadata(HiddenFile):
 @dataclass
 class DataFileRecord(BaseFile):
     format: str
-    size_gib: float
+    file_size_in_bytes: str
     row_count: int
     partition: str
     earliest_appearing_snapshot_id: int
@@ -59,7 +59,7 @@ class CollectDataFiles(Collector):
             type=self._detect_file_type(data_file_dict["content"]),
             file_path=data_file_dict["file_path"],
             format=data_file_dict["file_format"],
-            size_gib=bytes_to_gib(data_file_dict["file_size_in_bytes"]),
+            file_size_in_bytes=str(data_file_dict["file_size_in_bytes"]),
             row_count=data_file_dict["record_count"],
             partition=format_partition(data_file_dict["partition"]),
             earliest_appearing_snapshot_id=data_file_dict["earliest_snapshot_id"],
