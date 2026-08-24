@@ -183,7 +183,7 @@ offer a modified version to users over a network, the AGPL includes correspondin
 source obligations.
 
 Revisions released before the license change remain available under the
-[MIT License](LICENSE-MIT). Contributions require the
+[MIT License](https://github.com/YanivZalach/IceGraph/blob/v0.16.2/LICENSE). Contributions require the
 [Contributor License Agreement](CLA.md), which permits future relicensing and
 separate commercial or enterprise licensing.
 
