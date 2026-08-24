@@ -16,6 +16,10 @@ dependencies = [
     "arrow>=1.0",
 ]
 
+[project.urls]
+Homepage = "https://yanivzalach.github.io/IceGraph-Site/"
+Source = "https://github.com/YanivZalach/IceGraph"
+
 [project.scripts]
 icegraph = "icegraph_client.cli:main"
 

@@ -162,6 +162,19 @@ const SECTIONS = [
           </div>
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-slate-500 uppercase tracking-wider text-tiny font-semibold">
+              Website
+            </span>
+            <a
+              href="https://yanivzalach.github.io/IceGraph-Site/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-accent hover:text-blue-400 transition font-mono"
+            >
+              yanivzalach.github.io/IceGraph-Site
+            </a>
+          </div>
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-slate-500 uppercase tracking-wider text-tiny font-semibold">
               Source
             </span>
             <a

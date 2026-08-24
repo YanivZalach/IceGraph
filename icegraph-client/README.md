@@ -35,6 +35,8 @@ client.get_graph("database.table", start_snapshot_id, end_snapshot_id)
 
 ## Docs
 
+Product page: [https://yanivzalach.github.io/IceGraph-Site/](https://yanivzalach.github.io/IceGraph-Site/)
+
 Full documentation, the IceGraph application, and the source code: [github.com/YanivZalach/IceGraph](https://github.com/YanivZalach/IceGraph)
 
 ## License
