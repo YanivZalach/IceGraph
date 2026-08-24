@@ -760,7 +760,7 @@ const mockResponse = {
         event_id: {
           source_id: 1,
           field_type: "int",
-          column_size_mib: 40,
+          column_size_in_bytes: "41943040",
           value_count: 10,
           null_value_count: 0,
           nan_value_count: null,
@@ -770,7 +770,7 @@ const mockResponse = {
         event_type: {
           source_id: 2,
           field_type: "string",
-          column_size_mib: 100,
+          column_size_in_bytes: "104857600",
           value_count: 10,
           null_value_count: 0,
           nan_value_count: null,
@@ -780,7 +780,7 @@ const mockResponse = {
         event_ts: {
           source_id: 3,
           field_type: "timestamptz",
-          column_size_mib: 80,
+          column_size_in_bytes: "83886080",
           value_count: 10,
           null_value_count: 0,
           nan_value_count: null,
@@ -790,7 +790,7 @@ const mockResponse = {
         event_source: {
           source_id: 4,
           field_type: "string",
-          column_size_mib: 30,
+          column_size_in_bytes: "31457280",
           value_count: 10,
           null_value_count: 0,
           nan_value_count: null,
@@ -819,7 +819,7 @@ const mockResponse = {
         event_id: {
           source_id: 1,
           field_type: "int",
-          column_size_mib: 4,
+          column_size_in_bytes: "4194304",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -829,7 +829,7 @@ const mockResponse = {
         event_type: {
           source_id: 2,
           field_type: "string",
-          column_size_mib: 11,
+          column_size_in_bytes: "11534336",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -839,7 +839,7 @@ const mockResponse = {
         event_ts: {
           source_id: 3,
           field_type: "timestamptz",
-          column_size_mib: 8,
+          column_size_in_bytes: "8388608",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -849,7 +849,7 @@ const mockResponse = {
         event_source: {
           source_id: 4,
           field_type: "string",
-          column_size_mib: 3,
+          column_size_in_bytes: "3145728",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -878,7 +878,7 @@ const mockResponse = {
         event_id: {
           source_id: 1,
           field_type: "int",
-          column_size_mib: 4,
+          column_size_in_bytes: "4194304",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -888,7 +888,7 @@ const mockResponse = {
         event_type: {
           source_id: 2,
           field_type: "string",
-          column_size_mib: 11,
+          column_size_in_bytes: "11534336",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -898,7 +898,7 @@ const mockResponse = {
         event_ts: {
           source_id: 3,
           field_type: "timestamptz",
-          column_size_mib: 8,
+          column_size_in_bytes: "8388608",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -908,7 +908,7 @@ const mockResponse = {
         event_source: {
           source_id: 4,
           field_type: "string",
-          column_size_mib: 3,
+          column_size_in_bytes: "3145728",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -937,7 +937,7 @@ const mockResponse = {
         event_id: {
           source_id: 1,
           field_type: "int",
-          column_size_mib: 4,
+          column_size_in_bytes: "4194304",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -947,7 +947,7 @@ const mockResponse = {
         event_type: {
           source_id: 2,
           field_type: "string",
-          column_size_mib: 9,
+          column_size_in_bytes: "9437184",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -957,7 +957,7 @@ const mockResponse = {
         event_ts: {
           source_id: 3,
           field_type: "timestamptz",
-          column_size_mib: 8,
+          column_size_in_bytes: "8388608",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -967,7 +967,7 @@ const mockResponse = {
         event_source: {
           source_id: 4,
           field_type: "string",
-          column_size_mib: 5,
+          column_size_in_bytes: "5242880",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -996,7 +996,7 @@ const mockResponse = {
         event_id: {
           source_id: 1,
           field_type: "int",
-          column_size_mib: 8,
+          column_size_in_bytes: "8388608",
           value_count: 2,
           null_value_count: 0,
           nan_value_count: null,
@@ -1006,7 +1006,7 @@ const mockResponse = {
         event_type: {
           source_id: 2,
           field_type: "string",
-          column_size_mib: 24,
+          column_size_in_bytes: "25165824",
           value_count: 2,
           null_value_count: 0,
           nan_value_count: null,
@@ -1016,7 +1016,7 @@ const mockResponse = {
         event_ts: {
           source_id: 3,
           field_type: "timestamptz",
-          column_size_mib: 16,
+          column_size_in_bytes: "16777216",
           value_count: 2,
           null_value_count: 0,
           nan_value_count: null,
@@ -1026,7 +1026,7 @@ const mockResponse = {
         event_source: {
           source_id: 4,
           field_type: "string",
-          column_size_mib: 10,
+          column_size_in_bytes: "10485760",
           value_count: 2,
           null_value_count: 0,
           nan_value_count: null,
@@ -1055,7 +1055,7 @@ const mockResponse = {
         event_id: {
           source_id: 1,
           field_type: "int",
-          column_size_mib: 4,
+          column_size_in_bytes: "4194304",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1065,7 +1065,7 @@ const mockResponse = {
         event_type: {
           source_id: 2,
           field_type: "string",
-          column_size_mib: 15,
+          column_size_in_bytes: "15728640",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1075,7 +1075,7 @@ const mockResponse = {
         event_ts: {
           source_id: 3,
           field_type: "timestamptz",
-          column_size_mib: 8,
+          column_size_in_bytes: "8388608",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1085,7 +1085,7 @@ const mockResponse = {
         event_source: {
           source_id: 4,
           field_type: "string",
-          column_size_mib: 10,
+          column_size_in_bytes: "10485760",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1114,7 +1114,7 @@ const mockResponse = {
         event_id: {
           source_id: 1,
           field_type: "int",
-          column_size_mib: 8,
+          column_size_in_bytes: "8388608",
           value_count: 2,
           null_value_count: 0,
           nan_value_count: null,
@@ -1124,7 +1124,7 @@ const mockResponse = {
         event_type: {
           source_id: 2,
           field_type: "string",
-          column_size_mib: 30,
+          column_size_in_bytes: "31457280",
           value_count: 2,
           null_value_count: 0,
           nan_value_count: null,
@@ -1134,7 +1134,7 @@ const mockResponse = {
         event_ts: {
           source_id: 3,
           field_type: "timestamptz",
-          column_size_mib: 16,
+          column_size_in_bytes: "16777216",
           value_count: 2,
           null_value_count: 0,
           nan_value_count: null,
@@ -1144,7 +1144,7 @@ const mockResponse = {
         event_source: {
           source_id: 4,
           field_type: "string",
-          column_size_mib: 6,
+          column_size_in_bytes: "6291456",
           value_count: 2,
           null_value_count: 0,
           nan_value_count: null,
@@ -1173,7 +1173,7 @@ const mockResponse = {
         event_id: {
           source_id: 1,
           field_type: "int",
-          column_size_mib: 4,
+          column_size_in_bytes: "4194304",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1183,7 +1183,7 @@ const mockResponse = {
         event_type: {
           source_id: 2,
           field_type: "string",
-          column_size_mib: 18,
+          column_size_in_bytes: "18874368",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1193,7 +1193,7 @@ const mockResponse = {
         event_ts: {
           source_id: 3,
           field_type: "timestamptz",
-          column_size_mib: 8,
+          column_size_in_bytes: "8388608",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1203,7 +1203,7 @@ const mockResponse = {
         event_source: {
           source_id: 4,
           field_type: "string",
-          column_size_mib: 10,
+          column_size_in_bytes: "10485760",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1231,7 +1231,7 @@ const mockResponse = {
         event_id: {
           source_id: 1,
           field_type: "int",
-          column_size_mib: 4,
+          column_size_in_bytes: "4194304",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1241,7 +1241,7 @@ const mockResponse = {
         event_type: {
           source_id: 2,
           field_type: "string",
-          column_size_mib: 5,
+          column_size_in_bytes: "5242880",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1251,7 +1251,7 @@ const mockResponse = {
         event_ts: {
           source_id: 3,
           field_type: "timestamptz",
-          column_size_mib: 8,
+          column_size_in_bytes: "8388608",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1261,7 +1261,7 @@ const mockResponse = {
         event_source: {
           source_id: 4,
           field_type: "string",
-          column_size_mib: 3,
+          column_size_in_bytes: "3145728",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1289,7 +1289,7 @@ const mockResponse = {
         event_id: {
           source_id: 1,
           field_type: "int",
-          column_size_mib: 4,
+          column_size_in_bytes: "4194304",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1299,7 +1299,7 @@ const mockResponse = {
         event_type: {
           source_id: 2,
           field_type: "string",
-          column_size_mib: 6,
+          column_size_in_bytes: "6291456",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1309,7 +1309,7 @@ const mockResponse = {
         event_ts: {
           source_id: 3,
           field_type: "timestamptz",
-          column_size_mib: 8,
+          column_size_in_bytes: "8388608",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1319,7 +1319,7 @@ const mockResponse = {
         event_source: {
           source_id: 4,
           field_type: "string",
-          column_size_mib: 6,
+          column_size_in_bytes: "6291456",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1347,7 +1347,7 @@ const mockResponse = {
         event_id: {
           source_id: 1,
           field_type: "int",
-          column_size_mib: 4,
+          column_size_in_bytes: "4194304",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1357,7 +1357,7 @@ const mockResponse = {
         event_type: {
           source_id: 2,
           field_type: "string",
-          column_size_mib: 6,
+          column_size_in_bytes: "6291456",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1367,7 +1367,7 @@ const mockResponse = {
         event_ts: {
           source_id: 3,
           field_type: "timestamptz",
-          column_size_mib: 8,
+          column_size_in_bytes: "8388608",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1377,7 +1377,7 @@ const mockResponse = {
         event_source: {
           source_id: 4,
           field_type: "string",
-          column_size_mib: 6,
+          column_size_in_bytes: "6291456",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1405,7 +1405,7 @@ const mockResponse = {
         event_id: {
           source_id: 1,
           field_type: "int",
-          column_size_mib: 4,
+          column_size_in_bytes: "4194304",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1415,7 +1415,7 @@ const mockResponse = {
         event_type: {
           source_id: 2,
           field_type: "string",
-          column_size_mib: 6,
+          column_size_in_bytes: "6291456",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1425,7 +1425,7 @@ const mockResponse = {
         event_ts: {
           source_id: 3,
           field_type: "timestamptz",
-          column_size_mib: 8,
+          column_size_in_bytes: "8388608",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1435,7 +1435,7 @@ const mockResponse = {
         event_source: {
           source_id: 4,
           field_type: "string",
-          column_size_mib: 3,
+          column_size_in_bytes: "3145728",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1463,7 +1463,7 @@ const mockResponse = {
         event_id: {
           source_id: 1,
           field_type: "int",
-          column_size_mib: 4,
+          column_size_in_bytes: "4194304",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1473,7 +1473,7 @@ const mockResponse = {
         event_type: {
           source_id: 2,
           field_type: "string",
-          column_size_mib: 6,
+          column_size_in_bytes: "6291456",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1483,7 +1483,7 @@ const mockResponse = {
         event_ts: {
           source_id: 3,
           field_type: "timestamptz",
-          column_size_mib: 8,
+          column_size_in_bytes: "8388608",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1493,7 +1493,7 @@ const mockResponse = {
         event_source: {
           source_id: 4,
           field_type: "string",
-          column_size_mib: 3,
+          column_size_in_bytes: "3145728",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,

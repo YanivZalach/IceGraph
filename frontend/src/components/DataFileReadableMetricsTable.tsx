@@ -9,8 +9,8 @@ interface DataFileReadableMetricsTableProps {
 }
 
 const formatMetricLabel = (metricName: string): string =>
-  metricName === "column_size_mib"
-    ? "column size (MiB)"
+  metricName === "column_size_in_bytes"
+    ? "column size"
     : metricName.replaceAll("_", " ");
 
 const DataFileReadableMetricsTable = ({
