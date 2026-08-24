@@ -1,25 +1,39 @@
 import { useState } from "react";
 
-export default function CopyIconButton({
+interface CopyIconButtonProps {
+  text: string;
+  className?: string;
+  title?: string;
+}
+
+// Ported from JSX as-is, types only. This code is weird — hand-drawn SVGs
+// instead of lucide-react, class strings instead of cn(), and the "Copied!"
+// timer is never cleaned up. Out of scope to fix here, it goes with the
+// refactor: https://github.com/YanivZalach/IceGraph/issues/100
+const CopyIconButton = ({
   text,
   className = "",
   title = "Copy value",
-}) {
+}: CopyIconButtonProps) => {
   const [copied, setCopied] = useState(false);
 
   if (!text) return null;
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(String(text));
+    void navigator.clipboard.writeText(text);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => {
+      setCopied(false);
+    }, 2000);
   };
 
   return (
     <button
       type="button"
       onClick={handleCopy}
-      onMouseDown={(e) => e.preventDefault()}
+      onMouseDown={(event) => {
+        event.preventDefault();
+      }}
       title={copied ? "Copied!" : title}
       className={`p-1 rounded border border-edge bg-surface/90 text-slate-500 hover:text-slate-300 hover:border-slate-500 transition-colors cursor-pointer ${className}`}
     >
@@ -54,4 +68,6 @@ export default function CopyIconButton({
       )}
     </button>
   );
-}
+};
+
+export default CopyIconButton;
