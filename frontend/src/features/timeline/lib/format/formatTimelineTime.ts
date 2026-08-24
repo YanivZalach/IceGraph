@@ -13,6 +13,7 @@ const NARROW_DISTANCE_OPTIONS = {
 } as const;
 
 const DAY_AND_MONTH_PATTERN = "MMM d";
+const DAY_MONTH_AND_CLOCK_PATTERN = "MMM d, HH:mm";
 const ABSOLUTE_PATTERN = "MMM d, yyyy, HH:mm:ss.SSS XXX";
 
 /**
@@ -38,7 +39,7 @@ export const formatEventTime = (timestampMs: number, nowMs: number): string => {
   const elapsedMs = Math.abs(nowMs - timestampMs);
 
   if (elapsedMs >= MILLISECONDS_PER_DAY) {
-    return format(timestampMs, DAY_AND_MONTH_PATTERN);
+    return format(timestampMs, DAY_MONTH_AND_CLOCK_PATTERN);
   }
 
   if (elapsedMs >= MILLISECONDS_PER_HOUR) {
