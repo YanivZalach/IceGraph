@@ -471,7 +471,9 @@ const SECTIONS = [
               <strong className="text-white">Data file</strong> — the actual
               Parquet, ORC, or Avro file containing your rows. IceGraph is not
               reading the data file: all of the data shown comes from the
-              manifest entries that point at it
+              manifest entries that point at it. When available, the details
+              panel also shows human-readable per-column metrics derived from
+              the manifest entry
             </li>
             <li>
               <strong className="text-white">Unreadable file</strong> — a file

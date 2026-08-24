@@ -8,11 +8,13 @@ from constants import FileType
 from extractors.data_files_extractor import DataFilesExtractor
 from collectors.utils import format_partition
 from base_classes.utils import timed
+from iceberg_ports.readable_metrics import RawFileMetrics
 
 
 @dataclass
 class HiddenDataFileMetadata(HiddenFile):
     pointing_manifests: list[Dict[str, str]]
+    raw_metrics: RawFileMetrics
 
 
 @dataclass
@@ -27,6 +29,7 @@ class DataFileRecord(BaseFile):
     split_offsets: List[int]
     key_metadata: str
     equality_ids: str
+    readable_metrics: dict
     hidden_data_file_metadata: HiddenDataFileMetadata
 
 
@@ -65,9 +68,18 @@ class CollectDataFiles(Collector):
             split_offsets=data_file_dict["split_offsets"] or [],
             key_metadata=data_file_dict["key_metadata"],
             equality_ids=data_file_dict["equality_ids"],
+            readable_metrics={},
             child_files=[],
             hidden_data_file_metadata=HiddenDataFileMetadata(
                 pointing_manifests=data_file_dict["pointing_manifests"],
+                raw_metrics=RawFileMetrics(
+                    column_sizes=data_file_dict["column_sizes"],
+                    value_counts=data_file_dict["value_counts"],
+                    null_value_counts=data_file_dict["null_value_counts"],
+                    nan_value_counts=data_file_dict["nan_value_counts"],
+                    lower_bounds=data_file_dict["lower_bounds"],
+                    upper_bounds=data_file_dict["upper_bounds"],
+                ),
             ),
         )
 
