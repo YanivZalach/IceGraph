@@ -5,6 +5,9 @@ const TINY_VALUE_SIGNIFICANT_DIGITS = 3;
 export const isByteFieldName = (fieldName: string): boolean =>
   fieldName.endsWith("bytes");
 
+export const stripByteUnitFromFieldName = (fieldName: string): string =>
+  fieldName.replace(/[-_](in[-_])?bytes$/, "");
+
 export const formatBytesAsGibibytes = (byteCount: string): string => {
   if (!byteCount) return "";
 

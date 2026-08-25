@@ -3,6 +3,7 @@ import CopyIconButton from "./CopyIconButton";
 import {
   formatBytesAsGibibytes,
   isByteFieldName,
+  stripByteUnitFromFieldName,
 } from "../shared/lib/formatBytes";
 import {
   UI_BODY_MUTED_ITALIC_CLASS,
@@ -116,10 +117,14 @@ export function PanelDetailRow({
   relaxedCollapse = false,
   collapseLineCount = DEFAULT_COLLAPSE_LINES,
 }) {
+  const isByteField = isByteFieldName(String(label));
+  const displayLabel = isByteField
+    ? stripByteUnitFromFieldName(String(label))
+    : label;
   const displayValue =
     typeof value === "object" && value !== null
       ? JSON.stringify(value, null, 2)
-      : isByteFieldName(String(label))
+      : isByteField
         ? formatBytesAsGibibytes(value)
         : value;
 
@@ -133,7 +138,9 @@ export function PanelDetailRow({
   return (
     <div>
       <div className="flex items-center justify-between mb-1 gap-2">
-        <span className={`block ${PANEL_FIELD_LABEL_CLASS}`}>{label}</span>
+        <span className={`block ${PANEL_FIELD_LABEL_CLASS}`}>
+          {displayLabel}
+        </span>
         {isCollapsible && (
           <button
             type="button"
