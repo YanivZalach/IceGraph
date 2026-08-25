@@ -1,6 +1,7 @@
 import { useState } from "react";
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import CopyIconButton from "./CopyIconButton";
+import PanelSubtitle from "./PanelSubtitle";
 import {
   formatBytesAsMebibytes,
   isByteFieldName,
@@ -16,8 +17,7 @@ import {
 export const PANEL_TITLE_CLASS =
   "text-base font-bold uppercase tracking-wide text-ink leading-snug";
 
-export const PANEL_SUBTITLE_CLASS =
-  "text-sm font-mono text-slate-400 mt-1 break-words";
+export { PANEL_SUBTITLE_CLASS } from "./PanelSubtitle";
 
 export const PANEL_META_CLASS = "text-sm text-ink mt-1";
 
@@ -54,13 +54,6 @@ export const PANEL_DIFF_AFTER_VALUE_CLASS = `${PANEL_DIFF_VALUE_BASE_CLASS} bg-g
 export const DEFAULT_COLLAPSE_LINES = 15;
 
 const colorParseContext = document.createElement("canvas").getContext("2d");
-const PRESERVED_SUBTITLE_STYLE: CSSProperties = {
-  direction: "rtl",
-  textAlign: "left",
-  textOverflow: "ellipsis",
-};
-const LEFT_TO_RIGHT_EMBEDDING = "\u202A";
-const POP_DIRECTIONAL_FORMATTING = "\u202C";
 
 const stripAlpha = (color: string | null): string | null => {
   if (color === null || colorParseContext === null) return color;
@@ -72,20 +65,6 @@ const stripAlpha = (color: string | null): string | null => {
   return match
     ? `rgb(${String(match[1])}, ${String(match[2])}, ${String(match[3])})`
     : normalizedColor;
-};
-
-const renderBreakablePath = (path: string) => {
-  const segments = path.split("/");
-  return segments.map((segment, i) => (
-    <span key={i}>
-      {segment}
-      {i < segments.length - 1 ? (
-        <>
-          /<wbr />
-        </>
-      ) : null}
-    </span>
-  ));
 };
 
 interface PanelHeaderProps {
@@ -113,19 +92,7 @@ export const PanelHeader = ({
         {title}
       </div>
       {subtitle ? (
-        preserveSubtitleEnd ? (
-          <div
-            className={`${PANEL_SUBTITLE_CLASS} overflow-hidden text-ellipsis whitespace-nowrap text-left`}
-            style={PRESERVED_SUBTITLE_STYLE}
-            title={subtitle}
-          >
-            {LEFT_TO_RIGHT_EMBEDDING + subtitle + POP_DIRECTIONAL_FORMATTING}
-          </div>
-        ) : (
-          <div className={PANEL_SUBTITLE_CLASS}>
-            {renderBreakablePath(subtitle)}
-          </div>
-        )
+        <PanelSubtitle preserveEnd={preserveSubtitleEnd} subtitle={subtitle} />
       ) : null}
       {meta ? <div className={PANEL_META_CLASS}>{meta}</div> : null}
     </div>
@@ -161,11 +128,8 @@ export const PanelDetailRow = ({
   relaxedCollapse = false,
   collapseLineCount = DEFAULT_COLLAPSE_LINES,
 }: PanelDetailRowProps) => {
-  const isByteField =
-    typeof label === "string" && isByteFieldName(String(label));
-  const displayLabel = isByteField
-    ? stripByteUnitFromFieldName(String(label))
-    : label;
+  const isByteField = typeof label === "string" && isByteFieldName(label);
+  const displayLabel = isByteField ? stripByteUnitFromFieldName(label) : label;
   const textToCopy = (() => {
     if (value === null || value === undefined || value === "") return "";
     if (typeof value === "object") return JSON.stringify(value, null, 2);

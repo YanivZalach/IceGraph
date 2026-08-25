@@ -22,6 +22,27 @@ const optionalNumericValueSchema = numericValueSchema
   .transform((value) => value ?? undefined)
   .optional();
 
+const optionalStringValueSchema = z
+  .string()
+  .nullish()
+  .transform((value) => value ?? undefined)
+  .optional();
+
+const readableColumnMetricsSchema = z
+  .object({
+    source_id: z.union([z.string(), z.number()]),
+    field_type: z.string(),
+    column_size_in_bytes: z.string().nullish(),
+    value_count: z.number().nullish(),
+    null_value_count: z.number().nullish(),
+    nan_value_count: z.number().nullish(),
+    lower_bound: z.unknown().optional(),
+    upper_bound: z.unknown().optional(),
+  })
+  .catchall(z.unknown());
+
+const readableMetricsSchema = z.record(z.string(), readableColumnMetricsSchema);
+
 const referenceSchema = z
   .object({
     type: z.string(),
@@ -40,7 +61,8 @@ export const fileDetailsSchema = z
     earliest_appearing_snapshot_timestamp: z.string().nullish(),
     format: z.string().optional(),
     refs: z.record(z.string(), referenceSchema).optional(),
-    size_gb: optionalNumericValueSchema,
+    file_size_in_bytes: optionalStringValueSchema,
+    readable_metrics: readableMetricsSchema.optional(),
     row_count: optionalNumericValueSchema,
   })
   .catchall(z.unknown());

@@ -1,4 +1,4 @@
-import { formatByteSize } from "../model";
+import { formatBytesAsMebibytes } from "../../../shared/lib/formatBytes";
 import type { FileStatistics } from "../types";
 
 interface FileTreeStatisticsProps {
@@ -6,11 +6,13 @@ interface FileTreeStatisticsProps {
 }
 
 const FileTreeStatistics = ({ statistics }: FileTreeStatisticsProps) => {
+  const formatByteCount = (byteCount: number): string =>
+    formatBytesAsMebibytes(String(byteCount));
   const rows = [
-    ["Total size", formatByteSize(statistics.totalSizeBytes)],
-    ["Average size", formatByteSize(statistics.averageSizeBytes)],
-    ["Smallest file", formatByteSize(statistics.smallestSizeBytes)],
-    ["Largest file", formatByteSize(statistics.largestSizeBytes)],
+    ["Total size", formatByteCount(statistics.totalSizeBytes)],
+    ["Average size", formatByteCount(statistics.averageSizeBytes)],
+    ["Smallest file", formatByteCount(statistics.smallestSizeBytes)],
+    ["Largest file", formatByteCount(statistics.largestSizeBytes)],
     ["Rows", statistics.totalRowCount.toLocaleString()],
     ["Files", statistics.fileCount.toLocaleString()],
   ];

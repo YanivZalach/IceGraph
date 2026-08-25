@@ -1,4 +1,5 @@
 import type { GraphNode } from "./schemas";
+import type { ReadableMetrics } from "../../utils/readableMetrics";
 
 export type DataFileType = "data" | "position_delete" | "equality_delete";
 export type FileTreeViewMode = "flat" | "tree";
@@ -17,8 +18,10 @@ export interface FileStatistics {
   dataFileCount: number;
   equalityDeleteFileCount: number;
   fileCount: number;
+  hasCompleteFileSizes: boolean;
   largestSizeBytes: number;
   positionDeleteFileCount: number;
+  readableMetrics: ReadableMetrics;
   smallestSizeBytes: number;
   totalRowCount: number;
   totalSizeBytes: number;

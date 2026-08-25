@@ -1,18 +1,11 @@
 import { useState } from "react";
 import type { CSSProperties, MouseEvent } from "react";
-import { fileTypeLabel } from "../../../graphConstants.js";
-import {
-  PanelDetailRow,
-  PanelHeader,
-  PanelSectionTitle,
-} from "../../../components/PanelContent";
-import { isEmptyValue } from "../../../shared/lib/isEmptyValue";
+import { PanelHeader } from "../../../components/PanelContent";
 import SidePanelFrame, {
   SidePanelResizeHandle,
 } from "../../../components/SidePanelFrame";
-import { formatByteSize, getFileSizeBytes } from "../model";
 import type { InspectedFileTreeItem } from "../types";
-import FileTreeStatistics from "./FileTreeStatistics";
+import FileTreeInspectorContent from "./FileTreeInspectorContent";
 
 interface FileTreeInspectorProps {
   duplicatingNodeId: string | null;
@@ -28,20 +21,6 @@ interface FileTreeInspectorStyle extends CSSProperties {
 
 const PANEL_ACCENT = "#2e86c1";
 const PANEL_MIN_WIDTH_PX = 320;
-
-const humanizeKey = (key: string): string =>
-  key
-    .replaceAll("_", " ")
-    .replaceAll("-", " ")
-    .replace(/^./, (firstCharacter) => firstCharacter.toUpperCase());
-
-const FILE_SUMMARY_KEYS = new Set([
-  "file_path",
-  "format",
-  "row_count",
-  "size_gb",
-  "type",
-]);
 
 const FileTreeInspector = ({
   duplicatingNodeId,
@@ -62,36 +41,6 @@ const FileTreeInspector = ({
       : inspectedItem.kind === "partition-path"
         ? inspectedItem.partitionPathNode.path
         : inspectedItem.partition.name;
-  const statistics =
-    inspectedItem.kind === "partition-path"
-      ? inspectedItem.partitionPathNode.statistics
-      : inspectedItem.kind === "partition"
-        ? inspectedItem.partition.statistics
-        : null;
-  const fileSummaryRows =
-    inspectedItem.kind === "file"
-      ? [
-          inspectedItem.file.details.size_gb === undefined
-            ? null
-            : [
-                "File size",
-                formatByteSize(getFileSizeBytes(inspectedItem.file)),
-              ],
-          inspectedItem.file.details.row_count === undefined
-            ? null
-            : ["Rows", inspectedItem.file.details.row_count.toLocaleString()],
-          inspectedItem.file.details.format === undefined
-            ? null
-            : ["Format", inspectedItem.file.details.format],
-          ["File type", fileTypeLabel(inspectedItem.file.type)],
-        ].filter((row): row is [string, string] => row !== null)
-      : [];
-  const fileDetailRows =
-    inspectedItem.kind === "file"
-      ? Object.entries(inspectedItem.file.details).filter(
-          ([key, value]) => !FILE_SUMMARY_KEYS.has(key) && !isEmptyValue(value),
-        )
-      : [];
   const panelStyle: FileTreeInspectorStyle = {
     "--file-tree-inspector-width":
       panelWidthPx === null ? "38%" : `${String(panelWidthPx)}px`,
@@ -158,51 +107,11 @@ const FileTreeInspector = ({
       onClose={onClose}
       style={panelStyle}
     >
-      {inspectedItem.kind === "file" ? (
-        <section>
-          <PanelSectionTitle className="mb-3">File summary</PanelSectionTitle>
-          <div className="flex flex-col gap-3">
-            {fileSummaryRows.map(([label, value]) => (
-              <PanelDetailRow key={label} label={label} value={value} />
-            ))}
-          </div>
-        </section>
-      ) : statistics !== null ? (
-        <FileTreeStatistics statistics={statistics} />
-      ) : null}
-      {inspectedItem.kind === "file" && (
-        <>
-          <div className="flex justify-center border-y border-edge py-4">
-            <button
-              type="button"
-              onClick={(event) => {
-                onViewInGraph(event, inspectedItem.file.id);
-              }}
-              disabled={duplicatingNodeId !== null}
-              className="w-full cursor-pointer rounded-lg border border-accent px-3 py-2 text-xs font-bold uppercase tracking-wide text-accent hover:bg-accent-muted disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {duplicatingNodeId === inspectedItem.file.id
-                ? "Opening..."
-                : "View in graph"}
-            </button>
-          </div>
-          <section>
-            <PanelSectionTitle className="mb-3">
-              File information
-            </PanelSectionTitle>
-            <div className="flex flex-col gap-3">
-              <PanelDetailRow label="File path" value={inspectedItem.file.id} />
-              {fileDetailRows.map(([key, value]) => (
-                <PanelDetailRow
-                  key={key}
-                  label={humanizeKey(key)}
-                  value={value}
-                />
-              ))}
-            </div>
-          </section>
-        </>
-      )}
+      <FileTreeInspectorContent
+        duplicatingNodeId={duplicatingNodeId}
+        inspectedItem={inspectedItem}
+        onViewInGraph={onViewInGraph}
+      />
     </SidePanelFrame>
   );
 };

@@ -4,9 +4,15 @@ import {
   type ReadableMetrics,
 } from "../utils/readableMetrics";
 import { stripByteUnitFromFieldName } from "../shared/lib/formatBytes";
+import {
+  calculateReadableColumnStatistics,
+  formatAverageBytesPerValue,
+  formatMetricPercentage,
+} from "../utils/readableMetricsStatistics";
 
 interface DataFileReadableMetricsTableProps {
   readableMetrics: ReadableMetrics;
+  title?: string;
 }
 
 const formatMetricLabel = (metricName: string): string =>
@@ -14,9 +20,16 @@ const formatMetricLabel = (metricName: string): string =>
 
 const DataFileReadableMetricsTable = ({
   readableMetrics,
+  title = "Readable Metrics",
 }: DataFileReadableMetricsTableProps) => {
   const columns = Object.entries(readableMetrics);
   if (columns.length === 0) return null;
+  const statisticsByColumnName = new Map(
+    calculateReadableColumnStatistics(readableMetrics).map((statistics) => [
+      statistics.columnName,
+      statistics,
+    ]),
+  );
 
   const metricNames = [
     ...new Set(columns.flatMap(([, metrics]) => Object.keys(metrics))),
@@ -24,7 +37,7 @@ const DataFileReadableMetricsTable = ({
 
   return (
     <div>
-      <PanelSectionTitle>Readable Metrics</PanelSectionTitle>
+      <PanelSectionTitle>{title}</PanelSectionTitle>
       <div className="overflow-x-auto rounded-lg border border-edge">
         <table className="w-full text-left font-mono text-xs text-slate-200">
           <thead className="bg-surface text-slate-400">
@@ -35,6 +48,10 @@ const DataFileReadableMetricsTable = ({
                   {formatMetricLabel(metricName)}
                 </th>
               ))}
+              <th className="px-3 py-2 font-semibold">null %</th>
+              <th className="px-3 py-2 font-semibold">NaN %</th>
+              <th className="px-3 py-2 font-semibold">average bytes / value</th>
+              <th className="px-3 py-2 font-semibold">column size %</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-edge">
@@ -52,6 +69,30 @@ const DataFileReadableMetricsTable = ({
                     )}
                   </td>
                 ))}
+                <td className="whitespace-nowrap px-3 py-2">
+                  {formatMetricPercentage(
+                    statisticsByColumnName.get(columnName)?.nullPercentage ??
+                      null,
+                  )}
+                </td>
+                <td className="whitespace-nowrap px-3 py-2">
+                  {formatMetricPercentage(
+                    statisticsByColumnName.get(columnName)?.nanPercentage ??
+                      null,
+                  )}
+                </td>
+                <td className="whitespace-nowrap px-3 py-2">
+                  {formatAverageBytesPerValue(
+                    statisticsByColumnName.get(columnName)
+                      ?.averageBytesPerValue ?? null,
+                  )}
+                </td>
+                <td className="whitespace-nowrap px-3 py-2">
+                  {formatMetricPercentage(
+                    statisticsByColumnName.get(columnName)
+                      ?.columnSizePercentage ?? null,
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

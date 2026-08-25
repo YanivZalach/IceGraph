@@ -431,6 +431,16 @@ const SECTIONS = [
           <li>Expand directories to see individual files</li>
           <li>Choose a branch, and within it, a snapshot to explore</li>
           <li>
+            Switch between every file in a snapshot and only files added by the
+            selected commit
+          </li>
+          <li>
+            Select a file, partition, or partition-path step to inspect file
+            counts, sizes, rows, and readable per-column metrics, including null
+            and NaN percentages, average bytes per value, column-size share,
+            inferred metadata size, and largest or smallest column summaries
+          </li>
+          <li>
             If the selected snapshot or one of its included files could not be
             read, an error notice identifies the file and explains why
           </li>
@@ -486,7 +496,8 @@ const SECTIONS = [
               reading the data file: all of the data shown comes from the
               manifest entries that point at it. When available, the details
               panel also shows human-readable per-column metrics derived from
-              the manifest entry
+              the manifest entry, including the inferred metadata size that is
+              not represented by reported column sizes
             </li>
             <li>
               <strong className="text-white">Unreadable file</strong> — a file
