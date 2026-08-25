@@ -11,8 +11,8 @@ import type {
   SnapshotNode,
 } from "./types";
 import { fileTypeLabel } from "../../graphConstants.js";
+import { aggregateReadableMetrics } from "./readableMetrics";
 
-const BYTES_PER_GIBIBYTE = 1024 ** 3;
 const DATA_FILE_TYPES = new Set<DataFileType>([
   "data",
   "position_delete",
@@ -221,21 +221,24 @@ export const getSnapshotFiles = (
 export const calculateFileStatistics = (
   files: DataFileNode[],
 ): FileStatistics => {
-  const fileSizes = files.map(
-    (file) => (file.details.size_gb ?? 0) * BYTES_PER_GIBIBYTE,
-  );
+  const fileSizes = files
+    .map(getFileSizeBytes)
+    .filter((fileSize): fileSize is number => fileSize !== null);
   const totalSizeBytes = fileSizes.reduce((total, size) => total + size, 0);
   return {
-    averageSizeBytes: files.length === 0 ? 0 : totalSizeBytes / files.length,
+    averageSizeBytes:
+      fileSizes.length === 0 ? 0 : totalSizeBytes / fileSizes.length,
     dataFileCount: files.filter((file) => file.type === "data").length,
     equalityDeleteFileCount: files.filter(
       (file) => file.type === "equality_delete",
     ).length,
     fileCount: files.length,
+    hasCompleteFileSizes: fileSizes.length === files.length,
     largestSizeBytes: fileSizes.length === 0 ? 0 : Math.max(...fileSizes),
     positionDeleteFileCount: files.filter(
       (file) => file.type === "position_delete",
     ).length,
+    readableMetrics: aggregateReadableMetrics(files),
     smallestSizeBytes: fileSizes.length === 0 ? 0 : Math.min(...fileSizes),
     totalRowCount: files.reduce(
       (total, file) => total + (file.details.row_count ?? 0),
@@ -245,8 +248,14 @@ export const calculateFileStatistics = (
   };
 };
 
-export const getFileSizeBytes = (file: DataFileNode): number =>
-  (file.details.size_gb ?? 0) * BYTES_PER_GIBIBYTE;
+export const getFileSizeBytes = (file: DataFileNode): number | null => {
+  const rawFileSize = file.details.file_size_in_bytes;
+  if (rawFileSize === undefined) return null;
+  const fileSizeBytes = Number(rawFileSize);
+  return Number.isFinite(fileSizeBytes) && fileSizeBytes >= 0
+    ? fileSizeBytes
+    : null;
+};
 
 export const formatSnapshotVersion = (
   snapshot: SnapshotNode,
@@ -395,17 +404,4 @@ export const getSnapshotFileErrors = (
     }
   }
   return errors;
-};
-
-export const formatByteSize = (sizeBytes: number): string => {
-  if (sizeBytes === 0) return "0 B";
-  const units = ["B", "KB", "MB", "GB", "TB"];
-  const unitIndex = Math.min(
-    Math.floor(Math.log(sizeBytes) / Math.log(1024)),
-    units.length - 1,
-  );
-  const unit = units[unitIndex];
-  if (unit === undefined) return `${String(Math.round(sizeBytes))} B`;
-  const value = sizeBytes / 1024 ** unitIndex;
-  return `${value.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${unit}`;
 };

@@ -1,10 +1,10 @@
-import { useOutletContext } from "react-router-dom";
+import { useTableGraphData } from "../features/table/tableGraphData";
 import PanelIssueNotice from "../components/PanelIssueNotice";
 import FileTreeView from "../features/fileTree/FileTreeView";
 import { fileTreeContextSchema } from "../features/fileTree/schemas";
 
 const FileTreePage = () => {
-  const rawGraphData: unknown = useOutletContext();
+  const rawGraphData: unknown = useTableGraphData();
   const graphDataResult = fileTreeContextSchema.safeParse(rawGraphData);
   if (!graphDataResult.success) {
     const validationErrors = graphDataResult.error.issues
