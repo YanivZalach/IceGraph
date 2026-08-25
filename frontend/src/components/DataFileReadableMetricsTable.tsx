@@ -3,15 +3,14 @@ import {
   formatReadableMetricValue,
   type ReadableMetrics,
 } from "../utils/readableMetrics";
+import { stripByteUnitFromFieldName } from "../shared/lib/formatBytes";
 
 interface DataFileReadableMetricsTableProps {
   readableMetrics: ReadableMetrics;
 }
 
 const formatMetricLabel = (metricName: string): string =>
-  metricName === "column_size_mib"
-    ? "column size (MiB)"
-    : metricName.replaceAll("_", " ");
+  stripByteUnitFromFieldName(metricName).replaceAll("_", " ");
 
 const DataFileReadableMetricsTable = ({
   readableMetrics,

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTableGraphData } from "../features/table/tableGraphData";
 import JSONbig from "json-bigint";
 import CopyableValue from "../components/CopyableValue";
+import { formatBytesAsGibibytes } from "../shared/lib/formatBytes";
 import {
   DEFAULT_COLLAPSE_LINES,
   PANEL_COLLAPSE_TOGGLE_CLASS,
@@ -245,7 +246,12 @@ export default function MetadataPage() {
                 />
                 <KV label="Total Records" value={getStat("total-records")} />
                 <KV label="Data Files" value={getStat("total-data-files")} />
-                <KV label="Table Size" value={getStat("total-files-size")} />
+                <KV
+                  label="Table Size"
+                  value={formatBytesAsGibibytes(
+                    getStat("total-files-size-bytes"),
+                  )}
+                />
                 <KV
                   label="Delete Files"
                   value={getStat("total-delete-files")}

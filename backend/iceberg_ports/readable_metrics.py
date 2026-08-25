@@ -10,7 +10,6 @@ from iceberg_ports.iceberg_bound_decoder import decode_iceberg_bound
 
 RawMetricMap = Optional[list[Dict[str, Any]]]
 MetricMap = Optional[Dict[int, Any]]
-BYTES_PER_MIB = 1024 * 1024
 
 
 @dataclass(frozen=True)
@@ -64,7 +63,7 @@ class ReadableMetricsConverter:
             field.qualified_name: {
                 "source_id": field.field_id,
                 "field_type": field.field_type,
-                "column_size_mib": self._column_size_mib(metrics.column_sizes, field.field_id),
+                "column_size_in_bytes": self._column_size_in_bytes(metrics.column_sizes, field.field_id),
                 "value_count": self._metric_value(metrics.value_counts, field.field_id),
                 "null_value_count": self._metric_value(metrics.null_value_counts, field.field_id),
                 "nan_value_count": self._metric_value(metrics.nan_value_counts, field.field_id),
@@ -164,12 +163,12 @@ class ReadableMetricsConverter:
         return metric_map.get(field_id)
 
     @classmethod
-    def _column_size_mib(cls, column_sizes: MetricMap, field_id: int):
+    def _column_size_in_bytes(cls, column_sizes: MetricMap, field_id: int):
         column_size_bytes = cls._metric_value(column_sizes, field_id)
         if column_size_bytes is None:
             return None
 
-        return column_size_bytes / BYTES_PER_MIB
+        return str(column_size_bytes)
 
     def _decode_metric_bound(self, bounds: MetricMap, field: PrimitiveField):
         encoded_bound = self._metric_value(bounds, field.field_id)

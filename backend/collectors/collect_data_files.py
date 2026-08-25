@@ -20,7 +20,7 @@ class HiddenDataFileMetadata(HiddenFile):
 @dataclass
 class DataFileRecord(BaseFile):
     format: str
-    size_gb: str
+    file_size_in_bytes: str
     row_count: int
     partition: str
     earliest_appearing_snapshot_id: int
@@ -59,7 +59,7 @@ class CollectDataFiles(Collector):
             type=self._detect_file_type(data_file_dict["content"]),
             file_path=data_file_dict["file_path"],
             format=data_file_dict["file_format"],
-            size_gb=f"{(data_file_dict['file_size_in_bytes'] / 1024**3):.10f}",
+            file_size_in_bytes=str(data_file_dict["file_size_in_bytes"]),
             row_count=data_file_dict["record_count"],
             partition=format_partition(data_file_dict["partition"]),
             earliest_appearing_snapshot_id=data_file_dict["earliest_snapshot_id"],

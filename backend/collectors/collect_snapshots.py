@@ -65,8 +65,15 @@ class CollectSnapshots(Collector):
             raise ValueError(f"Too many snapshots to compute. Maximum is {Env.MAX_SNAPSHOTS_TO_COMPUTE}.")
 
     @staticmethod
-    def _format_summary(summary: dict) -> dict:
-        return {k: (f"{(int(v) / (1024**3)):.5f} GB" if k.endswith("files-size") else v) for k, v in summary.items()}
+    def _format_summary(summary: Dict[str, str]) -> Dict[str, str]:
+        formatted = {}
+        for key, value in summary.items():
+            if key.endswith("files-size"):
+                formatted[f"{key}-bytes"] = str(value)
+            else:
+                formatted[key] = value
+
+        return formatted
 
     def _parse_snapshot_row(self, snapshot) -> SnapshotRecord:
         return SnapshotRecord(

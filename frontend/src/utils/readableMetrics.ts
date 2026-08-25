@@ -1,4 +1,5 @@
 import { formatLocaleDateTime, parseUtcDate } from "./dateUtils.js";
+import { formatBytesAsMebibytes } from "../shared/lib/formatBytes";
 
 const LOCAL_TIMESTAMP_FIELD_TYPES = new Set<string>([
   "timestamp",
@@ -23,14 +24,8 @@ export const formatReadableMetricValue = (
 ): string => {
   if (value == null || value === "") return "-";
 
-  if (metricName === "column_size_mib") {
-    const numericValue = Number(value);
-    if (Number.isFinite(numericValue)) {
-      return numericValue.toLocaleString("en-US", {
-        maximumFractionDigits: 20,
-        useGrouping: false,
-      });
-    }
+  if (metricName === "column_size_in_bytes" && typeof value === "string") {
+    return formatBytesAsMebibytes(value);
   }
 
   if (

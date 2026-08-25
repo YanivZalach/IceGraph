@@ -422,10 +422,10 @@ const mockResponse = {
           "If you have found me, you are searching through IceGraph and doing a great job!",
         "added-data-files": "3",
         "added-records": "12",
-        "added-files-size": "0.00000 GB",
+        "added-files-size-bytes": "0",
         "changed-partition-count": "3",
         "total-records": "19",
-        "total-files-size": "0.00001 GB",
+        "total-files-size-bytes": "10737",
         "total-data-files": "10",
         "total-delete-files": "0",
         "total-position-deletes": "0",
@@ -454,10 +454,10 @@ const mockResponse = {
         "replace-partitions": "true",
         "added-data-files": "2",
         "added-records": "3",
-        "added-files-size": "0.00000 GB",
+        "added-files-size-bytes": "0",
         "changed-partition-count": "2",
         "total-records": "10",
-        "total-files-size": "0.00001 GB",
+        "total-files-size-bytes": "10737",
         "total-data-files": "9",
         "total-delete-files": "0",
         "total-position-deletes": "0",
@@ -488,11 +488,11 @@ const mockResponse = {
         "deleted-data-files": "1",
         "added-records": "2",
         "deleted-records": "2",
-        "added-files-size": "0.00000 GB",
-        "removed-files-size": "0.00000 GB",
+        "added-files-size-bytes": "0",
+        "removed-files-size-bytes": "0",
         "changed-partition-count": "2",
         "total-records": "7",
-        "total-files-size": "0.00001 GB",
+        "total-files-size-bytes": "10737",
         "total-data-files": "7",
         "total-delete-files": "0",
         "total-position-deletes": "0",
@@ -519,10 +519,10 @@ const mockResponse = {
         "spark.app.id": "local-1781260329809",
         "added-data-files": "2",
         "added-records": "2",
-        "added-files-size": "0.00000 GB",
+        "added-files-size-bytes": "0",
         "changed-partition-count": "2",
         "total-records": "7",
-        "total-files-size": "0.00001 GB",
+        "total-files-size-bytes": "10737",
         "total-data-files": "6",
         "total-delete-files": "0",
         "total-position-deletes": "0",
@@ -548,10 +548,10 @@ const mockResponse = {
         "spark.app.id": "local-1781260329646",
         "added-data-files": "2",
         "added-records": "2",
-        "added-files-size": "0.00000 GB",
+        "added-files-size-bytes": "0",
         "changed-partition-count": "2",
         "total-records": "5",
-        "total-files-size": "0.00000 GB",
+        "total-files-size-bytes": "0",
         "total-data-files": "4",
         "total-delete-files": "0",
         "total-position-deletes": "0",
@@ -577,10 +577,10 @@ const mockResponse = {
         "replace-partitions": "true",
         "added-data-files": "2",
         "added-records": "3",
-        "added-files-size": "0.00000 GB",
+        "added-files-size-bytes": "0",
         "changed-partition-count": "2",
         "total-records": "3",
-        "total-files-size": "0.00000 GB",
+        "total-files-size-bytes": "0",
         "total-data-files": "2",
         "total-delete-files": "0",
         "total-position-deletes": "0",
@@ -746,7 +746,7 @@ const mockResponse = {
       file_path:
         "/warehouse/default/events/data/event_ts_hour=2025-06-15-12/event_name=experiment/00000-33-a03e3636-d49e-4bfd-b6ea-e4e0aeda67b9-00001.parquet",
       format: "PARQUET",
-      size_gb: "0.0000013513",
+      file_size_in_bytes: "1451",
       row_count: 10,
       partition:
         "event_ts_hour = 2025-06-15 12 (486108), event_name = experiment",
@@ -760,7 +760,7 @@ const mockResponse = {
         event_id: {
           source_id: 1,
           field_type: "int",
-          column_size_mib: 40,
+          column_size_in_bytes: "41943040",
           value_count: 10,
           null_value_count: 0,
           nan_value_count: null,
@@ -770,7 +770,7 @@ const mockResponse = {
         event_type: {
           source_id: 2,
           field_type: "string",
-          column_size_mib: 100,
+          column_size_in_bytes: "104857600",
           value_count: 10,
           null_value_count: 0,
           nan_value_count: null,
@@ -780,7 +780,7 @@ const mockResponse = {
         event_ts: {
           source_id: 3,
           field_type: "timestamptz",
-          column_size_mib: 80,
+          column_size_in_bytes: "83886080",
           value_count: 10,
           null_value_count: 0,
           nan_value_count: null,
@@ -790,7 +790,7 @@ const mockResponse = {
         event_source: {
           source_id: 4,
           field_type: "string",
-          column_size_mib: 30,
+          column_size_in_bytes: "31457280",
           value_count: 10,
           null_value_count: 0,
           nan_value_count: null,
@@ -805,7 +805,7 @@ const mockResponse = {
       file_path:
         "/warehouse/default/events/data/event_ts_hour=2025-06-15-12/event_name=experiment1/00000-33-a03e3636-d49e-4bfd-b6ea-e4e0aeda67b9-00002.parquet",
       format: "PARQUET",
-      size_gb: "0.0000011753",
+      file_size_in_bytes: "1262",
       row_count: 1,
       partition:
         "event_ts_hour = 2025-06-15 12 (486108), event_name = experiment1",
@@ -819,7 +819,7 @@ const mockResponse = {
         event_id: {
           source_id: 1,
           field_type: "int",
-          column_size_mib: 4,
+          column_size_in_bytes: "4194304",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -829,7 +829,7 @@ const mockResponse = {
         event_type: {
           source_id: 2,
           field_type: "string",
-          column_size_mib: 11,
+          column_size_in_bytes: "11534336",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -839,7 +839,7 @@ const mockResponse = {
         event_ts: {
           source_id: 3,
           field_type: "timestamptz",
-          column_size_mib: 8,
+          column_size_in_bytes: "8388608",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -849,7 +849,7 @@ const mockResponse = {
         event_source: {
           source_id: 4,
           field_type: "string",
-          column_size_mib: 3,
+          column_size_in_bytes: "3145728",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -864,7 +864,7 @@ const mockResponse = {
       file_path:
         "/warehouse/default/events/data/event_ts_hour=2025-06-15-12/event_name=experiment2/00000-33-a03e3636-d49e-4bfd-b6ea-e4e0aeda67b9-00003.parquet",
       format: "PARQUET",
-      size_gb: "0.0000011753",
+      file_size_in_bytes: "1262",
       row_count: 1,
       partition:
         "event_ts_hour = 2025-06-15 12 (486108), event_name = experiment2",
@@ -878,7 +878,7 @@ const mockResponse = {
         event_id: {
           source_id: 1,
           field_type: "int",
-          column_size_mib: 4,
+          column_size_in_bytes: "4194304",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -888,7 +888,7 @@ const mockResponse = {
         event_type: {
           source_id: 2,
           field_type: "string",
-          column_size_mib: 11,
+          column_size_in_bytes: "11534336",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -898,7 +898,7 @@ const mockResponse = {
         event_ts: {
           source_id: 3,
           field_type: "timestamptz",
-          column_size_mib: 8,
+          column_size_in_bytes: "8388608",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -908,7 +908,7 @@ const mockResponse = {
         event_source: {
           source_id: 4,
           field_type: "string",
-          column_size_mib: 3,
+          column_size_in_bytes: "3145728",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -923,7 +923,7 @@ const mockResponse = {
       file_path:
         "/warehouse/default/events/data/event_ts_hour=2025-06-15-13/event_name=audit_fix/00000-22-aaa3b40a-e82d-4c85-9345-369325315d3e-00001.parquet",
       format: "PARQUET",
-      size_gb: "0.0000011688",
+      file_size_in_bytes: "1255",
       row_count: 1,
       partition:
         "event_ts_hour = 2025-06-15 13 (486109), event_name = audit_fix",
@@ -937,7 +937,7 @@ const mockResponse = {
         event_id: {
           source_id: 1,
           field_type: "int",
-          column_size_mib: 4,
+          column_size_in_bytes: "4194304",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -947,7 +947,7 @@ const mockResponse = {
         event_type: {
           source_id: 2,
           field_type: "string",
-          column_size_mib: 9,
+          column_size_in_bytes: "9437184",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -957,7 +957,7 @@ const mockResponse = {
         event_ts: {
           source_id: 3,
           field_type: "timestamptz",
-          column_size_mib: 8,
+          column_size_in_bytes: "8388608",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -967,7 +967,7 @@ const mockResponse = {
         event_source: {
           source_id: 4,
           field_type: "string",
-          column_size_mib: 5,
+          column_size_in_bytes: "5242880",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -982,7 +982,7 @@ const mockResponse = {
       file_path:
         "/warehouse/default/events/data/event_ts_hour=2025-06-15-13/event_name=audit_review/00000-22-aaa3b40a-e82d-4c85-9345-369325315d3e-00002.parquet",
       format: "PARQUET",
-      size_gb: "0.0000013439",
+      file_size_in_bytes: "1443",
       row_count: 2,
       partition:
         "event_ts_hour = 2025-06-15 13 (486109), event_name = audit_review",
@@ -996,7 +996,7 @@ const mockResponse = {
         event_id: {
           source_id: 1,
           field_type: "int",
-          column_size_mib: 8,
+          column_size_in_bytes: "8388608",
           value_count: 2,
           null_value_count: 0,
           nan_value_count: null,
@@ -1006,7 +1006,7 @@ const mockResponse = {
         event_type: {
           source_id: 2,
           field_type: "string",
-          column_size_mib: 24,
+          column_size_in_bytes: "25165824",
           value_count: 2,
           null_value_count: 0,
           nan_value_count: null,
@@ -1016,7 +1016,7 @@ const mockResponse = {
         event_ts: {
           source_id: 3,
           field_type: "timestamptz",
-          column_size_mib: 16,
+          column_size_in_bytes: "16777216",
           value_count: 2,
           null_value_count: 0,
           nan_value_count: null,
@@ -1026,7 +1026,7 @@ const mockResponse = {
         event_source: {
           source_id: 4,
           field_type: "string",
-          column_size_mib: 10,
+          column_size_in_bytes: "10485760",
           value_count: 2,
           null_value_count: 0,
           nan_value_count: null,
@@ -1041,7 +1041,7 @@ const mockResponse = {
       file_path:
         "/warehouse/default/events/data/event_ts_hour=2025-06-15-10/event_name=corrected_login/00000-16-00b99685-7437-4e54-aa12-46ca9ce83e02-00001.parquet",
       format: "PARQUET",
-      size_gb: "0.0000011949",
+      file_size_in_bytes: "1283",
       row_count: 1,
       partition:
         "event_ts_hour = 2025-06-15 10 (486106), event_name = corrected_login",
@@ -1055,7 +1055,7 @@ const mockResponse = {
         event_id: {
           source_id: 1,
           field_type: "int",
-          column_size_mib: 4,
+          column_size_in_bytes: "4194304",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1065,7 +1065,7 @@ const mockResponse = {
         event_type: {
           source_id: 2,
           field_type: "string",
-          column_size_mib: 15,
+          column_size_in_bytes: "15728640",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1075,7 +1075,7 @@ const mockResponse = {
         event_ts: {
           source_id: 3,
           field_type: "timestamptz",
-          column_size_mib: 8,
+          column_size_in_bytes: "8388608",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1085,7 +1085,7 @@ const mockResponse = {
         event_source: {
           source_id: 4,
           field_type: "string",
-          column_size_mib: 10,
+          column_size_in_bytes: "10485760",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1100,7 +1100,7 @@ const mockResponse = {
       file_path:
         "/warehouse/default/events/data/event_ts_hour=2025-06-15-10/event_name=corrected_login/00000-3-e1d3c7ba-9be9-416d-9f20-e46f50f81826-00001.parquet",
       format: "PARQUET",
-      size_gb: "0.0000010114",
+      file_size_in_bytes: "1086",
       row_count: 2,
       partition:
         "event_ts_hour = 2025-06-15 10 (486106), event_name = corrected_login",
@@ -1114,7 +1114,7 @@ const mockResponse = {
         event_id: {
           source_id: 1,
           field_type: "int",
-          column_size_mib: 8,
+          column_size_in_bytes: "8388608",
           value_count: 2,
           null_value_count: 0,
           nan_value_count: null,
@@ -1124,7 +1124,7 @@ const mockResponse = {
         event_type: {
           source_id: 2,
           field_type: "string",
-          column_size_mib: 30,
+          column_size_in_bytes: "31457280",
           value_count: 2,
           null_value_count: 0,
           nan_value_count: null,
@@ -1134,7 +1134,7 @@ const mockResponse = {
         event_ts: {
           source_id: 3,
           field_type: "timestamptz",
-          column_size_mib: 16,
+          column_size_in_bytes: "16777216",
           value_count: 2,
           null_value_count: 0,
           nan_value_count: null,
@@ -1144,7 +1144,7 @@ const mockResponse = {
         event_source: {
           source_id: 4,
           field_type: "string",
-          column_size_mib: 6,
+          column_size_in_bytes: "6291456",
           value_count: 2,
           null_value_count: 0,
           nan_value_count: null,
@@ -1159,7 +1159,7 @@ const mockResponse = {
       file_path:
         "/warehouse/default/events/data/event_ts_hour=2025-06-15-10/event_name=corrected_purchase/00000-16-00b99685-7437-4e54-aa12-46ca9ce83e02-00002.parquet",
       format: "PARQUET",
-      size_gb: "0.0000012144",
+      file_size_in_bytes: "1304",
       row_count: 1,
       partition:
         "event_ts_hour = 2025-06-15 10 (486106), event_name = corrected_purchase",
@@ -1173,7 +1173,7 @@ const mockResponse = {
         event_id: {
           source_id: 1,
           field_type: "int",
-          column_size_mib: 4,
+          column_size_in_bytes: "4194304",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1183,7 +1183,7 @@ const mockResponse = {
         event_type: {
           source_id: 2,
           field_type: "string",
-          column_size_mib: 18,
+          column_size_in_bytes: "18874368",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1193,7 +1193,7 @@ const mockResponse = {
         event_ts: {
           source_id: 3,
           field_type: "timestamptz",
-          column_size_mib: 8,
+          column_size_in_bytes: "8388608",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1203,7 +1203,7 @@ const mockResponse = {
         event_source: {
           source_id: 4,
           field_type: "string",
-          column_size_mib: 10,
+          column_size_in_bytes: "10485760",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1218,7 +1218,7 @@ const mockResponse = {
       file_path:
         "/warehouse/default/events/data/event_ts_hour=2025-06-15-11/event_name=click/00000-3-e1d3c7ba-9be9-416d-9f20-e46f50f81826-00002.parquet",
       format: "PARQUET",
-      size_gb: "0.0000008941",
+      file_size_in_bytes: "960",
       row_count: 1,
       partition: "event_ts_hour = 2025-06-15 11 (486107), event_name = click",
       earliest_appearing_snapshot_id: "3200045318442131660",
@@ -1231,7 +1231,7 @@ const mockResponse = {
         event_id: {
           source_id: 1,
           field_type: "int",
-          column_size_mib: 4,
+          column_size_in_bytes: "4194304",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1241,7 +1241,7 @@ const mockResponse = {
         event_type: {
           source_id: 2,
           field_type: "string",
-          column_size_mib: 5,
+          column_size_in_bytes: "5242880",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1251,7 +1251,7 @@ const mockResponse = {
         event_ts: {
           source_id: 3,
           field_type: "timestamptz",
-          column_size_mib: 8,
+          column_size_in_bytes: "8388608",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1261,7 +1261,7 @@ const mockResponse = {
         event_source: {
           source_id: 4,
           field_type: "string",
-          column_size_mib: 3,
+          column_size_in_bytes: "3145728",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1276,7 +1276,7 @@ const mockResponse = {
       file_path:
         "/warehouse/default/events/data/event_ts_hour=2025-06-15-11/event_name=logout/00000-11-cdc1d689-e3cb-43ed-9389-5746e3973b31-00001.parquet",
       format: "PARQUET",
-      size_gb: "0.0000011558",
+      file_size_in_bytes: "1241",
       row_count: 1,
       partition: "event_ts_hour = 2025-06-15 11 (486107), event_name = logout",
       earliest_appearing_snapshot_id: "3037121856853733940",
@@ -1289,7 +1289,7 @@ const mockResponse = {
         event_id: {
           source_id: 1,
           field_type: "int",
-          column_size_mib: 4,
+          column_size_in_bytes: "4194304",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1299,7 +1299,7 @@ const mockResponse = {
         event_type: {
           source_id: 2,
           field_type: "string",
-          column_size_mib: 6,
+          column_size_in_bytes: "6291456",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1309,7 +1309,7 @@ const mockResponse = {
         event_ts: {
           source_id: 3,
           field_type: "timestamptz",
-          column_size_mib: 8,
+          column_size_in_bytes: "8388608",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1319,7 +1319,7 @@ const mockResponse = {
         event_source: {
           source_id: 4,
           field_type: "string",
-          column_size_mib: 6,
+          column_size_in_bytes: "6291456",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1334,7 +1334,7 @@ const mockResponse = {
       file_path:
         "/warehouse/default/events/data/event_ts_hour=2025-06-15-11/event_name=signup/00000-11-cdc1d689-e3cb-43ed-9389-5746e3973b31-00002.parquet",
       format: "PARQUET",
-      size_gb: "0.0000011362",
+      file_size_in_bytes: "1220",
       row_count: 1,
       partition: "event_ts_hour = 2025-06-15 11 (486107), event_name = signup",
       earliest_appearing_snapshot_id: "3037121856853733940",
@@ -1347,7 +1347,7 @@ const mockResponse = {
         event_id: {
           source_id: 1,
           field_type: "int",
-          column_size_mib: 4,
+          column_size_in_bytes: "4194304",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1357,7 +1357,7 @@ const mockResponse = {
         event_type: {
           source_id: 2,
           field_type: "string",
-          column_size_mib: 6,
+          column_size_in_bytes: "6291456",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1367,7 +1367,7 @@ const mockResponse = {
         event_ts: {
           source_id: 3,
           field_type: "timestamptz",
-          column_size_mib: 8,
+          column_size_in_bytes: "8388608",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1377,7 +1377,7 @@ const mockResponse = {
         event_source: {
           source_id: 4,
           field_type: "string",
-          column_size_mib: 6,
+          column_size_in_bytes: "6291456",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1392,7 +1392,7 @@ const mockResponse = {
       file_path:
         "/warehouse/default/events/data/event_ts_hour=2025-06-15-11/event_name=logout/00000-8-88fba101-726e-4235-a6a6-18460a99c4a6-00001.parquet",
       format: "PARQUET",
-      size_gb: "0.0000011558",
+      file_size_in_bytes: "1241",
       row_count: 1,
       partition: "event_ts_hour = 2025-06-15 11 (486107), event_name = logout",
       earliest_appearing_snapshot_id: "2170216877480741855",
@@ -1405,7 +1405,7 @@ const mockResponse = {
         event_id: {
           source_id: 1,
           field_type: "int",
-          column_size_mib: 4,
+          column_size_in_bytes: "4194304",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1415,7 +1415,7 @@ const mockResponse = {
         event_type: {
           source_id: 2,
           field_type: "string",
-          column_size_mib: 6,
+          column_size_in_bytes: "6291456",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1425,7 +1425,7 @@ const mockResponse = {
         event_ts: {
           source_id: 3,
           field_type: "timestamptz",
-          column_size_mib: 8,
+          column_size_in_bytes: "8388608",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1435,7 +1435,7 @@ const mockResponse = {
         event_source: {
           source_id: 4,
           field_type: "string",
-          column_size_mib: 3,
+          column_size_in_bytes: "3145728",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1450,7 +1450,7 @@ const mockResponse = {
       file_path:
         "/warehouse/default/events/data/event_ts_hour=2025-06-15-11/event_name=signup/00000-8-88fba101-726e-4235-a6a6-18460a99c4a6-00002.parquet",
       format: "PARQUET",
-      size_gb: "0.0000011362",
+      file_size_in_bytes: "1220",
       row_count: 1,
       partition: "event_ts_hour = 2025-06-15 11 (486107), event_name = signup",
       earliest_appearing_snapshot_id: "2170216877480741855",
@@ -1463,7 +1463,7 @@ const mockResponse = {
         event_id: {
           source_id: 1,
           field_type: "int",
-          column_size_mib: 4,
+          column_size_in_bytes: "4194304",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1473,7 +1473,7 @@ const mockResponse = {
         event_type: {
           source_id: 2,
           field_type: "string",
-          column_size_mib: 6,
+          column_size_in_bytes: "6291456",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1483,7 +1483,7 @@ const mockResponse = {
         event_ts: {
           source_id: 3,
           field_type: "timestamptz",
-          column_size_mib: 8,
+          column_size_in_bytes: "8388608",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
@@ -1493,7 +1493,7 @@ const mockResponse = {
         event_source: {
           source_id: 4,
           field_type: "string",
-          column_size_mib: 3,
+          column_size_in_bytes: "3145728",
           value_count: 1,
           null_value_count: 0,
           nan_value_count: null,
