@@ -2,11 +2,13 @@ const BYTES_IN_GIBIBYTE = 1024 ** 3;
 const GIBIBYTE_FRACTION_DIGITS = 5;
 const TINY_VALUE_SIGNIFICANT_DIGITS = 3;
 
+const BYTE_FIELD_SUFFIX_PATTERN = /(^|[-_])(in[-_])?bytes$/;
+
 export const isByteFieldName = (fieldName: string): boolean =>
-  fieldName.endsWith("bytes");
+  BYTE_FIELD_SUFFIX_PATTERN.test(fieldName);
 
 export const stripByteUnitFromFieldName = (fieldName: string): string =>
-  fieldName.replace(/[-_](in[-_])?bytes$/, "");
+  fieldName.replace(BYTE_FIELD_SUFFIX_PATTERN, "") || fieldName;
 
 export const formatBytesAsGibibytes = (byteCount: string): string => {
   if (!byteCount) return "";
