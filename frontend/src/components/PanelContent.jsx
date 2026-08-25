@@ -1,7 +1,7 @@
 import { useState } from "react";
 import CopyIconButton from "./CopyIconButton";
 import {
-  formatBytesAsGibibytes,
+  formatBytesAsMebibytes,
   isByteFieldName,
   stripByteUnitFromFieldName,
 } from "../shared/lib/formatBytes";
@@ -125,7 +125,7 @@ export function PanelDetailRow({
     typeof value === "object" && value !== null
       ? JSON.stringify(value, null, 2)
       : isByteField
-        ? formatBytesAsGibibytes(value)
+        ? formatBytesAsMebibytes(value)
         : value;
 
   const textToCopy =

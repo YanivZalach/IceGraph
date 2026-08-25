@@ -1,5 +1,5 @@
 import { formatLocaleDateTime, parseUtcDate } from "./dateUtils.js";
-import { formatBytesAsGibibytes } from "../shared/lib/formatBytes";
+import { formatBytesAsMebibytes } from "../shared/lib/formatBytes";
 
 const LOCAL_TIMESTAMP_FIELD_TYPES = new Set<string>([
   "timestamp",
@@ -25,7 +25,7 @@ export const formatReadableMetricValue = (
   if (value == null || value === "") return "-";
 
   if (metricName === "column_size_in_bytes" && typeof value === "string") {
-    return formatBytesAsGibibytes(value);
+    return formatBytesAsMebibytes(value);
   }
 
   if (

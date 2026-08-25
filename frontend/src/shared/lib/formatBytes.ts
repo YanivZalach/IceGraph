@@ -1,6 +1,6 @@
+const BYTES_IN_MEBIBYTE = 1024 ** 2;
 const BYTES_IN_GIBIBYTE = 1024 ** 3;
-const GIBIBYTE_FRACTION_DIGITS = 5;
-const TINY_VALUE_SIGNIFICANT_DIGITS = 3;
+const FRACTION_DIGITS = 5;
 
 const BYTE_FIELD_SUFFIX_PATTERN = /(^|[-_])(in[-_])?bytes$/;
 
@@ -10,15 +10,21 @@ export const isByteFieldName = (fieldName: string): boolean =>
 export const stripByteUnitFromFieldName = (fieldName: string): string =>
   fieldName.replace(BYTE_FIELD_SUFFIX_PATTERN, "") || fieldName;
 
-export const formatBytesAsGibibytes = (byteCount: string): string => {
+const formatBytes = (
+  byteCount: string,
+  bytesPerUnit: number,
+  unitLabel: string,
+): string => {
   if (!byteCount) return "";
 
   const parsedByteCount = Number(byteCount);
   if (!Number.isFinite(parsedByteCount)) return byteCount;
 
-  const gibibytes = parsedByteCount / BYTES_IN_GIBIBYTE;
-  const rounded = gibibytes.toFixed(GIBIBYTE_FRACTION_DIGITS);
-  const isRoundedAwayToZero = Number(rounded) === 0 && parsedByteCount !== 0;
-
-  return `${isRoundedAwayToZero ? gibibytes.toExponential(TINY_VALUE_SIGNIFICANT_DIGITS) : rounded} GiB`;
+  return `${(parsedByteCount / bytesPerUnit).toFixed(FRACTION_DIGITS)} ${unitLabel}`;
 };
+
+export const formatBytesAsMebibytes = (byteCount: string): string =>
+  formatBytes(byteCount, BYTES_IN_MEBIBYTE, "MiB");
+
+export const formatBytesAsGibibytes = (byteCount: string): string =>
+  formatBytes(byteCount, BYTES_IN_GIBIBYTE, "GiB");
