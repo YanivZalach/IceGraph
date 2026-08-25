@@ -66,7 +66,14 @@ class CollectSnapshots(Collector):
 
     @staticmethod
     def _format_summary(summary: Dict[str, str]) -> Dict[str, str]:
-        return {(f"{key}-bytes" if key.endswith("files-size") else key): value for key, value in summary.items()}
+        formatted = {}
+        for key, value in summary.items():
+            if key.endswith("files-size"):
+                formatted[f"{key}-bytes"] = str(value)
+            else:
+                formatted[key] = value
+
+        return formatted
 
     def _parse_snapshot_row(self, snapshot) -> SnapshotRecord:
         return SnapshotRecord(

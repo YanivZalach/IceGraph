@@ -24,10 +24,8 @@ export const formatReadableMetricValue = (
 ): string => {
   if (value == null || value === "") return "-";
 
-  if (metricName === "column_size_in_bytes") {
-    const numericValue = Number(value);
-    if (Number.isFinite(numericValue))
-      return formatBytesAsGibibytes(numericValue);
+  if (metricName === "column_size_in_bytes" && typeof value === "string") {
+    return formatBytesAsGibibytes(value);
   }
 
   if (

@@ -5,13 +5,11 @@ const TINY_VALUE_SIGNIFICANT_DIGITS = 3;
 export const isByteFieldName = (fieldName: string): boolean =>
   fieldName.endsWith("bytes");
 
-export const formatBytesAsGibibytes = (
-  byteCount: string | number | null | undefined,
-): string => {
-  if (byteCount == null || byteCount === "") return "";
+export const formatBytesAsGibibytes = (byteCount: string): string => {
+  if (!byteCount) return "";
 
   const parsedByteCount = Number(byteCount);
-  if (!Number.isFinite(parsedByteCount)) return String(byteCount);
+  if (!Number.isFinite(parsedByteCount)) return byteCount;
 
   const gibibytes = parsedByteCount / BYTES_IN_GIBIBYTE;
   const rounded = gibibytes.toFixed(GIBIBYTE_FRACTION_DIGITS);
