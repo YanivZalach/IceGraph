@@ -3,6 +3,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { Outlet, useNavigate, useSearch } from "@tanstack/react-router";
 import { TableGraphDataContext } from "../features/table/tableGraphData";
 import PageLoader from "../components/PageLoader";
+import GraphCollectionChecklist from "../components/GraphCollectionChecklist";
 import { formatLocaleDateTime, parseUtcDate } from "../utils/dateUtils";
 import { IS_MOCK, MOCK_TABLE } from "../appConstants";
 import {
@@ -214,6 +215,7 @@ export default function TableLayout() {
     : `graphData_${tableName}_${startSnapshot}_${endSnapshot}`;
 
   const [loading, setLoading] = useState(true);
+  const [collectionStages, setCollectionStages] = useState(null);
   const [error, setError] = useState(null);
   const [graphData, setGraphData] = useState(null);
   const [jobId, setJobId] = useState(null);
@@ -332,8 +334,12 @@ export default function TableLayout() {
         setJobToken(null);
 
         clearPolling();
-      } else if (res.status !== 202) {
+      } else if (res.status === 202) {
         const data = await res.json();
+        setCollectionStages(data.stages || null);
+      } else {
+        const data = await res.json();
+        setCollectionStages(data.stages || null);
         setError(data.error || "Job failed");
         setLoading(false);
         setJobId(null);
@@ -395,6 +401,7 @@ export default function TableLayout() {
     setError(null);
     setErrors({});
     setWarnings({});
+    setCollectionStages(null);
     submitGraphJob(tableName, startSnapshot, endSnapshot);
   }, [tableName, startSnapshot, endSnapshot]);
 
@@ -413,10 +420,20 @@ export default function TableLayout() {
   if (loading) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-canvas">
-        <div className="w-10 h-10 border-4 border-edge border-t-accent rounded-full animate-spin mb-4" />
-        <p className={UI_BODY_MUTED_CLASS}>
-          Loading data for <strong>{tableName}</strong>…
-        </p>
+        <div
+          className="w-full max-w-md rounded-2xl border border-edge bg-surface/80 p-7 shadow-2xl shadow-black/20 backdrop-blur-sm"
+          aria-busy="true"
+        >
+          <div className="mb-6">
+            <p className="text-base font-semibold text-ink-bright">
+              Preparing table graph
+            </p>
+            <p className={`${UI_BODY_MUTED_CLASS} mt-1 break-all`}>
+              {tableName}
+            </p>
+          </div>
+          <GraphCollectionChecklist stages={collectionStages} />
+        </div>
       </div>
     );
   }
@@ -443,6 +460,11 @@ export default function TableLayout() {
       <div className="flex-1 flex flex-col items-center justify-center bg-canvas p-6">
         <div className="bg-red-950/50 border border-red-800 text-red-400 px-8 py-6 rounded-xl text-center max-w-lg w-full">
           <h2 className="font-bold mb-2">Request Failed</h2>
+          {collectionStages && (
+            <div className="my-5 rounded-lg border border-red-900/50 bg-canvas/40 p-4 text-left">
+              <GraphCollectionChecklist stages={collectionStages} />
+            </div>
+          )}
           {errorDisplay}
           <button
             className="mt-6 px-5 py-2.5 rounded-lg border-2 border-accent bg-accent text-white font-bold text-sm cursor-pointer hover:bg-accent-dark transition"

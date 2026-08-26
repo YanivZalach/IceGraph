@@ -1584,6 +1584,39 @@ const mockResponse = {
   warnings: {},
 };
 
+const MOCK_GRAPH_PROGRESS_RESPONSES = [
+  {
+    "Collecting snapshots": "in_progress",
+    "Collecting metadata files": "pending",
+    "Collecting manifests": "pending",
+    "Collecting data files": "pending",
+    "Building graph": "pending",
+  },
+  {
+    "Collecting snapshots": "done",
+    "Collecting metadata files": "in_progress",
+    "Collecting manifests": "in_progress",
+    "Collecting data files": "pending",
+    "Building graph": "pending",
+  },
+  {
+    "Collecting snapshots": "done",
+    "Collecting metadata files": "done",
+    "Collecting manifests": "done",
+    "Collecting data files": "in_progress",
+    "Building graph": "pending",
+  },
+  {
+    "Collecting snapshots": "done",
+    "Collecting metadata files": "done",
+    "Collecting manifests": "done",
+    "Collecting data files": "done",
+    "Building graph": "in_progress",
+  },
+];
+
+let graphProgressResponseIndex = 0;
+
 export const handlers = [
   http.get("/api/v1/tables", () => {
     return HttpResponse.json({
@@ -1593,6 +1626,7 @@ export const handlers = [
   }),
 
   http.post("/api/v1/graph-data", () => {
+    graphProgressResponseIndex = 0;
     return HttpResponse.json(
       {
         key: "default_events_None_None",
@@ -1604,6 +1638,19 @@ export const handlers = [
   }),
 
   http.get("/api/v1/graph-data/default_events_None_None", () => {
+    const stages = MOCK_GRAPH_PROGRESS_RESPONSES[graphProgressResponseIndex];
+    if (stages) {
+      graphProgressResponseIndex += 1;
+      return HttpResponse.json(
+        {
+          key: "default_events_None_None",
+          status: "processing",
+          stages,
+        },
+        { status: 202 },
+      );
+    }
+
     return HttpResponse.json(mockResponse);
   }),
 ];

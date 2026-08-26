@@ -7,6 +7,7 @@ import {
   UI_PAGE_TITLE_CLASS,
 } from "../uiTypography";
 import { parseUtcDate, formatLocaleDateTime } from "../utils/dateUtils";
+import LoadingIndicator from "../components/LoadingIndicator";
 
 function splitTsPrecision(ts) {
   const dotIdx = ts.indexOf(".");
@@ -199,8 +200,10 @@ export default function SnapshotSelectionPage() {
       <div
         className={`flex-1 flex flex-col items-center justify-center ${UI_BODY_MUTED_CLASS}`}
       >
-        <div className="w-10 h-10 border-4 border-slate-700 border-t-accent rounded-full animate-spin mb-4" />
-        <p>Loading snapshots for {tableName}…</p>
+        <LoadingIndicator
+          title="Loading snapshots"
+          description={`Reading snapshot history for ${tableName}. This may take a moment for large tables.`}
+        />
       </div>
     );
   }

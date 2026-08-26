@@ -10,7 +10,7 @@ from flask import Flask, jsonify, request, send_from_directory
 from pyspark.errors import AnalysisException
 
 from base_classes.utils import verify_iceberg_table
-from constants import APPLICATION_PORT, JOB_TOKEN_FIELD
+from constants import APPLICATION_PORT, COLLECTION_STAGES, JOB_TOKEN_FIELD, STAGE_BUILD_GRAPH
 from env import Env
 from graph_normalizer.graph_normalizer import GraphNormalizer
 from icegraph_logger import logger
@@ -58,11 +58,20 @@ def _schedule_cleanup(job_id, is_in_lock_block=False):
 
 def _compute_graph_background(job_id, table_name, start_snapshot_id, end_snapshot_id):
     try:
-        table_data = TableInventory(table_name, start_snapshot_id, end_snapshot_id).build()
+        stages = {stage_name: "pending" for stage_name in COLLECTION_STAGES}
 
-        table_data = SnapshotAnalyzer(table_data).analyze()
+        def _on_stage(stage_name, status):
+            stages[stage_name] = status
+            _safe_update_job(job_id, stages=dict(stages))
 
-        result = GraphNormalizer(table_data).normalize()
+        table_data = TableInventory(table_name, _on_stage, start_snapshot_id, end_snapshot_id).build()
+
+        _on_stage(STAGE_BUILD_GRAPH, "in_progress")
+        try:
+            table_data = SnapshotAnalyzer(table_data).analyze()
+            result = GraphNormalizer(table_data).normalize()
+        finally:
+            _on_stage(STAGE_BUILD_GRAPH, "done")
 
         _safe_update_job(job_id, status="completed", result=result)
         logger.info(f"Job {job_id} completed")
@@ -202,10 +211,16 @@ def get_job_status(job_id):
         return jsonify(job["result"]), 200
 
     elif status == "failed":
-        return jsonify({"error": job.get("error", "Unknown error")}), 400
+        return jsonify({"error": job.get("error", "Unknown error"), "stages": job.get("stages")}), 400
 
     else:
-        return jsonify({"key": job_id, "status": "processing"}), 202
+        return jsonify(
+            {
+                "key": job_id,
+                "status": "processing",
+                "stages": job.get("stages"),
+            }
+        ), 202
 
 
 def _force_exit():

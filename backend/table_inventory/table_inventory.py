@@ -1,6 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from base_classes.spark_table_action import SparkTableAction
 from base_classes.utils import timed
@@ -8,7 +8,15 @@ from collectors.collect_data_files import CollectDataFiles, DataFileRecord
 from collectors.collect_manifests import CollectManifests, ManifestRecord
 from collectors.collect_metadata import CollectMetadata, MetadataFileRecord
 from collectors.collect_snapshots import CollectSnapshots, SnapshotRecord
-from constants import DATA_FILES_CUTOFF_MANIFEST_WARNING, DATA_FILES_CUTOFF_WARNING, FileType
+from constants import (
+    DATA_FILES_CUTOFF_MANIFEST_WARNING,
+    DATA_FILES_CUTOFF_WARNING,
+    STAGE_COLLECT_DATA_FILES,
+    STAGE_COLLECT_MANIFESTS,
+    STAGE_COLLECT_METADATA_FILES,
+    STAGE_COLLECT_SNAPSHOTS,
+    FileType,
+)
 from env import Env
 from icegraph_logger import logger
 from iceberg_ports.readable_metrics import ReadableMetricsConverter
@@ -31,6 +39,7 @@ class TableInventory(SparkTableAction):
     def __init__(
         self,
         full_table_name: str,
+        on_stage: Callable[[str, str], None],
         start_snapshot_id: Optional[int] = None,
         end_snapshot_id: Optional[int] = None,
     ):
@@ -38,6 +47,7 @@ class TableInventory(SparkTableAction):
 
         self._start_snapshot_id = start_snapshot_id
         self._end_snapshot_id = end_snapshot_id
+        self._on_stage = on_stage
 
         self._errors: Dict[str, str] = {}
         self._warnings: Dict[str, str] = {}
@@ -53,9 +63,13 @@ class TableInventory(SparkTableAction):
 
     @timed
     def build(self):
-        self._find_search_cutoff()
+        self._on_stage_start(STAGE_COLLECT_SNAPSHOTS)
+        try:
+            self._find_search_cutoff()
+            self._collect_and_set_snapshots()
+        finally:
+            self._on_stage_end(STAGE_COLLECT_SNAPSHOTS)
 
-        self._collect_and_set_snapshots()
         self._collect_metadata_manifests_and_data_files()
 
         self._attach_snapshot_files_to_manifest_files()
@@ -130,26 +144,46 @@ class TableInventory(SparkTableAction):
                 self._errors["collect_manifests_and_data_files"] = str(e)
 
     def _threaded_collect_metadata_files(self):
-        return CollectMetadata(
-            self._table_name,
-            self._search_cutoff.start_metadata_cutoff,
-            self._search_cutoff.end_metadata_cutoff,
-            self._snapshots,
-        ).collect()
+        self._on_stage_start(STAGE_COLLECT_METADATA_FILES)
+        try:
+            result = CollectMetadata(
+                self._table_name,
+                self._search_cutoff.start_metadata_cutoff,
+                self._search_cutoff.end_metadata_cutoff,
+                self._snapshots,
+            ).collect()
+        finally:
+            self._on_stage_end(STAGE_COLLECT_METADATA_FILES)
+
+        return result
 
     def _threaded_collect_manifests_and_data_files(self):
-        manifests_collection = CollectManifests(
-            self._table_name,
-            self._snapshots,
-            self._search_cutoff.manifests_to_ignore_df,
-        ).collect()
+        self._on_stage_start(STAGE_COLLECT_MANIFESTS)
+        try:
+            manifests_collection = CollectManifests(
+                self._table_name,
+                self._snapshots,
+                self._search_cutoff.manifests_to_ignore_df,
+            ).collect()
+        finally:
+            self._on_stage_end(STAGE_COLLECT_MANIFESTS)
 
-        data_files_collection = CollectDataFiles(
-            self._table_name,
-            manifests_collection.files,
-        ).collect()
+        self._on_stage_start(STAGE_COLLECT_DATA_FILES)
+        try:
+            data_files_collection = CollectDataFiles(
+                self._table_name,
+                manifests_collection.files,
+            ).collect()
+        finally:
+            self._on_stage_end(STAGE_COLLECT_DATA_FILES)
 
         return manifests_collection, data_files_collection
+
+    def _on_stage_start(self, stage_name: str) -> None:
+        self._on_stage(stage_name, "in_progress")
+
+    def _on_stage_end(self, stage_name: str) -> None:
+        self._on_stage(stage_name, "done")
 
     def _attach_snapshot_files_to_manifest_files(self):
         if not self._snapshots or not self._manifests:
