@@ -330,12 +330,10 @@ export default function TableLayout() {
         setGraphData(buildGraphData(data));
         setErrors(data.errors || {});
         setWarnings(data.warnings || {});
-        setError(null);
         setLoading(false);
         setJobId(null);
         setJobToken(null);
 
-        clearPolling();
         return false;
       } else if (res.status !== 202) {
         const data = await res.json();
@@ -346,7 +344,6 @@ export default function TableLayout() {
         setJobId(null);
         setJobToken(null);
 
-        clearPolling();
         return false;
       }
 
@@ -359,7 +356,6 @@ export default function TableLayout() {
       setJobId(null);
       setJobToken(null);
 
-      clearPolling();
       return false;
     }
   };
