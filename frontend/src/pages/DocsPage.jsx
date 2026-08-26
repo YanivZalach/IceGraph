@@ -450,6 +450,11 @@ const SECTIONS = [
             result
           </li>
           <li>
+            If a readable snapshot has unreadable snapshots in its loaded
+            history, a warning identifies them. Added in commit compares with
+            the nearest readable parent and may therefore span multiple commits
+          </li>
+          <li>
             Many small files in one partition path often indicates a small-file
             problem
           </li>
