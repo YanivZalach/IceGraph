@@ -7,7 +7,8 @@ from base_classes.base_file import BaseFile, HiddenFile
 from base_classes.utils import timed
 from collectors.collect_snapshots import SnapshotRecord
 from collectors.collector import Collector, FilesCollection
-from constants import FileType
+from constants import MANIFESTS_LIMIT_ERROR, FileType
+from env import Env
 from extractors.manifests_extractor import ManifestsExtractor
 
 
@@ -43,6 +44,9 @@ class CollectManifests(Collector):
     @timed
     def collect(self) -> FilesCollection:
         manifests_rows = ManifestsExtractor(self._table_name, self._snapshots, self._manifests_to_ignore_df).extract_dataframe().collect()
+
+        if len(manifests_rows) > Env.MAX_MANIFESTS_TO_COLLECT:
+            raise ValueError(MANIFESTS_LIMIT_ERROR.format(max_manifests_to_collect=Env.MAX_MANIFESTS_TO_COLLECT))
 
         self._manifests = [self._process_manifest_row(manifest_row) for manifest_row in manifests_rows]
 
