@@ -8,7 +8,7 @@ import ReadableMetricsSummary from "../../../components/ReadableMetricsSummary";
 import { fileTypeLabel } from "../../../graphConstants.js";
 import { formatBytesAsMebibytes } from "../../../shared/lib/formatBytes";
 import { isEmptyValue } from "../../../shared/lib/isEmptyValue";
-import { getFileSizeBytes } from "../model";
+import { getFileSizeBytes } from "../partitionModel";
 import type { InspectedFileTreeItem } from "../types";
 import FileTreeStatistics from "./FileTreeStatistics";
 
