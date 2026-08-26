@@ -3,6 +3,7 @@ from pyspark.sql import functions as F
 from pyspark.sql.types import LongType, StringType, StructField, StructType
 
 from collectors.collect_snapshots import SnapshotRecord
+from env import Env
 from extractors.extractor import Extractor
 
 SNAPSHOT_TO_TIMESTAMP_SCHEMA = StructType(
@@ -37,8 +38,9 @@ class ManifestsExtractor(Extractor):
         manifests_with_timestamps_df = self._enrich_manifests_with_timestamps(manifests_df)
 
         valid_manifests_df = self._filter_ignored_manifests(manifests_with_timestamps_df)
+        aggregated_manifests_df = self._aggregate_snapshots_by_manifests_sorted(valid_manifests_df)
 
-        return self._aggregate_snapshots_by_manifests_sorted(valid_manifests_df)
+        return self._limit_manifests(aggregated_manifests_df)
 
     def _union_manifests_for_snapshots(self) -> pyspark.sql.DataFrame:
         result = None
@@ -96,3 +98,7 @@ class ManifestsExtractor(Extractor):
             .agg(F.collect_list("snapshot_id").alias("snapshot_ids"))
             .orderBy(F.col("added_snapshot_timestamp"), ascending=False)
         )
+
+    @staticmethod
+    def _limit_manifests(manifests_df: pyspark.sql.DataFrame) -> pyspark.sql.DataFrame:
+        return manifests_df.limit(Env.MAX_MANIFESTS_TO_COLLECT + 1)

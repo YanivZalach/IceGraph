@@ -37,3 +37,8 @@ Every data file you see is referenced by at least one snapshot that is newer tha
 DATA_FILES_CUTOFF_MANIFEST_WARNING = inspect.cleandoc("""
 The data files of the manifest were not loaded/attached because the limit of {max_data_files_to_collect} data files was reached.
 """)
+
+MANIFESTS_LIMIT_ERROR = inspect.cleandoc("""
+The number of manifests exceeds the limit of {max_manifests_to_collect}!
+The manifests and the data files were not collected, select a smaller snapshot range.
+""")
