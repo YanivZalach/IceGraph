@@ -105,6 +105,7 @@ class TableInventory(SparkTableAction):
                 metadata_collection = metadata_future.result()
 
                 self._errors.update(metadata_collection.errors)
+                self._warnings.update(metadata_collection.warnings)
 
                 self._metadata_files = metadata_collection.files
 

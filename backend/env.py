@@ -26,6 +26,9 @@ class Env:
     # Maximum number of manifests collected per graph.
     MAX_MANIFESTS_TO_COLLECT = int(os.getenv("MAX_MANIFESTS_TO_COLLECT", "5000"))
 
+    # Maximum number of metadata files collected per graph.
+    MAX_METADATA_FILES_TO_COLLECT = int(os.getenv("MAX_METADATA_FILES_TO_COLLECT", "100"))
+
     # Cache lifetime for the table selection endpoint.
     TABLE_LIST_CACHE_TTL_SECONDS = int(os.getenv("TABLE_LIST_CACHE_TTL_SECONDS", "60"))
 

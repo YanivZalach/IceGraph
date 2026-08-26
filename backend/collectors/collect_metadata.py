@@ -11,7 +11,8 @@ from pyspark.sql import functions as F
 from base_classes.base_file import BaseFile
 from collectors.collect_snapshots import SnapshotRecord
 from collectors.collector import Collector, FilesCollection
-from constants import FileType, MAIN_BRANCH_ICEBERG_TABLE_NAME
+from constants import METADATA_FILES_CUTOFF_WARNING, FileType, MAIN_BRANCH_ICEBERG_TABLE_NAME
+from env import Env
 from icegraph_logger import logger
 from collectors.utils import get_metadata_row_slim_df_from_path
 from base_classes.utils import timed
@@ -51,11 +52,14 @@ class CollectMetadata(Collector):
         self._metadata_files: List[MetadataFileRecord] = []
         self._bad_metadata_files: List[MetadataFileRecord] = []
         self._errors: Dict[str, str] = {}
+        self._warnings: Dict[str, str] = {}
 
     @timed
     def collect(self) -> FilesCollection:
         try:
             self._ordered_metadata_to_timestamp = self._query_metadata_files()
+            self._apply_metadata_files_cutoff()
+
             metadata_files_df = self._build_metadata_files_df()
 
             if metadata_files_df is not None:
@@ -71,7 +75,7 @@ class CollectMetadata(Collector):
             logger.error(f"[{self._table_name}] metadata collection failed", exc_info=True)
             self._errors["metadata_collection"] = str(e)
 
-        return FilesCollection(files=self._metadata_files, errors=self._errors)
+        return FilesCollection(files=self._metadata_files, errors=self._errors, warnings=self._warnings)
 
     @cached_property
     def _ordered_metadata_paths(self) -> list[str]:
@@ -85,9 +89,20 @@ class CollectMetadata(Collector):
             .filter(F.col("metadata_timestamp") >= F.lit(str(self._start_metadata_cutoff)))
             .filter(F.col("metadata_timestamp") <= F.lit(str(self._end_metadata_cutoff)))
             .orderBy(F.desc("metadata_timestamp"))
+            .limit(Env.MAX_METADATA_FILES_TO_COLLECT + 1)
             .withColumn("metadata_timestamp", column_to_string_utc("metadata_timestamp"))
         )
         return {row.file: row.metadata_timestamp for row in metadata_df.collect()}
+
+    def _apply_metadata_files_cutoff(self) -> None:
+        if len(self._ordered_metadata_to_timestamp) <= Env.MAX_METADATA_FILES_TO_COLLECT:
+            return
+
+        self._ordered_metadata_to_timestamp = dict(list(self._ordered_metadata_to_timestamp.items())[: Env.MAX_METADATA_FILES_TO_COLLECT])
+
+        self._warnings["metadata_files_cutoff"] = METADATA_FILES_CUTOFF_WARNING.format(
+            max_metadata_files_to_collect=Env.MAX_METADATA_FILES_TO_COLLECT
+        )
 
     def _build_metadata_files_df(self) -> Optional[pyspark.sql.DataFrame]:
         metadata_files_df = None
