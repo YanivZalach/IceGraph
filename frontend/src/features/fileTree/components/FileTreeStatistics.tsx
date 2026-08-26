@@ -10,7 +10,7 @@ const FileTreeStatistics = ({ statistics }: FileTreeStatisticsProps) => {
     formatBytesAsMebibytes(String(byteCount));
   const rows = [
     ["Total size", formatByteCount(statistics.totalSizeBytes)],
-    ["Average size", formatByteCount(statistics.averageSizeBytes)],
+    ["Average file size", formatByteCount(statistics.averageSizeBytes)],
     ["Smallest file", formatByteCount(statistics.smallestSizeBytes)],
     ["Largest file", formatByteCount(statistics.largestSizeBytes)],
     ["Rows", statistics.totalRowCount.toLocaleString()],
