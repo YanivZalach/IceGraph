@@ -11,6 +11,18 @@ STANDART_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss.SSSSSS"
 
 REPLACE_OPERATION = "replace"
 
+STAGE_COLLECT_SNAPSHOTS = "Collecting snapshots"
+STAGE_COLLECT_METADATA_FILES = "Collecting metadata files"
+STAGE_COLLECT_MANIFESTS = "Collecting manifests"
+STAGE_COLLECT_DATA_FILES = "Collecting data files"
+
+COLLECTION_STAGES = [
+    STAGE_COLLECT_SNAPSHOTS,
+    STAGE_COLLECT_METADATA_FILES,
+    STAGE_COLLECT_MANIFESTS,
+    STAGE_COLLECT_DATA_FILES,
+]
+
 
 class FileType(Enum):
     MAIN_METADATA = "main_metadata"

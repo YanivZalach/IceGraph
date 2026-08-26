@@ -8,25 +8,20 @@ from collectors.collect_data_files import CollectDataFiles, DataFileRecord
 from collectors.collect_manifests import CollectManifests, ManifestRecord
 from collectors.collect_metadata import CollectMetadata, MetadataFileRecord
 from collectors.collect_snapshots import CollectSnapshots, SnapshotRecord
-from constants import DATA_FILES_CUTOFF_MANIFEST_WARNING, DATA_FILES_CUTOFF_WARNING, FileType
+from constants import (
+    DATA_FILES_CUTOFF_MANIFEST_WARNING,
+    DATA_FILES_CUTOFF_WARNING,
+    STAGE_COLLECT_DATA_FILES,
+    STAGE_COLLECT_MANIFESTS,
+    STAGE_COLLECT_METADATA_FILES,
+    STAGE_COLLECT_SNAPSHOTS,
+    FileType,
+)
 from env import Env
 from icegraph_logger import logger
 from iceberg_ports.readable_metrics import ReadableMetricsConverter
 from search_cutoff.find_search_cutoff import SearchCutoff, find_search_cutoff
 from table_inventory.utils import format_schemas_to_full_dict, get_json_metadata_from_path, parse_json_string_fields
-
-
-STAGE_COLLECT_SNAPSHOTS = "Collecting snapshots"
-STAGE_COLLECT_METADATA_FILES = "Collecting metadata files"
-STAGE_COLLECT_MANIFESTS = "Collecting manifests"
-STAGE_COLLECT_DATA_FILES = "Collecting data files"
-
-COLLECTION_STAGES = [
-    STAGE_COLLECT_SNAPSHOTS,
-    STAGE_COLLECT_METADATA_FILES,
-    STAGE_COLLECT_MANIFESTS,
-    STAGE_COLLECT_DATA_FILES,
-]
 
 
 @dataclass
@@ -68,10 +63,10 @@ class TableInventory(SparkTableAction):
 
     @timed
     def build(self):
-        self._on_stage(STAGE_COLLECT_SNAPSHOTS, "in_progress")
+        self._on_stage_start(STAGE_COLLECT_SNAPSHOTS)
         self._find_search_cutoff()
         self._collect_and_set_snapshots()
-        self._on_stage(STAGE_COLLECT_SNAPSHOTS, "done")
+        self._on_stage_end(STAGE_COLLECT_SNAPSHOTS)
 
         self._collect_metadata_manifests_and_data_files()
 
@@ -147,34 +142,40 @@ class TableInventory(SparkTableAction):
                 self._errors["collect_manifests_and_data_files"] = str(e)
 
     def _threaded_collect_metadata_files(self):
-        self._on_stage(STAGE_COLLECT_METADATA_FILES, "in_progress")
+        self._on_stage_start(STAGE_COLLECT_METADATA_FILES)
         result = CollectMetadata(
             self._table_name,
             self._search_cutoff.start_metadata_cutoff,
             self._search_cutoff.end_metadata_cutoff,
             self._snapshots,
         ).collect()
-        self._on_stage(STAGE_COLLECT_METADATA_FILES, "done")
+        self._on_stage_end(STAGE_COLLECT_METADATA_FILES)
 
         return result
 
     def _threaded_collect_manifests_and_data_files(self):
-        self._on_stage(STAGE_COLLECT_MANIFESTS, "in_progress")
+        self._on_stage_start(STAGE_COLLECT_MANIFESTS)
         manifests_collection = CollectManifests(
             self._table_name,
             self._snapshots,
             self._search_cutoff.manifests_to_ignore_df,
         ).collect()
-        self._on_stage(STAGE_COLLECT_MANIFESTS, "done")
+        self._on_stage_end(STAGE_COLLECT_MANIFESTS)
 
-        self._on_stage(STAGE_COLLECT_DATA_FILES, "in_progress")
+        self._on_stage_start(STAGE_COLLECT_DATA_FILES)
         data_files_collection = CollectDataFiles(
             self._table_name,
             manifests_collection.files,
         ).collect()
-        self._on_stage(STAGE_COLLECT_DATA_FILES, "done")
+        self._on_stage_end(STAGE_COLLECT_DATA_FILES)
 
         return manifests_collection, data_files_collection
+
+    def _on_stage_start(self, stage_name: str) -> None:
+        self._on_stage(stage_name, "in_progress")
+
+    def _on_stage_end(self, stage_name: str) -> None:
+        self._on_stage(stage_name, "done")
 
     def _attach_snapshot_files_to_manifest_files(self):
         if not self._snapshots or not self._manifests:

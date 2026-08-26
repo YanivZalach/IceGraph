@@ -10,14 +10,14 @@ from flask import Flask, jsonify, request, send_from_directory
 from pyspark.errors import AnalysisException
 
 from base_classes.utils import verify_iceberg_table
-from constants import APPLICATION_PORT, JOB_TOKEN_FIELD
+from constants import APPLICATION_PORT, COLLECTION_STAGES, JOB_TOKEN_FIELD
 from env import Env
 from graph_normalizer.graph_normalizer import GraphNormalizer
 from icegraph_logger import logger
 from snapshot_analyzer.snapshot_analyzer import SnapshotAnalyzer
 from snapshot_map.snapshot_mapping import collect_snapshot_map
 from spark_connect import close_spark_connect_session
-from table_inventory.table_inventory import COLLECTION_STAGES, TableInventory
+from table_inventory.table_inventory import TableInventory
 from table_list_catalog.table_list_catalog import TableListCatalog
 
 app = Flask(__name__, static_url_path="/static")
