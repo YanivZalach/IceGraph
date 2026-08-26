@@ -1594,20 +1594,6 @@ const MOCK_GRAPH_PROGRESS_RESPONSES = [
   },
   {
     "Collecting snapshots": "done",
-    "Collecting metadata files": "in_progress",
-    "Collecting manifests": "in_progress",
-    "Collecting data files": "pending",
-    "Building graph": "pending",
-  },
-  {
-    "Collecting snapshots": "done",
-    "Collecting metadata files": "done",
-    "Collecting manifests": "done",
-    "Collecting data files": "in_progress",
-    "Building graph": "pending",
-  },
-  {
-    "Collecting snapshots": "done",
     "Collecting metadata files": "done",
     "Collecting manifests": "done",
     "Collecting data files": "done",
