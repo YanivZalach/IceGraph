@@ -221,12 +221,12 @@ export default function TableLayout() {
   const [showDiff, setShowDiff] = useState(false);
   const [specJsonCopied, setSpecJsonCopied] = useState(false);
 
-  const pollIntervalRef = useRef(null);
+  const pollTimeoutRef = useRef(null);
 
   const clearPolling = () => {
-    if (pollIntervalRef.current) {
-      clearInterval(pollIntervalRef.current);
-      pollIntervalRef.current = null;
+    if (pollTimeoutRef.current) {
+      clearTimeout(pollTimeoutRef.current);
+      pollTimeoutRef.current = null;
     }
   };
 
@@ -313,41 +313,53 @@ export default function TableLayout() {
     }
   };
 
-  const pollJobStatus = async (jid, token) => {
+  const pollJobStatus = async (jid, token, abortSignal) => {
     try {
       const res = await fetch(`/api/v1/graph-data/${jid}`, {
         headers: { "X-IceGraph-Job-Token": token },
+        signal: abortSignal,
       });
       if (res.status === 200) {
         const text = await res.text();
+        if (abortSignal.aborted) return false;
+
         setRawData(text);
         const data = JSONbig({ storeAsString: true }).parse(text);
-        console.log(JSONbig({ storeAsString: true }).parse(text));
 
         setGraphData(buildGraphData(data));
         setErrors(data.errors || {});
         setWarnings(data.warnings || {});
+        setError(null);
         setLoading(false);
         setJobId(null);
         setJobToken(null);
 
         clearPolling();
+        return false;
       } else if (res.status !== 202) {
         const data = await res.json();
+        if (abortSignal.aborted) return false;
+
         setError(data.error || "Job failed");
         setLoading(false);
         setJobId(null);
         setJobToken(null);
 
         clearPolling();
+        return false;
       }
+
+      return true;
     } catch (err) {
+      if (abortSignal.aborted) return false;
+
       setError(err.message || "Failed to check job status");
       setLoading(false);
       setJobId(null);
       setJobToken(null);
 
       clearPolling();
+      return false;
     }
   };
 
@@ -401,13 +413,26 @@ export default function TableLayout() {
   useEffect(() => {
     if (!jobId || !jobToken) return;
 
-    pollJobStatus(jobId, jobToken);
+    const abortController = new AbortController();
 
-    pollIntervalRef.current = setInterval(() => {
-      pollJobStatus(jobId, jobToken);
-    }, 1000);
+    const poll = async () => {
+      const shouldContinuePolling = await pollJobStatus(
+        jobId,
+        jobToken,
+        abortController.signal,
+      );
 
-    return clearPolling;
+      if (shouldContinuePolling && !abortController.signal.aborted) {
+        pollTimeoutRef.current = setTimeout(poll, 1000);
+      }
+    };
+
+    poll();
+
+    return () => {
+      abortController.abort();
+      clearPolling();
+    };
   }, [jobId, jobToken]);
 
   if (loading) {
