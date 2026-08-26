@@ -927,6 +927,7 @@ export default function GraphPage() {
             <>
               <ReadableMetricsSummary
                 readableMetrics={stickyReadableMetrics}
+                sizeScope="file"
                 totalFileSizeBytes={stickyFileSizeBytes}
               />
               <DataFileReadableMetricsTable

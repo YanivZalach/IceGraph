@@ -8,6 +8,7 @@ import { PanelSectionTitle } from "./PanelContent";
 
 interface ReadableMetricsSummaryProps {
   readableMetrics: ReadableMetrics;
+  sizeScope: "file" | "files";
   totalFileSizeBytes: number | null;
 }
 
@@ -36,6 +37,7 @@ const formatColumnNames = (columnNames: string[]): string =>
 
 const ReadableMetricsSummary = ({
   readableMetrics,
+  sizeScope,
   totalFileSizeBytes,
 }: ReadableMetricsSummaryProps) => {
   const summary = summarizeReadableMetrics(readableMetrics);
@@ -58,7 +60,7 @@ const ReadableMetricsSummary = ({
       : null;
   const cards: StatisticCardProps[] = [
     {
-      label: "Data size in file",
+      label: `Data size in ${sizeScope}`,
       value: formatBytesAsMebibytes(
         summary.totalMeasuredColumnSizeBytes.toString(),
       ),
@@ -72,7 +74,7 @@ const ReadableMetricsSummary = ({
         : {
             detail: `${formatMetricPercentage(metadataSizePercentage)} of total file size`,
           }),
-      label: "Metadata size in file",
+      label: `Metadata size in ${sizeScope}`,
       value: formatBytesAsMebibytes(metadataSizeBytes.toString()),
     });
   }
