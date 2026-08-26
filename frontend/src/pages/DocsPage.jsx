@@ -445,6 +445,11 @@ const SECTIONS = [
             read, an error notice identifies the file and explains why
           </li>
           <li>
+            If graph data references a missing node, a warning explains that
+            some files may be absent instead of silently showing an incomplete
+            result
+          </li>
+          <li>
             Many small files in one partition path often indicates a small-file
             problem
           </li>

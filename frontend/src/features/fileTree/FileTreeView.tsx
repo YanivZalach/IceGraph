@@ -2,20 +2,23 @@ import type { MouseEvent } from "react";
 import PanelIssueNotice from "../../components/PanelIssueNotice";
 import { useViewInGraph } from "../../hooks/useViewInGraph";
 import FileTreeContent from "./components/FileTreeContent";
+import FileTreeFileRow from "./components/FileTreeFileRow";
 import FileTreeInspector from "./components/FileTreeInspector";
 import FileTreeToolbar from "./components/FileTreeToolbar";
 import {
-  buildPartitionPathTree,
   buildFileTreeGraphIndex,
-  getAllPartitionPathNodeIds,
   getBranches,
-  getCurrentSnapshot,
   getDisplayedSnapshots,
-  getSnapshotFileErrors,
-  getSnapshotFiles,
+  getSnapshotFileResult,
+  selectCurrentSnapshot,
+} from "./graphModel";
+import {
+  buildPartitionPathTree,
+  getAllPartitionPathNodeIds,
   groupFilesByPartition,
-} from "./model";
+} from "./partitionModel";
 import type { FileTreeContext } from "./schemas";
+import type { DataFileNode } from "./types";
 import { useFileTreeState } from "./useFileTreeState";
 
 interface FileTreeViewProps {
@@ -41,21 +44,28 @@ const FileTreeView = ({ graphData }: FileTreeViewProps) => {
     branches,
     selectedBranchName,
   );
-  const currentSnapshot = getCurrentSnapshot(
+  const currentSnapshotSelection = selectCurrentSnapshot(
     displayedSnapshots,
     pageState.requestedSnapshotId,
   );
+  const currentSnapshot = currentSnapshotSelection.snapshot;
   const currentSnapshotId =
     currentSnapshot?.details.snapshot_id ?? currentSnapshot?.id ?? "";
-  const snapshotFiles = getSnapshotFiles(
+  const snapshotFileResult = getSnapshotFileResult(
     currentSnapshot,
     graphIndex,
     pageState.scope,
   );
+  const snapshotFiles = snapshotFileResult.files;
   const partitions = groupFilesByPartition(snapshotFiles, pageState.search);
   const partitionPathNodes = buildPartitionPathTree(partitions);
   const visibleFiles = partitions.flatMap((partition) => partition.files);
-  const snapshotErrors = getSnapshotFileErrors(currentSnapshot, graphIndex);
+  const snapshotWarnings = [
+    ...new Set([
+      ...currentSnapshotSelection.warnings,
+      ...snapshotFileResult.warnings,
+    ]),
+  ];
 
   const handleViewInGraph = (
     event: MouseEvent<HTMLButtonElement>,
@@ -76,6 +86,19 @@ const FileTreeView = ({ graphData }: FileTreeViewProps) => {
     pageState.inspectedItem?.kind === "partition"
       ? pageState.inspectedItem.partition.id
       : null;
+  const renderFile = (file: DataFileNode, isTreeItem: boolean) => (
+    <FileTreeFileRow
+      key={file.id}
+      checkedFileIds={pageState.checkedFileIds}
+      duplicatingNodeId={activeDuplicatingNodeId}
+      file={file}
+      isInspected={inspectedFileId === file.id}
+      isTreeItem={isTreeItem}
+      onInspect={pageState.inspectFile}
+      onToggleChecked={pageState.toggleChecked}
+      onViewInGraph={handleViewInGraph}
+    />
+  );
 
   return (
     <div className="h-graph flex w-full min-h-0 flex-none flex-col overflow-hidden bg-canvas">
@@ -122,38 +145,41 @@ const FileTreeView = ({ graphData }: FileTreeViewProps) => {
             pageState.inspectedItem === null ? "" : "basis-[45%] md:basis-auto"
           }`}
         >
+          {snapshotFileResult.errors.length > 0 && (
+            <div className="mb-3">
+              <PanelIssueNotice type="error">
+                {snapshotFileResult.errors.join("\n")}
+              </PanelIssueNotice>
+            </div>
+          )}
+          {snapshotWarnings.length > 0 && (
+            <div className="mb-3">
+              <PanelIssueNotice type="warning">
+                {snapshotWarnings.join("\n")}
+              </PanelIssueNotice>
+            </div>
+          )}
           {currentSnapshot === undefined ? (
             <p className="flex h-full items-center justify-center text-sm italic text-slate-500">
               No snapshots available for this branch in the loaded range.
             </p>
           ) : (
             <>
-              {snapshotErrors.length > 0 && (
-                <div className="mb-3">
-                  <PanelIssueNotice type="error">
-                    {snapshotErrors.join("\n")}
-                  </PanelIssueNotice>
-                </div>
-              )}
               <FileTreeContent
                 checkedFileIds={pageState.checkedFileIds}
-                duplicatingNodeId={activeDuplicatingNodeId}
                 expandedItemIds={pageState.expandedItemIds}
-                inspectedFileId={inspectedFileId}
                 inspectedPartitionPathNodeId={inspectedPartitionPathNodeId}
                 inspectedPartitionId={inspectedPartitionId}
                 onCollapseMany={pageState.collapseMany}
                 onExpandMany={pageState.expandItems}
-                onInspectFile={pageState.inspectFile}
                 onInspectPartitionPathNode={pageState.inspectPartitionPathNode}
                 onInspectPartition={pageState.inspectPartition}
-                onToggleChecked={pageState.toggleChecked}
                 onToggleExpanded={pageState.toggleExpanded}
                 onToggleFiles={pageState.toggleFiles}
-                onViewInGraph={handleViewInGraph}
                 partitions={partitions}
                 partitionPathNodes={partitionPathNodes}
                 search={pageState.search}
+                renderFile={renderFile}
                 viewMode={pageState.viewMode}
               />
             </>

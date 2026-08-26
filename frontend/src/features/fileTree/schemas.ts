@@ -52,6 +52,8 @@ const referenceSchema = z
 
 export const fileDetailsSchema = z
   .object({
+    child_files: z.array(identifierSchema).optional(),
+    deleted_child_files: z.array(identifierSchema).optional(),
     error: z.string().nullish(),
     timestamp: optionalTimestampSchema,
     snapshot_id: nullableIdentifierSchema,

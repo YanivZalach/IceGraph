@@ -1,4 +1,4 @@
-import type { MouseEvent } from "react";
+import type { ReactNode } from "react";
 import type {
   DataFileNode,
   FileTreeViewMode,
@@ -10,45 +10,37 @@ import PartitionPathNodeComponent from "./PartitionPathNode";
 
 interface FileTreeContentProps {
   checkedFileIds: Set<string>;
-  duplicatingNodeId: string | null;
   expandedItemIds: Set<string>;
-  inspectedFileId: string | null;
   inspectedPartitionPathNodeId: string | null;
   inspectedPartitionId: string | null;
   onCollapseMany: (itemIds: string[]) => void;
   onExpandMany: (itemIds: string[]) => void;
-  onInspectFile: (file: DataFileNode) => void;
   onInspectPartitionPathNode: (node: PartitionPathNode) => void;
   onInspectPartition: (partition: PartitionGroup) => void;
-  onToggleChecked: (fileId: string) => void;
   onToggleExpanded: (itemId: string) => void;
   onToggleFiles: (files: DataFileNode[]) => void;
-  onViewInGraph: (event: MouseEvent<HTMLButtonElement>, fileId: string) => void;
   partitions: PartitionGroup[];
   partitionPathNodes: PartitionPathNode[];
   search: string;
+  renderFile: (file: DataFileNode, isTreeItem: boolean) => ReactNode;
   viewMode: FileTreeViewMode;
 }
 
 const FileTreeContent = ({
   checkedFileIds,
-  duplicatingNodeId,
   expandedItemIds,
-  inspectedFileId,
   inspectedPartitionPathNodeId,
   inspectedPartitionId,
   onCollapseMany,
   onExpandMany,
-  onInspectFile,
   onInspectPartitionPathNode,
   onInspectPartition,
-  onToggleChecked,
   onToggleExpanded,
   onToggleFiles,
-  onViewInGraph,
   partitions,
   partitionPathNodes,
   search,
+  renderFile,
   viewMode,
 }: FileTreeContentProps) => {
   if (partitions.length === 0) {
@@ -68,17 +60,13 @@ const FileTreeContent = ({
           <FileTreePartition
             key={partition.id}
             checkedFileIds={checkedFileIds}
-            duplicatingNodeId={duplicatingNodeId}
             expandedItemIds={expandedItemIds}
-            inspectedFileId={inspectedFileId}
             isInspected={inspectedPartitionId === partition.id}
-            onInspectFile={onInspectFile}
             onInspectPartition={onInspectPartition}
-            onToggleChecked={onToggleChecked}
             onToggleExpanded={onToggleExpanded}
             onToggleFiles={onToggleFiles}
-            onViewInGraph={onViewInGraph}
             partition={partition}
+            renderFile={renderFile}
           />
         ))}
       </div>
@@ -93,17 +81,13 @@ const FileTreeContent = ({
       {unpartitioned !== undefined && (
         <FileTreePartition
           checkedFileIds={checkedFileIds}
-          duplicatingNodeId={duplicatingNodeId}
           expandedItemIds={expandedItemIds}
-          inspectedFileId={inspectedFileId}
           isInspected={inspectedPartitionId === unpartitioned.id}
-          onInspectFile={onInspectFile}
           onInspectPartition={onInspectPartition}
-          onToggleChecked={onToggleChecked}
           onToggleExpanded={onToggleExpanded}
           onToggleFiles={onToggleFiles}
-          onViewInGraph={onViewInGraph}
           partition={unpartitioned}
+          renderFile={renderFile}
         />
       )}
       <div
@@ -116,19 +100,15 @@ const FileTreeContent = ({
             key={partitionPathNode.id}
             checkedFileIds={checkedFileIds}
             depth={1}
-            duplicatingNodeId={duplicatingNodeId}
             expandedItemIds={expandedItemIds}
-            inspectedFileId={inspectedFileId}
             inspectedPartitionPathNodeId={inspectedPartitionPathNodeId}
             onCollapseMany={onCollapseMany}
             onExpandMany={onExpandMany}
-            onInspectFile={onInspectFile}
             onInspectPartitionPathNode={onInspectPartitionPathNode}
-            onToggleChecked={onToggleChecked}
             onToggleExpanded={onToggleExpanded}
             onToggleFiles={onToggleFiles}
-            onViewInGraph={onViewInGraph}
             partitionPathNode={partitionPathNode}
+            renderFile={renderFile}
           />
         ))}
       </div>
