@@ -17,7 +17,7 @@ from icegraph_logger import logger
 from snapshot_analyzer.snapshot_analyzer import SnapshotAnalyzer
 from snapshot_map.snapshot_mapping import collect_snapshot_map
 from spark_connect import close_spark_connect_session
-from table_inventory.table_inventory import TableInventory
+from table_inventory.table_inventory import COLLECTION_STAGES, TableInventory
 from table_list_catalog.table_list_catalog import TableListCatalog
 
 app = Flask(__name__, static_url_path="/static")
@@ -58,13 +58,15 @@ def _schedule_cleanup(job_id, is_in_lock_block=False):
 
 def _compute_graph_background(job_id, table_name, start_snapshot_id, end_snapshot_id):
     try:
+        stages = {stage_name: "pending" for stage_name in COLLECTION_STAGES}
 
-        def on_stage(stage):
-            _safe_update_job(job_id, stage=stage)
+        def on_stage(stage_name, status):
+            stages[stage_name] = status
+            _safe_update_job(job_id, stages=dict(stages))
 
         table_data = TableInventory(table_name, start_snapshot_id, end_snapshot_id, on_stage=on_stage).build()
 
-        on_stage("Building graph")
+        _safe_update_job(job_id, stage="Building graph")
         table_data = SnapshotAnalyzer(table_data).analyze()
 
         result = GraphNormalizer(table_data).normalize()
@@ -210,7 +212,14 @@ def get_job_status(job_id):
         return jsonify({"error": job.get("error", "Unknown error")}), 400
 
     else:
-        return jsonify({"key": job_id, "status": "processing", "stage": job.get("stage")}), 202
+        return jsonify(
+            {
+                "key": job_id,
+                "status": "processing",
+                "stages": job.get("stages"),
+                "stage": job.get("stage"),
+            }
+        ), 202
 
 
 def _force_exit():

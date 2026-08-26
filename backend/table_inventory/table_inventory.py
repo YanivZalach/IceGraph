@@ -16,6 +16,19 @@ from search_cutoff.find_search_cutoff import SearchCutoff, find_search_cutoff
 from table_inventory.utils import format_schemas_to_full_dict, get_json_metadata_from_path, parse_json_string_fields
 
 
+STAGE_COLLECT_SNAPSHOTS = "Collecting snapshots"
+STAGE_COLLECT_METADATA_FILES = "Collecting metadata files"
+STAGE_COLLECT_MANIFESTS = "Collecting manifests"
+STAGE_COLLECT_DATA_FILES = "Collecting data files"
+
+COLLECTION_STAGES = [
+    STAGE_COLLECT_SNAPSHOTS,
+    STAGE_COLLECT_METADATA_FILES,
+    STAGE_COLLECT_MANIFESTS,
+    STAGE_COLLECT_DATA_FILES,
+]
+
+
 @dataclass
 class TableInventoryResult:
     errors: Dict[str, str]
@@ -33,13 +46,13 @@ class TableInventory(SparkTableAction):
         full_table_name: str,
         start_snapshot_id: Optional[int] = None,
         end_snapshot_id: Optional[int] = None,
-        on_stage: Optional[Callable[[str], None]] = None,
+        on_stage: Optional[Callable[[str, str], None]] = None,
     ):
         super().__init__(full_table_name)
 
         self._start_snapshot_id = start_snapshot_id
         self._end_snapshot_id = end_snapshot_id
-        self._on_stage = on_stage or (lambda stage: None)
+        self._on_stage = on_stage or (lambda stage, status: None)
 
         self._errors: Dict[str, str] = {}
         self._warnings: Dict[str, str] = {}
@@ -55,11 +68,11 @@ class TableInventory(SparkTableAction):
 
     @timed
     def build(self):
-        self._on_stage("Collecting snapshots")
+        self._on_stage(STAGE_COLLECT_SNAPSHOTS, "in_progress")
         self._find_search_cutoff()
         self._collect_and_set_snapshots()
+        self._on_stage(STAGE_COLLECT_SNAPSHOTS, "done")
 
-        self._on_stage("Collecting metadata, manifests and data files")
         self._collect_metadata_manifests_and_data_files()
 
         self._attach_snapshot_files_to_manifest_files()
@@ -134,24 +147,32 @@ class TableInventory(SparkTableAction):
                 self._errors["collect_manifests_and_data_files"] = str(e)
 
     def _threaded_collect_metadata_files(self):
-        return CollectMetadata(
+        self._on_stage(STAGE_COLLECT_METADATA_FILES, "in_progress")
+        result = CollectMetadata(
             self._table_name,
             self._search_cutoff.start_metadata_cutoff,
             self._search_cutoff.end_metadata_cutoff,
             self._snapshots,
         ).collect()
+        self._on_stage(STAGE_COLLECT_METADATA_FILES, "done")
+
+        return result
 
     def _threaded_collect_manifests_and_data_files(self):
+        self._on_stage(STAGE_COLLECT_MANIFESTS, "in_progress")
         manifests_collection = CollectManifests(
             self._table_name,
             self._snapshots,
             self._search_cutoff.manifests_to_ignore_df,
         ).collect()
+        self._on_stage(STAGE_COLLECT_MANIFESTS, "done")
 
+        self._on_stage(STAGE_COLLECT_DATA_FILES, "in_progress")
         data_files_collection = CollectDataFiles(
             self._table_name,
             manifests_collection.files,
         ).collect()
+        self._on_stage(STAGE_COLLECT_DATA_FILES, "done")
 
         return manifests_collection, data_files_collection
 

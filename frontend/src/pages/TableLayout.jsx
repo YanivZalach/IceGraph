@@ -3,7 +3,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { Outlet, useNavigate, useSearch } from "@tanstack/react-router";
 import { TableGraphDataContext } from "../features/table/tableGraphData";
 import PageLoader from "../components/PageLoader";
-import GraphProgressBar from "../components/GraphProgressBar";
+import GraphCollectionChecklist from "../components/GraphCollectionChecklist";
 import { formatLocaleDateTime, parseUtcDate } from "../utils/dateUtils";
 import { IS_MOCK, MOCK_TABLE } from "../appConstants";
 import {
@@ -216,6 +216,7 @@ export default function TableLayout() {
 
   const [loading, setLoading] = useState(true);
   const [stage, setStage] = useState(null);
+  const [collectionStages, setCollectionStages] = useState(null);
   const [error, setError] = useState(null);
   const [graphData, setGraphData] = useState(null);
   const [jobId, setJobId] = useState(null);
@@ -337,6 +338,7 @@ export default function TableLayout() {
       } else if (res.status === 202) {
         const data = await res.json();
         setStage(data.stage || null);
+        setCollectionStages(data.stages || null);
       } else {
         const data = await res.json();
         setError(data.error || "Job failed");
@@ -401,6 +403,7 @@ export default function TableLayout() {
     setErrors({});
     setWarnings({});
     setStage(null);
+    setCollectionStages(null);
     submitGraphJob(tableName, startSnapshot, endSnapshot);
   }, [tableName, startSnapshot, endSnapshot]);
 
@@ -422,7 +425,7 @@ export default function TableLayout() {
         <p className={`${UI_BODY_MUTED_CLASS} mb-4`}>
           Loading data for <strong>{tableName}</strong>…
         </p>
-        <GraphProgressBar stage={stage} />
+        <GraphCollectionChecklist stages={collectionStages} stage={stage} />
       </div>
     );
   }
