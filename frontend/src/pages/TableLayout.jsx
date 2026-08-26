@@ -4,6 +4,7 @@ import { Outlet, useNavigate, useSearch } from "@tanstack/react-router";
 import { TableGraphDataContext } from "../features/table/tableGraphData";
 import PageLoader from "../components/PageLoader";
 import GraphCollectionChecklist from "../components/GraphCollectionChecklist";
+import GraphCollectionStageIcon from "../components/GraphCollectionStageIcon";
 import { formatLocaleDateTime, parseUtcDate } from "../utils/dateUtils";
 import { IS_MOCK, MOCK_TABLE } from "../appConstants";
 import {
@@ -224,6 +225,12 @@ export default function TableLayout() {
   const [showDiff, setShowDiff] = useState(false);
   const [specJsonCopied, setSpecJsonCopied] = useState(false);
 
+  const hasCompletedCollection = collectionStages
+    ? Object.values(collectionStages).every((status) => status === "done")
+    : false;
+  const finalizationStage =
+    stage || (hasCompletedCollection ? "Finalizing collected data" : null);
+
   const pollIntervalRef = useRef(null);
 
   const clearPolling = () => {
@@ -422,10 +429,26 @@ export default function TableLayout() {
   if (loading) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-canvas">
-        <p className={`${UI_BODY_MUTED_CLASS} mb-4`}>
-          Loading data for <strong>{tableName}</strong>…
-        </p>
-        <GraphCollectionChecklist stages={collectionStages} stage={stage} />
+        <div
+          className="w-full max-w-md rounded-2xl border border-edge bg-surface/80 p-7 shadow-2xl shadow-black/20 backdrop-blur-sm"
+          aria-busy="true"
+        >
+          <div className="mb-6">
+            <p className="text-base font-semibold text-ink-bright">
+              Preparing table graph
+            </p>
+            <p className={`${UI_BODY_MUTED_CLASS} mt-1 break-all`}>
+              {tableName}
+            </p>
+          </div>
+          <GraphCollectionChecklist stages={collectionStages} />
+          {finalizationStage && (
+            <div className="mt-5 flex items-center gap-3 border-t border-edge pt-4 text-sm font-medium text-ink">
+              <GraphCollectionStageIcon status="in_progress" />
+              <span>{finalizationStage}…</span>
+            </div>
+          )}
+        </div>
       </div>
     );
   }

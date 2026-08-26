@@ -285,7 +285,8 @@ const SECTIONS = [
           <p>
             IceGraph fetches the metadata in the background. Once ready, you
             land on the Timeline view. Large ranges with many data files may
-            take a moment.
+            take a moment. The loading panel shows which collection steps are
+            active and how many have completed.
           </p>
         </div>
         <div className="space-y-2">
