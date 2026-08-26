@@ -1,6 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from base_classes.spark_table_action import SparkTableAction
 from base_classes.utils import timed
@@ -33,11 +33,13 @@ class TableInventory(SparkTableAction):
         full_table_name: str,
         start_snapshot_id: Optional[int] = None,
         end_snapshot_id: Optional[int] = None,
+        on_stage: Optional[Callable[[str], None]] = None,
     ):
         super().__init__(full_table_name)
 
         self._start_snapshot_id = start_snapshot_id
         self._end_snapshot_id = end_snapshot_id
+        self._on_stage = on_stage or (lambda stage: None)
 
         self._errors: Dict[str, str] = {}
         self._warnings: Dict[str, str] = {}
@@ -53,9 +55,11 @@ class TableInventory(SparkTableAction):
 
     @timed
     def build(self):
+        self._on_stage("Collecting snapshots")
         self._find_search_cutoff()
-
         self._collect_and_set_snapshots()
+
+        self._on_stage("Collecting metadata, manifests and data files")
         self._collect_metadata_manifests_and_data_files()
 
         self._attach_snapshot_files_to_manifest_files()

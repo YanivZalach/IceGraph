@@ -58,8 +58,13 @@ def _schedule_cleanup(job_id, is_in_lock_block=False):
 
 def _compute_graph_background(job_id, table_name, start_snapshot_id, end_snapshot_id):
     try:
-        table_data = TableInventory(table_name, start_snapshot_id, end_snapshot_id).build()
 
+        def on_stage(stage):
+            _safe_update_job(job_id, stage=stage)
+
+        table_data = TableInventory(table_name, start_snapshot_id, end_snapshot_id, on_stage=on_stage).build()
+
+        on_stage("Building graph")
         table_data = SnapshotAnalyzer(table_data).analyze()
 
         result = GraphNormalizer(table_data).normalize()
@@ -205,7 +210,7 @@ def get_job_status(job_id):
         return jsonify({"error": job.get("error", "Unknown error")}), 400
 
     else:
-        return jsonify({"key": job_id, "status": "processing"}), 202
+        return jsonify({"key": job_id, "status": "processing", "stage": job.get("stage")}), 202
 
 
 def _force_exit():

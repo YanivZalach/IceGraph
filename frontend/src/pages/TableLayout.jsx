@@ -3,6 +3,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { Outlet, useNavigate, useSearch } from "@tanstack/react-router";
 import { TableGraphDataContext } from "../features/table/tableGraphData";
 import PageLoader from "../components/PageLoader";
+import GraphProgressBar from "../components/GraphProgressBar";
 import { formatLocaleDateTime, parseUtcDate } from "../utils/dateUtils";
 import { IS_MOCK, MOCK_TABLE } from "../appConstants";
 import {
@@ -214,6 +215,7 @@ export default function TableLayout() {
     : `graphData_${tableName}_${startSnapshot}_${endSnapshot}`;
 
   const [loading, setLoading] = useState(true);
+  const [stage, setStage] = useState(null);
   const [error, setError] = useState(null);
   const [graphData, setGraphData] = useState(null);
   const [jobId, setJobId] = useState(null);
@@ -332,7 +334,10 @@ export default function TableLayout() {
         setJobToken(null);
 
         clearPolling();
-      } else if (res.status !== 202) {
+      } else if (res.status === 202) {
+        const data = await res.json();
+        setStage(data.stage || null);
+      } else {
         const data = await res.json();
         setError(data.error || "Job failed");
         setLoading(false);
@@ -395,6 +400,7 @@ export default function TableLayout() {
     setError(null);
     setErrors({});
     setWarnings({});
+    setStage(null);
     submitGraphJob(tableName, startSnapshot, endSnapshot);
   }, [tableName, startSnapshot, endSnapshot]);
 
@@ -413,10 +419,10 @@ export default function TableLayout() {
   if (loading) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-canvas">
-        <div className="w-10 h-10 border-4 border-edge border-t-accent rounded-full animate-spin mb-4" />
-        <p className={UI_BODY_MUTED_CLASS}>
+        <p className={`${UI_BODY_MUTED_CLASS} mb-4`}>
           Loading data for <strong>{tableName}</strong>…
         </p>
+        <GraphProgressBar stage={stage} />
       </div>
     );
   }
