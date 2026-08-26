@@ -47,10 +47,5 @@ METADATA_FILES_CUTOFF_WARNING = inspect.cleandoc("""
 Showing partial metadata! the number of metadata files exceeds the limit of {max_metadata_files_to_collect}!
 
 Older metadata files were not collected.
-
-Oldest metadata file shown:
-File: {oldest_metadata_file}
-Timestamp: {oldest_metadata_timestamp} UTC
-
 Only the oldest metadata files are cut off, so every metadata file you see is complete and accurate.
 """)

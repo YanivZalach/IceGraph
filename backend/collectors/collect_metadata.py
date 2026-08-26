@@ -98,15 +98,10 @@ class CollectMetadata(Collector):
         if len(self._ordered_metadata_to_timestamp) <= Env.MAX_METADATA_FILES_TO_COLLECT:
             return
 
-        kept_metadata_files = list(self._ordered_metadata_to_timestamp.items())[: Env.MAX_METADATA_FILES_TO_COLLECT]
-        oldest_metadata_file, oldest_metadata_timestamp = kept_metadata_files[-1]
-
-        self._ordered_metadata_to_timestamp = dict(kept_metadata_files)
+        self._ordered_metadata_to_timestamp = dict(list(self._ordered_metadata_to_timestamp.items())[: Env.MAX_METADATA_FILES_TO_COLLECT])
 
         self._warnings["metadata_files_cutoff"] = METADATA_FILES_CUTOFF_WARNING.format(
-            max_metadata_files_to_collect=Env.MAX_METADATA_FILES_TO_COLLECT,
-            oldest_metadata_file=oldest_metadata_file,
-            oldest_metadata_timestamp=oldest_metadata_timestamp,
+            max_metadata_files_to_collect=Env.MAX_METADATA_FILES_TO_COLLECT
         )
 
     def _build_metadata_files_df(self) -> Optional[pyspark.sql.DataFrame]:
