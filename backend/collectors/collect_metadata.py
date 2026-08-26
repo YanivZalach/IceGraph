@@ -2,7 +2,6 @@ from base_classes.utils import column_to_string_utc
 import json
 from dataclasses import dataclass
 from functools import cached_property
-from itertools import islice
 from typing import Any, Dict, List, Optional
 
 import pyspark.sql
@@ -99,8 +98,10 @@ class CollectMetadata(Collector):
         if len(self._ordered_metadata_to_timestamp) <= Env.MAX_METADATA_FILES_TO_COLLECT:
             return
 
-        self._ordered_metadata_to_timestamp = dict(islice(self._ordered_metadata_to_timestamp.items(), Env.MAX_METADATA_FILES_TO_COLLECT))
-        oldest_metadata_file, oldest_metadata_timestamp = next(reversed(self._ordered_metadata_to_timestamp.items()))
+        kept_metadata_files = list(self._ordered_metadata_to_timestamp.items())[: Env.MAX_METADATA_FILES_TO_COLLECT]
+        oldest_metadata_file, oldest_metadata_timestamp = kept_metadata_files[-1]
+
+        self._ordered_metadata_to_timestamp = dict(kept_metadata_files)
 
         self._warnings["metadata_files_cutoff"] = METADATA_FILES_CUTOFF_WARNING.format(
             max_metadata_files_to_collect=Env.MAX_METADATA_FILES_TO_COLLECT,
