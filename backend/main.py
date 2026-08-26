@@ -69,7 +69,6 @@ def _compute_graph_background(job_id, table_name, start_snapshot_id, end_snapsho
         _on_stage(STAGE_BUILD_GRAPH, "in_progress")
         try:
             table_data = SnapshotAnalyzer(table_data).analyze()
-
             result = GraphNormalizer(table_data).normalize()
         finally:
             _on_stage(STAGE_BUILD_GRAPH, "done")
