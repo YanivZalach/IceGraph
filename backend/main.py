@@ -60,19 +60,19 @@ def _compute_graph_background(job_id, table_name, start_snapshot_id, end_snapsho
     try:
         stages = {stage_name: "pending" for stage_name in COLLECTION_STAGES}
 
-        def on_stage(stage_name, status):
+        def _on_stage(stage_name, status):
             stages[stage_name] = status
             _safe_update_job(job_id, stages=dict(stages))
 
-        table_data = TableInventory(table_name, start_snapshot_id, end_snapshot_id, on_stage=on_stage).build()
+        table_data = TableInventory(table_name, _on_stage, start_snapshot_id, end_snapshot_id).build()
 
-        on_stage(STAGE_BUILD_GRAPH, "in_progress")
+        _on_stage(STAGE_BUILD_GRAPH, "in_progress")
         try:
             table_data = SnapshotAnalyzer(table_data).analyze()
 
             result = GraphNormalizer(table_data).normalize()
         finally:
-            on_stage(STAGE_BUILD_GRAPH, "done")
+            _on_stage(STAGE_BUILD_GRAPH, "done")
 
         _safe_update_job(job_id, status="completed", result=result)
         logger.info(f"Job {job_id} completed")

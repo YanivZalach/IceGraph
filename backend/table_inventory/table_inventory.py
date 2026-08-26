@@ -39,15 +39,15 @@ class TableInventory(SparkTableAction):
     def __init__(
         self,
         full_table_name: str,
+        on_stage: Callable[[str, str], None],
         start_snapshot_id: Optional[int] = None,
         end_snapshot_id: Optional[int] = None,
-        on_stage: Optional[Callable[[str, str], None]] = None,
     ):
         super().__init__(full_table_name)
 
         self._start_snapshot_id = start_snapshot_id
         self._end_snapshot_id = end_snapshot_id
-        self._on_stage = on_stage or (lambda stage, status: None)
+        self._on_stage = on_stage
 
         self._errors: Dict[str, str] = {}
         self._warnings: Dict[str, str] = {}
