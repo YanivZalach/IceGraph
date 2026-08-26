@@ -9,7 +9,10 @@ const GraphCollectionStageIcon = ({
 }: GraphCollectionStageIconProps) => {
   if (status === "done") {
     return (
-      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-bold text-white">
+      <span
+        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-bold text-white"
+        aria-hidden="true"
+      >
         ✓
       </span>
     );
@@ -17,7 +20,10 @@ const GraphCollectionStageIcon = ({
 
   if (status === "in_progress") {
     return (
-      <span className="relative flex h-5 w-5 shrink-0 items-center justify-center">
+      <span
+        className="relative flex h-5 w-5 shrink-0 items-center justify-center"
+        aria-hidden="true"
+      >
         <span className="absolute inset-0 animate-spin rounded-full border-2 border-accent/25 border-t-accent motion-reduce:animate-none" />
         <span className="h-1.5 w-1.5 rounded-full bg-accent" />
       </span>
@@ -25,7 +31,10 @@ const GraphCollectionStageIcon = ({
   }
 
   return (
-    <span className="h-5 w-5 shrink-0 rounded-full border-2 border-edge" />
+    <span
+      className="h-5 w-5 shrink-0 rounded-full border-2 border-edge"
+      aria-hidden="true"
+    />
   );
 };
 

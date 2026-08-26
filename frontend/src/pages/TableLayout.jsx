@@ -4,7 +4,6 @@ import { Outlet, useNavigate, useSearch } from "@tanstack/react-router";
 import { TableGraphDataContext } from "../features/table/tableGraphData";
 import PageLoader from "../components/PageLoader";
 import GraphCollectionChecklist from "../components/GraphCollectionChecklist";
-import GraphCollectionStageIcon from "../components/GraphCollectionStageIcon";
 import { formatLocaleDateTime, parseUtcDate } from "../utils/dateUtils";
 import { IS_MOCK, MOCK_TABLE } from "../appConstants";
 import {
@@ -216,7 +215,6 @@ export default function TableLayout() {
     : `graphData_${tableName}_${startSnapshot}_${endSnapshot}`;
 
   const [loading, setLoading] = useState(true);
-  const [stage, setStage] = useState(null);
   const [collectionStages, setCollectionStages] = useState(null);
   const [error, setError] = useState(null);
   const [graphData, setGraphData] = useState(null);
@@ -224,12 +222,6 @@ export default function TableLayout() {
   const [jobToken, setJobToken] = useState(null);
   const [showDiff, setShowDiff] = useState(false);
   const [specJsonCopied, setSpecJsonCopied] = useState(false);
-
-  const hasCompletedCollection = collectionStages
-    ? Object.values(collectionStages).every((status) => status === "done")
-    : false;
-  const finalizationStage =
-    stage || (hasCompletedCollection ? "Finalizing collected data" : null);
 
   const pollIntervalRef = useRef(null);
 
@@ -344,10 +336,10 @@ export default function TableLayout() {
         clearPolling();
       } else if (res.status === 202) {
         const data = await res.json();
-        setStage(data.stage || null);
         setCollectionStages(data.stages || null);
       } else {
         const data = await res.json();
+        setCollectionStages(data.stages || null);
         setError(data.error || "Job failed");
         setLoading(false);
         setJobId(null);
@@ -409,7 +401,6 @@ export default function TableLayout() {
     setError(null);
     setErrors({});
     setWarnings({});
-    setStage(null);
     setCollectionStages(null);
     submitGraphJob(tableName, startSnapshot, endSnapshot);
   }, [tableName, startSnapshot, endSnapshot]);
@@ -442,12 +433,6 @@ export default function TableLayout() {
             </p>
           </div>
           <GraphCollectionChecklist stages={collectionStages} />
-          {finalizationStage && (
-            <div className="mt-5 flex items-center gap-3 border-t border-edge pt-4 text-sm font-medium text-ink">
-              <GraphCollectionStageIcon status="in_progress" />
-              <span>{finalizationStage}…</span>
-            </div>
-          )}
         </div>
       </div>
     );
@@ -475,6 +460,11 @@ export default function TableLayout() {
       <div className="flex-1 flex flex-col items-center justify-center bg-canvas p-6">
         <div className="bg-red-950/50 border border-red-800 text-red-400 px-8 py-6 rounded-xl text-center max-w-lg w-full">
           <h2 className="font-bold mb-2">Request Failed</h2>
+          {collectionStages && (
+            <div className="my-5 rounded-lg border border-red-900/50 bg-canvas/40 p-4 text-left">
+              <GraphCollectionChecklist stages={collectionStages} />
+            </div>
+          )}
           {errorDisplay}
           <button
             className="mt-6 px-5 py-2.5 rounded-lg border-2 border-accent bg-accent text-white font-bold text-sm cursor-pointer hover:bg-accent-dark transition"

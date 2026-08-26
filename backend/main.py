@@ -10,7 +10,7 @@ from flask import Flask, jsonify, request, send_from_directory
 from pyspark.errors import AnalysisException
 
 from base_classes.utils import verify_iceberg_table
-from constants import APPLICATION_PORT, COLLECTION_STAGES, JOB_TOKEN_FIELD
+from constants import APPLICATION_PORT, COLLECTION_STAGES, JOB_TOKEN_FIELD, STAGE_BUILD_GRAPH
 from env import Env
 from graph_normalizer.graph_normalizer import GraphNormalizer
 from icegraph_logger import logger
@@ -66,10 +66,13 @@ def _compute_graph_background(job_id, table_name, start_snapshot_id, end_snapsho
 
         table_data = TableInventory(table_name, start_snapshot_id, end_snapshot_id, on_stage=on_stage).build()
 
-        _safe_update_job(job_id, stage="Building graph")
-        table_data = SnapshotAnalyzer(table_data).analyze()
+        on_stage(STAGE_BUILD_GRAPH, "in_progress")
+        try:
+            table_data = SnapshotAnalyzer(table_data).analyze()
 
-        result = GraphNormalizer(table_data).normalize()
+            result = GraphNormalizer(table_data).normalize()
+        finally:
+            on_stage(STAGE_BUILD_GRAPH, "done")
 
         _safe_update_job(job_id, status="completed", result=result)
         logger.info(f"Job {job_id} completed")
@@ -209,7 +212,7 @@ def get_job_status(job_id):
         return jsonify(job["result"]), 200
 
     elif status == "failed":
-        return jsonify({"error": job.get("error", "Unknown error")}), 400
+        return jsonify({"error": job.get("error", "Unknown error"), "stages": job.get("stages")}), 400
 
     else:
         return jsonify(
@@ -217,7 +220,6 @@ def get_job_status(job_id):
                 "key": job_id,
                 "status": "processing",
                 "stages": job.get("stages"),
-                "stage": job.get("stage"),
             }
         ), 202
 

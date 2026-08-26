@@ -64,9 +64,11 @@ class TableInventory(SparkTableAction):
     @timed
     def build(self):
         self._on_stage_start(STAGE_COLLECT_SNAPSHOTS)
-        self._find_search_cutoff()
-        self._collect_and_set_snapshots()
-        self._on_stage_end(STAGE_COLLECT_SNAPSHOTS)
+        try:
+            self._find_search_cutoff()
+            self._collect_and_set_snapshots()
+        finally:
+            self._on_stage_end(STAGE_COLLECT_SNAPSHOTS)
 
         self._collect_metadata_manifests_and_data_files()
 
@@ -143,31 +145,37 @@ class TableInventory(SparkTableAction):
 
     def _threaded_collect_metadata_files(self):
         self._on_stage_start(STAGE_COLLECT_METADATA_FILES)
-        result = CollectMetadata(
-            self._table_name,
-            self._search_cutoff.start_metadata_cutoff,
-            self._search_cutoff.end_metadata_cutoff,
-            self._snapshots,
-        ).collect()
-        self._on_stage_end(STAGE_COLLECT_METADATA_FILES)
+        try:
+            result = CollectMetadata(
+                self._table_name,
+                self._search_cutoff.start_metadata_cutoff,
+                self._search_cutoff.end_metadata_cutoff,
+                self._snapshots,
+            ).collect()
+        finally:
+            self._on_stage_end(STAGE_COLLECT_METADATA_FILES)
 
         return result
 
     def _threaded_collect_manifests_and_data_files(self):
         self._on_stage_start(STAGE_COLLECT_MANIFESTS)
-        manifests_collection = CollectManifests(
-            self._table_name,
-            self._snapshots,
-            self._search_cutoff.manifests_to_ignore_df,
-        ).collect()
-        self._on_stage_end(STAGE_COLLECT_MANIFESTS)
+        try:
+            manifests_collection = CollectManifests(
+                self._table_name,
+                self._snapshots,
+                self._search_cutoff.manifests_to_ignore_df,
+            ).collect()
+        finally:
+            self._on_stage_end(STAGE_COLLECT_MANIFESTS)
 
         self._on_stage_start(STAGE_COLLECT_DATA_FILES)
-        data_files_collection = CollectDataFiles(
-            self._table_name,
-            manifests_collection.files,
-        ).collect()
-        self._on_stage_end(STAGE_COLLECT_DATA_FILES)
+        try:
+            data_files_collection = CollectDataFiles(
+                self._table_name,
+                manifests_collection.files,
+            ).collect()
+        finally:
+            self._on_stage_end(STAGE_COLLECT_DATA_FILES)
 
         return manifests_collection, data_files_collection
 

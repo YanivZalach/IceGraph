@@ -2,6 +2,12 @@ import { cn } from "../shared/lib/cn";
 import GraphCollectionStageIcon from "./GraphCollectionStageIcon";
 import type { GraphCollectionStageStatus } from "./GraphCollectionStageIcon";
 
+const STAGE_STATUS_LABELS = {
+  pending: "pending",
+  in_progress: "in progress",
+  done: "complete",
+} as const;
+
 interface GraphCollectionChecklistProps {
   stages: Record<string, GraphCollectionStageStatus> | null;
 }
@@ -55,6 +61,7 @@ const GraphCollectionChecklist = ({
             >
               {name}
             </span>
+            <span className="sr-only">: {STAGE_STATUS_LABELS[status]}</span>
           </li>
         ))}
       </ul>

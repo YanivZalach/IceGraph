@@ -8,7 +8,6 @@ const LoadingIndicator = ({ title, description }: LoadingIndicatorProps) => (
     className="flex max-w-sm flex-col items-center text-center"
     role="status"
     aria-live="polite"
-    aria-busy="true"
   >
     <div className="relative mb-6 flex h-16 w-16 items-center justify-center">
       <div className="absolute inset-0 rounded-full bg-accent/15 blur-md" />

@@ -1,6 +1,7 @@
+from base_classes.utils import timed
 from typing import Dict
 
-from base_classes.utils import column_to_string_utc, timed, to_arrow_utc
+from base_classes.utils import column_to_string_utc, to_arrow_utc
 
 from spark_connect import open_spark_connect_session
 
