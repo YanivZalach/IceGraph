@@ -1,4 +1,4 @@
-import type { SnapshotSummary } from "../api/nodeSchemas";
+import type { SnapshotSummary } from "../../api/nodeSchemas";
 
 export type SummaryEntry = [key: string, value: string];
 
