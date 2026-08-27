@@ -1,5 +1,7 @@
 import { useState } from "react";
+import type { ReactNode } from "react";
 import CopyIconButton from "./CopyIconButton";
+import PanelSubtitle from "./PanelSubtitle";
 import {
   formatBytesAsMebibytes,
   isByteFieldName,
@@ -15,8 +17,7 @@ import {
 export const PANEL_TITLE_CLASS =
   "text-base font-bold uppercase tracking-wide text-ink leading-snug";
 
-export const PANEL_SUBTITLE_CLASS =
-  "text-sm font-mono text-slate-400 mt-1 break-words";
+export { PANEL_SUBTITLE_CLASS } from "./PanelSubtitle";
 
 export const PANEL_META_CLASS = "text-sm text-ink mt-1";
 
@@ -52,84 +53,87 @@ export const PANEL_DIFF_AFTER_VALUE_CLASS = `${PANEL_DIFF_VALUE_BASE_CLASS} bg-g
 
 export const DEFAULT_COLLAPSE_LINES = 15;
 
-const colorParseCtx = document.createElement("canvas").getContext("2d");
-
-function stripAlpha(color) {
-  if (typeof color !== "string") return color;
-  colorParseCtx.fillStyle = color;
-  const m = colorParseCtx.fillStyle.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-
-  return m ? `rgb(${m[1]}, ${m[2]}, ${m[3]})` : colorParseCtx.fillStyle;
+interface PanelHeaderProps {
+  meta?: ReactNode;
+  preserveSubtitleEnd?: boolean;
+  subtitle?: string | null;
+  title: ReactNode;
+  titleColor?: string | null;
 }
 
-function renderBreakablePath(path) {
-  const segments = path.split("/");
-  return segments.map((segment, i) => (
-    <span key={i}>
-      {segment}
-      {i < segments.length - 1 ? (
-        <>
-          /<wbr />
-        </>
-      ) : null}
-    </span>
-  ));
-}
-
-export function PanelHeader({ title, titleColor, subtitle, meta }) {
-  const opaqueColor = stripAlpha(titleColor);
+export const PanelHeader = ({
+  title,
+  titleColor = null,
+  subtitle = null,
+  meta = null,
+  preserveSubtitleEnd = false,
+}: PanelHeaderProps) => {
   return (
     <div className="min-w-0 pr-4">
       <div
         className={PANEL_TITLE_CLASS}
-        style={opaqueColor ? { color: opaqueColor } : undefined}
+        style={titleColor ? { color: titleColor } : undefined}
       >
         {title}
       </div>
       {subtitle ? (
-        <div className={PANEL_SUBTITLE_CLASS}>
-          {renderBreakablePath(subtitle)}
-        </div>
+        <PanelSubtitle preserveEnd={preserveSubtitleEnd} subtitle={subtitle} />
       ) : null}
       {meta ? <div className={PANEL_META_CLASS}>{meta}</div> : null}
     </div>
   );
+};
+
+interface PanelSectionTitleProps {
+  children: ReactNode;
+  className?: string;
 }
 
-export function PanelSectionTitle({ children, className = "" }) {
+export const PanelSectionTitle = ({
+  children,
+  className = "",
+}: PanelSectionTitleProps) => {
   return (
     <div className={`${PANEL_SECTION_TITLE_CLASS} ${className}`}>
       {children}
     </div>
   );
+};
+
+interface PanelDetailRowProps {
+  collapseLineCount?: number;
+  label: ReactNode;
+  relaxedCollapse?: boolean;
+  value: unknown;
 }
 
-export function isEmptyValue(value) {
-  if (value == null || value === "") return true;
-  if (Array.isArray(value)) return value.length === 0;
-  if (typeof value === "object") return Object.keys(value).length === 0;
-  return false;
-}
-
-export function PanelDetailRow({
+export const PanelDetailRow = ({
   label,
   value,
   relaxedCollapse = false,
   collapseLineCount = DEFAULT_COLLAPSE_LINES,
-}) {
-  const isByteField = isByteFieldName(String(label));
-  const displayLabel = isByteField
-    ? stripByteUnitFromFieldName(String(label))
-    : label;
-  const displayValue =
-    typeof value === "object" && value !== null
-      ? JSON.stringify(value, null, 2)
-      : isByteField
-        ? formatBytesAsMebibytes(value)
-        : value;
-
-  const textToCopy =
-    displayValue != null && displayValue !== "" ? String(displayValue) : "";
+}: PanelDetailRowProps) => {
+  const isByteField = typeof label === "string" && isByteFieldName(label);
+  const displayLabel = isByteField ? stripByteUnitFromFieldName(label) : label;
+  const textToCopy = (() => {
+    if (value === null || value === undefined || value === "") return "";
+    if (typeof value === "object") return JSON.stringify(value, null, 2);
+    if (
+      isByteField &&
+      (typeof value === "string" || typeof value === "number")
+    ) {
+      return formatBytesAsMebibytes(value);
+    }
+    if (
+      typeof value === "string" ||
+      typeof value === "number" ||
+      typeof value === "bigint" ||
+      typeof value === "boolean"
+    ) {
+      return String(value);
+    }
+    return "";
+  })();
   const hasValue = textToCopy !== "";
   const lineCount = hasValue ? textToCopy.split("\n").length : 0;
   const isCollapsible = lineCount > collapseLineCount;
@@ -144,10 +148,12 @@ export function PanelDetailRow({
         {isCollapsible && (
           <button
             type="button"
-            onClick={() => setIsCollapsed((p) => !p)}
+            onClick={() => {
+              setIsCollapsed((previous) => !previous);
+            }}
             className={PANEL_COLLAPSE_TOGGLE_CLASS}
           >
-            {isCollapsed ? `(${lineCount} lines) ▼` : "▲"}
+            {isCollapsed ? `(${String(lineCount)} lines) ▼` : "▲"}
           </button>
         )}
       </div>
@@ -178,4 +184,4 @@ export function PanelDetailRow({
       </div>
     </div>
   );
-}
+};

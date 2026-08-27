@@ -34,10 +34,17 @@ const mobileTabClass = ({ isActive }) =>
       : "text-slate-400 hover:text-white hover:bg-surface-hover"
   }`;
 
+const getTabSearch = (search, destination) => {
+  if (destination === "/table/filetree") return search;
+  return Object.fromEntries(
+    Object.entries(search).filter(([key]) => !key.startsWith("filetree_")),
+  );
+};
+
 const TabLink = ({ to, children, mobile }) => (
   <Link
     to={to}
-    search={(prev) => prev}
+    search={(previous) => getTabSearch(previous, to)}
     activeProps={{
       className: (mobile ? mobileTabClass : tabClass)({ isActive: true }),
     }}
@@ -121,7 +128,11 @@ export default function NavBar() {
       const idx = parseInt(e.key) - 1;
       if (idx >= 0 && idx < tabs.length) {
         e.preventDefault();
-        navigate({ to: `/table/${tabs[idx]}`, search: (prev) => prev });
+        const destination = `/table/${tabs[idx]}`;
+        navigate({
+          to: destination,
+          search: (previous) => getTabSearch(previous, destination),
+        });
       }
     };
     window.addEventListener("keydown", handleKey);

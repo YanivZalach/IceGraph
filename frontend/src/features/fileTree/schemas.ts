@@ -1,0 +1,100 @@
+import { z } from "zod";
+
+const identifierSchema = z
+  .union([z.string(), z.number(), z.bigint()])
+  .transform((value) => String(value));
+
+const nullableIdentifierSchema = identifierSchema.nullable().optional();
+
+const numericValueSchema = z
+  .union([z.number(), z.string()])
+  .transform((value) => Number(value))
+  .pipe(z.number());
+
+const optionalTimestampSchema = z
+  .union([z.string(), z.number()])
+  .nullish()
+  .transform((value) => value ?? undefined)
+  .optional();
+
+const optionalNumericValueSchema = numericValueSchema
+  .nullish()
+  .transform((value) => value ?? undefined)
+  .optional();
+
+const optionalStringValueSchema = z
+  .string()
+  .nullish()
+  .transform((value) => value ?? undefined)
+  .optional();
+
+const readableColumnMetricsSchema = z
+  .object({
+    source_id: z.union([z.string(), z.number()]),
+    field_type: z.string(),
+    column_size_in_bytes: z.string().nullish(),
+    value_count: z.number().nullish(),
+    null_value_count: z.number().nullish(),
+    nan_value_count: z.number().nullish(),
+    lower_bound: z.unknown().optional(),
+    upper_bound: z.unknown().optional(),
+  })
+  .catchall(z.unknown());
+
+const readableMetricsSchema = z.record(z.string(), readableColumnMetricsSchema);
+
+const referenceSchema = z
+  .object({
+    type: z.string(),
+    "snapshot-id": identifierSchema,
+  })
+  .catchall(z.unknown());
+
+export const fileDetailsSchema = z
+  .object({
+    child_files: z.array(identifierSchema).optional(),
+    deleted_child_files: z.array(identifierSchema).optional(),
+    error: z.string().nullish(),
+    timestamp: optionalTimestampSchema,
+    snapshot_id: nullableIdentifierSchema,
+    parent_id: nullableIdentifierSchema,
+    partition: z.string().optional(),
+    earliest_appearing_snapshot_id: nullableIdentifierSchema,
+    earliest_appearing_snapshot_timestamp: z.string().nullish(),
+    format: z.string().optional(),
+    refs: z.record(z.string(), referenceSchema).optional(),
+    file_size_in_bytes: optionalStringValueSchema,
+    readable_metrics: readableMetricsSchema.optional(),
+    row_count: optionalNumericValueSchema,
+  })
+  .catchall(z.unknown());
+
+export const graphNodeSchema = z.object({
+  id: identifierSchema,
+  label: z.string().optional(),
+  type: z.string(),
+  details: fileDetailsSchema.default({}),
+});
+
+export const graphEdgeSchema = z.object({
+  from: identifierSchema,
+  to: identifierSchema,
+  is_deleted: z.boolean().optional(),
+});
+
+const metadataSchema = z
+  .object({
+    refs: z.record(z.string(), referenceSchema).optional(),
+  })
+  .catchall(z.unknown());
+
+export const fileTreeContextSchema = z.object({
+  nodes: z.array(graphNodeSchema).default([]),
+  edges: z.array(graphEdgeSchema).default([]),
+  metadata: metadataSchema.nullable().optional(),
+});
+
+export type FileDetails = z.infer<typeof fileDetailsSchema>;
+export type GraphEdge = z.infer<typeof graphEdgeSchema>;
+export type GraphNode = z.infer<typeof graphNodeSchema>;
+export type FileTreeContext = z.infer<typeof fileTreeContextSchema>;

@@ -3,13 +3,14 @@ import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import { useTableGraphData } from "../features/table/tableGraphData";
 import ForceGraph2D from "react-force-graph-2d";
 import {
-  isEmptyValue,
   PanelDetailRow,
   PanelHeader,
   PANEL_STATUS_BADGE_CLASS,
 } from "../components/PanelContent";
 import PanelIssueNotice from "../components/PanelIssueNotice";
 import DataFileReadableMetricsTable from "../components/DataFileReadableMetricsTable";
+import ReadableMetricsSummary from "../components/ReadableMetricsSummary";
+import { isEmptyValue } from "../shared/lib/isEmptyValue";
 import {
   UI_DIALOG_SECTION_TITLE_CLASS,
   UI_POPUP_HINT_CLASS,
@@ -40,6 +41,23 @@ const POPUP_KEYS = "abdegmnopqstuvwxyz";
 
 const LINK_CURVATURE = 0.1;
 const DELETED_CONNECTION_LABLE = "deleted";
+const DATA_AND_DELETE_FILE_TYPES = new Set([
+  FileType.DATA,
+  FileType.POSITION_DELETE,
+  FileType.EQUALITY_DELETE,
+]);
+
+function getFileSizeBytes(details) {
+  const rawFileSize = details?.file_size_in_bytes;
+  if (typeof rawFileSize !== "string" && typeof rawFileSize !== "number") {
+    return null;
+  }
+
+  const fileSizeBytes = Number(rawFileSize);
+  return Number.isSafeInteger(fileSizeBytes) && fileSizeBytes >= 0
+    ? fileSizeBytes
+    : null;
+}
 
 function getGraphNodeMetrics() {
   return {
@@ -733,6 +751,17 @@ export default function GraphPage() {
           })),
       }
     : null;
+  const stickyReadableMetrics =
+    stickyNode !== null &&
+    DATA_AND_DELETE_FILE_TYPES.has(stickyNode.details.type) &&
+    stickyNode.details.readable_metrics &&
+    Object.keys(stickyNode.details.readable_metrics).length > 0
+      ? stickyNode.details.readable_metrics
+      : null;
+  const stickyFileSizeBytes =
+    stickyReadableMetrics === null
+      ? null
+      : getFileSizeBytes(stickyNode.details);
 
   return (
     <div className="relative w-full overflow-hidden h-graph bg-graph-grid">
@@ -894,10 +923,19 @@ export default function GraphPage() {
                 }
               />
             ))}
-          {stickyNode.details.readable_metrics && (
-            <DataFileReadableMetricsTable
-              readableMetrics={stickyNode.details.readable_metrics}
-            />
+          {stickyReadableMetrics && (
+            <>
+              <ReadableMetricsSummary
+                readableMetrics={stickyReadableMetrics}
+                sizeScope="file"
+                totalFileSizeBytes={stickyFileSizeBytes}
+              />
+              <DataFileReadableMetricsTable
+                readableMetrics={stickyReadableMetrics}
+                sizeScope="file"
+                totalFileSizeBytes={stickyFileSizeBytes}
+              />
+            </>
           )}
         </ResizableSidePanel>
       )}
