@@ -24,7 +24,7 @@ class Env:
     MAX_DATA_FILES_TO_COLLECT: int = int(os.getenv("MAX_DATA_FILES_TO_COLLECT", "5000"))
 
     # Maximum number of manifests collected per graph.
-    MAX_MANIFESTS_TO_COLLECT: int = int(os.getenv("MAX_MANIFESTS_TO_COLLECT", "100"))
+    MAX_MANIFESTS_TO_COLLECT: int = int(os.getenv("MAX_MANIFESTS_TO_COLLECT", "300"))
 
     # Maximum number of metadata files collected per graph.
     MAX_METADATA_FILES_TO_COLLECT: int = int(os.getenv("MAX_METADATA_FILES_TO_COLLECT", "100"))
