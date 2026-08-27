@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { cn } from "../../../shared/lib/cn";
 import type { DataFileNode, PartitionGroup } from "../types";
 import FileTreeGroupHeader from "./FileTreeGroupHeader";
@@ -11,7 +10,6 @@ interface FileTreePartitionProps {
   onToggleExpanded: (itemId: string) => void;
   onToggleFiles: (files: DataFileNode[]) => void;
   partition: PartitionGroup;
-  renderFile: (file: DataFileNode, isTreeItem: boolean) => ReactNode;
 }
 
 const FileTreePartition = ({
@@ -22,7 +20,6 @@ const FileTreePartition = ({
   onToggleExpanded,
   onToggleFiles,
   partition,
-  renderFile,
 }: FileTreePartitionProps) => {
   const isExpanded = expandedItemIds.has(partition.id);
 
@@ -50,14 +47,6 @@ const FileTreePartition = ({
         }}
         onToggleFiles={onToggleFiles}
       />
-      {isExpanded && (
-        <div
-          role="list"
-          className="flex flex-col gap-1 border-t border-edge px-4 py-2"
-        >
-          {partition.files.map((file) => renderFile(file, false))}
-        </div>
-      )}
     </section>
   );
 };

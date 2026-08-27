@@ -140,8 +140,7 @@ const FileTreeView = ({ graphData }: FileTreeViewProps) => {
       />
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         <main
-          data-testid="file-tree-content-scroll"
-          className={`min-h-0 min-w-0 flex-1 overflow-y-auto px-3 py-3 sm:px-8 sm:py-4 ${
+          className={`flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-3 py-3 sm:px-8 sm:py-4 ${
             pageState.inspectedItem === null ? "" : "basis-[45%] md:basis-auto"
           }`}
         >
@@ -164,25 +163,23 @@ const FileTreeView = ({ graphData }: FileTreeViewProps) => {
               No snapshots available for this branch in the loaded range.
             </p>
           ) : (
-            <>
-              <FileTreeContent
-                checkedFileIds={pageState.checkedFileIds}
-                expandedItemIds={pageState.expandedItemIds}
-                inspectedPartitionPathNodeId={inspectedPartitionPathNodeId}
-                inspectedPartitionId={inspectedPartitionId}
-                onCollapseMany={pageState.collapseMany}
-                onExpandMany={pageState.expandItems}
-                onInspectPartitionPathNode={pageState.inspectPartitionPathNode}
-                onInspectPartition={pageState.inspectPartition}
-                onToggleExpanded={pageState.toggleExpanded}
-                onToggleFiles={pageState.toggleFiles}
-                partitions={partitions}
-                partitionPathNodes={partitionPathNodes}
-                search={pageState.search}
-                renderFile={renderFile}
-                viewMode={pageState.viewMode}
-              />
-            </>
+            <FileTreeContent
+              checkedFileIds={pageState.checkedFileIds}
+              expandedItemIds={pageState.expandedItemIds}
+              inspectedPartitionPathNodeId={inspectedPartitionPathNodeId}
+              inspectedPartitionId={inspectedPartitionId}
+              onCollapseMany={pageState.collapseMany}
+              onExpandMany={pageState.expandItems}
+              onInspectPartitionPathNode={pageState.inspectPartitionPathNode}
+              onInspectPartition={pageState.inspectPartition}
+              onToggleExpanded={pageState.toggleExpanded}
+              onToggleFiles={pageState.toggleFiles}
+              partitions={partitions}
+              partitionPathNodes={partitionPathNodes}
+              search={pageState.search}
+              renderFile={renderFile}
+              viewMode={pageState.viewMode}
+            />
           )}
         </main>
         {pageState.inspectedItem !== null && (

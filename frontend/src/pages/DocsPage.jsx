@@ -430,6 +430,10 @@ const SECTIONS = [
         </p>
         <ul className="list-disc list-inside space-y-1">
           <li>Expand directories to see individual files</li>
+          <li>
+            Directories start collapsed, and large trees render only the rows
+            visible in the viewport so expanding many files remains responsive
+          </li>
           <li>Choose a branch, and within it, a snapshot to explore</li>
           <li>
             Switch between every file in a snapshot and only files added by the

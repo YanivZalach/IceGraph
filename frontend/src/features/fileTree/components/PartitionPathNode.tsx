@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { cn } from "../../../shared/lib/cn";
 import { getAllPartitionPathNodeIds } from "../partitionModel";
 import type {
@@ -19,7 +18,6 @@ interface PartitionPathNodeProps {
   onToggleExpanded: (itemId: string) => void;
   onToggleFiles: (files: DataFileNode[]) => void;
   partitionPathNode: PartitionPathNodeData;
-  renderFile: (file: DataFileNode, isTreeItem: boolean) => ReactNode;
 }
 
 const PartitionPathNode = ({
@@ -33,7 +31,6 @@ const PartitionPathNode = ({
   onToggleExpanded,
   onToggleFiles,
   partitionPathNode,
-  renderFile,
 }: PartitionPathNodeProps) => {
   const isExpanded = expandedItemIds.has(partitionPathNode.id);
   const descendantNodeIds = getAllPartitionPathNodeIds(
@@ -98,30 +95,6 @@ const PartitionPathNode = ({
         }}
         onToggleFiles={onToggleFiles}
       />
-      {isExpanded && (
-        <div
-          role="group"
-          className="flex flex-col gap-2 border-t border-edge px-4 py-2"
-        >
-          {partitionPathNode.children.map((child) => (
-            <PartitionPathNode
-              key={child.id}
-              checkedFileIds={checkedFileIds}
-              depth={depth + 1}
-              expandedItemIds={expandedItemIds}
-              inspectedPartitionPathNodeId={inspectedPartitionPathNodeId}
-              onCollapseMany={onCollapseMany}
-              onExpandMany={onExpandMany}
-              onInspectPartitionPathNode={onInspectPartitionPathNode}
-              onToggleExpanded={onToggleExpanded}
-              onToggleFiles={onToggleFiles}
-              partitionPathNode={child}
-              renderFile={renderFile}
-            />
-          ))}
-          {partitionPathNode.directFiles.map((file) => renderFile(file, true))}
-        </div>
-      )}
     </div>
   );
 };

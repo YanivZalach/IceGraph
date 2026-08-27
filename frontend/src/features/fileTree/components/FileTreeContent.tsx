@@ -1,11 +1,15 @@
 import type { ReactNode } from "react";
+import { buildVisibleFileTreeRows } from "../fileTreeRows";
+import type { FileTreeRow } from "../fileTreeRows";
 import type {
   DataFileNode,
   FileTreeViewMode,
   PartitionGroup,
   PartitionPathNode,
 } from "../types";
+import FileTreeIndentedRow from "./FileTreeIndentedRow";
 import FileTreePartition from "./FileTreePartition";
+import FileTreeVirtualList from "./FileTreeVirtualList";
 import PartitionPathNodeComponent from "./PartitionPathNode";
 
 interface FileTreeContentProps {
@@ -43,76 +47,64 @@ const FileTreeContent = ({
   renderFile,
   viewMode,
 }: FileTreeContentProps) => {
-  if (partitions.length === 0) {
-    return (
-      <p className="mt-4 text-sm italic text-slate-500">
-        {search === ""
-          ? "No data files found for this snapshot and scope."
-          : "No partitions match the search."}
-      </p>
-    );
-  }
-
-  if (viewMode === "flat") {
-    return (
-      <div className="flex flex-col gap-2">
-        {partitions.map((partition) => (
-          <FileTreePartition
-            key={partition.id}
-            checkedFileIds={checkedFileIds}
-            expandedItemIds={expandedItemIds}
-            isInspected={inspectedPartitionId === partition.id}
-            onInspectPartition={onInspectPartition}
-            onToggleExpanded={onToggleExpanded}
-            onToggleFiles={onToggleFiles}
-            partition={partition}
-            renderFile={renderFile}
-          />
-        ))}
-      </div>
-    );
-  }
-
-  const unpartitioned = partitions.find(
-    (partition) => partition.name === "(unpartitioned)",
+  const visibleRows = buildVisibleFileTreeRows(
+    partitions,
+    partitionPathNodes,
+    expandedItemIds,
+    viewMode,
   );
-  return (
-    <div className="flex flex-col gap-2">
-      {unpartitioned !== undefined && (
+  const renderVisibleRow = (row: FileTreeRow) => (
+    <FileTreeIndentedRow depth={row.depth}>
+      {row.kind === "file" ? (
+        renderFile(row.file, row.isTreeItem)
+      ) : row.kind === "partition" ? (
         <FileTreePartition
           checkedFileIds={checkedFileIds}
           expandedItemIds={expandedItemIds}
-          isInspected={inspectedPartitionId === unpartitioned.id}
+          isInspected={inspectedPartitionId === row.partition.id}
           onInspectPartition={onInspectPartition}
           onToggleExpanded={onToggleExpanded}
           onToggleFiles={onToggleFiles}
-          partition={unpartitioned}
-          renderFile={renderFile}
+          partition={row.partition}
+        />
+      ) : (
+        <PartitionPathNodeComponent
+          checkedFileIds={checkedFileIds}
+          depth={row.depth + 1}
+          expandedItemIds={expandedItemIds}
+          inspectedPartitionPathNodeId={inspectedPartitionPathNodeId}
+          onCollapseMany={onCollapseMany}
+          onExpandMany={onExpandMany}
+          onInspectPartitionPathNode={onInspectPartitionPathNode}
+          onToggleExpanded={onToggleExpanded}
+          onToggleFiles={onToggleFiles}
+          partitionPathNode={row.partitionPathNode}
         />
       )}
+    </FileTreeIndentedRow>
+  );
+
+  if (partitions.length === 0) {
+    return (
       <div
-        role="tree"
-        aria-label="Data files by partition"
-        className="flex flex-col gap-2"
+        data-testid="file-tree-content-scroll"
+        className="min-h-0 flex-1 overflow-y-auto"
       >
-        {partitionPathNodes.map((partitionPathNode) => (
-          <PartitionPathNodeComponent
-            key={partitionPathNode.id}
-            checkedFileIds={checkedFileIds}
-            depth={1}
-            expandedItemIds={expandedItemIds}
-            inspectedPartitionPathNodeId={inspectedPartitionPathNodeId}
-            onCollapseMany={onCollapseMany}
-            onExpandMany={onExpandMany}
-            onInspectPartitionPathNode={onInspectPartitionPathNode}
-            onToggleExpanded={onToggleExpanded}
-            onToggleFiles={onToggleFiles}
-            partitionPathNode={partitionPathNode}
-            renderFile={renderFile}
-          />
-        ))}
+        <p className="mt-4 text-sm italic text-slate-500">
+          {search === ""
+            ? "No data files found for this snapshot and scope."
+            : "No partitions match the search."}
+        </p>
       </div>
-    </div>
+    );
+  }
+
+  return (
+    <FileTreeVirtualList
+      renderRow={renderVisibleRow}
+      rows={visibleRows}
+      viewMode={viewMode}
+    />
   );
 };
 
