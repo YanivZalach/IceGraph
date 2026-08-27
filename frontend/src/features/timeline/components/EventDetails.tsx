@@ -1,23 +1,27 @@
 import { Fragment } from "react";
 import { PanelDetailRow } from "../../../components/PanelContent";
 import type { MetadataFileNode, SnapshotNode } from "../api/nodeSchemas";
+import { diffMetadataFiles } from "../lib/diffMetadataFiles";
 import { buildEventDetailSections } from "../lib/buildEventDetailSections";
 import type { TimelineRow } from "../lib/timelineRow";
+import RawDiffSection from "./RawDiffSection";
 import ViewInGraphButtons from "./ViewInGraphButtons";
 
 interface EventDetailsProps {
   row: TimelineRow;
   file: MetadataFileNode;
+  previousFile: MetadataFileNode | undefined;
   snapshot: SnapshotNode | undefined;
   repointTarget: SnapshotNode | undefined;
 }
 
-const SECTION_TITLE_CLASS =
+export const SECTION_TITLE_CLASS =
   "mt-2 mb-2 text-sm font-bold tracking-widest text-accent uppercase";
 
 const EventDetails = ({
   row,
   file,
+  previousFile,
   snapshot,
   repointTarget,
 }: EventDetailsProps) => {
@@ -54,6 +58,9 @@ const EventDetails = ({
           ))}
         </Fragment>
       ))}
+      {previousFile !== undefined && (
+        <RawDiffSection diffs={diffMetadataFiles(previousFile, file)} />
+      )}
     </div>
   );
 };
