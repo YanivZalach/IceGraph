@@ -46,6 +46,7 @@ export const snapshotNodeSchema = z.object({
   parent_id: optionalSnapshotIdSchema,
   operation: z.string().nullable(),
   operation_description: z.string().nullable(),
+  action_link: z.string().nullish(),
   summary: z.record(z.string(), z.string()),
 });
 

@@ -2,7 +2,8 @@ import type { MetadataFileNode, SnapshotRefs } from "../../api/nodeSchemas";
 import type { CommitDescription, SnapshotsById } from "./commitDescription";
 import { formatShortId } from "../format/formatShortId";
 import { formatDayAndMonth } from "../format/formatTimelineTime";
-import { impactText, type ImpactSegment } from "../impactSegment";
+import { impactText } from "../impactSegment";
+import type { DescribedChange } from "../definitionChanges/describedChange";
 
 type AncestrySearchResult = "ancestor" | "not-ancestor" | "lineage-broken";
 
@@ -97,7 +98,7 @@ export const describeRePointCommit = (
   previousFile: MetadataFileNode,
   targetId: string,
   snapshotsById: SnapshotsById,
-  definitionImpacts: ImpactSegment[],
+  definitionChanges: DescribedChange[],
 ): CommitDescription => {
   const targetRecord = snapshotsById.get(targetId);
   const targetImpact =
@@ -108,7 +109,11 @@ export const describeRePointCommit = (
   return {
     kind: "re-point",
     title: rePointTitle(previousFile, targetId, snapshotsById),
-    impactSegments: [impactText(targetImpact), ...definitionImpacts],
+    impactSegments: [
+      impactText(targetImpact),
+      ...definitionChanges.map((change) => impactText(change.impact)),
+    ],
+    detailTexts: definitionChanges.map((change) => change.detail),
     snapshotId: null,
     branchName: null,
     repointTargetId: targetId,
