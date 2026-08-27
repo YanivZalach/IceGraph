@@ -1,8 +1,8 @@
-import { cn } from "../../../shared/lib/cn";
+import { cn } from "../../../../shared/lib/cn";
 import {
   formatAbsoluteTimestamp,
   formatEventTime,
-} from "../lib/format/formatTimelineTime";
+} from "../../lib/format/formatTimelineTime";
 import EventRail from "./EventRail";
 import {
   ROW_CLASS,
