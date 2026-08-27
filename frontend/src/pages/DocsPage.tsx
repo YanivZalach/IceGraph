@@ -4,10 +4,7 @@ import DocsSearchOverlay from "../features/docs/components/DocsSearchOverlay";
 import Key from "../features/docs/components/Key";
 import MarkdownContent from "../features/docs/components/MarkdownContent";
 import { OVERVIEW_SECTION, SECTIONS } from "../features/docs/docsSections";
-import {
-  findAllIndices,
-  markdownToSearchText,
-} from "../features/docs/docsSearch";
+import { buildSearchResults } from "../features/docs/docsSearch";
 import type { Highlight, SearchResult } from "../features/docs/docsTypes";
 
 const DocsPage = () => {
@@ -34,24 +31,7 @@ const DocsPage = () => {
     closeSearch();
   };
 
-  const searchResults: SearchResult[] = query
-    ? SECTIONS.flatMap((section) => {
-        const content = markdownToSearchText(section.markdown);
-        const contentMatches = findAllIndices(content, query);
-
-        return contentMatches.map((matchIndex, occurrenceIndex) => {
-          const snippetStart = Math.max(0, matchIndex - 40);
-          const snippet = content.substring(snippetStart, snippetStart + 140);
-
-          return {
-            section,
-            snippet,
-            occurrenceIndex,
-            totalInSection: contentMatches.length,
-          };
-        });
-      })
-    : [];
+  const searchResults = buildSearchResults(SECTIONS, query);
 
   useEffect(() => {
     if (contentRef.current) contentRef.current.scrollTop = 0;
@@ -213,7 +193,10 @@ const DocsPage = () => {
             {activeSection.title}
           </h1>
           <div className={UI_DOCS_BODY_CLASS}>
-            <MarkdownContent markdown={activeSection.markdown} />
+            <MarkdownContent
+              markdown={activeSection.markdown}
+              sectionId={activeSection.id}
+            />
           </div>
         </div>
       </div>

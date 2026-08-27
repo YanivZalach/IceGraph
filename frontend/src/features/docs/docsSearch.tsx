@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import type { DocsSection } from "./docsSections";
+import type { SearchResult } from "./docsTypes";
 
 const escapeRegExp = (text: string): string =>
   text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -28,6 +30,29 @@ export const markdownToSearchText = (markdown: string): string =>
     .replace(/^\s*-\s+/gm, "")
     .replace(/\s+/g, " ")
     .trim();
+
+export const buildSearchResults = (
+  sections: DocsSection[],
+  query: string,
+): SearchResult[] => {
+  if (!query) return [];
+
+  return sections.flatMap((section) => {
+    const content = markdownToSearchText(section.markdown);
+    const contentMatches = findAllIndices(content, query);
+
+    return contentMatches.map((matchIndex, occurrenceIndex) => {
+      const snippetStart = Math.max(0, matchIndex - 40);
+
+      return {
+        section,
+        snippet: content.substring(snippetStart, snippetStart + 140),
+        occurrenceIndex,
+        totalInSection: contentMatches.length,
+      };
+    });
+  });
+};
 
 export const highlightMatch = (text: string, query: string): ReactNode => {
   const regularExpression = new RegExp(`(${escapeRegExp(query)})`, "gi");

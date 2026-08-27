@@ -2,21 +2,13 @@ A chronological list of every snapshot in your selected range. Each row shows wh
 
 ### Operation types
 
--
+- **append** - new data was added to the table
 
-**append** - new data was added to the table
+- **overwrite** - new data was written, and any existing data in the affected partitions was replaced
 
--
+- **replace** - files were rewritten without changing the actual records (compaction, rewriting manifests, etc)
 
-**overwrite** - new data was written, and any existing data in the affected partitions was replaced
-
--
-
-**replace** - files were rewritten without changing the actual records (compaction, rewriting manifests, etc)
-
--
-
-**delete** - rows or files were removed from the table
+- **delete** - rows or files were removed from the table
 
 Use the Timeline to pinpoint when a large write happened, spot unexpected deletes, or verify that a compaction job ran as expected.
 
