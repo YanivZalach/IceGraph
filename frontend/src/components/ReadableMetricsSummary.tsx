@@ -1,6 +1,7 @@
 import { formatBytesAsMebibytes } from "../shared/lib/formatBytes";
 import type { ReadableMetrics } from "../utils/readableMetrics";
 import {
+  createMetricRatio,
   formatMetricPercentage,
   summarizeReadableMetrics,
 } from "../utils/readableMetricsStatistics";
@@ -32,9 +33,6 @@ const StatisticCard = ({ detail, label, value }: StatisticCardProps) => (
   </div>
 );
 
-const formatColumnNames = (columnNames: string[]): string =>
-  columnNames.join(", ");
-
 const ReadableMetricsSummary = ({
   readableMetrics,
   sizeScope,
@@ -52,12 +50,11 @@ const ReadableMetricsSummary = ({
     summary.totalMeasuredColumnSizeBytes <= totalFileSizeBigInt
       ? totalFileSizeBigInt - summary.totalMeasuredColumnSizeBytes
       : null;
-  const metadataSizePercentage =
-    metadataSizeBytes !== null &&
-    totalFileSizeBytes !== null &&
-    totalFileSizeBytes > 0
-      ? (Number(metadataSizeBytes) / totalFileSizeBytes) * 100
-      : null;
+  const metadataSizePercentage = createMetricRatio(
+    metadataSizeBytes ?? undefined,
+    totalFileSizeBigInt ?? undefined,
+    true,
+  );
   const cards: StatisticCardProps[] = [
     {
       label: `Data size in ${sizeScope}`,
@@ -69,7 +66,7 @@ const ReadableMetricsSummary = ({
 
   if (metadataSizeBytes !== null) {
     cards.push({
-      ...(metadataSizePercentage === null
+      ...(metadataSizePercentage === undefined
         ? {}
         : {
             detail: `${formatMetricPercentage(metadataSizePercentage)} of total file size`,
@@ -79,44 +76,9 @@ const ReadableMetricsSummary = ({
     });
   }
 
-  if (summary.largestColumns !== null) {
-    cards.push({
-      detail: formatBytesAsMebibytes(summary.largestColumns.value.toString()),
-      label: "Largest column",
-      value: formatColumnNames(summary.largestColumns.columnNames),
-    });
-  }
-  if (summary.smallestColumns !== null) {
-    cards.push({
-      detail: formatBytesAsMebibytes(summary.smallestColumns.value.toString()),
-      label: "Smallest column",
-      value: formatColumnNames(summary.smallestColumns.columnNames),
-    });
-  }
-  if (summary.highestNullPercentage !== null) {
-    cards.push({
-      detail: formatMetricPercentage(summary.highestNullPercentage.value),
-      label: "Highest null percentage",
-      value: formatColumnNames(summary.highestNullPercentage.columnNames),
-    });
-  }
-  if (summary.lowestNullPercentage !== null) {
-    cards.push({
-      detail: formatMetricPercentage(summary.lowestNullPercentage.value),
-      label: "Lowest null percentage",
-      value: formatColumnNames(summary.lowestNullPercentage.columnNames),
-    });
-  }
-  if (summary.highestNanPercentage !== null) {
-    cards.push({
-      detail: formatMetricPercentage(summary.highestNanPercentage.value),
-      label: "Highest NaN percentage",
-      value: formatColumnNames(summary.highestNanPercentage.columnNames),
-    });
-  }
   cards.push({
     label: "Number of columns",
-    value: summary.measuredColumnCount.toLocaleString(),
+    value: summary.columnCount.toLocaleString(),
   });
 
   return (

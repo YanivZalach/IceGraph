@@ -26,20 +26,27 @@ interface MutableColumnMetrics {
   fieldType: string;
   isCompatible: boolean;
   lowerBound: BoundAccumulator;
-  nanValueCount: number | null;
-  nullValueCount: number | null;
+  nanValueCount: bigint | null;
+  nullValueCount: bigint | null;
   sourceId: string | number;
   upperBound: BoundAccumulator;
-  valueCount: number | null;
+  valueCount: bigint | null;
 }
 
-const addNumberMetric = (
-  currentTotal: number | null,
+const addCountMetric = (
+  currentTotal: bigint | null,
   value: unknown,
-): number | null =>
-  typeof value === "number" && Number.isFinite(value)
-    ? (currentTotal ?? 0) + value
-    : currentTotal;
+): bigint | null => {
+  const count =
+    typeof value === "bigint" && value >= 0n
+      ? value
+      : typeof value === "number" && Number.isSafeInteger(value) && value >= 0
+        ? BigInt(value)
+        : typeof value === "string" && /^\d+$/.test(value)
+          ? BigInt(value)
+          : null;
+  return count === null ? currentTotal : (currentTotal ?? 0n) + count;
+};
 
 const addByteMetric = (
   currentTotal: bigint | null,
@@ -148,15 +155,15 @@ const accumulateColumnMetrics = (
     aggregate.columnSizeInBytes,
     metrics.column_size_in_bytes,
   );
-  aggregate.valueCount = addNumberMetric(
+  aggregate.valueCount = addCountMetric(
     aggregate.valueCount,
     metrics.value_count,
   );
-  aggregate.nullValueCount = addNumberMetric(
+  aggregate.nullValueCount = addCountMetric(
     aggregate.nullValueCount,
     metrics.null_value_count,
   );
-  aggregate.nanValueCount = addNumberMetric(
+  aggregate.nanValueCount = addCountMetric(
     aggregate.nanValueCount,
     metrics.nan_value_count,
   );
@@ -196,9 +203,9 @@ export const aggregateReadableMetrics = (
       source_id: aggregate.sourceId,
       field_type: aggregate.fieldType,
       column_size_in_bytes: aggregate.columnSizeInBytes?.toString() ?? null,
-      value_count: aggregate.valueCount,
-      null_value_count: aggregate.nullValueCount,
-      nan_value_count: aggregate.nanValueCount,
+      value_count: aggregate.valueCount?.toString() ?? null,
+      null_value_count: aggregate.nullValueCount?.toString() ?? null,
+      nan_value_count: aggregate.nanValueCount?.toString() ?? null,
       lower_bound: aggregate.lowerBound.isComparable
         ? aggregate.lowerBound.value
         : null,

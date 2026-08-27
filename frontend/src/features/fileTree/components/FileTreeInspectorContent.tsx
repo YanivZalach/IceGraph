@@ -102,9 +102,11 @@ const FileTreeInspectorContent = ({
           />
           <DataFileReadableMetricsTable
             readableMetrics={readableMetrics}
+            sizeScope={file === null ? "files" : "file"}
             title={
               file === null ? "Aggregated Readable Metrics" : "Readable Metrics"
             }
+            totalFileSizeBytes={totalFileSizeBytes}
           />
         </>
       )}

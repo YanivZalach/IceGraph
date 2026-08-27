@@ -438,8 +438,10 @@ const SECTIONS = [
           <li>
             Select a file, partition, or partition-path step to inspect file
             counts, sizes, rows, and readable per-column metrics, including null
-            and NaN percentages, average bytes per value, column-size share,
-            inferred metadata size, and largest or smallest column summaries
+            and NaN percentages, average bytes per value, column-size share, and
+            inferred metadata size. Click a metric-table heading to sort by its
+            original value. Click it again to reverse the order, then once more
+            to restore schema order
           </li>
           <li>
             If the selected snapshot or one of its included files could not be
