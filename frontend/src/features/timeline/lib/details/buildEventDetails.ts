@@ -36,8 +36,14 @@ export interface MetadataFileData {
   stats: DetailRowData[];
 }
 
+export interface DetailNotice {
+  kind: "error" | "warning";
+  text: string;
+}
+
 /** Field order mirrors the panel's display order, but the JSX in EventDetails decides it. */
 export interface EventDetailData {
+  notices: DetailNotice[];
   topRows: DetailRowData[];
   thisChange: ThisChangeData;
   tableState: BeforeAfterRow[];
@@ -144,6 +150,29 @@ const fileStats = (file: MetadataFileNode): DetailRowData[] => [
   },
 ];
 
+/** Errors first; a text the file and snapshot both carry shows once. */
+const nodeNotices = (
+  file: MetadataFileNode,
+  snapshot: SnapshotNode | undefined,
+): DetailNotice[] => {
+  const candidates = [
+    { kind: "error", text: file.error },
+    { kind: "error", text: snapshot?.error },
+    { kind: "warning", text: file.warning },
+    { kind: "warning", text: snapshot?.warning },
+  ] as const;
+
+  const seenTexts = new Set<string>();
+  const notices: DetailNotice[] = [];
+  for (const { kind, text } of candidates) {
+    if (text != null && text !== "" && !seenTexts.has(text)) {
+      seenTexts.add(text);
+      notices.push({ kind, text });
+    }
+  }
+  return notices;
+};
+
 const refRows = (file: MetadataFileNode): DetailRowData[] =>
   Object.entries(file.refs).map(([name, ref]) => ({
     label: `${ref.type} ${name}`,
@@ -168,6 +197,7 @@ export const buildEventDetails = (
       : [{ label: "Branch Name", value: row.branchName }];
 
   return {
+    notices: nodeNotices(file, snapshot),
     topRows: [
       ...branchRows,
       ...snapshotRows(row, snapshot),

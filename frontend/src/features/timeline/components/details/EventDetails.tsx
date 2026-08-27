@@ -1,4 +1,5 @@
 import { PanelDetailRow } from "../../../../components/PanelContent";
+import { cn } from "../../../../shared/lib/cn";
 import type { MetadataFileNode, SnapshotNode } from "../../api/nodeSchemas";
 import { diffMetadataFiles } from "../../lib/details/diffMetadataFiles";
 import { buildEventDetails } from "../../lib/details/buildEventDetails";
@@ -40,6 +41,19 @@ const EventDetails = ({
 
   return (
     <div className="flex flex-col gap-4">
+      {details.notices.map((notice) => (
+        <p
+          key={notice.text}
+          className={cn(
+            "rounded border px-3 py-2 text-xs",
+            notice.kind === "error"
+              ? "border-red-500/40 bg-red-500/10 text-red-300"
+              : "border-amber-500/40 bg-amber-500/10 text-amber-300",
+          )}
+        >
+          {notice.text}
+        </p>
+      ))}
       <ViewInGraphButtons
         snapshotFilePath={snapshot?.file_path ?? null}
         metadataFilePath={file.file_path}
