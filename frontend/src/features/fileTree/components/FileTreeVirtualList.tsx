@@ -2,19 +2,13 @@ import { useRef } from "react";
 import type { ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import type { FileTreeRow } from "../fileTreeRows";
-import type { FileTreeViewMode } from "../types";
 
 interface FileTreeVirtualListProps {
   renderRow: (row: FileTreeRow) => ReactNode;
   rows: FileTreeRow[];
-  viewMode: FileTreeViewMode;
 }
 
-const FileTreeVirtualList = ({
-  renderRow,
-  rows,
-  viewMode,
-}: FileTreeVirtualListProps) => {
+const FileTreeVirtualList = ({ renderRow, rows }: FileTreeVirtualListProps) => {
   // TanStack Virtual exposes mutable functions that React Compiler cannot safely cache: https://react.dev/reference/react-compiler/directives/use-no-memo
   "use no memo";
 
@@ -34,7 +28,7 @@ const FileTreeVirtualList = ({
       className="min-h-0 flex-1 overflow-y-auto"
     >
       <div
-        role={viewMode === "tree" ? "tree" : "list"}
+        role="list"
         aria-label="Data files by partition"
         className="relative w-full"
         // Runtime virtual-list measurements cannot be represented by static Tailwind classes: https://tanstack.com/virtual/latest/docs/framework/react/react-virtual
@@ -46,6 +40,7 @@ const FileTreeVirtualList = ({
           return (
             <div
               key={virtualRow.key}
+              ref={rowVirtualizer.measureElement}
               role="none"
               data-index={virtualRow.index}
               className="absolute top-0 left-0 w-full pb-2"

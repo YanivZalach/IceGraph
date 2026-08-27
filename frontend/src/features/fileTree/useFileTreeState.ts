@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import type {
   DataFileNode,
   FileTreeViewMode,
@@ -36,15 +37,18 @@ interface FileTreeState {
 }
 
 export const useFileTreeState = (): FileTreeState => {
-  const [search, setSearchState] = useState("");
-  const [requestedBranchName, setRequestedBranchName] = useState<string | null>(
-    "main",
-  );
-  const [requestedSnapshotId, setRequestedSnapshotId] = useState<string | null>(
-    null,
-  );
-  const [scope, setScopeState] = useState<SnapshotFileScope>("snapshot");
-  const [viewMode, setViewModeState] = useState<FileTreeViewMode>("tree");
+  const navigate = useNavigate({ from: "/table/filetree" });
+  const searchParameters = useSearch({ from: "/table/filetree" });
+  const requestedBranchName =
+    searchParameters.filetree_branch === undefined
+      ? "main"
+      : searchParameters.filetree_branch === ""
+        ? null
+        : searchParameters.filetree_branch;
+  const requestedSnapshotId = searchParameters.filetree_snapshot_id ?? null;
+  const scope = searchParameters.filetree_scope ?? "snapshot";
+  const search = searchParameters.filetree_search ?? "";
+  const viewMode = searchParameters.filetree_grouping ?? "tree";
   const [expandedItemIds, setExpandedItemIds] = useState(new Set<string>());
   const [checkedFileIds, setCheckedFileIds] = useState(new Set<string>());
   const [inspectedItem, setInspectedItem] =
@@ -56,21 +60,50 @@ export const useFileTreeState = (): FileTreeState => {
     setInspectedItem(null);
   };
   const setBranch = (branchName: string | null) => {
-    setRequestedBranchName(branchName);
-    setRequestedSnapshotId(null);
+    void navigate({
+      search: (previous) => ({
+        ...previous,
+        filetree_branch: branchName ?? "",
+        filetree_snapshot_id: undefined,
+      }),
+    });
     clearTransientState();
   };
   const setSnapshot = (snapshotId: string) => {
-    setRequestedSnapshotId(snapshotId);
+    void navigate({
+      search: (previous) => ({
+        ...previous,
+        filetree_snapshot_id: snapshotId,
+      }),
+    });
     clearTransientState();
   };
   const setScope = (nextScope: SnapshotFileScope) => {
-    setScopeState(nextScope);
+    void navigate({
+      search: (previous) => ({
+        ...previous,
+        filetree_scope: nextScope === "snapshot" ? undefined : nextScope,
+      }),
+    });
     clearTransientState();
   };
   const setViewMode = (nextViewMode: FileTreeViewMode) => {
-    setViewModeState(nextViewMode);
+    void navigate({
+      search: (previous) => ({
+        ...previous,
+        filetree_grouping: nextViewMode === "tree" ? undefined : nextViewMode,
+      }),
+    });
     setExpandedItemIds(new Set());
+  };
+  const setSearch = (nextSearch: string) => {
+    void navigate({
+      replace: true,
+      search: (previous) => ({
+        ...previous,
+        filetree_search: nextSearch === "" ? undefined : nextSearch,
+      }),
+    });
   };
   const toggleExpanded = (itemId: string) => {
     setExpandedItemIds((currentIds) => {
@@ -140,7 +173,7 @@ export const useFileTreeState = (): FileTreeState => {
     },
     setBranch,
     setScope,
-    setSearch: setSearchState,
+    setSearch,
     setSnapshot,
     setViewMode,
     toggleChecked,

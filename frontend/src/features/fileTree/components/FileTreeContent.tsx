@@ -65,12 +65,11 @@ const FileTreeContent = ({
     <FileTreeIndentedRow depth={row.depth}>
       {row.kind === "file" ? (
         <FileTreeFileRow
-          ariaLevel={row.isTreeItem ? row.depth + 1 : undefined}
+          ariaLevel={row.isHierarchical ? row.depth + 1 : undefined}
           checkedFileIds={checkedFileIds}
           duplicatingNodeId={duplicatingNodeId}
           file={row.file}
           isInspected={inspectedFileId === row.file.id}
-          isTreeItem={row.isTreeItem}
           onInspect={onInspectFile}
           onToggleChecked={onToggleChecked}
           onViewInGraph={onViewInGraph}
@@ -112,11 +111,7 @@ const FileTreeContent = ({
   }
 
   return (
-    <FileTreeVirtualList
-      renderRow={renderVisibleRow}
-      rows={visibleRows}
-      viewMode={viewMode}
-    />
+    <FileTreeVirtualList renderRow={renderVisibleRow} rows={visibleRows} />
   );
 };
 

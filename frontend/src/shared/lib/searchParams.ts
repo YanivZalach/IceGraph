@@ -40,6 +40,14 @@ export const graphSearchSchema = tableSearchSchema.extend({
   select_node_id: z.string().optional(),
 });
 
+export const fileTreeSearchSchema = tableSearchSchema.extend({
+  filetree_branch: z.string().optional(),
+  filetree_grouping: z.enum(["flat", "tree"]).optional(),
+  filetree_scope: z.enum(["commit", "snapshot"]).optional(),
+  filetree_search: z.string().optional(),
+  filetree_snapshot_id: z.string().optional(),
+});
+
 export const snapshotSelectionSearchSchema = z.looseObject({
   table: z.string().optional(),
 });

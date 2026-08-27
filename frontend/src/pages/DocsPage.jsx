@@ -443,6 +443,11 @@ const SECTIONS = [
             selected commit
           </li>
           <li>
+            Branch, selected snapshot, file scope, grouping, and search are
+            stored in the URL so the current FileTree view can be refreshed or
+            shared
+          </li>
+          <li>
             Select a file, partition, or partition-path step to inspect file
             counts, sizes, rows, and readable per-column metrics, including null
             and NaN percentages, average bytes per value, column-size share, and

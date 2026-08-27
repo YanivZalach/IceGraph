@@ -70,7 +70,11 @@ export const groupFilesByPartition = (
 ): PartitionGroup[] => {
   const filesByPartition = new Map<string, DataFileNode[]>();
   for (const file of files) {
-    const partition = file.details.partition ?? "(unpartitioned)";
+    const rawPartition = file.details.partition;
+    const partition =
+      rawPartition === undefined || rawPartition.trim() === ""
+        ? "(unpartitioned)"
+        : rawPartition;
     const partitionFiles = filesByPartition.get(partition) ?? [];
     partitionFiles.push(file);
     filesByPartition.set(partition, partitionFiles);

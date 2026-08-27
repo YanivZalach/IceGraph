@@ -171,6 +171,11 @@ particular table in focus.
    naturally to one of those views, link to that page (`/table/metadata`, `/table/timeline`,
    `/table/filetree`, same `table`/snapshot query params) *without* `select_node_id`, and say
    plainly that node-level selection is only available on the Graph view.
+   FileTree links may additionally preserve the view with `filetree_branch`,
+   `filetree_snapshot_id`, `filetree_scope` (`snapshot` or `commit`), `filetree_grouping` (`tree`
+   or `flat`), and `filetree_search`. Omit FileTree parameters that use the defaults: branch
+   `main`, snapshot scope, tree grouping, and an empty search. Use an empty `filetree_branch` only
+   when the view intentionally includes all branches.
 3. **Never add `dup` or `cache_id` to a URL you construct.** Those params belong to the app's own
    "Duplicate tab" / "View in graph" buttons, which cache the current in-memory data into that
    browser's IndexedDB for about two seconds before deleting it. A URL built with them from outside

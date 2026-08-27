@@ -10,20 +10,20 @@ export type FileTreeRow =
       depth: number;
       file: DataFileNode;
       id: string;
-      isTreeItem: boolean;
+      isHierarchical: boolean;
       kind: "file";
     }
   | {
       depth: number;
       id: string;
-      isTreeItem: true;
+      isHierarchical: true;
       kind: "partition-path";
       partitionPathNode: PartitionPathNode;
     }
   | {
       depth: number;
       id: string;
-      isTreeItem: boolean;
+      isHierarchical: boolean;
       kind: "partition";
       partition: PartitionGroup;
     };
@@ -37,7 +37,7 @@ const appendPartitionPathRows = (
   rows.push({
     depth,
     id: partitionPathNode.id,
-    isTreeItem: true,
+    isHierarchical: true,
     kind: "partition-path",
     partitionPathNode,
   });
@@ -51,7 +51,7 @@ const appendPartitionPathRows = (
       depth: depth + 1,
       file,
       id: `file:${file.id}`,
-      isTreeItem: true,
+      isHierarchical: true,
       kind: "file",
     });
   }
@@ -61,12 +61,12 @@ const appendPartitionRows = (
   rows: FileTreeRow[],
   partition: PartitionGroup,
   expandedItemIds: Set<string>,
-  isTreeItem: boolean,
+  isHierarchical: boolean,
 ) => {
   rows.push({
     depth: 0,
     id: partition.id,
-    isTreeItem,
+    isHierarchical,
     kind: "partition",
     partition,
   });
@@ -77,7 +77,7 @@ const appendPartitionRows = (
       depth: 1,
       file,
       id: `file:${file.id}`,
-      isTreeItem,
+      isHierarchical,
       kind: "file",
     });
   }

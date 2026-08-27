@@ -9,7 +9,6 @@ interface FileTreeFileRowProps {
   duplicatingNodeId: string | null;
   file: DataFileNode;
   isInspected: boolean;
-  isTreeItem: boolean;
   onInspect: (file: DataFileNode) => void;
   onToggleChecked: (fileId: string) => void;
   onViewInGraph: (event: MouseEvent<HTMLButtonElement>, fileId: string) => void;
@@ -21,7 +20,6 @@ const FileTreeFileRow = ({
   duplicatingNodeId,
   file,
   isInspected,
-  isTreeItem,
   onInspect,
   onToggleChecked,
   onViewInGraph,
@@ -41,10 +39,10 @@ const FileTreeFileRow = ({
 
   return (
     <div
-      role={isTreeItem ? "treeitem" : "listitem"}
-      aria-current={!isTreeItem && isInspected ? "true" : undefined}
+      role="listitem"
+      aria-current={isInspected ? "true" : undefined}
+      aria-description="Press Enter or Space to inspect"
       aria-level={ariaLevel}
-      aria-selected={isTreeItem ? isInspected : undefined}
       tabIndex={0}
       onKeyDown={handleKeyDown}
       onClick={() => {

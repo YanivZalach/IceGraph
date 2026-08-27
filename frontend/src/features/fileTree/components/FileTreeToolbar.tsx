@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type {
   Branch,
   FileTreeViewMode,
@@ -53,13 +53,33 @@ const FileTreeToolbar = ({
   snapshots,
   viewMode,
 }: FileTreeToolbarProps) => {
-  const [isCopied, setIsCopied] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<"copied" | "failed" | "idle">(
+    "idle",
+  );
+  const copyStatusTimeoutRef = useRef<number | null>(null);
+
+  useEffect(
+    () => () => {
+      if (copyStatusTimeoutRef.current !== null) {
+        window.clearTimeout(copyStatusTimeoutRef.current);
+      }
+    },
+    [],
+  );
 
   const handleCopyPaths = async () => {
-    await navigator.clipboard.writeText([...checkedFileIds].join("\n"));
-    setIsCopied(true);
-    window.setTimeout(() => {
-      setIsCopied(false);
+    if (copyStatusTimeoutRef.current !== null) {
+      window.clearTimeout(copyStatusTimeoutRef.current);
+    }
+    try {
+      await navigator.clipboard.writeText([...checkedFileIds].join("\n"));
+      setCopyStatus("copied");
+    } catch {
+      setCopyStatus("failed");
+    }
+    copyStatusTimeoutRef.current = window.setTimeout(() => {
+      setCopyStatus("idle");
+      copyStatusTimeoutRef.current = null;
     }, 2000);
   };
 
@@ -127,7 +147,11 @@ const FileTreeToolbar = ({
           disabled={checkedFileIds.size === 0}
           className="shrink-0 cursor-pointer rounded-lg border border-accent px-3 py-1.5 text-sm text-accent transition hover:bg-accent-muted disabled:cursor-not-allowed disabled:border-edge disabled:text-slate-600"
         >
-          {isCopied ? "Copied" : `Copy paths (${String(checkedFileIds.size)})`}
+          {copyStatus === "copied"
+            ? "Copied"
+            : copyStatus === "failed"
+              ? "Copy failed"
+              : `Copy paths (${String(checkedFileIds.size)})`}
         </button>
         <span className="whitespace-nowrap text-xs text-slate-500">
           {partitionCount} partitions / {fileCount} files

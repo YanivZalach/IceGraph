@@ -65,12 +65,11 @@ const FileTreeGroupRow = ({
 
   return (
     <div
-      role={row.isTreeItem ? "treeitem" : "listitem"}
-      aria-current={!row.isTreeItem && isInspected ? "true" : undefined}
-      aria-expanded={row.isTreeItem ? isExpanded : undefined}
+      role="listitem"
+      aria-current={isInspected ? "true" : undefined}
+      aria-description="Press Enter or Space to inspect"
       aria-label={label}
-      aria-level={row.isTreeItem ? row.depth + 1 : undefined}
-      aria-selected={row.isTreeItem ? isInspected : undefined}
+      aria-level={row.isHierarchical ? row.depth + 1 : undefined}
       tabIndex={0}
       onClick={handleInspect}
       onKeyDown={handleKeyDown}

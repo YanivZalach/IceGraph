@@ -133,7 +133,12 @@ export const PanelDetailRow = ({
   const textToCopy = (() => {
     if (value === null || value === undefined || value === "") return "";
     if (typeof value === "object") return JSON.stringify(value, null, 2);
-    if (isByteField && typeof value === "string") {
+    if (
+      isByteField &&
+      (typeof value === "string" ||
+        typeof value === "number" ||
+        typeof value === "bigint")
+    ) {
       return formatBytesAsMebibytes(value);
     }
     if (
