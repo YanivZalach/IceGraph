@@ -1,9 +1,10 @@
-import type { MouseEvent } from "react";
+import type { KeyboardEvent, MouseEvent } from "react";
 import { fileTypeLabel } from "../../../graphConstants.js";
 import { cn } from "../../../shared/lib/cn";
 import type { DataFileNode } from "../types";
 
 interface FileTreeFileRowProps {
+  ariaLevel: number | undefined;
   checkedFileIds: Set<string>;
   duplicatingNodeId: string | null;
   file: DataFileNode;
@@ -15,6 +16,7 @@ interface FileTreeFileRowProps {
 }
 
 const FileTreeFileRow = ({
+  ariaLevel,
   checkedFileIds,
   duplicatingNodeId,
   file,
@@ -26,11 +28,25 @@ const FileTreeFileRow = ({
 }: FileTreeFileRowProps) => {
   const isChecked = checkedFileIds.has(file.id);
   const timestamp = file.details.earliest_appearing_snapshot_timestamp;
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (
+      event.target !== event.currentTarget ||
+      (event.key !== "Enter" && event.key !== " ")
+    ) {
+      return;
+    }
+    event.preventDefault();
+    onInspect(file);
+  };
 
   return (
     <div
       role={isTreeItem ? "treeitem" : "listitem"}
-      aria-selected={isInspected}
+      aria-current={!isTreeItem && isInspected ? "true" : undefined}
+      aria-level={ariaLevel}
+      aria-selected={isTreeItem ? isInspected : undefined}
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
       onClick={() => {
         onInspect(file);
       }}

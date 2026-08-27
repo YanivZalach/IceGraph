@@ -53,11 +53,16 @@ export const getFileSizeBytes = (file: DataFileNode): number | null => {
 };
 
 export const getLatestFileTimestamp = (files: DataFileNode[]): string | null =>
-  files
-    .map((file) => file.details.earliest_appearing_snapshot_timestamp)
-    .filter((timestamp): timestamp is string => timestamp != null)
-    .sort((first, second) => first.localeCompare(second))
-    .at(-1) ?? null;
+  files.reduce<string | null>((latestTimestamp, file) => {
+    const timestamp = file.details.earliest_appearing_snapshot_timestamp;
+    if (timestamp == null) return latestTimestamp;
+    if (
+      latestTimestamp === null ||
+      timestamp.localeCompare(latestTimestamp) > 0
+    )
+      return timestamp;
+    return latestTimestamp;
+  }, null);
 
 export const groupFilesByPartition = (
   files: DataFileNode[],
@@ -82,7 +87,6 @@ export const groupFilesByPartition = (
       files: partitionFiles,
       id: `partition:${name}`,
       name,
-      statistics: calculateFileStatistics(partitionFiles),
     }))
     .sort((first, second) => second.name.localeCompare(first.name));
 };
@@ -104,7 +108,6 @@ const convertMutablePartitionPathNode = (
     id: `partition-path:${mutableNode.path}`,
     label: mutableNode.label,
     path: mutableNode.path,
-    statistics: calculateFileStatistics(allFiles),
   };
 };
 

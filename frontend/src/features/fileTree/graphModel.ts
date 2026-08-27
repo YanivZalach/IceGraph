@@ -197,6 +197,7 @@ export const selectCurrentSnapshot = (
 const traverseSnapshotGraph = (
   snapshot: SnapshotNode | undefined,
   graphIndex: FileTreeGraphIndex,
+  shouldCollectFiles = true,
 ): SnapshotGraphTraversal => {
   if (snapshot === undefined) return { errors: [], files: [], warnings: [] };
 
@@ -206,9 +207,11 @@ const traverseSnapshotGraph = (
   const warnings: string[] = [];
   const visitedNodeIds = new Set<string>();
   const queuedNodeIds = [snapshot.id];
+  let queuedNodeIndex = 0;
 
-  while (queuedNodeIds.length > 0) {
-    const currentNodeId = queuedNodeIds.shift();
+  while (queuedNodeIndex < queuedNodeIds.length) {
+    const currentNodeId = queuedNodeIds[queuedNodeIndex];
+    queuedNodeIndex += 1;
     if (currentNodeId === undefined || visitedNodeIds.has(currentNodeId)) {
       continue;
     }
@@ -235,7 +238,11 @@ const traverseSnapshotGraph = (
         }
         continue;
       }
-      if (isDataFileNode(child) && !connection.isDeleted) {
+      if (
+        shouldCollectFiles &&
+        isDataFileNode(child) &&
+        !connection.isDeleted
+      ) {
         filesById.set(child.id, child);
       }
       queuedNodeIds.push(child.id);
@@ -251,6 +258,7 @@ const getSnapshotIdentifier = (snapshot: SnapshotNode): string =>
 const inspectSnapshotLineage = (
   snapshot: SnapshotNode,
   graphIndex: FileTreeGraphIndex,
+  scope: SnapshotFileScope,
 ): SnapshotLineageInspection => {
   const issueDescriptions: string[] = [];
   let nearestReadableParent: SnapshotGraphTraversal | undefined;
@@ -267,7 +275,13 @@ const inspectSnapshotLineage = (
     const parentSnapshot = graphIndex.snapshotsBySnapshotId[parentSnapshotId];
     if (parentSnapshot === undefined) break;
 
-    const parentTraversal = traverseSnapshotGraph(parentSnapshot, graphIndex);
+    const shouldCollectParentFiles =
+      scope === "commit" && nearestReadableParent === undefined;
+    const parentTraversal = traverseSnapshotGraph(
+      parentSnapshot,
+      graphIndex,
+      shouldCollectParentFiles,
+    );
     const parentIssues = [
       ...parentTraversal.errors,
       ...parentTraversal.warnings,
@@ -279,7 +293,10 @@ const inspectSnapshotLineage = (
       if (nearestReadableParent === undefined) {
         skippedSnapshotIds.push(getSnapshotIdentifier(parentSnapshot));
       }
-    } else if (nearestReadableParent === undefined) {
+    } else if (
+      shouldCollectParentFiles &&
+      nearestReadableParent === undefined
+    ) {
       nearestReadableParent = parentTraversal;
       nearestReadableParentId = getSnapshotIdentifier(parentSnapshot);
     }
@@ -335,7 +352,7 @@ export const getSnapshotFileResult = (
     return snapshotTraversal;
   }
 
-  const lineage = inspectSnapshotLineage(snapshot, graphIndex);
+  const lineage = inspectSnapshotLineage(snapshot, graphIndex, scope);
   const lineageWarnings = getLineageWarnings(snapshot, lineage, scope);
   if (scope === "snapshot") {
     return {

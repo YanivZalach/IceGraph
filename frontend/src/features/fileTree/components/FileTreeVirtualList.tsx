@@ -46,6 +46,7 @@ const FileTreeVirtualList = ({
           return (
             <div
               key={virtualRow.key}
+              role="none"
               data-index={virtualRow.index}
               className="absolute top-0 left-0 w-full pb-2"
               // TanStack Virtual supplies each row's runtime position: https://tanstack.com/virtual/latest/docs/framework/react/react-virtual

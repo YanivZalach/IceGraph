@@ -34,14 +34,12 @@ export interface PartitionPathNode {
   id: string;
   label: string;
   path: string;
-  statistics: FileStatistics;
 }
 
 export interface PartitionGroup {
   files: DataFileNode[];
   id: string;
   name: string;
-  statistics: FileStatistics;
 }
 
 export interface Branch {

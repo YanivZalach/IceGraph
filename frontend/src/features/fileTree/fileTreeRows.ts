@@ -16,12 +16,14 @@ export type FileTreeRow =
   | {
       depth: number;
       id: string;
+      isTreeItem: true;
       kind: "partition-path";
       partitionPathNode: PartitionPathNode;
     }
   | {
       depth: number;
       id: string;
+      isTreeItem: boolean;
       kind: "partition";
       partition: PartitionGroup;
     };
@@ -35,6 +37,7 @@ const appendPartitionPathRows = (
   rows.push({
     depth,
     id: partitionPathNode.id,
+    isTreeItem: true,
     kind: "partition-path",
     partitionPathNode,
   });
@@ -58,10 +61,12 @@ const appendPartitionRows = (
   rows: FileTreeRow[],
   partition: PartitionGroup,
   expandedItemIds: Set<string>,
+  isTreeItem: boolean,
 ) => {
   rows.push({
     depth: 0,
     id: partition.id,
+    isTreeItem,
     kind: "partition",
     partition,
   });
@@ -72,7 +77,7 @@ const appendPartitionRows = (
       depth: 1,
       file,
       id: `file:${file.id}`,
-      isTreeItem: false,
+      isTreeItem,
       kind: "file",
     });
   }
@@ -87,7 +92,7 @@ export const buildVisibleFileTreeRows = (
   const rows: FileTreeRow[] = [];
   if (viewMode === "flat") {
     for (const partition of partitions) {
-      appendPartitionRows(rows, partition, expandedItemIds);
+      appendPartitionRows(rows, partition, expandedItemIds, false);
     }
     return rows;
   }
@@ -96,7 +101,7 @@ export const buildVisibleFileTreeRows = (
     (partition) => partition.name === "(unpartitioned)",
   );
   if (unpartitioned !== undefined) {
-    appendPartitionRows(rows, unpartitioned, expandedItemIds);
+    appendPartitionRows(rows, unpartitioned, expandedItemIds, true);
   }
   for (const partitionPathNode of partitionPathNodes) {
     appendPartitionPathRows(rows, partitionPathNode, 0, expandedItemIds);

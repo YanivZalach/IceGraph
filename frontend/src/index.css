@@ -24,10 +24,10 @@
   --spacing-45: 11.25rem;
   --spacing-85: 21.25rem;
 
-  --font-size-tiny: 0.55rem;
-  --font-size-micro: 0.6rem;
-  --font-size-caption: 0.65rem;
-  --font-size-detail: 0.7rem;
+  --text-tiny: 0.55rem;
+  --text-micro: 0.6rem;
+  --text-caption: 0.65rem;
+  --text-detail: 0.7rem;
 }
 
 @utility h-graph {

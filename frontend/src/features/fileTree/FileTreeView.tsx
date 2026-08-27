@@ -2,7 +2,6 @@ import type { MouseEvent } from "react";
 import PanelIssueNotice from "../../components/PanelIssueNotice";
 import { useViewInGraph } from "../../hooks/useViewInGraph";
 import FileTreeContent from "./components/FileTreeContent";
-import FileTreeFileRow from "./components/FileTreeFileRow";
 import FileTreeInspector from "./components/FileTreeInspector";
 import FileTreeToolbar from "./components/FileTreeToolbar";
 import {
@@ -18,7 +17,6 @@ import {
   groupFilesByPartition,
 } from "./partitionModel";
 import type { FileTreeContext } from "./schemas";
-import type { DataFileNode } from "./types";
 import { useFileTreeState } from "./useFileTreeState";
 
 interface FileTreeViewProps {
@@ -86,20 +84,6 @@ const FileTreeView = ({ graphData }: FileTreeViewProps) => {
     pageState.inspectedItem?.kind === "partition"
       ? pageState.inspectedItem.partition.id
       : null;
-  const renderFile = (file: DataFileNode, isTreeItem: boolean) => (
-    <FileTreeFileRow
-      key={file.id}
-      checkedFileIds={pageState.checkedFileIds}
-      duplicatingNodeId={activeDuplicatingNodeId}
-      file={file}
-      isInspected={inspectedFileId === file.id}
-      isTreeItem={isTreeItem}
-      onInspect={pageState.inspectFile}
-      onToggleChecked={pageState.toggleChecked}
-      onViewInGraph={handleViewInGraph}
-    />
-  );
-
   return (
     <div className="h-graph flex w-full min-h-0 flex-none flex-col overflow-hidden bg-canvas">
       <FileTreeToolbar
@@ -165,19 +149,23 @@ const FileTreeView = ({ graphData }: FileTreeViewProps) => {
           ) : (
             <FileTreeContent
               checkedFileIds={pageState.checkedFileIds}
+              duplicatingNodeId={activeDuplicatingNodeId}
               expandedItemIds={pageState.expandedItemIds}
+              inspectedFileId={inspectedFileId}
               inspectedPartitionPathNodeId={inspectedPartitionPathNodeId}
               inspectedPartitionId={inspectedPartitionId}
               onCollapseMany={pageState.collapseMany}
               onExpandMany={pageState.expandItems}
+              onInspectFile={pageState.inspectFile}
               onInspectPartitionPathNode={pageState.inspectPartitionPathNode}
               onInspectPartition={pageState.inspectPartition}
               onToggleExpanded={pageState.toggleExpanded}
+              onToggleChecked={pageState.toggleChecked}
               onToggleFiles={pageState.toggleFiles}
+              onViewInGraph={handleViewInGraph}
               partitions={partitions}
               partitionPathNodes={partitionPathNodes}
               search={pageState.search}
-              renderFile={renderFile}
               viewMode={pageState.viewMode}
             />
           )}

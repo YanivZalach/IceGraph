@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { MouseEvent } from "react";
 import { buildVisibleFileTreeRows } from "../fileTreeRows";
 import type { FileTreeRow } from "../fileTreeRows";
 import type {
@@ -8,43 +8,51 @@ import type {
   PartitionPathNode,
 } from "../types";
 import FileTreeIndentedRow from "./FileTreeIndentedRow";
-import FileTreePartition from "./FileTreePartition";
+import FileTreeFileRow from "./FileTreeFileRow";
+import FileTreeGroupRow from "./FileTreeGroupRow";
 import FileTreeVirtualList from "./FileTreeVirtualList";
-import PartitionPathNodeComponent from "./PartitionPathNode";
 
 interface FileTreeContentProps {
   checkedFileIds: Set<string>;
+  duplicatingNodeId: string | null;
   expandedItemIds: Set<string>;
+  inspectedFileId: string | null;
   inspectedPartitionPathNodeId: string | null;
   inspectedPartitionId: string | null;
   onCollapseMany: (itemIds: string[]) => void;
   onExpandMany: (itemIds: string[]) => void;
+  onInspectFile: (file: DataFileNode) => void;
   onInspectPartitionPathNode: (node: PartitionPathNode) => void;
   onInspectPartition: (partition: PartitionGroup) => void;
   onToggleExpanded: (itemId: string) => void;
+  onToggleChecked: (fileId: string) => void;
   onToggleFiles: (files: DataFileNode[]) => void;
+  onViewInGraph: (event: MouseEvent<HTMLButtonElement>, fileId: string) => void;
   partitions: PartitionGroup[];
   partitionPathNodes: PartitionPathNode[];
   search: string;
-  renderFile: (file: DataFileNode, isTreeItem: boolean) => ReactNode;
   viewMode: FileTreeViewMode;
 }
 
 const FileTreeContent = ({
   checkedFileIds,
+  duplicatingNodeId,
   expandedItemIds,
+  inspectedFileId,
   inspectedPartitionPathNodeId,
   inspectedPartitionId,
   onCollapseMany,
   onExpandMany,
+  onInspectFile,
   onInspectPartitionPathNode,
   onInspectPartition,
   onToggleExpanded,
+  onToggleChecked,
   onToggleFiles,
+  onViewInGraph,
   partitions,
   partitionPathNodes,
   search,
-  renderFile,
   viewMode,
 }: FileTreeContentProps) => {
   const visibleRows = buildVisibleFileTreeRows(
@@ -56,29 +64,33 @@ const FileTreeContent = ({
   const renderVisibleRow = (row: FileTreeRow) => (
     <FileTreeIndentedRow depth={row.depth}>
       {row.kind === "file" ? (
-        renderFile(row.file, row.isTreeItem)
-      ) : row.kind === "partition" ? (
-        <FileTreePartition
+        <FileTreeFileRow
+          ariaLevel={row.isTreeItem ? row.depth + 1 : undefined}
           checkedFileIds={checkedFileIds}
-          expandedItemIds={expandedItemIds}
-          isInspected={inspectedPartitionId === row.partition.id}
-          onInspectPartition={onInspectPartition}
-          onToggleExpanded={onToggleExpanded}
-          onToggleFiles={onToggleFiles}
-          partition={row.partition}
+          duplicatingNodeId={duplicatingNodeId}
+          file={row.file}
+          isInspected={inspectedFileId === row.file.id}
+          isTreeItem={row.isTreeItem}
+          onInspect={onInspectFile}
+          onToggleChecked={onToggleChecked}
+          onViewInGraph={onViewInGraph}
         />
       ) : (
-        <PartitionPathNodeComponent
+        <FileTreeGroupRow
           checkedFileIds={checkedFileIds}
-          depth={row.depth + 1}
           expandedItemIds={expandedItemIds}
-          inspectedPartitionPathNodeId={inspectedPartitionPathNodeId}
+          isInspected={
+            row.kind === "partition"
+              ? inspectedPartitionId === row.partition.id
+              : inspectedPartitionPathNodeId === row.partitionPathNode.id
+          }
           onCollapseMany={onCollapseMany}
           onExpandMany={onExpandMany}
           onInspectPartitionPathNode={onInspectPartitionPathNode}
+          onInspectPartition={onInspectPartition}
           onToggleExpanded={onToggleExpanded}
           onToggleFiles={onToggleFiles}
-          partitionPathNode={row.partitionPathNode}
+          row={row}
         />
       )}
     </FileTreeIndentedRow>

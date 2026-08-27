@@ -8,7 +8,7 @@ import ReadableMetricsSummary from "../../../components/ReadableMetricsSummary";
 import { fileTypeLabel } from "../../../graphConstants.js";
 import { formatBytesAsMebibytes } from "../../../shared/lib/formatBytes";
 import { isEmptyValue } from "../../../shared/lib/isEmptyValue";
-import { getFileSizeBytes } from "../partitionModel";
+import { calculateFileStatistics, getFileSizeBytes } from "../partitionModel";
 import type { InspectedFileTreeItem } from "../types";
 import FileTreeStatistics from "./FileTreeStatistics";
 
@@ -39,12 +39,14 @@ const FileTreeInspectorContent = ({
   onViewInGraph,
 }: FileTreeInspectorContentProps) => {
   const file = inspectedItem.kind === "file" ? inspectedItem.file : null;
-  const statistics =
+  const inspectedFiles =
     inspectedItem.kind === "partition-path"
-      ? inspectedItem.partitionPathNode.statistics
+      ? inspectedItem.partitionPathNode.allFiles
       : inspectedItem.kind === "partition"
-        ? inspectedItem.partition.statistics
+        ? inspectedItem.partition.files
         : null;
+  const statistics =
+    inspectedFiles === null ? null : calculateFileStatistics(inspectedFiles);
   const readableMetrics =
     file?.details.readable_metrics ?? statistics?.readableMetrics ?? {};
   const hasReadableMetrics = Object.keys(readableMetrics).length > 0;

@@ -431,6 +431,9 @@ const SECTIONS = [
         <ul className="list-disc list-inside space-y-1">
           <li>Expand directories to see individual files</li>
           <li>
+            Focus a file or directory and press Enter or Space to inspect it
+          </li>
+          <li>
             Directories start collapsed, and large trees render only the rows
             visible in the viewport so expanding many files remains responsive
           </li>
