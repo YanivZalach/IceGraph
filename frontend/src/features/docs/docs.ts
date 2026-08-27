@@ -11,18 +11,35 @@ import overviewMarkdown from "./content/overview.md?raw";
 import specsPanelMarkdown from "./content/specs-panel.md?raw";
 import timelineViewMarkdown from "./content/timeline-view.md?raw";
 import tipsMarkdown from "./content/tips.md?raw";
-import { PIP_INSTALL_COMMAND } from "./docsConstants";
 
-export interface DocsSection {
+interface DocsSection {
   id: string;
   title: string;
   markdown: string;
 }
 
+export interface SearchResult {
+  section: DocsSection;
+  occurrenceIndex: number;
+  totalInSection: number;
+  snippet: string;
+}
+
+export interface Highlight {
+  sectionId: string;
+  term: string;
+  index: number;
+}
+
+const pipInstallCommand =
+  APP_VERSION === "dev"
+    ? "pip install icegraph-client"
+    : `pip install icegraph-client==${APP_VERSION.replace(/^v/, "")}`;
+
 const resolvePlaceholders = (markdown: string): string =>
   markdown
     .replaceAll("{{APP_VERSION}}", APP_VERSION)
-    .replaceAll("{{PIP_INSTALL_COMMAND}}", PIP_INSTALL_COMMAND)
+    .replaceAll("{{PIP_INSTALL_COMMAND}}", pipInstallCommand)
     .replaceAll("{{BASE_PATH}}", BASE_PATH);
 
 export const OVERVIEW_SECTION: DocsSection = {
@@ -89,3 +106,52 @@ export const SECTIONS: DocsSection[] = [
     markdown: resolvePlaceholders(clientCliMarkdown),
   },
 ];
+
+const findAllIndices = (text: string, query: string): number[] => {
+  const indices = [];
+  const lowerText = text.toLowerCase();
+  const lowerQuery = query.toLowerCase();
+  let from = 0;
+  let index = lowerText.indexOf(lowerQuery, from);
+
+  while (index !== -1) {
+    indices.push(index);
+    from = index + lowerQuery.length;
+    index = lowerText.indexOf(lowerQuery, from);
+  }
+
+  return indices;
+};
+
+const markdownToSearchText = (markdown: string): string =>
+  markdown
+    .replace(/```[^\n]*\n/g, "")
+    .replace(/```/g, "")
+    .replace(/\[([^\]]+)]\([^)]+\)/g, "$1")
+    .replace(/[*#`]/g, "")
+    .replace(/^\s*-\s+/gm, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+export const buildSearchResults = (
+  sections: DocsSection[],
+  query: string,
+): SearchResult[] => {
+  if (!query) return [];
+
+  return sections.flatMap((section) => {
+    const content = markdownToSearchText(section.markdown);
+    const contentMatches = findAllIndices(content, query);
+
+    return contentMatches.map((matchIndex, occurrenceIndex) => {
+      const snippetStart = Math.max(0, matchIndex - 40);
+
+      return {
+        section,
+        snippet: content.substring(snippetStart, snippetStart + 140),
+        occurrenceIndex,
+        totalInSection: contentMatches.length,
+      };
+    });
+  });
+};

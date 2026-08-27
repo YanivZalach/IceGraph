@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { UI_DOCS_BODY_CLASS, UI_DOCS_NAV_TITLE_CLASS } from "../uiTypography";
 import DocsSearchOverlay from "../features/docs/components/DocsSearchOverlay";
-import Key from "../features/docs/components/Key";
 import MarkdownContent from "../features/docs/components/MarkdownContent";
-import { OVERVIEW_SECTION, SECTIONS } from "../features/docs/docsSections";
-import { buildSearchResults } from "../features/docs/docsSearch";
-import type { Highlight, SearchResult } from "../features/docs/docsTypes";
+import {
+  buildSearchResults,
+  type Highlight,
+  OVERVIEW_SECTION,
+  type SearchResult,
+  SECTIONS,
+} from "../features/docs/docs";
 
 const DocsPage = () => {
   const [active, setActive] = useState(OVERVIEW_SECTION.id);
@@ -145,7 +148,9 @@ const DocsPage = () => {
               className="w-full flex items-center justify-between rounded-md border border-edge bg-surface px-3 py-2 text-sm text-slate-400 hover:text-white hover:bg-surface-hover transition"
             >
               <span>Search docs...</span>
-              <Key k="k" />
+              <kbd className="bg-surface-hover border border-[#3d4a5c] text-[#7dd3fc] text-xs font-mono px-2 py-0.5 rounded">
+                k
+              </kbd>
             </button>
           </div>
 

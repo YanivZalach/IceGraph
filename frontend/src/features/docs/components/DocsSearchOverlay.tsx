@@ -1,7 +1,26 @@
 import { useEffect, useRef } from "react";
-import type { Dispatch, RefObject, SetStateAction } from "react";
-import { highlightMatch } from "../docsSearch";
-import type { SearchResult } from "../docsTypes";
+import type { Dispatch, ReactNode, RefObject, SetStateAction } from "react";
+import type { SearchResult } from "../docs";
+
+const escapeRegExp = (text: string): string =>
+  text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const highlightMatch = (text: string, query: string): ReactNode => {
+  const regularExpression = new RegExp(`(${escapeRegExp(query)})`, "gi");
+
+  return text.split(regularExpression).map((part, index) =>
+    part.toLowerCase() === query.toLowerCase() ? (
+      <mark
+        key={String(index)}
+        className="bg-yellow-400 text-black px-1 rounded"
+      >
+        {part}
+      </mark>
+    ) : (
+      part
+    ),
+  );
+};
 
 interface DocsSearchOverlayProps {
   query: string;
