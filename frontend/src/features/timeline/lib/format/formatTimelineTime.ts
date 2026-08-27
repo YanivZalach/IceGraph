@@ -14,6 +14,7 @@ const NARROW_DISTANCE_OPTIONS = {
 
 const DAY_AND_MONTH_PATTERN = "MMM d";
 const DAY_MONTH_AND_CLOCK_PATTERN = "MMM d, HH:mm";
+const DAY_MONTH_YEAR_AND_CLOCK_PATTERN = "MMM d, yyyy, HH:mm";
 const ABSOLUTE_PATTERN = "MMM d, yyyy, HH:mm:ss.SSS XXX";
 
 /**
@@ -57,3 +58,6 @@ export const formatAbsoluteTimestamp = (timestampMs: number): string =>
 
 export const formatDayAndMonth = (timestampMs: number): string =>
   format(timestampMs, DAY_AND_MONTH_PATTERN);
+
+export const formatDayMonthYearAndClock = (timestampMs: number): string =>
+  format(timestampMs, DAY_MONTH_YEAR_AND_CLOCK_PATTERN);
