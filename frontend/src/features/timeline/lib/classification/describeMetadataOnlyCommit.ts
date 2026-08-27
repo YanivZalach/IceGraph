@@ -69,6 +69,7 @@ export const describeMetadataOnlyCommit = (
   const propertyChanges = describePropertyChanges(
     previousFile.properties,
     currentFile.properties,
+    previousFile.sort_order_id !== currentFile.sort_order_id,
   );
   const expiryChanges = describeExpiredSnapshots(expiredSnapshotCount);
 

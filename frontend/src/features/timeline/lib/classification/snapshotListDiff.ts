@@ -39,6 +39,13 @@ export const countExpiredSnapshots = (
   previousFile: MetadataFileNode,
   currentFile: MetadataFileNode,
 ): number => {
+  const isEitherListMissing =
+    previousFile.pointed_snapshots_files === null ||
+    currentFile.pointed_snapshots_files === null;
+  if (isEitherListMissing) {
+    return 0;
+  }
+
   const currentIds = new Set(listSnapshotIds(currentFile));
 
   return listSnapshotIds(previousFile).filter(
