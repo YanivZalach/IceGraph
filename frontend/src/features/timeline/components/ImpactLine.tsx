@@ -5,18 +5,18 @@ interface ImpactLineProps {
   segments: ImpactSegment[];
 }
 
-const isRewriteRowChurn = (segment: ImpactSegment): boolean =>
+const isBalancedRowChurn = (segment: ImpactSegment): boolean =>
   segment.kind === "count" &&
   segment.unit === "rows" &&
   segment.added > 0 &&
-  segment.removed > 0;
+  segment.added === segment.removed;
 
 const segmentKey = (segment: ImpactSegment): string =>
   segment.kind === "text" ? segment.text : segment.unit;
 
 const ImpactLine = ({ segments }: ImpactLineProps) => {
   const shownSegments = segments.filter(
-    (segment) => !isRewriteRowChurn(segment),
+    (segment) => !isBalancedRowChurn(segment),
   );
 
   return (
