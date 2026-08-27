@@ -415,7 +415,7 @@ export default function TableLayout() {
       );
 
       if (shouldContinuePolling && !abortController.signal.aborted) {
-        pollTimeoutId = setTimeout(poll, 1000);
+        pollTimeoutId = setTimeout(poll, 700);
       }
     };
 

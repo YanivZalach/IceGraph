@@ -612,14 +612,21 @@ const SECTIONS = [
           <div className="space-y-1">
             <h3 className="text-amber-400 font-semibold">Warnings</h3>
             <p>
-              Your request exceeded the allowed data file limit. The backend
-              stopped collecting data files at the configured maximum, so the
-              graph represents a partial view of the table. The snapshot and
-              manifest structure is still complete; only data file coverage is
-              capped.
+              A collection limit was reached, so the graph represents a partial
+              view of the table. When the data file limit is hit, the backend
+              stops attaching data files, but the snapshot and manifest
+              structure is still complete. When the metadata file limit is hit,
+              only the oldest metadata files are dropped, so every metadata file
+              you see is complete and accurate.
             </p>
           </div>
         </div>
+        <p>
+          The manifest limit behaves differently: if your snapshot range
+          contains more manifests than the backend allows, the request fails
+          instead of returning a partial graph, and nothing is rendered. Select
+          a smaller snapshot range.
+        </p>
         <p>
           The panel opens automatically when the backend reports any issue. Even
           so, always check it when the graph looks incomplete or the data file

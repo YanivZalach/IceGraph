@@ -9,40 +9,40 @@ class Env:
     """Application settings loaded from environment variables."""
 
     # Maximum number of graphs to compute in parallel.
-    MAX_NUMBER_OF_GRAPHS_TO_COMPUTE = int(os.getenv("MAX_NUMBER_OF_GRAPHS_TO_COMPUTE", "15"))
+    MAX_NUMBER_OF_GRAPHS_TO_COMPUTE: int = int(os.getenv("MAX_NUMBER_OF_GRAPHS_TO_COMPUTE", "15"))
 
     # Maximum number of snapshots shown on the snapshot selection page.
-    MAX_SNAPSHOTS_TO_SHOW = int(os.getenv("MAX_SNAPSHOTS_TO_SHOW", "20"))
+    MAX_SNAPSHOTS_TO_SHOW: int = int(os.getenv("MAX_SNAPSHOTS_TO_SHOW", "20"))
 
     # Maximum number of snapshots processed per graph.
-    MAX_SNAPSHOTS_TO_COMPUTE = int(os.getenv("MAX_SNAPSHOTS_TO_COMPUTE", "50"))
+    MAX_SNAPSHOTS_TO_COMPUTE: int = int(os.getenv("MAX_SNAPSHOTS_TO_COMPUTE", "50"))
 
     # Delay before a completed graph is removed from memory.
-    COMPUTE_CLEANUP_TIME_SECONDS = int(os.getenv("COMPUTE_CLEANUP_TIME_SECONDS", "12"))
+    COMPUTE_CLEANUP_TIME_SECONDS: int = int(os.getenv("COMPUTE_CLEANUP_TIME_SECONDS", "15"))
 
     # Maximum number of data files collected per graph.
-    MAX_DATA_FILES_TO_COLLECT = int(os.getenv("MAX_DATA_FILES_TO_COLLECT", "5000"))
+    MAX_DATA_FILES_TO_COLLECT: int = int(os.getenv("MAX_DATA_FILES_TO_COLLECT", "5000"))
 
     # Maximum number of manifests collected per graph.
-    MAX_MANIFESTS_TO_COLLECT = int(os.getenv("MAX_MANIFESTS_TO_COLLECT", "5000"))
+    MAX_MANIFESTS_TO_COLLECT: int = int(os.getenv("MAX_MANIFESTS_TO_COLLECT", "300"))
 
     # Maximum number of metadata files collected per graph.
-    MAX_METADATA_FILES_TO_COLLECT = int(os.getenv("MAX_METADATA_FILES_TO_COLLECT", "100"))
+    MAX_METADATA_FILES_TO_COLLECT: int = int(os.getenv("MAX_METADATA_FILES_TO_COLLECT", "100"))
 
     # Cache lifetime for the table selection endpoint.
-    TABLE_LIST_CACHE_TTL_SECONDS = int(os.getenv("TABLE_LIST_CACHE_TTL_SECONDS", "60"))
+    TABLE_LIST_CACHE_TTL_SECONDS: int = int(os.getenv("TABLE_LIST_CACHE_TTL_SECONDS", "60"))
 
     # Base URL used to link Spark snapshots to their History Server applications.
-    SPARK_HISTORY_SERVER_URL = os.getenv("SPARK_HISTORY_SERVER_URL", "")
+    SPARK_HISTORY_SERVER_URL: str = os.getenv("SPARK_HISTORY_SERVER_URL", "")
 
     # Whether non-Iceberg catalogs are included in table selection.
-    INCLUDE_NONE_ICEBERG_CATALOGS = os.getenv("INCLUDE_NONE_ICEBERG_CATALOGS", "true").lower() == "true"
+    INCLUDE_NONE_ICEBERG_CATALOGS: bool = os.getenv("INCLUDE_NONE_ICEBERG_CATALOGS", "true").lower() == "true"
 
     # Maximum time allowed for graceful application shutdown.
-    MAX_GRACEFUL_SHUTDOWN_TIME_SECONDS = int(os.getenv("MAX_GRACEFUL_SHUTDOWN_TIME_SECONDS", "10"))
+    MAX_GRACEFUL_SHUTDOWN_TIME_SECONDS: int = int(os.getenv("MAX_GRACEFUL_SHUTDOWN_TIME_SECONDS", "10"))
 
     # Whether to serve the application with Waitress.
-    PRODUCTION_MODE = os.getenv("PRODUCTION_MODE", "false").lower() == "true"
+    PRODUCTION_MODE: bool = os.getenv("PRODUCTION_MODE", "false").lower() == "true"
 
     # Number of request threads used by Waitress.
-    WSGI_THREADS = int(os.getenv("WSGI_THREADS", "20"))
+    WSGI_THREADS: int = int(os.getenv("WSGI_THREADS", "20"))
