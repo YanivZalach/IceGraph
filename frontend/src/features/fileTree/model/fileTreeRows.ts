@@ -3,7 +3,7 @@ import type {
   FileTreeViewMode,
   PartitionGroup,
   PartitionPathNode,
-} from "./types";
+} from "../types";
 
 export type FileTreeRow =
   | {

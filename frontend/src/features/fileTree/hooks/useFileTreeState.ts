@@ -7,7 +7,7 @@ import type {
   PartitionGroup,
   PartitionPathNode,
   SnapshotFileScope,
-} from "./types";
+} from "../types";
 
 interface FileTreeState {
   checkedFileIds: Set<string>;

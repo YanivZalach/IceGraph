@@ -1,6 +1,6 @@
 import type { MouseEvent } from "react";
-import { buildVisibleFileTreeRows } from "../fileTreeRows";
-import type { FileTreeRow } from "../fileTreeRows";
+import { buildVisibleFileTreeRows } from "../model/fileTreeRows";
+import type { FileTreeRow } from "../model/fileTreeRows";
 import type {
   DataFileNode,
   FileTreeViewMode,

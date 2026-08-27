@@ -1,4 +1,4 @@
-import { formatSnapshotVersion } from "../graphModel";
+import { formatSnapshotVersion } from "../model/snapshotSelection";
 import type { SnapshotNode } from "../types";
 
 interface FileTreeSnapshotSelectProps {

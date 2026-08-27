@@ -3,7 +3,7 @@ import type {
   FileStatistics,
   PartitionGroup,
   PartitionPathNode,
-} from "./types";
+} from "../types";
 import { aggregateReadableMetrics } from "./aggregateReadableMetrics";
 
 interface MutablePartitionPathNode {

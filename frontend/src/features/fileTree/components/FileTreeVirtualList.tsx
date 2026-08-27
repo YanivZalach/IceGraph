@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import type { ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import type { FileTreeRow } from "../fileTreeRows";
+import type { FileTreeRow } from "../model/fileTreeRows";
 
 interface FileTreeVirtualListProps {
   renderRow: (row: FileTreeRow) => ReactNode;

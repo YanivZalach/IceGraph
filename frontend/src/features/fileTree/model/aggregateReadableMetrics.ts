@@ -1,8 +1,8 @@
 import type {
   ReadableColumnMetrics,
   ReadableMetrics,
-} from "../../utils/readableMetrics";
-import type { DataFileNode } from "./types";
+} from "../../../utils/readableMetrics";
+import type { DataFileNode } from "../types";
 
 const NUMERIC_BOUND_FIELD_TYPES = new Set(["int", "long", "float", "double"]);
 const STRING_BOUND_FIELD_TYPES = new Set([

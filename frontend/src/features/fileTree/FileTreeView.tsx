@@ -4,20 +4,20 @@ import { useViewInGraph } from "../../hooks/useViewInGraph";
 import FileTreeContent from "./components/FileTreeContent";
 import FileTreeInspector from "./components/FileTreeInspector";
 import FileTreeToolbar from "./components/FileTreeToolbar";
+import { buildFileTreeGraphIndex } from "./model/graphIndex";
 import {
-  buildFileTreeGraphIndex,
   getBranches,
   getDisplayedSnapshots,
-  getSnapshotFileResult,
   selectCurrentSnapshot,
-} from "./graphModel";
+} from "./model/snapshotSelection";
+import { getSnapshotFileResult } from "./model/snapshotLineage";
 import {
   buildPartitionPathTree,
   getAllPartitionPathNodeIds,
   groupFilesByPartition,
-} from "./partitionModel";
+} from "./model/partitionModel";
 import type { FileTreeContext } from "./schemas";
-import { useFileTreeState } from "./useFileTreeState";
+import { useFileTreeState } from "./hooks/useFileTreeState";
 
 interface FileTreeViewProps {
   graphData: FileTreeContext;

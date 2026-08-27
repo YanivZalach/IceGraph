@@ -1,10 +1,10 @@
 import type { KeyboardEvent } from "react";
 import { cn } from "../../../shared/lib/cn";
-import type { FileTreeRow } from "../fileTreeRows";
+import type { FileTreeRow } from "../model/fileTreeRows";
 import {
   getAllPartitionPathNodeIds,
   getLatestFileTimestamp,
-} from "../partitionModel";
+} from "../model/partitionModel";
 import type { DataFileNode, PartitionGroup, PartitionPathNode } from "../types";
 import PartitionPathIcon from "./PartitionPathIcon";
 
