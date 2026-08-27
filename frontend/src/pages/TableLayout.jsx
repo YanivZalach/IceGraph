@@ -1,5 +1,5 @@
 import JSONbig from "json-bigint";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useEffectEvent, useRef, useState } from "react";
 import { Outlet, useNavigate, useSearch } from "@tanstack/react-router";
 import { TableGraphDataContext } from "../features/table/tableGraphData";
 import PageLoader from "../components/PageLoader";
@@ -223,15 +223,6 @@ export default function TableLayout() {
   const [showDiff, setShowDiff] = useState(false);
   const [specJsonCopied, setSpecJsonCopied] = useState(false);
 
-  const pollIntervalRef = useRef(null);
-
-  const clearPolling = () => {
-    if (pollIntervalRef.current) {
-      clearInterval(pollIntervalRef.current);
-      pollIntervalRef.current = null;
-    }
-  };
-
   useEffect(() => {
     setShowDiff(false);
   }, [selectionDetail]);
@@ -315,47 +306,52 @@ export default function TableLayout() {
     }
   };
 
-  const pollJobStatus = async (jid, token) => {
-    try {
-      const res = await fetch(`/api/v1/graph-data/${jid}`, {
-        headers: { "X-IceGraph-Job-Token": token },
-      });
-      if (res.status === 200) {
-        const text = await res.text();
-        setRawData(text);
-        const data = JSONbig({ storeAsString: true }).parse(text);
-        console.log(JSONbig({ storeAsString: true }).parse(text));
+  const pollJobStatus = useEffectEvent(
+    async (polledJobId, polledJobToken, signal) => {
+      try {
+        const response = await fetch(`/api/v1/graph-data/${polledJobId}`, {
+          headers: { "X-IceGraph-Job-Token": polledJobToken },
+          signal,
+        });
+        if (response.status === 200) {
+          const text = await response.text();
+          setRawData(text);
+          const data = JSONbig({ storeAsString: true }).parse(text);
 
-        setGraphData(buildGraphData(data));
-        setErrors(data.errors || {});
-        setWarnings(data.warnings || {});
+          setGraphData(buildGraphData(data));
+          setErrors(data.errors || {});
+          setWarnings(data.warnings || {});
+          setLoading(false);
+          setJobId(null);
+          setJobToken(null);
+
+          return false;
+        } else if (response.status === 202) {
+          const data = await response.json();
+          setCollectionStages(data.stages || null);
+          return true;
+        } else {
+          const data = await response.json();
+          setCollectionStages(data.stages || null);
+          setError(data.error || "Job failed");
+          setLoading(false);
+          setJobId(null);
+          setJobToken(null);
+
+          return false;
+        }
+      } catch (error) {
+        if (signal.aborted) return false;
+
+        setError(error.message || "Failed to check job status");
         setLoading(false);
         setJobId(null);
         setJobToken(null);
 
-        clearPolling();
-      } else if (res.status === 202) {
-        const data = await res.json();
-        setCollectionStages(data.stages || null);
-      } else {
-        const data = await res.json();
-        setCollectionStages(data.stages || null);
-        setError(data.error || "Job failed");
-        setLoading(false);
-        setJobId(null);
-        setJobToken(null);
-
-        clearPolling();
+        return false;
       }
-    } catch (err) {
-      setError(err.message || "Failed to check job status");
-      setLoading(false);
-      setJobId(null);
-      setJobToken(null);
-
-      clearPolling();
-    }
-  };
+    },
+  );
 
   useEffect(() => {
     if (!tableName) {
@@ -408,13 +404,27 @@ export default function TableLayout() {
   useEffect(() => {
     if (!jobId || !jobToken) return;
 
-    pollJobStatus(jobId, jobToken);
+    const abortController = new AbortController();
+    let pollTimeoutId = null;
 
-    pollIntervalRef.current = setInterval(() => {
-      pollJobStatus(jobId, jobToken);
-    }, 1000);
+    const poll = async () => {
+      const shouldContinuePolling = await pollJobStatus(
+        jobId,
+        jobToken,
+        abortController.signal,
+      );
 
-    return clearPolling;
+      if (shouldContinuePolling && !abortController.signal.aborted) {
+        pollTimeoutId = setTimeout(poll, 1000);
+      }
+    };
+
+    poll();
+
+    return () => {
+      abortController.abort();
+      if (pollTimeoutId) clearTimeout(pollTimeoutId);
+    };
   }, [jobId, jobToken]);
 
   if (loading) {
