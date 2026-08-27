@@ -53,20 +53,6 @@ export const PANEL_DIFF_AFTER_VALUE_CLASS = `${PANEL_DIFF_VALUE_BASE_CLASS} bg-g
 
 export const DEFAULT_COLLAPSE_LINES = 15;
 
-const colorParseContext = document.createElement("canvas").getContext("2d");
-
-const stripAlpha = (color: string | null): string | null => {
-  if (color === null || colorParseContext === null) return color;
-  colorParseContext.fillStyle = color;
-  const normalizedColor = colorParseContext.fillStyle;
-  if (typeof normalizedColor !== "string") return color;
-  const match = normalizedColor.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-
-  return match
-    ? `rgb(${String(match[1])}, ${String(match[2])}, ${String(match[3])})`
-    : normalizedColor;
-};
-
 interface PanelHeaderProps {
   meta?: ReactNode;
   preserveSubtitleEnd?: boolean;
@@ -82,12 +68,11 @@ export const PanelHeader = ({
   meta = null,
   preserveSubtitleEnd = false,
 }: PanelHeaderProps) => {
-  const opaqueColor = stripAlpha(titleColor);
   return (
     <div className="min-w-0 pr-4">
       <div
         className={PANEL_TITLE_CLASS}
-        style={opaqueColor ? { color: opaqueColor } : undefined}
+        style={titleColor ? { color: titleColor } : undefined}
       >
         {title}
       </div>
@@ -135,9 +120,7 @@ export const PanelDetailRow = ({
     if (typeof value === "object") return JSON.stringify(value, null, 2);
     if (
       isByteField &&
-      (typeof value === "string" ||
-        typeof value === "number" ||
-        typeof value === "bigint")
+      (typeof value === "string" || typeof value === "number")
     ) {
       return formatBytesAsMebibytes(value);
     }

@@ -11,7 +11,7 @@ export const stripByteUnitFromFieldName = (fieldName: string): string =>
   fieldName.replace(BYTE_FIELD_SUFFIX_PATTERN, "") || fieldName;
 
 const formatBytes = (
-  byteCount: string | number | bigint,
+  byteCount: string | number,
   bytesPerUnit: number,
   unitLabel: string,
 ): string => {
@@ -23,10 +23,8 @@ const formatBytes = (
   return `${(parsedByteCount / bytesPerUnit).toFixed(FRACTION_DIGITS)} ${unitLabel}`;
 };
 
-export const formatBytesAsMebibytes = (
-  byteCount: string | number | bigint,
-): string => formatBytes(byteCount, BYTES_IN_MEBIBYTE, "MiB");
+export const formatBytesAsMebibytes = (byteCount: string | number): string =>
+  formatBytes(byteCount, BYTES_IN_MEBIBYTE, "MiB");
 
-export const formatBytesAsGibibytes = (
-  byteCount: string | number | bigint,
-): string => formatBytes(byteCount, BYTES_IN_GIBIBYTE, "GiB");
+export const formatBytesAsGibibytes = (byteCount: string | number): string =>
+  formatBytes(byteCount, BYTES_IN_GIBIBYTE, "GiB");
