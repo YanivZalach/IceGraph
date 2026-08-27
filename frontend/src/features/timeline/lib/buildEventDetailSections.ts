@@ -1,5 +1,8 @@
 import type { MetadataFileNode, SnapshotNode } from "../api/nodeSchemas";
-import { formatDayAndMonth } from "./format/formatTimelineTime";
+import {
+  formatDayAndMonth,
+  formatDayMonthYearAndClock,
+} from "./format/formatTimelineTime";
 import { formatShortId } from "./format/formatShortId";
 import { groupSnapshotSummary } from "./groupSnapshotSummary";
 import type { TimelineRow } from "./timelineRow";
@@ -24,10 +27,10 @@ const movedToText = (
   target: SnapshotNode | undefined,
 ): string => {
   if (target === undefined) {
-    return `snapshot ${formatShortId(targetId)} (unavailable)`;
+    return `snapshot ${formatShortId(targetId)} (expired or not loaded)`;
   }
   const operation = target.operation ?? "unknown";
-  return `snapshot ${formatShortId(target.snapshot_id)} from ${formatDayAndMonth(target.timestamp)} (${operation})`;
+  return `snapshot ${formatShortId(target.snapshot_id)} from ${formatDayMonthYearAndClock(target.timestamp)} (${operation})`;
 };
 
 const snapshotRows = (
