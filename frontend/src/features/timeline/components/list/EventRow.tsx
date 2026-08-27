@@ -1,9 +1,9 @@
-import { cn } from "../../../shared/lib/cn";
+import { cn } from "../../../../shared/lib/cn";
 import {
   formatAbsoluteTimestamp,
   formatEventTime,
-} from "../lib/format/formatTimelineTime";
-import type { TimelineRow } from "../lib/timelineRow";
+} from "../../lib/format/formatTimelineTime";
+import type { TimelineRow } from "../../lib/timelineRow";
 import EventRail from "./EventRail";
 import ImpactLine from "./ImpactLine";
 import RefBadge from "./RefBadge";
