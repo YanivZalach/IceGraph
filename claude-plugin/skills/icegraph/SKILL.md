@@ -157,6 +157,31 @@ particular table in focus.
   (or a filename the user already gave you). It stays valid as long as that file is still part of
   the selected snapshot range.
 
+### FileTree links
+
+When linking to `/table/filetree`, the following optional parameters reproduce the user's
+FileTree view:
+
+- `filetree_branch=<branch name>` selects a branch. An empty value selects all branches. If the
+  parameter is omitted, FileTree selects `main` when that branch exists.
+- `filetree_snapshot_id=<snapshot id>` selects a snapshot from the loaded range and selected
+  branch. Use an ID returned by the CLI, and keep both `start_snapshot_id` and `end_snapshot_id`
+  in the URL so the snapshot is available to the page.
+- `filetree_scope=commit|snapshot` selects files added in the commit or all files present at the
+  snapshot. The default is `snapshot`.
+- `filetree_grouping=flat|tree` selects flat partition groups or the partition-path tree. The
+  default is `tree`.
+- `filetree_search=<uri-encoded text>` filters partition labels. The default is no filter.
+
+For example, this opens files added by a specific commit across all branches, grouped flat:
+
+```
+<base_url>/table/filetree?table=<uri-encoded database.table>&start_snapshot_id=<range start>&end_snapshot_id=<range end>&filetree_branch=&filetree_snapshot_id=<snapshot id>&filetree_scope=commit&filetree_grouping=flat
+```
+
+URI-encode branch names and search text as well as table names. Omit FileTree parameters that use
+their defaults unless an explicit value makes the requested view clearer.
+
 **Three hard rules:**
 
 1. **Always set both `start_snapshot_id` and `end_snapshot_id` — never emit `end_snapshot_id`
