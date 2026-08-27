@@ -18,8 +18,10 @@ export const describeRefChanges = (
     }
 
     const hasMoved = previousRef["snapshot-id"] !== currentRef["snapshot-id"];
-    const isTheRowsOwnEvent = currentRef["snapshot-id"] === rowSnapshotId;
-    if (hasMoved && !isTheRowsOwnEvent) {
+    const isTheRowsOwnBranchMove =
+      currentRef.type === "branch" &&
+      currentRef["snapshot-id"] === rowSnapshotId;
+    if (hasMoved && !isTheRowsOwnBranchMove) {
       changes.push(
         sameTextChange(
           `${currentRef.type} ${name} moved to snapshot ${formatShortId(currentRef["snapshot-id"])}`,

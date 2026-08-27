@@ -29,5 +29,9 @@ export const listDefinitionChanges = (
     tableMetadata,
   ),
   ...describeRefChanges(previousFile.refs, currentFile.refs, rowSnapshotId),
-  ...describePropertyChanges(previousFile.properties, currentFile.properties),
+  ...describePropertyChanges(
+    previousFile.properties,
+    currentFile.properties,
+    previousFile.sort_order_id !== currentFile.sort_order_id,
+  ),
 ];

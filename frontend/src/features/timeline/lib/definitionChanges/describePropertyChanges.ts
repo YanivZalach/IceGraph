@@ -5,23 +5,31 @@ import { sameTextChange, type DescribedChange } from "./describedChange";
 
 const BYTE_SIZE_PROPERTY_PATTERN = /-size(-bytes)?$/;
 const ALL_DIGITS_PATTERN = /^\d+$/;
+const LONG_HASH_PATTERN = /^[0-9a-f]{16,}$/i;
 
-/** Set by Nessie and Spark themselves, not by anyone. */
-const IGNORED_PROPERTY_KEYS = new Set([
-  "nessie.commit.id",
-  "write.distribution-mode",
-]);
+/** Stamped fresh by Nessie on every commit — bookkeeping, not a setting change. */
+const ALWAYS_IGNORED_KEYS = new Set(["nessie.commit.id"]);
 
-/** The hidden keys, for rows where they are the only thing that changed. */
+/** Spark sets this itself as part of `WRITE ORDERED BY`. */
+const SORT_ORDER_SIDE_EFFECT_KEYS = new Set(["write.distribution-mode"]);
+
+const shortenHash = (value: string | undefined): string => {
+  if (value === undefined) {
+    return "unset";
+  }
+  return LONG_HASH_PATTERN.test(value) ? formatShortId(value) : value;
+};
+
+/** The always-hidden keys, for rows where they are the only thing that changed. */
 export const describeIgnoredPropertyChanges = (
   previousProperties: TableProperties,
   currentProperties: TableProperties,
 ): DescribedChange[] =>
-  [...IGNORED_PROPERTY_KEYS]
+  [...ALWAYS_IGNORED_KEYS]
     .filter((key) => previousProperties[key] !== currentProperties[key])
     .map((key) =>
       sameTextChange(
-        `${key} ${formatShortId(previousProperties[key] ?? null)} → ${formatShortId(currentProperties[key] ?? null)}`,
+        `${key} ${shortenHash(previousProperties[key])} → ${shortenHash(currentProperties[key])}`,
       ),
     );
 
@@ -33,13 +41,18 @@ const formatPropertyValue = (key: string, value: string): string =>
 export const describePropertyChanges = (
   previousProperties: TableProperties,
   currentProperties: TableProperties,
+  hasSortOrderChanged: boolean,
 ): DescribedChange[] => {
+  const isIgnored = (key: string): boolean =>
+    ALWAYS_IGNORED_KEYS.has(key) ||
+    (hasSortOrderChanged && SORT_ORDER_SIDE_EFFECT_KEYS.has(key));
+
   const changes: DescribedChange[] = [];
 
   for (const [key, currentValue] of Object.entries(currentProperties)) {
     const previousValue = previousProperties[key];
 
-    if (IGNORED_PROPERTY_KEYS.has(key)) {
+    if (isIgnored(key)) {
       continue;
     }
 
@@ -59,7 +72,7 @@ export const describePropertyChanges = (
   }
 
   for (const key of Object.keys(previousProperties)) {
-    if (IGNORED_PROPERTY_KEYS.has(key)) {
+    if (isIgnored(key)) {
       continue;
     }
     if (currentProperties[key] === undefined) {
