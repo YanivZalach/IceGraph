@@ -1,4 +1,4 @@
-import { useViewInGraph } from "../../../hooks/useViewInGraph";
+import { useViewInGraph } from "../../../../hooks/useViewInGraph";
 import GraphLinkButton from "./GraphLinkButton";
 
 interface ViewInGraphButtonsProps {

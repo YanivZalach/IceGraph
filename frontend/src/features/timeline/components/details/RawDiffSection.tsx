@@ -4,9 +4,9 @@ import {
   PANEL_DIFF_BEFORE_LABEL_CLASS,
   PANEL_DIFF_BEFORE_VALUE_CLASS,
   PANEL_FIELD_LABEL_CLASS,
-} from "../../../components/PanelContent";
-import type { FieldDiff } from "../lib/diffMetadataFiles";
-import { SECTION_TITLE_CLASS } from "./EventDetails";
+} from "../../../../components/PanelContent";
+import type { FieldDiff } from "../../lib/details/diffMetadataFiles";
+import { SECTION_TITLE_CLASS } from "./sectionTitleClass";
 
 interface RawDiffSectionProps {
   diffs: FieldDiff[];

@@ -1,11 +1,24 @@
-import type { MetadataFileNode, SnapshotNode } from "../api/nodeSchemas";
+import type {
+  MetadataFileNode,
+  SnapshotNode,
+  SnapshotSummary,
+} from "../../api/nodeSchemas";
 import {
   formatDayAndMonth,
   formatDayMonthYearAndClock,
-} from "./format/formatTimelineTime";
-import { formatShortId } from "./format/formatShortId";
-import { groupSnapshotSummary } from "./groupSnapshotSummary";
-import type { TimelineRow } from "./timelineRow";
+} from "../format/formatTimelineTime";
+import { formatShortId } from "../format/formatShortId";
+import {
+  groupSnapshotSummary,
+  type SummaryEntry,
+} from "./groupSnapshotSummary";
+import {
+  buildBeforeAfterRows,
+  pairChangeCounts,
+  type BeforeAfterRow,
+  type ChangeCountRow,
+} from "./summaryTables";
+import type { TimelineRow } from "../timelineRow";
 
 export interface DetailRowData {
   label: string;
@@ -13,13 +26,28 @@ export interface DetailRowData {
   isCopyable?: boolean;
 }
 
-export interface DetailSection {
-  /** Empty string = the untitled block at the top of the panel. */
-  title: string;
-  rows: DetailRowData[];
+export interface ThisChangeData {
+  counts: ChangeCountRow[];
+  rest: DetailRowData[];
 }
 
-const toRows = (entries: [string, string][]): DetailRowData[] =>
+export interface MetadataFileData {
+  path: string;
+  stats: DetailRowData[];
+}
+
+/** Field order mirrors the panel's display order, but the JSX in EventDetails decides it. */
+export interface EventDetailData {
+  topRows: DetailRowData[];
+  thisChange: ThisChangeData;
+  tableState: BeforeAfterRow[];
+  engine: DetailRowData[];
+  metadataFile: MetadataFileData;
+  refs: DetailRowData[];
+  properties: DetailRowData[];
+}
+
+const toRows = (entries: SummaryEntry[]): DetailRowData[] =>
   entries.map(([label, value]) => ({ label, value }));
 
 const movedToText = (
@@ -103,8 +131,7 @@ const eventRows = (
   return rows;
 };
 
-const fileRows = (file: MetadataFileNode): DetailRowData[] => [
-  { label: "Path", value: file.file_path, isCopyable: true },
+const fileStats = (file: MetadataFileNode): DetailRowData[] => [
   { label: "Schema ID", value: file.current_schema_id?.toString() ?? "" },
   {
     label: "Partition Spec ID",
@@ -124,36 +151,33 @@ const refRows = (file: MetadataFileNode): DetailRowData[] =>
     isCopyable: true,
   }));
 
-export const buildEventDetailSections = (
+export const buildEventDetails = (
   row: TimelineRow,
   file: MetadataFileNode,
   snapshot: SnapshotNode | undefined,
   repointTarget: SnapshotNode | undefined,
-): DetailSection[] => {
+  parentSummary: SnapshotSummary | null,
+): EventDetailData => {
   const summary =
     snapshot === undefined ? null : groupSnapshotSummary(snapshot.summary);
+  const { paired, rest } = pairChangeCounts(summary?.thisChange ?? []);
 
   const branchRows: DetailRowData[] =
     row.branchName === null
       ? []
       : [{ label: "Branch Name", value: row.branchName }];
 
-  const sections: DetailSection[] = [
-    {
-      title: "",
-      rows: [
-        ...branchRows,
-        ...snapshotRows(row, snapshot),
-        ...eventRows(row, repointTarget),
-      ],
-    },
-    { title: "This change", rows: toRows(summary?.thisChange ?? []) },
-    { title: "Table after", rows: toRows(summary?.tableAfter ?? []) },
-    { title: "Engine", rows: toRows(summary?.engine ?? []) },
-    { title: "Metadata file", rows: fileRows(file) },
-    { title: "Refs", rows: refRows(file) },
-    { title: "Properties", rows: toRows(Object.entries(file.properties)) },
-  ];
-
-  return sections.filter((section) => section.rows.length > 0);
+  return {
+    topRows: [
+      ...branchRows,
+      ...snapshotRows(row, snapshot),
+      ...eventRows(row, repointTarget),
+    ],
+    thisChange: { counts: paired, rest: toRows(rest) },
+    tableState: buildBeforeAfterRows(summary?.tableAfter ?? [], parentSummary),
+    engine: toRows(summary?.engine ?? []),
+    metadataFile: { path: file.file_path, stats: fileStats(file) },
+    refs: refRows(file),
+    properties: toRows(Object.entries(file.properties)),
+  };
 };
