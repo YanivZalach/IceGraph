@@ -2,7 +2,6 @@ import type { MetadataFileNode } from "../../api/nodeSchemas";
 import type { TableMetadata } from "../../api/tableMetadataSchema";
 import type { CommitDescription, SnapshotsById } from "./commitDescription";
 import { listDefinitionChanges } from "../definitionChanges/listDefinitionChanges";
-import { impactText } from "../impactSegment";
 import { describeMetadataOnlyCommit } from "./describeMetadataOnlyCommit";
 import { describeRePointCommit } from "./describeRePointCommit";
 import { describeWriteCommit } from "./describeWriteCommit";
@@ -26,19 +25,19 @@ export const describeCommit = (
       ? newCurrentId
       : null;
 
-  const definitionImpacts = listDefinitionChanges(
+  const definitionChanges = listDefinitionChanges(
     previousFile,
     currentFile,
     tableMetadata,
     gainedSnapshotId ?? rePointTargetId,
-  ).map((change) => impactText(change.impact));
+  );
 
   if (gainedSnapshotId !== null) {
     return describeWriteCommit(
       gainedSnapshotId,
       currentFile,
       snapshotsById,
-      definitionImpacts,
+      definitionChanges,
     );
   }
 
@@ -47,7 +46,7 @@ export const describeCommit = (
       previousFile,
       rePointTargetId,
       snapshotsById,
-      definitionImpacts,
+      definitionChanges,
     );
   }
 

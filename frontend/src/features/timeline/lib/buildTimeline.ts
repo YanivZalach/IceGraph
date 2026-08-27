@@ -21,6 +21,7 @@ const DEGRADED_COMMIT: CommitDescription = {
   kind: "metadata-only",
   title: "Metadata updated",
   impactSegments: [],
+  detailTexts: [],
   snapshotId: null,
   branchName: null,
   repointTargetId: null,
@@ -55,6 +56,8 @@ const toTimelineRow = (
   kind: commit.kind,
   title: commit.title,
   impact: commit.impactSegments,
+  details: commit.detailTexts,
+  repointTargetId: commit.repointTargetId,
   shortId: formatShortId(commit.snapshotId),
   snapshotId: commit.snapshotId,
   branchName: commit.branchName,
@@ -133,5 +136,9 @@ export const buildTimeline = (
   return {
     rows: rowsNewestFirst,
     skippedNodeCount: skippedNodeCount + degradedRowCount,
+    snapshotsById,
+    filesByPath: new Map(
+      filesOldestFirst.map((file) => [file.file_path, file]),
+    ),
   };
 };
