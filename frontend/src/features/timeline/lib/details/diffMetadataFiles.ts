@@ -1,4 +1,4 @@
-import type { MetadataFileNode } from "../api/nodeSchemas";
+import type { MetadataFileNode } from "../../api/nodeSchemas";
 
 export interface FieldDiff {
   key: string;
