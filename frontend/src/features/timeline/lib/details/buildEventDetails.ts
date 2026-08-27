@@ -70,8 +70,8 @@ const snapshotRows = (
       ? []
       : [
           {
-            label: "Snapshot ID",
-            value: `${row.snapshotId} (unavailable)`,
+            label: "Snapshot ID (expired or not loaded)",
+            value: row.snapshotId,
             isCopyable: true,
           },
         ];

@@ -21,8 +21,8 @@ interface CountCell {
 }
 
 const SIGN_COLOR_CLASS = {
-  "+": "text-green-400",
-  "−": "text-red-400",
+  "+": "font-semibold text-green-400",
+  "−": "font-semibold text-red-400",
 } as const;
 
 const countCell = (value: string | null, sign: "+" | "−"): CountCell => {
