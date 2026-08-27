@@ -1,5 +1,6 @@
-import type { ImpactSegment } from "../lib/impactSegment";
+import type { ImpactSegment } from "../../lib/impactSegment";
 import ImpactCount from "./ImpactCount";
+import ImpactSize from "./ImpactSize";
 
 interface ImpactLineProps {
   segments: ImpactSegment[];
@@ -11,8 +12,15 @@ const isBalancedRowChurn = (segment: ImpactSegment): boolean =>
   segment.added > 0 &&
   segment.added === segment.removed;
 
-const segmentKey = (segment: ImpactSegment): string =>
-  segment.kind === "text" ? segment.text : segment.unit;
+const segmentKey = (segment: ImpactSegment): string => {
+  if (segment.kind === "text") {
+    return segment.text;
+  }
+  if (segment.kind === "size") {
+    return "size";
+  }
+  return segment.unit;
+};
 
 const ImpactLine = ({ segments }: ImpactLineProps) => {
   const shownSegments = segments.filter(
@@ -28,6 +36,8 @@ const ImpactLine = ({ segments }: ImpactLineProps) => {
         >
           {segment.kind === "text" ? (
             segment.text
+          ) : segment.kind === "size" ? (
+            <ImpactSize netBytes={segment.netBytes} />
           ) : (
             <ImpactCount
               added={segment.added}

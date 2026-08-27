@@ -1,8 +1,9 @@
 import type { SnapshotSummary } from "../api/nodeSchemas";
-import { formatByteSize, parseBackendSizeToBytes } from "./format/backendSize";
+import { parseBackendSizeToBytes } from "./format/backendSize";
 
 export type ImpactSegment =
   | { kind: "count"; added: number; removed: number; unit: "rows" | "files" }
+  | { kind: "size"; netBytes: number }
   | { kind: "text"; text: string };
 
 export const impactText = (text: string): ImpactSegment => ({
@@ -34,11 +35,11 @@ export const readSnapshotImpact = (
   const addedBytes = parseBackendSizeToBytes(summary["added-files-size"]) ?? 0;
   const removedBytes =
     parseBackendSizeToBytes(summary["removed-files-size"]) ?? 0;
-  const sizeChangeBytes = Math.abs(addedBytes - removedBytes);
+  const netBytes = addedBytes - removedBytes;
 
   const hasRowChange = addedRows > 0 || removedRows > 0;
   const hasFileChange = addedFiles > 0 || removedFiles > 0;
-  const hasSizeChange = sizeChangeBytes > 0;
+  const hasSizeChange = netBytes !== 0;
 
   const segments: ImpactSegment[] = [];
 
@@ -61,7 +62,7 @@ export const readSnapshotImpact = (
   }
 
   if (hasSizeChange) {
-    segments.push(impactText(formatByteSize(sizeChangeBytes)));
+    segments.push({ kind: "size", netBytes });
   }
 
   return segments;
