@@ -21,34 +21,21 @@ const MetadataFileSection = ({ data }: MetadataFileSectionProps) => (
           <CopyIconButton text={data.path} />
         </span>
       </div>
-      <table className="w-full">
-        <thead>
-          <tr>
-            {data.stats.map((stat) => (
-              <th
-                key={stat.label}
-                className={cn(
-                  UI_FIELD_LABEL_CLASS,
-                  "pb-1 text-center align-bottom normal-case break-words",
-                )}
-              >
-                {stat.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            {data.stats.map((stat) => (
-              <td key={stat.label} className="text-center">
-                <span className="inline-block rounded bg-canvas px-2 py-0.5 font-mono text-xs text-slate-200">
-                  {stat.value === "" ? "—" : stat.value}
-                </span>
-              </td>
-            ))}
-          </tr>
-        </tbody>
-      </table>
+      <div className="grid grid-cols-2 gap-x-6">
+        {data.stats.map((stat) => (
+          <div
+            key={stat.label}
+            className="flex items-center justify-between gap-x-3 border-b border-edge/50 py-1.5 nth-last-[-n+2]:border-0"
+          >
+            <span className={cn(UI_FIELD_LABEL_CLASS, "normal-case")}>
+              {stat.label}
+            </span>
+            <span className="rounded bg-canvas px-2 py-0.5 font-mono text-xs text-slate-200">
+              {stat.value === "" ? "—" : stat.value}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   </details>
 );

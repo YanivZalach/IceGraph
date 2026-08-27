@@ -33,7 +33,7 @@ const RawDiffSection = ({ diffs }: RawDiffSectionProps) => {
   return (
     <details>
       <summary className={`${SECTION_TITLE_CLASS} cursor-pointer`}>
-        Raw diff
+        Raw metadata diff
       </summary>
       <div className="flex flex-col gap-4">
         {diffs.map((diff) => (
