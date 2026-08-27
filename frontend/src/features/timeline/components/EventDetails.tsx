@@ -1,9 +1,9 @@
-import { Fragment } from "react";
 import { PanelDetailRow } from "../../../components/PanelContent";
 import type { MetadataFileNode, SnapshotNode } from "../api/nodeSchemas";
 import { diffMetadataFiles } from "../lib/diffMetadataFiles";
 import { buildEventDetailSections } from "../lib/buildEventDetailSections";
 import type { TimelineRow } from "../lib/timelineRow";
+import CollapsibleTableSection from "./CollapsibleTableSection";
 import RawDiffSection from "./RawDiffSection";
 import ViewInGraphButtons from "./ViewInGraphButtons";
 
@@ -44,20 +44,24 @@ const EventDetails = ({
           {actionLink}
         </a>
       )}
-      {sections.map((section) => (
-        <Fragment key={section.title}>
-          {section.title !== "" && (
-            <div className={SECTION_TITLE_CLASS}>{section.title}</div>
-          )}
-          {section.rows.map((rowData) => (
+      {sections.map((section) =>
+        section.title === "" ? (
+          section.rows.map((rowData) => (
             <PanelDetailRow
               key={rowData.label}
               label={rowData.label}
               value={rowData.value}
             />
-          ))}
-        </Fragment>
-      ))}
+          ))
+        ) : (
+          <CollapsibleTableSection
+            key={section.title}
+            title={section.title}
+            rows={section.rows}
+            isOpenByDefault={section.title === "This change"}
+          />
+        ),
+      )}
       {previousFile !== undefined && (
         <RawDiffSection diffs={diffMetadataFiles(previousFile, file)} />
       )}
