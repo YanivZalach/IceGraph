@@ -1,0 +1,15 @@
+The **Specs** button in the navbar opens the Table Specification panel, which shows the full history of your table's structural definitions across three sections:
+
+-
+
+**Schema History** - every schema version the table has had, showing each by its schema ID
+
+-
+
+**Partition History** - every partition spec version, showing each by its spec ID
+
+-
+
+**Order History** - every sort order version, showing each by its order ID
+
+The currently active version in each section is highlighted with an **ACTIVE** badge. Click any version to expand its full field-level definition - schema fields render with their types (including nested structs, lists, and maps), while partition and sort order fields render as structured tables. Use the **Full** / **Diff** toggle to compare a version against the one before it, with added, removed, and changed fields highlighted.

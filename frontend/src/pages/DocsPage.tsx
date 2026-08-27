@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { UI_DOCS_BODY_CLASS, UI_DOCS_NAV_TITLE_CLASS } from "../uiTypography";
 import DocsSearchOverlay from "../features/docs/components/DocsSearchOverlay";
 import Key from "../features/docs/components/Key";
+import MarkdownContent from "../features/docs/components/MarkdownContent";
 import { OVERVIEW_SECTION, SECTIONS } from "../features/docs/docsSections";
 import {
-  extractText,
   findAllIndices,
-  highlightTreeMatches,
+  markdownToSearchText,
 } from "../features/docs/docsSearch";
 import type { Highlight, SearchResult } from "../features/docs/docsTypes";
 
@@ -36,7 +36,7 @@ const DocsPage = () => {
 
   const searchResults: SearchResult[] = query
     ? SECTIONS.flatMap((section) => {
-        const content = extractText(section.body);
+        const content = markdownToSearchText(section.markdown);
         const contentMatches = findAllIndices(content, query);
 
         return contentMatches.map((matchIndex, occurrenceIndex) => {
@@ -58,14 +58,55 @@ const DocsPage = () => {
   }, [active]);
 
   useEffect(() => {
-    const activeMark = contentRef.current?.querySelector(
-      '[data-active-match="true"]',
+    const contentElement = contentRef.current;
+    if (!contentElement || !highlight) return;
+
+    for (const previousMark of contentElement.querySelectorAll(
+      "mark[data-docs-search-highlight]",
+    )) {
+      previousMark.replaceWith(...previousMark.childNodes);
+    }
+    contentElement.normalize();
+
+    const treeWalker = document.createTreeWalker(
+      contentElement,
+      NodeFilter.SHOW_TEXT,
     );
-    if (highlight?.index != null && activeMark) {
-      activeMark.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
+    const lowerTerm = highlight.term.toLowerCase();
+    let occurrenceIndex = 0;
+    let textNode = treeWalker.nextNode();
+
+    while (textNode) {
+      const text = textNode.nodeValue;
+      if (text === null) {
+        textNode = treeWalker.nextNode();
+        continue;
+      }
+      const lowerText = text.toLowerCase();
+      let matchIndex = lowerText.indexOf(lowerTerm);
+
+      while (matchIndex !== -1) {
+        if (occurrenceIndex === highlight.index) {
+          const range = document.createRange();
+          range.setStart(textNode, matchIndex);
+          range.setEnd(textNode, matchIndex + highlight.term.length);
+          const mark = document.createElement("mark");
+          mark.dataset.docsSearchHighlight = "true";
+          mark.className =
+            "bg-accent text-white px-1 rounded ring-2 ring-white";
+          range.surroundContents(mark);
+          mark.scrollIntoView({ behavior: "smooth", block: "center" });
+          return;
+        }
+
+        occurrenceIndex += 1;
+        matchIndex = lowerText.indexOf(
+          lowerTerm,
+          matchIndex + lowerTerm.length,
+        );
+      }
+
+      textNode = treeWalker.nextNode();
     }
   }, [highlight, active]);
 
@@ -172,13 +213,7 @@ const DocsPage = () => {
             {activeSection.title}
           </h1>
           <div className={UI_DOCS_BODY_CLASS}>
-            {highlight?.sectionId === activeSection.id
-              ? highlightTreeMatches(activeSection.body, highlight.term, {
-                  count: 0,
-                  target: highlight.index,
-                  key: 0,
-                })
-              : activeSection.body}
+            <MarkdownContent markdown={activeSection.markdown} />
           </div>
         </div>
       </div>

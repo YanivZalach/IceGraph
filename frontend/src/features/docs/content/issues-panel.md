@@ -1,0 +1,13 @@
+When the backend reports problems during metadata collection, an **Issues** button appears in the navbar. There are two severity levels:
+
+### Critical Errors
+
+Something failed while reading the table's metadata - for example, a file could not be accessed or the backend encountered an unexpected state. The graph may be incomplete or missing sections entirely.
+
+### Warnings
+
+A collection limit was reached, so the graph represents a partial view of the table. When the data file limit is hit, the backend stops attaching data files, but the snapshot and manifest structure is still complete. When the metadata file limit is hit, only the oldest metadata files are dropped, so every metadata file you see is complete and accurate.
+
+The manifest limit behaves differently: if your snapshot range contains more manifests than the backend allows, the request fails instead of returning a partial graph, and nothing is rendered. Select a smaller snapshot range.
+
+The panel opens automatically when the backend reports any issue. Even so, always check it when the graph looks incomplete or the data file count seems lower than expected.
