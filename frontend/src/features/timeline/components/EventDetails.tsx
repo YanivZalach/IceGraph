@@ -39,9 +39,10 @@ const EventDetails = ({
           href={actionLink}
           target="_blank"
           rel="noopener noreferrer"
+          aria-label="Open the Spark job page in a new tab"
           className="block font-mono text-xs break-all text-accent hover:text-accent-dark"
         >
-          {actionLink}
+          {actionLink} ↗
         </a>
       )}
       {sections.map((section) =>

@@ -35,6 +35,7 @@ const CopyIconButton = ({
         event.preventDefault();
       }}
       title={copied ? "Copied!" : title}
+      aria-label={copied ? "Copied!" : title}
       className={`p-1 rounded border border-edge bg-surface/90 text-slate-500 hover:text-slate-300 hover:border-slate-500 transition-colors cursor-pointer ${className}`}
     >
       {copied ? (
