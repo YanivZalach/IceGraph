@@ -22,11 +22,7 @@ const sideOfKey = (key: string): "added" | "removed" | null => {
   return null;
 };
 
-/**
- * Collapses `added-records` + `deleted-records` into one +/− row per metric.
- * Iceberg spells the negative side either `deleted-` or `removed-`, so both count.
- * Keys with no side prefix, and duplicate sides, land in `rest` untouched.
- */
+// Iceberg spells the negative side either `deleted-` or `removed-`.
 export const pairChangeCounts = (
   entries: SummaryEntry[],
 ): PairedChangeCounts => {
