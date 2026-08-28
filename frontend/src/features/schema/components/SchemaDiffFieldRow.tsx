@@ -1,7 +1,10 @@
 import type { ReactNode } from "react";
 import { cn } from "../../../shared/lib/cn";
 import type { SchemaFieldDiff } from "../schemaDiff";
-import { getSchemaFieldDiffMarker } from "../schemaDiffPresentation";
+import {
+  getSchemaFieldDiffLabel,
+  getSchemaFieldDiffMarker,
+} from "../schemaDiffPresentation";
 import SchemaDiffValue from "./SchemaDiffValue";
 import SchemaDiffTypeView from "./SchemaDiffTypeView";
 
@@ -40,6 +43,7 @@ const SchemaDiffFieldRow = ({
     >
       <div className="grid grid-cols-[1rem_2.5rem_minmax(0,1fr)_auto] items-center gap-x-3 px-1">
         <span
+          title={getSchemaFieldDiffLabel(fieldDiff)}
           className={cn(
             "text-center font-mono text-sm text-slate-500",
             fieldDiff.status === "added" && "text-green-400",
@@ -48,7 +52,8 @@ const SchemaDiffFieldRow = ({
             fieldDiff.status === "moved" && "text-sky-400",
           )}
         >
-          {getSchemaFieldDiffMarker(fieldDiff)}
+          <span aria-hidden="true">{getSchemaFieldDiffMarker(fieldDiff)}</span>
+          <span className="sr-only">{getSchemaFieldDiffLabel(fieldDiff)}</span>
         </span>
         <span className="text-right font-mono text-sm tabular-nums text-slate-500">
           {field.id ?? "?"}
