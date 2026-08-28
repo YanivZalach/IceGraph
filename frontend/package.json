@@ -27,13 +27,13 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-force-graph-2d": "^1.29.1",
-    "react-markdown": "^10.1.0",
     "tailwind-merge": "^3.6.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@eslint-community/eslint-plugin-eslint-comments": "^4.7.2",
     "@eslint/js": "^10.0.1",
+    "@mdx-js/rollup": "^3.1.1",
     "@tailwindcss/vite": "^4.0.0",
     "@tanstack/router-plugin": "^1.168.29",
     "@types/json-bigint": "^1.0.4",

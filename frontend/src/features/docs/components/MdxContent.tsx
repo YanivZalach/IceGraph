@@ -1,36 +1,36 @@
-import ReactMarkdown from "react-markdown";
-import type { Components } from "react-markdown";
-import { Children } from "react";
+import type { MDXComponents } from "mdx/types";
+import type { ComponentType, ReactNode } from "react";
+import { APP_VERSION, BASE_PATH } from "../../../appConstants";
 import { cn } from "../../../shared/lib/cn";
 
-interface MarkdownContentProps {
-  markdown: string;
+interface MdxContentProps {
+  Content: ComponentType<{ components?: MDXComponents }>;
   sectionId: string;
 }
 
-const MarkdownContent = ({ markdown, sectionId }: MarkdownContentProps) => {
+interface ChildrenProps {
+  children?: ReactNode;
+}
+
+interface AnchorProps extends ChildrenProps {
+  href?: string;
+}
+
+const pipInstallCommand =
+  APP_VERSION === "dev"
+    ? "pip install icegraph-client"
+    : `pip install icegraph-client==${APP_VERSION.replace(/^v/, "")}`;
+
+const MdxContent = ({ Content, sectionId }: MdxContentProps) => {
   const isKeyboardShortcuts = sectionId === "keyboard-shortcuts";
   const isOverview = sectionId === "overview";
-  const isIssuesPanel = sectionId === "issues-panel";
 
-  const components: Components = {
-    h3: ({ children }) => {
-      const heading = Children.toArray(children)
-        .filter((child): child is string => typeof child === "string")
-        .join("");
-      const severityClass =
-        isIssuesPanel && heading === "Critical Errors"
-          ? "text-[#ff6b6b]"
-          : isIssuesPanel && heading === "Warnings"
-            ? "text-[#fbbf24]"
-            : "text-white";
-
-      return (
-        <h3 className={`mt-5 mb-2 first:mt-0 font-semibold ${severityClass}`}>
-          {children}
-        </h3>
-      );
-    },
+  const components: MDXComponents = {
+    h3: ({ children }) => (
+      <h3 className="mt-5 mb-2 first:mt-0 text-white font-semibold">
+        {children}
+      </h3>
+    ),
     p: ({ children }) => (
       <p
         className={cn(
@@ -44,7 +44,7 @@ const MarkdownContent = ({ markdown, sectionId }: MarkdownContentProps) => {
     strong: ({ children }) => (
       <strong className="text-white">{children}</strong>
     ),
-    a: ({ children, href }) => {
+    a: ({ children, href }: AnchorProps) => {
       const className = cn(
         "text-accent hover:text-blue-400 transition font-mono text-sm",
         !isOverview && "underline",
@@ -104,9 +104,34 @@ const MarkdownContent = ({ markdown, sectionId }: MarkdownContentProps) => {
         {children}
       </li>
     ),
+    AppVersion: () => APP_VERSION,
+    PipInstallCommand: () => (
+      <pre className="mb-4 last:mb-0 bg-surface-hover rounded-md p-3 text-sm text-[#7dd3fc] overflow-x-auto whitespace-pre-wrap">
+        <code>{pipInstallCommand}</code>
+      </pre>
+    ),
+    SkillDownloadLink: ({ children }: ChildrenProps) => (
+      <a
+        href={`${BASE_PATH}/SKILL.md`}
+        download="SKILL.md"
+        className="text-accent hover:text-blue-400 transition font-mono text-sm underline"
+      >
+        {children}
+      </a>
+    ),
+    CriticalHeading: ({ children }: ChildrenProps) => (
+      <h3 className="mt-5 mb-2 first:mt-0 font-semibold text-[#ff6b6b]">
+        {children}
+      </h3>
+    ),
+    WarningHeading: ({ children }: ChildrenProps) => (
+      <h3 className="mt-5 mb-2 first:mt-0 font-semibold text-[#fbbf24]">
+        {children}
+      </h3>
+    ),
   };
 
-  return <ReactMarkdown components={components}>{markdown}</ReactMarkdown>;
+  return <Content components={components} />;
 };
 
-export default MarkdownContent;
+export default MdxContent;

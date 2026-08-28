@@ -3,7 +3,7 @@ import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { UI_DOCS_BODY_CLASS, UI_DOCS_NAV_TITLE_CLASS } from "../uiTypography";
 import DocsSearchOverlay from "../features/docs/components/DocsSearchOverlay";
-import MarkdownContent from "../features/docs/components/MarkdownContent";
+import MdxContent from "../features/docs/components/MdxContent";
 import { highlightSearchResult } from "../features/docs/docsHighlight";
 import {
   buildSearchResults,
@@ -158,8 +158,8 @@ const DocsPage = () => {
             {activeSection.title}
           </h1>
           <div ref={markdownContentRef} className={UI_DOCS_BODY_CLASS}>
-            <MarkdownContent
-              markdown={activeSection.markdown}
+            <MdxContent
+              Content={activeSection.Content}
               sectionId={activeSection.id}
             />
           </div>
