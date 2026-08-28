@@ -8,7 +8,7 @@ import {
   PANEL_COLLAPSE_TOGGLE_CLASS,
 } from "../components/PanelContent";
 import PartitionSpecList from "../components/PartitionSpecList";
-import SchemaFieldList from "../components/SchemaFieldList";
+import SchemaFieldList from "../features/schema/components/SchemaFieldList";
 import SortOrderList from "../components/SortOrderList";
 import { FileType } from "../graphConstants";
 import {
