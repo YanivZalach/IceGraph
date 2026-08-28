@@ -1,3 +1,4 @@
+import { useHotkey } from "@tanstack/react-hotkeys";
 import { useEffect, useRef, useState } from "react";
 import { UI_DOCS_BODY_CLASS, UI_DOCS_NAV_TITLE_CLASS } from "../uiTypography";
 import DocsSearchOverlay from "../features/docs/components/DocsSearchOverlay";
@@ -24,6 +25,21 @@ const DocsPage = () => {
     setQuery("");
   };
 
+  useHotkey(
+    { key: "K" },
+    () => {
+      setSearchOpen(true);
+    },
+    { preventDefault: true },
+  );
+  useHotkey("Escape", closeSearch, { enabled: searchOpen });
+
+  const selectSection = (sectionId: string) => {
+    setActive(sectionId);
+    setHighlight(null);
+    contentRef.current?.scrollTo({ top: 0 });
+  };
+
   const selectResult = (result: SearchResult) => {
     setActive(result.section.id);
     setHighlight({
@@ -35,10 +51,6 @@ const DocsPage = () => {
   };
 
   const searchResults = buildSearchResults(SECTIONS, query);
-
-  useEffect(() => {
-    if (contentRef.current) contentRef.current.scrollTop = 0;
-  }, [active]);
 
   useEffect(() => {
     const contentElement = contentRef.current;
@@ -93,32 +105,6 @@ const DocsPage = () => {
     }
   }, [highlight, active]);
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        closeSearch();
-        return;
-      }
-
-      if (
-        event.target instanceof HTMLElement &&
-        (["INPUT", "TEXTAREA", "SELECT"].includes(event.target.tagName) ||
-          event.target.isContentEditable)
-      )
-        return;
-
-      if (event.key === "k") {
-        event.preventDefault();
-        setSearchOpen(true);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
-
   const activeSection =
     SECTIONS.find((section) => section.id === active) ?? OVERVIEW_SECTION;
 
@@ -159,8 +145,7 @@ const DocsPage = () => {
               <button
                 key={section.id}
                 onClick={() => {
-                  setActive(section.id);
-                  setHighlight(null);
+                  selectSection(section.id);
                 }}
                 className={`text-left text-sm px-3 py-2 rounded-md transition ${
                   active === section.id
@@ -180,8 +165,7 @@ const DocsPage = () => {
           <select
             value={active}
             onChange={(e) => {
-              setActive(e.target.value);
-              setHighlight(null);
+              selectSection(e.target.value);
             }}
             className="w-full bg-surface-hover text-white text-sm border border-edge rounded-md px-3 py-2"
           >
