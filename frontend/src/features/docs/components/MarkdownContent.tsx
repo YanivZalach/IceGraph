@@ -1,5 +1,6 @@
 import ReactMarkdown from "react-markdown";
 import type { Components } from "react-markdown";
+import { Children } from "react";
 import { cn } from "../../../shared/lib/cn";
 
 interface MarkdownContentProps {
@@ -10,13 +11,26 @@ interface MarkdownContentProps {
 const MarkdownContent = ({ markdown, sectionId }: MarkdownContentProps) => {
   const isKeyboardShortcuts = sectionId === "keyboard-shortcuts";
   const isOverview = sectionId === "overview";
+  const isIssuesPanel = sectionId === "issues-panel";
 
   const components: Components = {
-    h3: ({ children }) => (
-      <h3 className="mt-5 mb-2 first:mt-0 text-white font-semibold">
-        {children}
-      </h3>
-    ),
+    h3: ({ children }) => {
+      const heading = Children.toArray(children)
+        .filter((child): child is string => typeof child === "string")
+        .join("");
+      const severityClass =
+        isIssuesPanel && heading === "Critical Errors"
+          ? "text-[#ff6b6b]"
+          : isIssuesPanel && heading === "Warnings"
+            ? "text-[#fbbf24]"
+            : "text-white";
+
+      return (
+        <h3 className={`mt-5 mb-2 first:mt-0 font-semibold ${severityClass}`}>
+          {children}
+        </h3>
+      );
+    },
     p: ({ children }) => (
       <p
         className={cn(
