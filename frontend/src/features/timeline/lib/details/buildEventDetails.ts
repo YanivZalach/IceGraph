@@ -207,7 +207,10 @@ export const buildEventDetails = (
 
   const actionLink = snapshot?.action_link ?? null;
 
-  const rowBelow = rows[rows.indexOf(row) + 1];
+  const rowIndex = rows.findIndex(
+    (candidate) => candidate.filePath === row.filePath,
+  );
+  const rowBelow = rowIndex === -1 ? undefined : rows[rowIndex + 1];
   const previousFile =
     rowBelow === undefined ? undefined : filesByPath.get(rowBelow.filePath);
 
