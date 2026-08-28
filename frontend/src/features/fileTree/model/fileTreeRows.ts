@@ -28,12 +28,23 @@ export interface FileTreeGroupRowModel {
 
 export type FileTreeRow = FileTreeFileRowModel | FileTreeGroupRowModel;
 
+export type GroupCheckedState = "all" | "none" | "some";
+
+export const getGroupCheckedState = (
+  files: DataFileNode[],
+  checkedFileIds: Set<string>,
+): GroupCheckedState => {
+  if (files.length === 0) return "none";
+  if (files.every((file) => checkedFileIds.has(file.id))) return "all";
+  return files.some((file) => checkedFileIds.has(file.id)) ? "some" : "none";
+};
+
 const createFileRow = (
   file: DataFileNode,
   depth: number,
-  isHierarchical: boolean,
+  isTreeMode: boolean,
 ): FileTreeFileRowModel => ({
-  ariaLevel: isHierarchical ? depth + 1 : undefined,
+  ariaLevel: isTreeMode ? depth + 1 : undefined,
   depth,
   file,
   id: `file:${file.id}`,
@@ -42,9 +53,9 @@ const createFileRow = (
 
 const createPartitionRow = (
   partition: PartitionGroup,
-  isHierarchical: boolean,
+  isTreeMode: boolean,
 ): FileTreeGroupRowModel => ({
-  ariaLevel: isHierarchical ? 1 : undefined,
+  ariaLevel: isTreeMode ? 1 : undefined,
   depth: 0,
   files: partition.files,
   id: partition.id,
@@ -91,13 +102,13 @@ const appendPartitionRows = (
   rows: FileTreeRow[],
   partition: PartitionGroup,
   expandedItemIds: Set<string>,
-  isHierarchical: boolean,
+  isTreeMode: boolean,
 ) => {
-  rows.push(createPartitionRow(partition, isHierarchical));
+  rows.push(createPartitionRow(partition, isTreeMode));
   if (!expandedItemIds.has(partition.id)) return;
 
   for (const file of partition.files) {
-    rows.push(createFileRow(file, 1, isHierarchical));
+    rows.push(createFileRow(file, 1, isTreeMode));
   }
 };
 

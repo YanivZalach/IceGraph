@@ -54,7 +54,7 @@ const ResizableSidePanel = forwardRef(function ResizableSidePanel(
     onClose,
     onLayoutChange,
     maxContainerWidth = typeof window !== "undefined"
-      ? remToPx(window.innerWidth) - remToPx(PANEL_GUTTER_REM)
+      ? window.innerWidth - remToPx(PANEL_GUTTER_REM)
       : remToPx(PANEL_WIDTH_DEFAULT_REM),
   },
   scrollRef,

@@ -1,21 +1,10 @@
 import type { MouseEvent } from "react";
-import { getInspectedRowId } from "../model/fileTreeRows";
+import { getGroupCheckedState, getInspectedRowId } from "../model/fileTreeRows";
 import type { FileTreeRow } from "../model/fileTreeRows";
 import type { FileTreeSelection } from "../hooks/useFileTreeState";
-import type { DataFileNode } from "../types";
 import FileTreeFileRow from "./FileTreeFileRow";
 import FileTreeGroupRow from "./FileTreeGroupRow";
-import type { GroupCheckedState } from "./FileTreeGroupRow";
 import FileTreeVirtualList from "./FileTreeVirtualList";
-
-const getGroupCheckedState = (
-  files: DataFileNode[],
-  checkedFileIds: Set<string>,
-): GroupCheckedState => {
-  if (files.length === 0) return "none";
-  if (files.every((file) => checkedFileIds.has(file.id))) return "all";
-  return files.some((file) => checkedFileIds.has(file.id)) ? "some" : "none";
-};
 
 interface FileTreeContentProps {
   duplicatingNodeId: string | null;

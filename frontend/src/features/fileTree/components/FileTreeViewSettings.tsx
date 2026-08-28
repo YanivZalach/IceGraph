@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { cn } from "../../../shared/lib/cn";
 import { useOutsideClick } from "../../../shared/lib/useOutsideClick";
-import type { FileTreeViewSettings as FileTreeViewSettingsState } from "../hooks/useFileTreeState";
+import type { FileTreeViewSettingsState } from "../hooks/useFileTreeState";
 import type { Branch, SnapshotNode } from "../types";
 import FileTreeSnapshotSelect from "./FileTreeSnapshotSelect";
 

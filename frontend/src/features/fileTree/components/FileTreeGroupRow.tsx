@@ -1,9 +1,10 @@
 import type { KeyboardEvent } from "react";
 import { cn } from "../../../shared/lib/cn";
-import type { FileTreeGroupRowModel } from "../model/fileTreeRows";
+import type {
+  FileTreeGroupRowModel,
+  GroupCheckedState,
+} from "../model/fileTreeRows";
 import { getLatestFileTimestamp } from "../model/partitionModel";
-
-export type GroupCheckedState = "all" | "none" | "some";
 
 interface FileTreeGroupRowProps {
   checkedState: GroupCheckedState;

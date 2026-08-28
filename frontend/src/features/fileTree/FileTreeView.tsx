@@ -110,7 +110,7 @@ const FileTreeView = ({ graphData }: FileTreeViewProps) => {
         }}
         partitionCount={partitions.length}
         search={viewSettings.search}
-        viewSettings={
+        settingsMenu={
           <FileTreeViewSettings
             branches={branches}
             currentSnapshotId={currentSnapshotId}

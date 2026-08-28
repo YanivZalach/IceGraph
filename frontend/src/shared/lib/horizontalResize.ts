@@ -13,12 +13,23 @@ export const startHorizontalResize = (
   event: ResizePointerEvent,
   bounds: HorizontalResizeBounds,
   onWidthChange: (widthPx: number) => void,
-): void => {
+): (() => void) => {
   event.preventDefault();
   const startX = event.clientX;
   const maximumWidthPx = Math.max(bounds.minimumWidthPx, bounds.maximumWidthPx);
+  const controller = new AbortController();
+
+  const finishResize = () => {
+    controller.abort();
+    document.body.style.cursor = "";
+    document.body.style.userSelect = "";
+  };
 
   const handleMove = (moveEvent: MouseEvent) => {
+    if (moveEvent.buttons === 0) {
+      finishResize();
+      return;
+    }
     onWidthChange(
       Math.min(
         maximumWidthPx,
@@ -29,15 +40,13 @@ export const startHorizontalResize = (
       ),
     );
   };
-  const handleUp = () => {
-    document.removeEventListener("mousemove", handleMove);
-    document.removeEventListener("mouseup", handleUp);
-    document.body.style.cursor = "";
-    document.body.style.userSelect = "";
-  };
 
   document.body.style.cursor = "ew-resize";
   document.body.style.userSelect = "none";
-  document.addEventListener("mousemove", handleMove);
-  document.addEventListener("mouseup", handleUp);
+  const { signal } = controller;
+  document.addEventListener("mousemove", handleMove, { signal });
+  document.addEventListener("mouseup", finishResize, { signal });
+  window.addEventListener("blur", finishResize, { signal });
+
+  return finishResize;
 };

@@ -7,7 +7,7 @@ import type {
   SnapshotFileScope,
 } from "../types";
 
-export interface FileTreeViewSettings {
+export interface FileTreeViewSettingsState {
   requestedBranchName: string | null;
   requestedSnapshotId: string | null;
   scope: SnapshotFileScope;
@@ -37,7 +37,7 @@ export interface FileTreeSelection {
 
 interface FileTreeState {
   selection: FileTreeSelection;
-  viewSettings: FileTreeViewSettings;
+  viewSettings: FileTreeViewSettingsState;
 }
 
 export const useFileTreeState = (): FileTreeState => {
@@ -109,7 +109,7 @@ export const useFileTreeState = (): FileTreeState => {
     },
   };
 
-  const viewSettings: FileTreeViewSettings = {
+  const viewSettings: FileTreeViewSettingsState = {
     requestedBranchName:
       searchParameters.filetree_branch === undefined
         ? "main"

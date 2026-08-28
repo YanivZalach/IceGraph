@@ -31,7 +31,9 @@ export const parseExactSignedCount = (value: unknown): bigint | undefined => {
   return undefined;
 };
 
-export const parseFileSizeBytes = (value: unknown): number | null => {
+export const parseFileSizeBytes = (
+  value: string | number | null | undefined,
+): number | null => {
   const byteCount = parseExactCount(value);
   return byteCount === undefined || byteCount > MAXIMUM_SAFE_COUNT
     ? null

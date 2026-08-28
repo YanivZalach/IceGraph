@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, MouseEvent } from "react";
 import { PanelHeader } from "../../../components/PanelContent";
 import SidePanelFrame, {
@@ -30,6 +30,14 @@ const FileTreeInspector = ({
   onViewInGraph,
 }: FileTreeInspectorProps) => {
   const [panelWidthPx, setPanelWidthPx] = useState<number | null>(null);
+  const cancelResizeRef = useRef<(() => void) | null>(null);
+
+  useEffect(
+    () => () => {
+      cancelResizeRef.current?.();
+    },
+    [],
+  );
   const title =
     inspectedItem.kind === "file"
       ? "Data file"
@@ -53,7 +61,7 @@ const FileTreeInspector = ({
     const container = panel?.parentElement;
     if (panel == null || container == null) return;
 
-    startHorizontalResize(
+    cancelResizeRef.current = startHorizontalResize(
       event,
       {
         maximumWidthPx: container.getBoundingClientRect().width * 0.7,

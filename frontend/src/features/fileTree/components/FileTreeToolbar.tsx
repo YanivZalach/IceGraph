@@ -11,7 +11,7 @@ interface FileTreeToolbarProps {
   onSelectAll: () => void;
   partitionCount: number;
   search: string;
-  viewSettings: ReactNode;
+  settingsMenu: ReactNode;
 }
 
 const ACTION_CLASS =
@@ -27,7 +27,7 @@ const FileTreeToolbar = ({
   onSelectAll,
   partitionCount,
   search,
-  viewSettings,
+  settingsMenu,
 }: FileTreeToolbarProps) => {
   const [copyStatus, setCopyStatus] = useState<"copied" | "failed" | "idle">(
     "idle",
@@ -61,7 +61,7 @@ const FileTreeToolbar = ({
 
   return (
     <header className="flex shrink-0 flex-wrap items-center gap-2 border-b border-edge px-3 py-2 sm:px-6 sm:py-3">
-      {viewSettings}
+      {settingsMenu}
       <div className="hidden h-5 w-px bg-edge sm:block" />
       <input
         type="search"
