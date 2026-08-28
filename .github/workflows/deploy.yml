@@ -19,16 +19,17 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: "24"
-          cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Install dependencies
         working-directory: frontend
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Generate MSW service worker
         working-directory: frontend
-        run: npx msw init public/ --save
+        run: pnpm exec msw init public/ --save
 
       - name: Build
         working-directory: frontend
@@ -37,7 +38,7 @@ jobs:
           VITE_BASE: "/IceGraph/"
           VITE_OUT_DIR: "dist"
           VITE_APP_VERSION: ${{ github.ref_name }}
-        run: npm run build
+        run: pnpm run build
 
       - name: Add 404 fallback for SPA routing
         run: cp frontend/dist/index.html frontend/dist/404.html

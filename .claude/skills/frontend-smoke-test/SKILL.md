@@ -24,7 +24,7 @@ in step 2.
 - "No — I'll start it myself and tell you when it's ready"
 
 If they say it's not running, stop and wait for them to confirm it's up rather than launching it
-yourself (per `! npm run dev` guidance — that's their call to make, not yours). Skip re-asking if
+yourself (per `! pnpm run dev` guidance, that's their call to make, not yours). Skip re-asking if
 the dev server / backend location was already established earlier in the same conversation —
 don't make the user repeat themselves.
 

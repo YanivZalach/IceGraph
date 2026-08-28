@@ -44,14 +44,16 @@ uv run ruff format .       # Format (CI enforces this)
 
 ### Frontend (Node/React)
 
+Before running frontend commands, run `pnpm --version`. The required version is `11.24.0`, as pinned in `frontend/package.json`. If pnpm is unavailable or has a different version, prefix pnpm commands with Corepack, for example `corepack pnpm install`. If Corepack is unavailable, ask the user before installing it globally.
+
 ```bash
 cd frontend
-npm i                      # Install dependencies
-npm run dev                # Start Vite dev server on port 3000 (proxies /api to port 5050)
-npm run build              # Production build to /dist
-npm run lint               # ESLint
-npm run format             # Prettier
-npm run typecheck          # tsc --noEmit
+pnpm install               # Install dependencies
+pnpm run dev               # Start Vite dev server on port 3000 (proxies /api to port 5050)
+pnpm run build             # Production build to /dist
+pnpm run lint              # ESLint
+pnpm run format            # Prettier
+pnpm run typecheck         # tsc --noEmit
 ```
 
 ### Docker
