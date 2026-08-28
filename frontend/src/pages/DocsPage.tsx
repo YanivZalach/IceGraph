@@ -1,4 +1,5 @@
 import { useHotkey } from "@tanstack/react-hotkeys";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { UI_DOCS_BODY_CLASS, UI_DOCS_NAV_TITLE_CLASS } from "../uiTypography";
 import DocsSearchOverlay from "../features/docs/components/DocsSearchOverlay";
@@ -67,7 +68,8 @@ const highlightSearchResult = (
 };
 
 const DocsPage = () => {
-  const [active, setActive] = useState(OVERVIEW_SECTION.id);
+  const navigate = useNavigate({ from: "/docs" });
+  const { section: sectionId } = useSearch({ from: "/docs" });
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [highlight, setHighlight] = useState<Highlight | null>(null);
@@ -90,13 +92,20 @@ const DocsPage = () => {
   useHotkey("Escape", closeSearch, { enabled: searchOpen });
 
   const selectSection = (sectionId: string) => {
-    setActive(sectionId);
+    void navigate({
+      search: (previousSearch) => ({ ...previousSearch, section: sectionId }),
+    });
     setHighlight(null);
     contentRef.current?.scrollTo({ top: 0 });
   };
 
   const selectResult = (result: SearchResult) => {
-    setActive(result.section.id);
+    void navigate({
+      search: (previousSearch) => ({
+        ...previousSearch,
+        section: result.section.id,
+      }),
+    });
     setHighlight({
       sectionId: result.section.id,
       term: query,
@@ -112,10 +121,11 @@ const DocsPage = () => {
     if (!contentElement || !highlight) return;
 
     highlightSearchResult(contentElement, highlight);
-  }, [highlight, active]);
+  }, [highlight, sectionId]);
 
   const activeSection =
-    DOC_SECTIONS.find((section) => section.id === active) ?? OVERVIEW_SECTION;
+    DOC_SECTIONS.find((section) => section.id === sectionId) ??
+    OVERVIEW_SECTION;
 
   return (
     <div className="flex flex-1 overflow-hidden">
@@ -157,7 +167,7 @@ const DocsPage = () => {
                   selectSection(section.id);
                 }}
                 className={`text-left text-sm px-3 py-2 rounded-md transition ${
-                  active === section.id
+                  activeSection.id === section.id
                     ? "bg-accent-muted text-white font-medium"
                     : "text-slate-400 hover:text-white hover:bg-surface-hover"
                 }`}
@@ -172,7 +182,7 @@ const DocsPage = () => {
       <div className="flex-1 overflow-y-auto" ref={contentRef}>
         <div className="sm:hidden px-4 pt-4 pb-2">
           <select
-            value={active}
+            value={activeSection.id}
             onChange={(e) => {
               selectSection(e.target.value);
             }}
