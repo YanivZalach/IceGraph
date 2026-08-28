@@ -69,7 +69,7 @@ const ReadableMetricsSummary = ({
       ...(metadataSizePercentage === undefined
         ? {}
         : {
-            detail: `${formatMetricPercentage(metadataSizePercentage)} of total file size`,
+            detail: `${formatMetricPercentage(metadataSizePercentage)} of total size`,
           }),
       label: `Metadata size in ${sizeScope}`,
       value: formatBytesAsMebibytes(metadataSizeBytes.toString()),
