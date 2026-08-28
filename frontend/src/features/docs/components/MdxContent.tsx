@@ -1,6 +1,5 @@
 import type { MDXComponents } from "mdx/types";
 import type { ComponentType, ReactNode } from "react";
-import { APP_VERSION, BASE_PATH } from "../../../appConstants";
 import { cn } from "../../../shared/lib/cn";
 
 interface MdxContentProps {
@@ -8,18 +7,10 @@ interface MdxContentProps {
   sectionId: string;
 }
 
-interface ChildrenProps {
+interface AnchorProps {
   children?: ReactNode;
-}
-
-interface AnchorProps extends ChildrenProps {
   href?: string;
 }
-
-const pipInstallCommand =
-  APP_VERSION === "dev"
-    ? "pip install icegraph-client"
-    : `pip install icegraph-client==${APP_VERSION.replace(/^v/, "")}`;
 
 const MdxContent = ({ Content, sectionId }: MdxContentProps) => {
   const isKeyboardShortcuts = sectionId === "keyboard-shortcuts";
@@ -44,27 +35,19 @@ const MdxContent = ({ Content, sectionId }: MdxContentProps) => {
     strong: ({ children }) => (
       <strong className="text-white">{children}</strong>
     ),
-    a: ({ children, href }: AnchorProps) => {
-      const className = cn(
-        "text-accent hover:text-blue-400 transition font-mono text-sm",
-        !isOverview && "underline",
-      );
-
-      return href?.endsWith("/SKILL.md") ? (
-        <a href={href} download="SKILL.md" className={className}>
-          {children}
-        </a>
-      ) : (
-        <a
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={className}
-        >
-          {children}
-        </a>
-      );
-    },
+    a: ({ children, href }: AnchorProps) => (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={cn(
+          "text-accent hover:text-blue-400 transition font-mono text-sm",
+          !isOverview && "underline",
+        )}
+      >
+        {children}
+      </a>
+    ),
     code: ({ children }) =>
       isKeyboardShortcuts ? (
         <kbd className="bg-surface-hover border border-[#3d4a5c] text-[#7dd3fc] text-xs font-mono px-2 py-0.5 rounded">
@@ -103,31 +86,6 @@ const MdxContent = ({ Content, sectionId }: MdxContentProps) => {
       >
         {children}
       </li>
-    ),
-    AppVersion: () => APP_VERSION,
-    PipInstallCommand: () => (
-      <pre className="mb-4 last:mb-0 bg-surface-hover rounded-md p-3 text-sm text-[#7dd3fc] overflow-x-auto whitespace-pre-wrap">
-        <code>{pipInstallCommand}</code>
-      </pre>
-    ),
-    SkillDownloadLink: ({ children }: ChildrenProps) => (
-      <a
-        href={`${BASE_PATH}/SKILL.md`}
-        download="SKILL.md"
-        className="text-accent hover:text-blue-400 transition font-mono text-sm underline"
-      >
-        {children}
-      </a>
-    ),
-    CriticalHeading: ({ children }: ChildrenProps) => (
-      <h3 className="mt-5 mb-2 first:mt-0 font-semibold text-[#ff6b6b]">
-        {children}
-      </h3>
-    ),
-    WarningHeading: ({ children }: ChildrenProps) => (
-      <h3 className="mt-5 mb-2 first:mt-0 font-semibold text-[#fbbf24]">
-        {children}
-      </h3>
     ),
   };
 

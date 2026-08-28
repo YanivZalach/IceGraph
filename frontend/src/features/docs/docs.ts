@@ -1,4 +1,3 @@
-import { APP_VERSION } from "../../appConstants";
 import type { MDXComponents } from "mdx/types";
 import type { ComponentType } from "react";
 import ClientCliContent from "./content/client-cli.mdx";
@@ -57,22 +56,6 @@ export interface Highlight {
   term: string;
   index: number;
 }
-
-const pipInstallCommand =
-  APP_VERSION === "dev"
-    ? "pip install icegraph-client"
-    : `pip install icegraph-client==${APP_VERSION.replace(/^v/, "")}`;
-
-const resolveSearchComponents = (source: string): string =>
-  source
-    .replaceAll("<AppVersion />", APP_VERSION)
-    .replaceAll("<PipInstallCommand />", pipInstallCommand)
-    .replaceAll("<SkillDownloadLink>", "")
-    .replaceAll("</SkillDownloadLink>", "")
-    .replaceAll("<CriticalHeading>", "")
-    .replaceAll("</CriticalHeading>", "")
-    .replaceAll("<WarningHeading>", "")
-    .replaceAll("</WarningHeading>", "");
 
 export const OVERVIEW_SECTION = createSection(
   "overview",
@@ -158,17 +141,26 @@ const findAllIndices = (text: string, query: string): number[] => {
   return indices;
 };
 
-const mdxToSearchText = (source: string): string => {
-  const withoutCodeBlocks = source
-    .replace(/```[^\n]*\n/g, "")
-    .replace(/```/g, "");
-  const withoutLinks = withoutCodeBlocks.replace(/\[([^\]]+)]\([^)]+\)/g, "$1");
-  const withoutMarkdownSyntax = withoutLinks
+const stripProseSyntax = (prose: string): string =>
+  prose
+    .replace(/^import\s[^\n]*$/gm, "")
+    .replace(/\{"([^"]*)"\}/g, "$1")
+    .replace(/\{[^{}]*\}/g, "")
+    .replace(/<[^>]*>/g, "")
+    .replace(/\[([^\]]+)]\([^)]+\)/g, "$1")
     .replace(/[*#`]/g, "")
     .replace(/^\s*-\s+/gm, "");
 
-  return withoutMarkdownSyntax.replace(/\s+/g, " ").trim();
-};
+/** Fenced code is kept verbatim; everything else is stripped of MDX and markdown syntax. */
+const mdxToSearchText = (source: string): string =>
+  source
+    .split(/```[^\n]*\n?/)
+    .map((segment, index) =>
+      index % 2 === 0 ? stripProseSyntax(segment) : segment,
+    )
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
 
 export const buildSearchResults = (
   sections: DocsSection[],
@@ -177,7 +169,7 @@ export const buildSearchResults = (
   if (!query) return [];
 
   return sections.flatMap((section) => {
-    const content = mdxToSearchText(resolveSearchComponents(section.source));
+    const content = mdxToSearchText(section.source);
     const contentMatches = findAllIndices(content, query);
 
     return contentMatches.map((matchIndex, occurrenceIndex) => {
