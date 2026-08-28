@@ -3,19 +3,7 @@ import mdx from "@mdx-js/rollup";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
-
-// @mdx-js/rollup strips the query before filtering, so it would also compile
-// `.mdx?raw` imports (used as the docs search source) into components.
-const mdxSkippingRawImports = () => {
-  const plugin = mdx();
-
-  return {
-    ...plugin,
-    enforce: "pre" as const,
-    transform: (value: string, id: string) =>
-      /[?&]raw(?:&|$)/.test(id) ? undefined : plugin.transform(value, id),
-  };
-};
+import { remarkSearchText } from "./mdxSearchText";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
@@ -24,7 +12,7 @@ export default defineConfig(({ mode }) => {
       // Must precede react() so route-file transforms run before Babel:
       // https://tanstack.com/router/latest/docs/framework/react/routing/installation-with-vite
       tanstackRouter({ target: "react", autoCodeSplitting: false }),
-      mdxSkippingRawImports(),
+      { enforce: "pre", ...mdx({ remarkPlugins: [remarkSearchText] }) },
       react({
         include: /\.(js|jsx|mdx|ts|tsx)$/,
         babel: {

@@ -37,6 +37,7 @@
     "@tailwindcss/vite": "^4.0.0",
     "@tanstack/router-plugin": "^1.168.29",
     "@types/json-bigint": "^1.0.4",
+    "@types/mdast": "^4.0.4",
     "@types/node": "^26.2.0",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
@@ -47,11 +48,14 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.4",
     "globals": "^17.9.0",
+    "mdast-util-mdx": "^3.0.0",
+    "mdast-util-to-string": "^4.0.0",
     "msw": "^2.7.0",
     "prettier": "^3.9.6",
     "tailwindcss": "^4.0.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.67.0",
+    "unist-util-visit": "^5.1.0",
     "vite": "^7.0.0"
   },
   "msw": {

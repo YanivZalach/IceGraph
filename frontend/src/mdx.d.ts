@@ -4,4 +4,6 @@ declare module "*.mdx" {
 
   const MdxContent: (props: MDXProps) => ReactElement;
   export default MdxContent;
+
+  export const searchText: string;
 }

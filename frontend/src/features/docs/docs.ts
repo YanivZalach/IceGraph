@@ -1,47 +1,57 @@
 import type { MDXComponents } from "mdx/types";
 import type { ComponentType } from "react";
-import ClientCliContent from "./content/client-cli.mdx";
-import clientCliSource from "./content/client-cli.mdx?raw";
-import CodingAgentContent from "./content/coding-agent.mdx";
-import codingAgentSource from "./content/coding-agent.mdx?raw";
-import FileTreeViewContent from "./content/file-tree-view.mdx";
-import fileTreeViewSource from "./content/file-tree-view.mdx?raw";
-import GraphViewContent from "./content/graph-view.mdx";
-import graphViewSource from "./content/graph-view.mdx?raw";
-import IssuesPanelContent from "./content/issues-panel.mdx";
-import issuesPanelSource from "./content/issues-panel.mdx?raw";
-import KeyboardShortcutsContent from "./content/keyboard-shortcuts.mdx";
-import keyboardShortcutsSource from "./content/keyboard-shortcuts.mdx?raw";
-import LoadingTableContent from "./content/loading-table.mdx";
-import loadingTableSource from "./content/loading-table.mdx?raw";
-import MetadataViewContent from "./content/metadata-view.mdx";
-import metadataViewSource from "./content/metadata-view.mdx?raw";
-import OverviewContent from "./content/overview.mdx";
-import overviewSource from "./content/overview.mdx?raw";
-import SpecsPanelContent from "./content/specs-panel.mdx";
-import specsPanelSource from "./content/specs-panel.mdx?raw";
-import TimelineViewContent from "./content/timeline-view.mdx";
-import timelineViewSource from "./content/timeline-view.mdx?raw";
-import TipsContent from "./content/tips.mdx";
-import tipsSource from "./content/tips.mdx?raw";
+import ClientCliContent, {
+  searchText as clientCliText,
+} from "./content/client-cli.mdx";
+import CodingAgentContent, {
+  searchText as codingAgentText,
+} from "./content/coding-agent.mdx";
+import FileTreeViewContent, {
+  searchText as fileTreeViewText,
+} from "./content/file-tree-view.mdx";
+import GraphViewContent, {
+  searchText as graphViewText,
+} from "./content/graph-view.mdx";
+import IssuesPanelContent, {
+  searchText as issuesPanelText,
+} from "./content/issues-panel.mdx";
+import KeyboardShortcutsContent, {
+  searchText as keyboardShortcutsText,
+} from "./content/keyboard-shortcuts.mdx";
+import LoadingTableContent, {
+  searchText as loadingTableText,
+} from "./content/loading-table.mdx";
+import MetadataViewContent, {
+  searchText as metadataViewText,
+} from "./content/metadata-view.mdx";
+import OverviewContent, {
+  searchText as overviewText,
+} from "./content/overview.mdx";
+import SpecsPanelContent, {
+  searchText as specsPanelText,
+} from "./content/specs-panel.mdx";
+import TimelineViewContent, {
+  searchText as timelineViewText,
+} from "./content/timeline-view.mdx";
+import TipsContent, { searchText as tipsText } from "./content/tips.mdx";
 
 interface DocsSection {
   id: string;
   title: string;
   Content: ComponentType<{ components?: MDXComponents }>;
-  source: string;
+  searchText: string;
 }
 
 const createSection = (
   id: string,
   title: string,
   Content: ComponentType<{ components?: MDXComponents }>,
-  source: string,
+  searchText: string,
 ): DocsSection => ({
   id,
   title,
   Content,
-  source,
+  searchText,
 });
 
 export interface SearchResult {
@@ -61,68 +71,62 @@ export const OVERVIEW_SECTION = createSection(
   "overview",
   "Overview",
   OverviewContent,
-  overviewSource,
+  overviewText,
 );
 
-/** Ordered documentation pages shown in the sidebar and searchable index. */
 export const DOC_SECTIONS: DocsSection[] = [
   OVERVIEW_SECTION,
   createSection(
     "coding-agent",
     "Connect to Coding Agent",
     CodingAgentContent,
-    codingAgentSource,
+    codingAgentText,
   ),
   createSection(
     "loading-a-table",
     "Loading a Table",
     LoadingTableContent,
-    loadingTableSource,
+    loadingTableText,
   ),
   createSection(
     "timeline-view",
     "Timeline View",
     TimelineViewContent,
-    timelineViewSource,
+    timelineViewText,
   ),
   createSection(
     "metadata-view",
     "Metadata View",
     MetadataViewContent,
-    metadataViewSource,
+    metadataViewText,
   ),
   createSection(
     "filetree-view",
     "FileTree View",
     FileTreeViewContent,
-    fileTreeViewSource,
+    fileTreeViewText,
   ),
-  createSection("graph-view", "Graph View", GraphViewContent, graphViewSource),
+  createSection("graph-view", "Graph View", GraphViewContent, graphViewText),
   createSection(
     "specs-panel",
     "Specs Panel",
     SpecsPanelContent,
-    specsPanelSource,
+    specsPanelText,
   ),
   createSection(
     "issues-panel",
     "Issues Panel",
     IssuesPanelContent,
-    issuesPanelSource,
+    issuesPanelText,
   ),
   createSection(
     "keyboard-shortcuts",
     "Keyboard Shortcuts",
     KeyboardShortcutsContent,
-    keyboardShortcutsSource,
+    keyboardShortcutsText,
   ),
-  createSection("tips", "Tips & Tricks", TipsContent, tipsSource),
-  createSection(
-    "cli",
-    "CLI & Python Client",
-    ClientCliContent,
-    clientCliSource,
-  ),
+  createSection("tips", "Tips & Tricks", TipsContent, tipsText),
+  createSection("cli", "CLI & Python Client", ClientCliContent, clientCliText),
 ];
 
 const findAllIndices = (text: string, query: string): number[] => {
@@ -141,27 +145,6 @@ const findAllIndices = (text: string, query: string): number[] => {
   return indices;
 };
 
-const stripProseSyntax = (prose: string): string =>
-  prose
-    .replace(/^import\s[^\n]*$/gm, "")
-    .replace(/\{"([^"]*)"\}/g, "$1")
-    .replace(/\{[^{}]*\}/g, "")
-    .replace(/<[^>]*>/g, "")
-    .replace(/\[([^\]]+)]\([^)]+\)/g, "$1")
-    .replace(/[*#`]/g, "")
-    .replace(/^\s*-\s+/gm, "");
-
-/** Fenced code is kept verbatim; everything else is stripped of MDX and markdown syntax. */
-const mdxToSearchText = (source: string): string =>
-  source
-    .split(/```[^\n]*\n?/)
-    .map((segment, index) =>
-      index % 2 === 0 ? stripProseSyntax(segment) : segment,
-    )
-    .join(" ")
-    .replace(/\s+/g, " ")
-    .trim();
-
 export const buildSearchResults = (
   sections: DocsSection[],
   query: string,
@@ -169,7 +152,7 @@ export const buildSearchResults = (
   if (!query) return [];
 
   return sections.flatMap((section) => {
-    const content = mdxToSearchText(section.source);
+    const content = section.searchText;
     const contentMatches = findAllIndices(content, query);
 
     return contentMatches.map((matchIndex, occurrenceIndex) => {
