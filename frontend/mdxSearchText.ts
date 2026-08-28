@@ -39,6 +39,7 @@ const collectProse = (node: Nodes, blocks: string[]): void => {
 };
 
 const extractSearchText = (tree: Root): string => {
+  /** Extract row text from tree */
   const prose = structuredClone(tree);
 
   visit(prose, (node, index, parent) => {
@@ -63,6 +64,7 @@ const extractSearchText = (tree: Root): string => {
 };
 
 const searchTextExport = (text: string): MdxjsEsm => ({
+  /** Makes the text importable as `searchText` in MDX components. */
   type: "mdxjsEsm",
   value: "",
   data: {
