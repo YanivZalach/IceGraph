@@ -4,7 +4,6 @@ export interface IcebergSchema {
 
 export interface IcebergSchemaField {
   id: string | null;
-  identity: string;
   name: string;
   isRequired: boolean | null;
   type: IcebergType;
@@ -66,34 +65,27 @@ const parseRequired = (value: unknown): boolean | null =>
   typeof value === "boolean" ? value : null;
 
 const parseFieldId = (value: unknown): string | null =>
-  parseId(readProperty(value, "field-id")) ??
   parseId(readProperty(value, "id"));
 
-const parseFields = (
-  value: unknown,
-  parentIdentity: string,
-): IcebergSchemaField[] => {
+const parseFields = (value: unknown): IcebergSchemaField[] => {
   if (!Array.isArray(value)) {
     return [];
   }
 
-  return value.map((field, fieldIndex) => {
+  return value.map((field) => {
     const id = parseFieldId(field);
-    const positionalIdentity = `${parentIdentity}.field.${String(fieldIndex)}`;
-    const identity = id === null ? positionalIdentity : `field-id.${id}`;
     const name = readProperty(field, "name");
 
     return {
       id,
-      identity,
       name: typeof name === "string" ? name : "Unnamed field",
       isRequired: parseRequired(readProperty(field, "required")),
-      type: parseType(readProperty(field, "type"), identity),
+      type: parseType(readProperty(field, "type")),
     };
   });
 };
 
-const parseType = (value: unknown, parentIdentity: string): IcebergType => {
+const parseType = (value: unknown): IcebergType => {
   if (typeof value === "string") {
     return { kind: "primitive", name: value };
   }
@@ -103,7 +95,7 @@ const parseType = (value: unknown, parentIdentity: string): IcebergType => {
   if (typeName === "struct") {
     return {
       kind: "struct",
-      fields: parseFields(readProperty(value, "fields"), parentIdentity),
+      fields: parseFields(readProperty(value, "fields")),
     };
   }
 
@@ -112,10 +104,7 @@ const parseType = (value: unknown, parentIdentity: string): IcebergType => {
       kind: "list",
       elementId: parseId(readProperty(value, "element-id")),
       isElementRequired: parseRequired(readProperty(value, "element-required")),
-      element: parseType(
-        readProperty(value, "element"),
-        `${parentIdentity}.element`,
-      ),
+      element: parseType(readProperty(value, "element")),
     };
   }
 
@@ -123,10 +112,10 @@ const parseType = (value: unknown, parentIdentity: string): IcebergType => {
     return {
       kind: "map",
       keyId: parseId(readProperty(value, "key-id")),
-      key: parseType(readProperty(value, "key"), `${parentIdentity}.key`),
+      key: parseType(readProperty(value, "key")),
       valueId: parseId(readProperty(value, "value-id")),
       isValueRequired: parseRequired(readProperty(value, "value-required")),
-      value: parseType(readProperty(value, "value"), `${parentIdentity}.value`),
+      value: parseType(readProperty(value, "value")),
     };
   }
 
@@ -134,7 +123,7 @@ const parseType = (value: unknown, parentIdentity: string): IcebergType => {
 };
 
 export const parseIcebergSchema = (value: unknown): IcebergSchema => ({
-  fields: parseFields(readProperty(value, "fields"), "schema"),
+  fields: parseFields(readProperty(value, "fields")),
 });
 
 export const formatUnknownType = (value: unknown): string => {

@@ -19,7 +19,7 @@ const SchemaDiffFieldList = ({
     <div className={isNested ? "ml-3 border-l-2 border-edge pl-4" : ""}>
       {fields.map((field, fieldIndex) => (
         <SchemaDiffFieldRow
-          key={`${field.identity}.${String(fieldIndex)}`}
+          key={`${field.after?.id ?? field.before?.id ?? "missing-id"}.${String(fieldIndex)}`}
           fieldDiff={field}
           renderNestedFields={renderNestedFields}
         />

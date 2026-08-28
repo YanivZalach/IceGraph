@@ -18,6 +18,7 @@ import PartitionSpecList, {
 } from "../components/PartitionSpecList";
 import SchemaDiffView from "../features/schema/components/SchemaDiffView";
 import SchemaFieldList from "../features/schema/components/SchemaFieldList";
+import { findPreviousSchema } from "../features/schema/schemaHistory";
 import SortOrderList, { SortDiffView } from "../components/SortOrderList";
 import { useTableSpecs } from "../context/TableSpecsContext";
 import {
@@ -571,7 +572,12 @@ export default function TableLayout() {
                   const idx = list.findIndex(
                     (s) => s[config.idKey] === selectionDetail.id,
                   );
-                  const prevItem = idx > 0 ? list[idx - 1] : null;
+                  const prevItem =
+                    selectionDetail.type === "schema"
+                      ? findPreviousSchema(list, selectionDetail.data)
+                      : idx > 0
+                        ? list[idx - 1]
+                        : null;
                   const hasPrev = prevItem !== null;
 
                   const diff =

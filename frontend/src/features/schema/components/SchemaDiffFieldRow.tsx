@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "../../../shared/lib/cn";
-import type { SchemaFieldDiff, SchemaDiffStatus } from "../schemaDiff";
+import type { SchemaFieldDiff } from "../schemaDiff";
+import { getSchemaFieldDiffMarker } from "../schemaDiffPresentation";
 import SchemaDiffValue from "./SchemaDiffValue";
 import SchemaDiffTypeView from "./SchemaDiffTypeView";
 
@@ -11,21 +12,6 @@ interface SchemaDiffFieldRowProps {
 
 const formatRequired = (isRequired: boolean | null): string =>
   isRequired === null ? "unknown" : isRequired ? "required" : "optional";
-
-const statusMarker = (status: SchemaDiffStatus): string => {
-  switch (status) {
-    case "added":
-      return "+";
-    case "removed":
-      return "−";
-    case "changed":
-      return "~";
-    case "descendant-changed":
-      return "·";
-    case "unchanged":
-      return "";
-  }
-};
 
 const SchemaDiffFieldRow = ({
   fieldDiff,
@@ -49,6 +35,7 @@ const SchemaDiffFieldRow = ({
         fieldDiff.status === "added" && "bg-green-900/20",
         fieldDiff.status === "removed" && "bg-red-900/20",
         fieldDiff.status === "changed" && "border-l-2 border-l-amber-500/60",
+        fieldDiff.status === "moved" && "border-l-2 border-l-sky-500/60",
       )}
     >
       <div className="grid grid-cols-[1rem_2.5rem_minmax(0,1fr)_auto] items-center gap-x-3 px-1">
@@ -58,9 +45,10 @@ const SchemaDiffFieldRow = ({
             fieldDiff.status === "added" && "text-green-400",
             fieldDiff.status === "removed" && "text-red-400",
             fieldDiff.status === "changed" && "text-amber-400",
+            fieldDiff.status === "moved" && "text-sky-400",
           )}
         >
-          {statusMarker(fieldDiff.status)}
+          {getSchemaFieldDiffMarker(fieldDiff)}
         </span>
         <span className="text-right font-mono text-sm tabular-nums text-slate-500">
           {field.id ?? "?"}

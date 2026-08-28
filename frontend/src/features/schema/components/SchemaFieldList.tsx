@@ -18,7 +18,7 @@ const SchemaFieldList = ({ schema }: SchemaFieldListProps) => {
       <SchemaFieldHeader />
       {parsedSchema.fields.map((field, fieldIndex) => (
         <div
-          key={`${field.identity}.${String(fieldIndex)}`}
+          key={`${field.id ?? "missing-id"}.${String(fieldIndex)}`}
           className="border-b border-edge py-4 last:border-0"
         >
           <div className="grid grid-cols-[1rem_2.5rem_minmax(0,1fr)_auto] items-center gap-x-3">

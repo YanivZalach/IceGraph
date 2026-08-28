@@ -37,7 +37,7 @@ const SchemaTypeView = ({ type }: SchemaTypeViewProps) => {
           <div className="ml-3 flex flex-col border-l-2 border-edge pl-4">
             {type.fields.map((field, fieldIndex) => (
               <div
-                key={`${field.identity}.${String(fieldIndex)}`}
+                key={`${field.id ?? "missing-id"}.${String(fieldIndex)}`}
                 className="flex flex-col gap-1.5 border-b border-edge py-3 last:border-0"
               >
                 <div className="flex items-center gap-2">

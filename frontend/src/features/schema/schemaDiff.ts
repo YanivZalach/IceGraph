@@ -9,7 +9,12 @@ import type {
 import { parseIcebergSchema } from "./schemaModel";
 
 export type SchemaDiffStatus =
-  "unchanged" | "added" | "removed" | "changed" | "descendant-changed";
+  | "unchanged"
+  | "added"
+  | "removed"
+  | "changed"
+  | "moved"
+  | "descendant-changed";
 
 interface TypeDiffBase {
   status: SchemaDiffStatus;
@@ -69,7 +74,7 @@ export type SchemaTypeDiff =
 
 export interface SchemaFieldDiff {
   status: SchemaDiffStatus;
-  identity: string;
+  movement: "from" | "to" | null;
   before: IcebergSchemaField | null;
   after: IcebergSchemaField | null;
   isNameChanged: boolean;
@@ -79,6 +84,13 @@ export interface SchemaFieldDiff {
 
 export interface SchemaDiff {
   fields: SchemaFieldDiff[];
+}
+
+interface SchemaDiffContext {
+  matchableFieldIds: ReadonlySet<string>;
+  movedFieldIds: ReadonlySet<string>;
+  beforeFieldsById: ReadonlyMap<string, IcebergSchemaField>;
+  afterFieldsById: ReadonlyMap<string, IcebergSchemaField>;
 }
 
 const hasChangedStatus = (status: SchemaDiffStatus): boolean =>
@@ -132,7 +144,7 @@ const createPresentFieldDiff = (
   status: "added" | "removed",
 ): SchemaFieldDiff => ({
   status,
-  identity: field.identity,
+  movement: null,
   before: status === "removed" ? field : null,
   after: status === "added" ? field : null,
   isNameChanged: false,
@@ -199,8 +211,9 @@ const createPresentTypeDiff = (
 const diffStructTypes = (
   before: StructType,
   after: StructType,
+  context: SchemaDiffContext,
 ): StructTypeDiff => {
-  const fields = diffSchemaFields(before.fields, after.fields);
+  const fields = diffSchemaFields(before.fields, after.fields, context);
   return {
     kind: "struct",
     status: nestedStatus(
@@ -211,8 +224,12 @@ const diffStructTypes = (
   };
 };
 
-const diffListTypes = (before: ListType, after: ListType): ListTypeDiff => {
-  const element = diffSchemaTypes(before.element, after.element);
+const diffListTypes = (
+  before: ListType,
+  after: ListType,
+  context: SchemaDiffContext,
+): ListTypeDiff => {
+  const element = diffSchemaTypes(before.element, after.element, context);
   const hasDirectChange =
     before.elementId !== after.elementId ||
     before.isElementRequired !== after.isElementRequired;
@@ -228,9 +245,13 @@ const diffListTypes = (before: ListType, after: ListType): ListTypeDiff => {
   };
 };
 
-const diffMapTypes = (before: MapType, after: MapType): MapTypeDiff => {
-  const key = diffSchemaTypes(before.key, after.key);
-  const value = diffSchemaTypes(before.value, after.value);
+const diffMapTypes = (
+  before: MapType,
+  after: MapType,
+  context: SchemaDiffContext,
+): MapTypeDiff => {
+  const key = diffSchemaTypes(before.key, after.key, context);
+  const value = diffSchemaTypes(before.value, after.value, context);
   const hasDirectChange =
     before.keyId !== after.keyId ||
     before.valueId !== after.valueId ||
@@ -253,6 +274,7 @@ const diffMapTypes = (before: MapType, after: MapType): MapTypeDiff => {
 const diffSchemaTypes = (
   before: IcebergType,
   after: IcebergType,
+  context: SchemaDiffContext,
 ): SchemaTypeDiff => {
   if (before.kind !== after.kind) {
     return { kind: "replacement", status: "changed", before, after };
@@ -270,15 +292,15 @@ const diffSchemaTypes = (
     }
     case "struct":
       return after.kind === "struct"
-        ? diffStructTypes(before, after)
+        ? diffStructTypes(before, after, context)
         : { kind: "replacement", status: "changed", before, after };
     case "list":
       return after.kind === "list"
-        ? diffListTypes(before, after)
+        ? diffListTypes(before, after, context)
         : { kind: "replacement", status: "changed", before, after };
     case "map":
       return after.kind === "map"
-        ? diffMapTypes(before, after)
+        ? diffMapTypes(before, after, context)
         : { kind: "replacement", status: "changed", before, after };
     case "unknown": {
       const afterValue = after.kind === "unknown" ? after.value : null;
@@ -297,14 +319,15 @@ const diffSchemaTypes = (
 const diffMatchedFields = (
   before: IcebergSchemaField,
   after: IcebergSchemaField,
+  context: SchemaDiffContext,
 ): SchemaFieldDiff => {
-  const type = diffSchemaTypes(before.type, after.type);
+  const type = diffSchemaTypes(before.type, after.type, context);
   const isNameChanged = before.name !== after.name;
   const isRequiredChanged = before.isRequired !== after.isRequired;
 
   return {
     status: nestedStatus(isNameChanged || isRequiredChanged, [type.status]),
-    identity: after.identity,
+    movement: null,
     before,
     after,
     isNameChanged,
@@ -313,36 +336,182 @@ const diffMatchedFields = (
   };
 };
 
+const createMovedFieldDiff = (
+  before: IcebergSchemaField,
+  after: IcebergSchemaField,
+  movement: "from" | "to",
+  context: SchemaDiffContext,
+): SchemaFieldDiff => ({
+  ...diffMatchedFields(before, after, context),
+  status: "moved",
+  movement,
+});
+
 const diffSchemaFields = (
   beforeFields: IcebergSchemaField[],
   afterFields: IcebergSchemaField[],
+  context: SchemaDiffContext,
 ): SchemaFieldDiff[] => {
-  const unmatchedBeforeFields = [...beforeFields];
+  const matchedBeforeIndexes = new Set<number>();
   const fieldDiffs = afterFields.map((afterField) => {
-    const beforeIndex = unmatchedBeforeFields.findIndex(
-      (beforeField) => beforeField.identity === afterField.identity,
-    );
+    const canMatch =
+      afterField.id !== null && context.matchableFieldIds.has(afterField.id);
+    const beforeIndex = canMatch
+      ? beforeFields.findIndex(
+          (beforeField) => beforeField.id === afterField.id,
+        )
+      : -1;
 
     if (beforeIndex < 0) {
+      const beforeField =
+        afterField.id === null
+          ? undefined
+          : context.beforeFieldsById.get(afterField.id);
+
+      if (
+        afterField.id !== null &&
+        context.movedFieldIds.has(afterField.id) &&
+        beforeField !== undefined
+      ) {
+        return createMovedFieldDiff(beforeField, afterField, "to", context);
+      }
+
       return createPresentFieldDiff(afterField, "added");
     }
 
-    const beforeField = unmatchedBeforeFields[beforeIndex];
-    unmatchedBeforeFields.splice(beforeIndex, 1);
+    const beforeField = beforeFields[beforeIndex];
+    matchedBeforeIndexes.add(beforeIndex);
 
     return beforeField === undefined
       ? createPresentFieldDiff(afterField, "added")
-      : diffMatchedFields(beforeField, afterField);
+      : diffMatchedFields(beforeField, afterField, context);
   });
 
   const allFieldDiffs = [
     ...fieldDiffs,
-    ...unmatchedBeforeFields.map((field) =>
-      createPresentFieldDiff(field, "removed"),
-    ),
+    ...beforeFields.flatMap((field, fieldIndex) => {
+      if (matchedBeforeIndexes.has(fieldIndex)) {
+        return [];
+      }
+
+      const afterField =
+        field.id === null ? undefined : context.afterFieldsById.get(field.id);
+
+      return field.id !== null &&
+        context.movedFieldIds.has(field.id) &&
+        afterField !== undefined
+        ? [createMovedFieldDiff(field, afterField, "from", context)]
+        : [createPresentFieldDiff(field, "removed")];
+    }),
   ];
 
   return allFieldDiffs.filter((field) => field.status !== "unchanged");
+};
+
+interface SchemaFieldIndex {
+  fieldsById: ReadonlyMap<string, IcebergSchemaField>;
+  idCounts: ReadonlyMap<string, number>;
+  locationsById: ReadonlyMap<string, string>;
+}
+
+const indexSchemaFields = (
+  fields: IcebergSchemaField[],
+  parentId: string | null,
+  containerPath: string[],
+  fieldsById: Map<string, IcebergSchemaField>,
+  idCounts: Map<string, number>,
+  locationsById: Map<string, string>,
+): void => {
+  const indexNestedType = (
+    type: IcebergType,
+    nestedParentId: string | null,
+    nestedContainerPath: string[],
+  ): void => {
+    switch (type.kind) {
+      case "struct":
+        indexSchemaFields(
+          type.fields,
+          nestedParentId,
+          [...nestedContainerPath, "struct"],
+          fieldsById,
+          idCounts,
+          locationsById,
+        );
+        break;
+      case "list":
+        indexNestedType(type.element, nestedParentId, [
+          ...nestedContainerPath,
+          "list.element",
+        ]);
+        break;
+      case "map":
+        indexNestedType(type.key, nestedParentId, [
+          ...nestedContainerPath,
+          "map.key",
+        ]);
+        indexNestedType(type.value, nestedParentId, [
+          ...nestedContainerPath,
+          "map.value",
+        ]);
+        break;
+      case "primitive":
+      case "unknown":
+        break;
+    }
+  };
+
+  fields.forEach((field) => {
+    if (field.id !== null) {
+      fieldsById.set(field.id, field);
+      idCounts.set(field.id, (idCounts.get(field.id) ?? 0) + 1);
+      locationsById.set(field.id, JSON.stringify([parentId, ...containerPath]));
+    }
+
+    indexNestedType(field.type, field.id, []);
+  });
+};
+
+const createSchemaFieldIndex = (schema: IcebergSchema): SchemaFieldIndex => {
+  const fieldsById = new Map<string, IcebergSchemaField>();
+  const idCounts = new Map<string, number>();
+  const locationsById = new Map<string, string>();
+  indexSchemaFields(
+    schema.fields,
+    null,
+    ["root"],
+    fieldsById,
+    idCounts,
+    locationsById,
+  );
+
+  return { fieldsById, idCounts, locationsById };
+};
+
+const createSchemaDiffContext = (
+  beforeSchema: IcebergSchema,
+  afterSchema: IcebergSchema,
+): SchemaDiffContext => {
+  const beforeIndex = createSchemaFieldIndex(beforeSchema);
+  const afterIndex = createSchemaFieldIndex(afterSchema);
+  const matchableFieldIds = new Set(
+    [...afterIndex.idCounts.keys()].filter(
+      (id) =>
+        beforeIndex.idCounts.get(id) === 1 && afterIndex.idCounts.get(id) === 1,
+    ),
+  );
+  const movedFieldIds = new Set(
+    [...matchableFieldIds].filter(
+      (id) =>
+        beforeIndex.locationsById.get(id) !== afterIndex.locationsById.get(id),
+    ),
+  );
+
+  return {
+    matchableFieldIds,
+    movedFieldIds,
+    beforeFieldsById: beforeIndex.fieldsById,
+    afterFieldsById: afterIndex.fieldsById,
+  };
 };
 
 export const diffIcebergSchemas = (
@@ -351,6 +520,9 @@ export const diffIcebergSchemas = (
 ): SchemaDiff => {
   const beforeSchema: IcebergSchema = parseIcebergSchema(before);
   const afterSchema: IcebergSchema = parseIcebergSchema(after);
+  const context = createSchemaDiffContext(beforeSchema, afterSchema);
 
-  return { fields: diffSchemaFields(beforeSchema.fields, afterSchema.fields) };
+  return {
+    fields: diffSchemaFields(beforeSchema.fields, afterSchema.fields, context),
+  };
 };
