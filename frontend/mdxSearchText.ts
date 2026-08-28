@@ -44,11 +44,6 @@ const extractSearchText = (tree: Root): string => {
   visit(prose, (node, index, parent) => {
     if (!parent || index === undefined) return undefined;
 
-    if (node.type === "mdxjsEsm") {
-      parent.children.splice(index, 1);
-      return index;
-    }
-
     if (MDX_EXPRESSIONS.has(node.type)) {
       const literal = stringLiteralOf(node);
       if (literal === undefined) {
