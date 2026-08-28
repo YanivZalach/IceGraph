@@ -51,3 +51,7 @@ export const fileTreeSearchSchema = tableSearchSchema.extend({
 export const snapshotSelectionSearchSchema = z.looseObject({
   table: z.string().optional(),
 });
+
+export const docsSearchSchema = z.looseObject({
+  section: z.string().optional(),
+});
