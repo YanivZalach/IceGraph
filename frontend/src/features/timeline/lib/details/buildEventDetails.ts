@@ -1,8 +1,5 @@
-import type {
-  MetadataFileNode,
-  SnapshotNode,
-  SnapshotSummary,
-} from "../../api/nodeSchemas";
+import type { MetadataFileNode, SnapshotNode } from "../../api/nodeSchemas";
+import { diffMetadataFiles, type FieldDiff } from "./diffMetadataFiles";
 import {
   formatDayAndMonth,
   formatDayMonthYearAndClock,
@@ -18,7 +15,7 @@ import {
   type BeforeAfterRow,
   type ChangeCountRow,
 } from "./summaryTables";
-import type { TimelineRow } from "../timelineRow";
+import type { TimelineData, TimelineRow } from "../timelineRow";
 
 export interface DetailRowData {
   label: string;
@@ -43,6 +40,8 @@ export interface DetailNotice {
 
 export interface EventDetailData {
   notices: DetailNotice[];
+  actionLink: string | null;
+  snapshotFilePath: string | null;
   topRows: DetailRowData[];
   thisChange: ThisChangeData;
   tableState: BeforeAfterRow[];
@@ -50,6 +49,7 @@ export interface EventDetailData {
   metadataFile: MetadataFileData;
   refs: DetailRowData[];
   properties: DetailRowData[];
+  rawDiff: FieldDiff[];
 }
 
 const toRows = (entries: SummaryEntry[]): DetailRowData[] =>
@@ -179,15 +179,37 @@ const refRows = (file: MetadataFileNode): DetailRowData[] =>
   }));
 
 export const buildEventDetails = (
+  timeline: TimelineData,
   row: TimelineRow,
-  file: MetadataFileNode,
-  snapshot: SnapshotNode | undefined,
-  repointTarget: SnapshotNode | undefined,
-  parentSummary: SnapshotSummary | null,
 ): EventDetailData => {
+  const { rows, snapshotsById, filesByPath } = timeline;
+
+  const file = filesByPath.get(row.filePath);
+  if (file === undefined) {
+    throw new Error(`timeline row without its metadata file: ${row.filePath}`);
+  }
+
+  const snapshot =
+    row.snapshotId === null ? undefined : snapshotsById.get(row.snapshotId);
   const summary =
     snapshot === undefined ? null : groupSnapshotSummary(snapshot.summary);
   const { paired, rest } = pairChangeCounts(summary?.thisChange ?? []);
+
+  const parentSnapshot =
+    snapshot?.parent_id == null
+      ? undefined
+      : snapshotsById.get(snapshot.parent_id);
+
+  const repointTarget =
+    row.repointTargetId === null
+      ? undefined
+      : snapshotsById.get(row.repointTargetId);
+
+  const actionLink = snapshot?.action_link ?? null;
+
+  const rowBelow = rows[rows.indexOf(row) + 1];
+  const previousFile =
+    rowBelow === undefined ? undefined : filesByPath.get(rowBelow.filePath);
 
   const branchRows: DetailRowData[] =
     row.branchName === null
@@ -196,16 +218,23 @@ export const buildEventDetails = (
 
   return {
     notices: nodeNotices(file, snapshot),
+    actionLink: actionLink === "" ? null : actionLink,
+    snapshotFilePath: snapshot?.file_path ?? null,
     topRows: [
       ...branchRows,
       ...snapshotRows(row, snapshot),
       ...eventRows(row, repointTarget),
     ],
     thisChange: { counts: paired, rest: toRows(rest) },
-    tableState: buildBeforeAfterRows(summary?.tableAfter ?? [], parentSummary),
+    tableState: buildBeforeAfterRows(
+      summary?.tableAfter ?? [],
+      parentSnapshot?.summary ?? null,
+    ),
     engine: toRows(summary?.engine ?? []),
     metadataFile: { path: file.file_path, stats: fileStats(file) },
     refs: refRows(file),
     properties: toRows(Object.entries(file.properties)),
+    rawDiff:
+      previousFile === undefined ? [] : diffMetadataFiles(previousFile, file),
   };
 };
