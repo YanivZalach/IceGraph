@@ -13,6 +13,10 @@ const SchemaDiffView = ({
 }: SchemaDiffViewProps) => {
   const schemaDiff = diffIcebergSchemas(previousSchema, currentSchema);
 
+  if (schemaDiff.fields.length === 0) {
+    return <p className="text-sm italic text-slate-400">No field changes.</p>;
+  }
+
   return (
     <div>
       <SchemaFieldHeader />

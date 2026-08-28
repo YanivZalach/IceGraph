@@ -335,12 +335,14 @@ const diffSchemaFields = (
       : diffMatchedFields(beforeField, afterField);
   });
 
-  return [
+  const allFieldDiffs = [
     ...fieldDiffs,
     ...unmatchedBeforeFields.map((field) =>
       createPresentFieldDiff(field, "removed"),
     ),
   ];
+
+  return allFieldDiffs.filter((field) => field.status !== "unchanged");
 };
 
 export const diffIcebergSchemas = (
