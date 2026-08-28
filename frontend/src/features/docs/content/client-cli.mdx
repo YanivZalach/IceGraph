@@ -1,4 +1,4 @@
-import { APP_VERSION } from "../../../appConstants";
+import { PIP_INSTALL_COMMAND } from "../docsContentValues";
 
 `icegraph-client` is a Python client and CLI for the same backend API this UI uses - handy for scripting access to tables, snapshots, and the metadata graph.
 
@@ -7,10 +7,7 @@ import { APP_VERSION } from "../../../appConstants";
 `icegraph-client` is only guaranteed compatible with the exact same version of the IceGraph server it talks to - they're released together. Install that version:
 
 <pre className="mb-4 last:mb-0 bg-surface-hover rounded-md p-3 text-sm text-[#7dd3fc] overflow-x-auto whitespace-pre-wrap">
-  <code>
-    {"pip install icegraph-client"}
-    {APP_VERSION === "dev" ? "" : "==" + APP_VERSION.replace(/^v/, "")}
-  </code>
+  <code>{PIP_INSTALL_COMMAND}</code>
 </pre>
 
 ### Point it at your server

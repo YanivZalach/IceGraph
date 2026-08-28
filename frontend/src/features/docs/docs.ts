@@ -1,5 +1,7 @@
 import type { MDXComponents } from "mdx/types";
 import type { ComponentType } from "react";
+import { APP_VERSION } from "../../appConstants";
+import { PIP_INSTALL_COMMAND } from "./docsContentValues";
 import ClientCliContent, {
   searchText as clientCliText,
 } from "./content/client-cli.mdx";
@@ -71,7 +73,7 @@ export const OVERVIEW_SECTION = createSection(
   "overview",
   "Overview",
   OverviewContent,
-  overviewText,
+  overviewText.replace("Version", `Version ${APP_VERSION}`),
 );
 
 export const DOC_SECTIONS: DocsSection[] = [
@@ -126,7 +128,12 @@ export const DOC_SECTIONS: DocsSection[] = [
     keyboardShortcutsText,
   ),
   createSection("tips", "Tips & Tricks", TipsContent, tipsText),
-  createSection("cli", "CLI & Python Client", ClientCliContent, clientCliText),
+  createSection(
+    "cli",
+    "CLI & Python Client",
+    ClientCliContent,
+    `${clientCliText} ${PIP_INSTALL_COMMAND}`,
+  ),
 ];
 
 const findAllIndices = (text: string, query: string): number[] => {
