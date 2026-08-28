@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { UI_DOCS_BODY_CLASS, UI_DOCS_NAV_TITLE_CLASS } from "../uiTypography";
 import DocsSearchOverlay from "../features/docs/components/DocsSearchOverlay";
 import MarkdownContent from "../features/docs/components/MarkdownContent";
+import { highlightSearchResult } from "../features/docs/docsHighlight";
 import {
   buildSearchResults,
   type Highlight,
@@ -12,69 +13,16 @@ import {
   DOC_SECTIONS,
 } from "../features/docs/docs";
 
-const SEARCH_HIGHLIGHT_SELECTOR = "mark[data-docs-search-highlight]";
-const SEARCH_HIGHLIGHT_CLASS =
-  "bg-accent text-white px-1 rounded ring-2 ring-white";
-
-const highlightSearchResult = (
-  contentElement: HTMLDivElement,
-  highlight: Highlight,
-) => {
-  for (const previousMark of contentElement.querySelectorAll(
-    SEARCH_HIGHLIGHT_SELECTOR,
-  )) {
-    previousMark.replaceWith(...previousMark.childNodes);
-  }
-  contentElement.normalize();
-
-  const treeWalker = document.createTreeWalker(
-    contentElement,
-    NodeFilter.SHOW_TEXT,
-  );
-  const lowerTerm = highlight.term.toLowerCase();
-  let occurrenceIndex = 0;
-  let textNode = treeWalker.nextNode();
-
-  while (textNode) {
-    const text = textNode.nodeValue;
-    if (text === null) {
-      textNode = treeWalker.nextNode();
-      continue;
-    }
-
-    const lowerText = text.toLowerCase();
-    let matchIndex = lowerText.indexOf(lowerTerm);
-
-    while (matchIndex !== -1) {
-      if (occurrenceIndex === highlight.index) {
-        const range = document.createRange();
-        range.setStart(textNode, matchIndex);
-        range.setEnd(textNode, matchIndex + highlight.term.length);
-
-        const mark = document.createElement("mark");
-        mark.dataset.docsSearchHighlight = "true";
-        mark.className = SEARCH_HIGHLIGHT_CLASS;
-        range.surroundContents(mark);
-        mark.scrollIntoView({ behavior: "smooth", block: "center" });
-        return;
-      }
-
-      occurrenceIndex += 1;
-      matchIndex = lowerText.indexOf(lowerTerm, matchIndex + lowerTerm.length);
-    }
-
-    textNode = treeWalker.nextNode();
-  }
-};
-
 const DocsPage = () => {
   const navigate = useNavigate({ from: "/docs" });
   const { section: sectionId } = useSearch({ from: "/docs" });
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [highlight, setHighlight] = useState<Highlight | null>(null);
+  const [highlightRequest, setHighlightRequest] = useState(0);
   const [selectedResultIndex, setSelectedResultIndex] = useState(0);
+  const pendingHighlightRef = useRef<Highlight | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const markdownContentRef = useRef<HTMLDivElement>(null);
   const resultsContainerRef = useRef<HTMLDivElement>(null);
 
   const closeSearch = () => {
@@ -95,7 +43,7 @@ const DocsPage = () => {
     void navigate({
       search: (previousSearch) => ({ ...previousSearch, section: sectionId }),
     });
-    setHighlight(null);
+    pendingHighlightRef.current = null;
     contentRef.current?.scrollTo({ top: 0 });
   };
 
@@ -106,26 +54,35 @@ const DocsPage = () => {
         section: result.section.id,
       }),
     });
-    setHighlight({
+    pendingHighlightRef.current = {
       sectionId: result.section.id,
       term: query,
       index: result.occurrenceIndex,
-    });
+    };
+    setHighlightRequest((request) => request + 1);
     closeSearch();
   };
 
   const searchResults = buildSearchResults(DOC_SECTIONS, query);
 
   useEffect(() => {
-    const contentElement = contentRef.current;
-    if (!contentElement || !highlight) return;
+    const highlight = pendingHighlightRef.current;
+    const contentElement = markdownContentRef.current;
+    if (!contentElement || !highlight || highlight.sectionId !== sectionId) {
+      return;
+    }
 
     highlightSearchResult(contentElement, highlight);
-  }, [highlight, sectionId]);
+    pendingHighlightRef.current = null;
+  }, [highlightRequest, sectionId]);
 
   const activeSection =
     DOC_SECTIONS.find((section) => section.id === sectionId) ??
     OVERVIEW_SECTION;
+
+  useEffect(() => {
+    contentRef.current?.scrollTo({ top: 0 });
+  }, [activeSection.id]);
 
   return (
     <div className="flex flex-1 overflow-hidden">
@@ -200,7 +157,7 @@ const DocsPage = () => {
           <h1 className="text-2xl font-bold text-white mb-6">
             {activeSection.title}
           </h1>
-          <div className={UI_DOCS_BODY_CLASS}>
+          <div ref={markdownContentRef} className={UI_DOCS_BODY_CLASS}>
             <MarkdownContent
               markdown={activeSection.markdown}
               sectionId={activeSection.id}

@@ -12,10 +12,7 @@
 
 Pass `--base-url`, or set it once via the `ICEGRAPH_BASE_URL` environment variable.
 
-If your server sits behind auth, pass `--token` (sent as an `Authorization: Bearer` header) or `--cookie`
-
-- or set them via the
-  `ICEGRAPH_TOKEN` / `ICEGRAPH_COOKIE` environment variables.
+If your server sits behind auth, pass `--token` (sent as an `Authorization: Bearer` header) or `--cookie`, or set them via the `ICEGRAPH_TOKEN` / `ICEGRAPH_COOKIE` environment variables.
 
 IceGraph itself doesn't have a login system, so you'll only need a token or cookie if your team has placed the server behind its own proxy. If you're already able to reach the IceGraph UI in a browser, that proxy has already authenticated your session - you can find the value it's using by opening DevTools → Application/Storage → Cookies (or the Network tab → any request → Request Headers) on the IceGraph page. If that doesn't apply, or you're not sure, it's best to check with whoever set up your IceGraph server - they'll know how their proxy handles authentication.
 

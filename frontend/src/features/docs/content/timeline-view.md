@@ -14,7 +14,7 @@ Use the Timeline to pinpoint when a large write happened, spot unexpected delete
 
 A red **Unknown Events** marker appears when metadata or snapshot data could not be read. Snapshots that simply fall outside the selected range are not flagged. It indicates that one or more events occurred in that part of the timeline, even when the exact events cannot be determined. The next readable event is compared with the previous readable metadata. Its details show the metadata changes, and when the snapshot changed they also show that snapshot's operation.
 
-### Zoom &amp; pan
+### Zoom & pan
 
 Scroll the mouse wheel to zoom in and out (text and nodes scale together, like Graph view). Drag the timeline background to pan. Use horizontal trackpad scroll or Shift + wheel to pan sideways without zooming. **Fit Timeline** scales the full history to the viewport and centers it.
 
