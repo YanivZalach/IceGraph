@@ -12,9 +12,8 @@ export default defineConfig(({ mode }) => {
       // Must precede react() so route-file transforms run before Babel:
       // https://tanstack.com/router/latest/docs/framework/react/routing/installation-with-vite
       tanstackRouter({ target: "react", autoCodeSplitting: false }),
-      { enforce: "pre", ...mdx({ remarkPlugins: [remarkSearchText] }) },
+      mdx({ remarkPlugins: [remarkSearchText] }),
       react({
-        include: /\.(js|jsx|mdx|ts|tsx)$/,
         babel: {
           plugins: ["babel-plugin-react-compiler"],
         },
