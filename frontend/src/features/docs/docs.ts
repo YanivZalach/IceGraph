@@ -61,7 +61,7 @@ export const OVERVIEW_SECTION: DocsSection = {
 /** Ordered documentation pages shown in the sidebar and searchable index. */
 export const DOC_SECTIONS: DocsSection[] = [
   OVERVIEW_SECTION,
-  createSection("claude-code", "Connect to Coding Agent", codingAgentMarkdown),
+  createSection("coding-agent", "Connect to Coding Agent", codingAgentMarkdown),
   createSection("loading-a-table", "Loading a Table", loadingTableMarkdown),
   createSection("timeline-view", "Timeline View", timelineViewMarkdown),
   createSection("metadata-view", "Metadata View", metadataViewMarkdown),
