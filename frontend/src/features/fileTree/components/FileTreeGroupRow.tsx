@@ -1,57 +1,37 @@
 import type { KeyboardEvent } from "react";
 import { cn } from "../../../shared/lib/cn";
-import type { FileTreeRow } from "../model/fileTreeRows";
-import {
-  getAllPartitionPathNodeIds,
-  getLatestFileTimestamp,
-} from "../model/partitionModel";
-import type { DataFileNode, PartitionGroup, PartitionPathNode } from "../types";
-import PartitionPathIcon from "./PartitionPathIcon";
+import type { FileTreeGroupRowModel } from "../model/fileTreeRows";
+import { getLatestFileTimestamp } from "../model/partitionModel";
 
-type FileTreeGroup = Exclude<FileTreeRow, { kind: "file" }>;
+export type GroupCheckedState = "all" | "none" | "some";
 
 interface FileTreeGroupRowProps {
-  checkedFileIds: Set<string>;
-  expandedItemIds: Set<string>;
+  checkedState: GroupCheckedState;
+  isExpanded: boolean;
   isInspected: boolean;
-  onCollapseMany: (itemIds: string[]) => void;
-  onExpandMany: (itemIds: string[]) => void;
-  onInspectPartitionPathNode: (node: PartitionPathNode) => void;
-  onInspectPartition: (partition: PartitionGroup) => void;
-  onToggleExpanded: (itemId: string) => void;
-  onToggleFiles: (files: DataFileNode[]) => void;
-  row: FileTreeGroup;
+  onCollapseNested: () => void;
+  onExpandNested: () => void;
+  onInspect: () => void;
+  onToggleChecked: () => void;
+  onToggleExpanded: () => void;
+  row: FileTreeGroupRowModel;
 }
 
+const NESTED_ACTION_CLASS =
+  "flex size-8 cursor-pointer items-center justify-center rounded text-base text-slate-600 hover:bg-edge hover:text-slate-300";
+
 const FileTreeGroupRow = ({
-  checkedFileIds,
-  expandedItemIds,
+  checkedState,
+  isExpanded,
   isInspected,
-  onCollapseMany,
-  onExpandMany,
-  onInspectPartitionPathNode,
-  onInspectPartition,
+  onCollapseNested,
+  onExpandNested,
+  onInspect,
+  onToggleChecked,
   onToggleExpanded,
-  onToggleFiles,
   row,
 }: FileTreeGroupRowProps) => {
-  const item = row.kind === "partition" ? row.partition : row.partitionPathNode;
-  const files =
-    row.kind === "partition"
-      ? row.partition.files
-      : row.partitionPathNode.allFiles;
-  const label =
-    row.kind === "partition" ? row.partition.name : row.partitionPathNode.label;
-  const isExpanded = expandedItemIds.has(item.id);
-  const isAllChecked =
-    files.length > 0 && files.every((file) => checkedFileIds.has(file.id));
-  const isSomeChecked =
-    !isAllChecked && files.some((file) => checkedFileIds.has(file.id));
-  const latestTimestamp = getLatestFileTimestamp(files);
-  const handleInspect = () => {
-    if (row.kind === "partition") onInspectPartition(row.partition);
-    else onInspectPartitionPathNode(row.partitionPathNode);
-  };
+  const latestTimestamp = getLatestFileTimestamp(row.files);
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (
       event.target !== event.currentTarget ||
@@ -60,7 +40,7 @@ const FileTreeGroupRow = ({
       return;
     }
     event.preventDefault();
-    handleInspect();
+    onInspect();
   };
 
   return (
@@ -68,10 +48,10 @@ const FileTreeGroupRow = ({
       role="listitem"
       aria-current={isInspected ? "true" : undefined}
       aria-description="Press Enter or Space to inspect"
-      aria-label={label}
-      aria-level={row.isHierarchical ? row.depth + 1 : undefined}
+      aria-label={row.label}
+      aria-level={row.ariaLevel}
       tabIndex={0}
-      onClick={handleInspect}
+      onClick={onInspect}
       onKeyDown={handleKeyDown}
       className={cn(
         "overflow-hidden rounded-lg border bg-surface",
@@ -82,11 +62,11 @@ const FileTreeGroupRow = ({
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <button
             type="button"
-            aria-label={`${isExpanded ? "Collapse" : "Expand"} ${label}`}
+            aria-label={`${isExpanded ? "Collapse" : "Expand"} ${row.label}`}
             aria-expanded={isExpanded}
             onClick={(event) => {
               event.stopPropagation();
-              onToggleExpanded(item.id);
+              onToggleExpanded();
             }}
             className={cn(
               "flex size-8 shrink-0 cursor-pointer items-center justify-center rounded text-accent transition hover:bg-accent-muted",
@@ -104,9 +84,18 @@ const FileTreeGroupRow = ({
               <path d="M4 6l4 4 4-4" strokeLinecap="round" />
             </svg>
           </button>
-          {row.kind === "partition-path" && <PartitionPathIcon />}
+          {row.isPartitionPath && (
+            <svg
+              className="size-4 shrink-0 text-slate-400"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path d="M2 6a2 2 0 012-2h4l2 2h6a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+            </svg>
+          )}
           <span className="truncate font-mono text-xs text-slate-200">
-            {label}
+            {row.label}
           </span>
         </div>
         <div className="ml-4 flex shrink-0 items-center gap-2">
@@ -116,57 +105,46 @@ const FileTreeGroupRow = ({
             </span>
           )}
           <span className="rounded bg-edge px-2 py-0.5 text-xs font-semibold text-slate-300">
-            {files.length}
+            {row.files.length}
           </span>
-          {row.kind === "partition-path" &&
-            row.partitionPathNode.children.length > 0 && (
-              <>
-                <button
-                  type="button"
-                  title="Expand nested partition paths"
-                  aria-label={`Expand every partition path inside ${label}`}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onExpandMany([
-                      item.id,
-                      ...getAllPartitionPathNodeIds(
-                        row.partitionPathNode.children,
-                      ),
-                    ]);
-                  }}
-                  className="flex size-8 cursor-pointer items-center justify-center rounded text-base text-slate-600 hover:bg-edge hover:text-slate-300"
-                >
-                  ⇊
-                </button>
-                <button
-                  type="button"
-                  title="Collapse nested partition paths"
-                  aria-label={`Collapse every partition path inside ${label}`}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onCollapseMany([
-                      item.id,
-                      ...getAllPartitionPathNodeIds(
-                        row.partitionPathNode.children,
-                      ),
-                    ]);
-                  }}
-                  className="flex size-8 cursor-pointer items-center justify-center rounded text-base text-slate-600 hover:bg-edge hover:text-slate-300"
-                >
-                  ⇈
-                </button>
-              </>
-            )}
+          {row.nestedGroupIds.length > 0 && (
+            <>
+              <button
+                type="button"
+                title="Expand nested partition paths"
+                aria-label={`Expand every partition path inside ${row.label}`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onExpandNested();
+                }}
+                className={NESTED_ACTION_CLASS}
+              >
+                ⇊
+              </button>
+              <button
+                type="button"
+                title="Collapse nested partition paths"
+                aria-label={`Collapse every partition path inside ${row.label}`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onCollapseNested();
+                }}
+                className={NESTED_ACTION_CLASS}
+              >
+                ⇈
+              </button>
+            </>
+          )}
           <input
             type="checkbox"
-            aria-label={`Select all files in ${label}`}
-            checked={isAllChecked}
+            aria-label={`Select all files in ${row.label}`}
+            checked={checkedState === "all"}
             ref={(element) => {
-              if (element !== null) element.indeterminate = isSomeChecked;
+              if (element !== null) {
+                element.indeterminate = checkedState === "some";
+              }
             }}
-            onChange={() => {
-              onToggleFiles(files);
-            }}
+            onChange={onToggleChecked}
             onClick={(event) => {
               event.stopPropagation();
             }}

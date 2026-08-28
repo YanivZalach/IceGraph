@@ -1,11 +1,8 @@
-import { formatBytesAsMebibytes } from "../shared/lib/formatBytes";
-import type { ReadableMetrics } from "../utils/readableMetrics";
-import {
-  createMetricRatio,
-  formatMetricPercentage,
-  summarizeReadableMetrics,
-} from "../utils/readableMetricsStatistics";
-import { PanelSectionTitle } from "./PanelContent";
+import { formatBytesAsMebibytes } from "../lib/formatBytes";
+import type { ReadableMetrics } from "./readableMetricValues";
+import { createMetricRatio, parseExactCount } from "./exactCounts";
+import { formatMetricPercentage, summarizeReadableMetrics } from "./metricRows";
+import { PanelSectionTitle } from "../../components/PanelContent";
 
 interface ReadableMetricsSummaryProps {
   readableMetrics: ReadableMetrics;
@@ -39,20 +36,15 @@ const ReadableMetricsSummary = ({
   totalFileSizeBytes,
 }: ReadableMetricsSummaryProps) => {
   const summary = summarizeReadableMetrics(readableMetrics);
-  const totalFileSizeBigInt =
-    totalFileSizeBytes !== null &&
-    Number.isSafeInteger(totalFileSizeBytes) &&
-    totalFileSizeBytes >= 0
-      ? BigInt(totalFileSizeBytes)
-      : null;
+  const totalFileSize = parseExactCount(totalFileSizeBytes);
   const metadataSizeBytes =
-    totalFileSizeBigInt !== null &&
-    summary.totalMeasuredColumnSizeBytes <= totalFileSizeBigInt
-      ? totalFileSizeBigInt - summary.totalMeasuredColumnSizeBytes
+    totalFileSize !== undefined &&
+    summary.totalMeasuredColumnSizeBytes <= totalFileSize
+      ? totalFileSize - summary.totalMeasuredColumnSizeBytes
       : null;
   const metadataSizePercentage = createMetricRatio(
     metadataSizeBytes ?? undefined,
-    totalFileSizeBigInt ?? undefined,
+    totalFileSize,
     true,
   );
   const cards: StatisticCardProps[] = [

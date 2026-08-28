@@ -4,6 +4,7 @@ import { useViewInGraph } from "../../hooks/useViewInGraph";
 import FileTreeContent from "./components/FileTreeContent";
 import FileTreeInspector from "./components/FileTreeInspector";
 import FileTreeToolbar from "./components/FileTreeToolbar";
+import FileTreeViewSettings from "./components/FileTreeViewSettings";
 import { buildFileTreeGraphIndex } from "./model/graphIndex";
 import {
   getBranches,
@@ -11,6 +12,7 @@ import {
   selectCurrentSnapshot,
 } from "./model/snapshotSelection";
 import { getSnapshotFileResult } from "./model/snapshotLineage";
+import { buildVisibleFileTreeRows } from "./model/fileTreeRows";
 import {
   buildPartitionPathTree,
   getAllPartitionPathNodeIds,
@@ -28,14 +30,14 @@ const FileTreeView = ({ graphData }: FileTreeViewProps) => {
   const activeDuplicatingNodeId =
     typeof duplicatingNodeId === "string" ? duplicatingNodeId : null;
 
-  const pageState = useFileTreeState();
+  const { selection, viewSettings } = useFileTreeState();
 
   const graphIndex = buildFileTreeGraphIndex(graphData);
   const branches = getBranches(graphData);
   const selectedBranchName = branches.some(
-    (branch) => branch.name === pageState.requestedBranchName,
+    (branch) => branch.name === viewSettings.requestedBranchName,
   )
-    ? pageState.requestedBranchName
+    ? viewSettings.requestedBranchName
     : null;
   const displayedSnapshots = getDisplayedSnapshots(
     graphIndex,
@@ -44,7 +46,7 @@ const FileTreeView = ({ graphData }: FileTreeViewProps) => {
   );
   const currentSnapshotSelection = selectCurrentSnapshot(
     displayedSnapshots,
-    pageState.requestedSnapshotId,
+    viewSettings.requestedSnapshotId,
   );
   const currentSnapshot = currentSnapshotSelection.snapshot;
   const currentSnapshotId =
@@ -52,12 +54,20 @@ const FileTreeView = ({ graphData }: FileTreeViewProps) => {
   const snapshotFileResult = getSnapshotFileResult(
     currentSnapshot,
     graphIndex,
-    pageState.scope,
+    viewSettings.scope,
   );
-  const snapshotFiles = snapshotFileResult.files;
-  const partitions = groupFilesByPartition(snapshotFiles, pageState.search);
+  const partitions = groupFilesByPartition(
+    snapshotFileResult.files,
+    viewSettings.search,
+  );
   const partitionPathNodes = buildPartitionPathTree(partitions);
   const visibleFiles = partitions.flatMap((partition) => partition.files);
+  const visibleRows = buildVisibleFileTreeRows(
+    partitions,
+    partitionPathNodes,
+    selection.expandedItemIds,
+    viewSettings.viewMode,
+  );
   const snapshotWarnings = [
     ...new Set([
       ...currentSnapshotSelection.warnings,
@@ -71,61 +81,49 @@ const FileTreeView = ({ graphData }: FileTreeViewProps) => {
   ) => {
     void viewInGraph(event, fileId);
   };
+  const handleExpandAll = () => {
+    selection.expandItems(
+      viewSettings.viewMode === "tree"
+        ? [
+            ...getAllPartitionPathNodeIds(partitionPathNodes),
+            ...partitions
+              .filter(({ name }) => name === "(unpartitioned)")
+              .map(({ id }) => id),
+          ]
+        : partitions.map(({ id }) => id),
+    );
+  };
 
-  const inspectedFileId =
-    pageState.inspectedItem?.kind === "file"
-      ? pageState.inspectedItem.file.id
-      : null;
-  const inspectedPartitionPathNodeId =
-    pageState.inspectedItem?.kind === "partition-path"
-      ? pageState.inspectedItem.partitionPathNode.id
-      : null;
-  const inspectedPartitionId =
-    pageState.inspectedItem?.kind === "partition"
-      ? pageState.inspectedItem.partition.id
-      : null;
   return (
     <div className="h-graph flex w-full min-h-0 flex-none flex-col overflow-hidden bg-canvas">
       <FileTreeToolbar
-        branches={branches}
-        checkedFileIds={pageState.checkedFileIds}
-        currentSnapshotId={currentSnapshotId}
+        checkedFileIds={selection.checkedFileIds}
         fileCount={visibleFiles.length}
-        onBranchChange={pageState.setBranch}
         onClearSelection={() => {
-          pageState.selectFiles([]);
+          selection.selectFiles([]);
         }}
-        onCollapseAll={pageState.collapseAll}
-        onExpandAll={() => {
-          pageState.expandItems(
-            pageState.viewMode === "tree"
-              ? [
-                  ...getAllPartitionPathNodeIds(partitionPathNodes),
-                  ...partitions
-                    .filter(({ name }) => name === "(unpartitioned)")
-                    .map(({ id }) => id),
-                ]
-              : partitions.map(({ id }) => id),
-          );
-        }}
-        onScopeChange={pageState.setScope}
-        onSearchChange={pageState.setSearch}
+        onCollapseAll={selection.collapseAll}
+        onExpandAll={handleExpandAll}
+        onSearchChange={viewSettings.setSearch}
         onSelectAll={() => {
-          pageState.selectFiles(visibleFiles);
+          selection.selectFiles(visibleFiles);
         }}
-        onSnapshotChange={pageState.setSnapshot}
-        onViewModeChange={pageState.setViewMode}
         partitionCount={partitions.length}
-        scope={pageState.scope}
-        search={pageState.search}
-        selectedBranchName={selectedBranchName}
-        snapshots={displayedSnapshots}
-        viewMode={pageState.viewMode}
+        search={viewSettings.search}
+        viewSettings={
+          <FileTreeViewSettings
+            branches={branches}
+            currentSnapshotId={currentSnapshotId}
+            selectedBranchName={selectedBranchName}
+            snapshots={displayedSnapshots}
+            viewSettings={viewSettings}
+          />
+        }
       />
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         <main
           className={`flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-3 py-3 sm:px-8 sm:py-4 ${
-            pageState.inspectedItem === null ? "" : "basis-[45%] md:basis-auto"
+            selection.inspectedItem === null ? "" : "basis-[45%] md:basis-auto"
           }`}
         >
           {snapshotFileResult.errors.length > 0 && (
@@ -148,33 +146,19 @@ const FileTreeView = ({ graphData }: FileTreeViewProps) => {
             </p>
           ) : (
             <FileTreeContent
-              checkedFileIds={pageState.checkedFileIds}
               duplicatingNodeId={activeDuplicatingNodeId}
-              expandedItemIds={pageState.expandedItemIds}
-              inspectedFileId={inspectedFileId}
-              inspectedPartitionPathNodeId={inspectedPartitionPathNodeId}
-              inspectedPartitionId={inspectedPartitionId}
-              onCollapseMany={pageState.collapseMany}
-              onExpandMany={pageState.expandItems}
-              onInspectFile={pageState.inspectFile}
-              onInspectPartitionPathNode={pageState.inspectPartitionPathNode}
-              onInspectPartition={pageState.inspectPartition}
-              onToggleExpanded={pageState.toggleExpanded}
-              onToggleChecked={pageState.toggleChecked}
-              onToggleFiles={pageState.toggleFiles}
               onViewInGraph={handleViewInGraph}
-              partitions={partitions}
-              partitionPathNodes={partitionPathNodes}
-              search={pageState.search}
-              viewMode={pageState.viewMode}
+              rows={visibleRows}
+              search={viewSettings.search}
+              selection={selection}
             />
           )}
         </main>
-        {pageState.inspectedItem !== null && (
+        {selection.inspectedItem !== null && (
           <FileTreeInspector
             duplicatingNodeId={activeDuplicatingNodeId}
-            inspectedItem={pageState.inspectedItem}
-            onClose={pageState.closeInspector}
+            inspectedItem={selection.inspectedItem}
+            onClose={selection.closeInspector}
             onViewInGraph={handleViewInGraph}
           />
         )}

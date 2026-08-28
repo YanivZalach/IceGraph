@@ -1,57 +1,33 @@
 import { useEffect, useRef, useState } from "react";
-import type {
-  Branch,
-  FileTreeViewMode,
-  SnapshotFileScope,
-  SnapshotNode,
-} from "../types";
-import FileTreeViewSettings from "./FileTreeViewSettings";
+import type { ReactNode } from "react";
 
 interface FileTreeToolbarProps {
-  branches: Branch[];
   checkedFileIds: Set<string>;
-  currentSnapshotId: string;
   fileCount: number;
-  onBranchChange: (branchName: string | null) => void;
   onClearSelection: () => void;
   onCollapseAll: () => void;
   onExpandAll: () => void;
-  onScopeChange: (scope: SnapshotFileScope) => void;
   onSearchChange: (search: string) => void;
   onSelectAll: () => void;
-  onSnapshotChange: (snapshotId: string) => void;
-  onViewModeChange: (viewMode: FileTreeViewMode) => void;
   partitionCount: number;
-  scope: SnapshotFileScope;
   search: string;
-  selectedBranchName: string | null;
-  snapshots: SnapshotNode[];
-  viewMode: FileTreeViewMode;
+  viewSettings: ReactNode;
 }
 
 const ACTION_CLASS =
   "shrink-0 cursor-pointer rounded-lg border border-edge px-3 py-1.5 text-sm text-slate-400 transition hover:border-edge-hover hover:text-ink disabled:cursor-not-allowed disabled:opacity-30";
 
 const FileTreeToolbar = ({
-  branches,
   checkedFileIds,
-  currentSnapshotId,
   fileCount,
-  onBranchChange,
   onClearSelection,
   onCollapseAll,
   onExpandAll,
-  onScopeChange,
   onSearchChange,
   onSelectAll,
-  onSnapshotChange,
-  onViewModeChange,
   partitionCount,
-  scope,
   search,
-  selectedBranchName,
-  snapshots,
-  viewMode,
+  viewSettings,
 }: FileTreeToolbarProps) => {
   const [copyStatus, setCopyStatus] = useState<"copied" | "failed" | "idle">(
     "idle",
@@ -85,18 +61,7 @@ const FileTreeToolbar = ({
 
   return (
     <header className="flex shrink-0 flex-wrap items-center gap-2 border-b border-edge px-3 py-2 sm:px-6 sm:py-3">
-      <FileTreeViewSettings
-        branches={branches}
-        currentSnapshotId={currentSnapshotId}
-        onBranchChange={onBranchChange}
-        onScopeChange={onScopeChange}
-        onSnapshotChange={onSnapshotChange}
-        onViewModeChange={onViewModeChange}
-        scope={scope}
-        selectedBranchName={selectedBranchName}
-        snapshots={snapshots}
-        viewMode={viewMode}
-      />
+      {viewSettings}
       <div className="hidden h-5 w-px bg-edge sm:block" />
       <input
         type="search"
