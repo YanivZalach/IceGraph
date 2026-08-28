@@ -41,7 +41,6 @@ export interface DetailNotice {
   text: string;
 }
 
-/** Field order mirrors the panel's display order, but the JSX in EventDetails decides it. */
 export interface EventDetailData {
   notices: DetailNotice[];
   topRows: DetailRowData[];
@@ -150,7 +149,6 @@ const fileStats = (file: MetadataFileNode): DetailRowData[] => [
   },
 ];
 
-/** Errors first; a text the file and snapshot both carry shows once. */
 const nodeNotices = (
   file: MetadataFileNode,
   snapshot: SnapshotNode | undefined,
