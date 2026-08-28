@@ -5,26 +5,25 @@ import type { DataFileNode } from "../types";
 
 interface FileTreeFileRowProps {
   ariaLevel: number | undefined;
-  checkedFileIds: Set<string>;
   duplicatingNodeId: string | null;
   file: DataFileNode;
+  isChecked: boolean;
   isInspected: boolean;
-  onInspect: (file: DataFileNode) => void;
-  onToggleChecked: (fileId: string) => void;
+  onInspect: () => void;
+  onToggleChecked: () => void;
   onViewInGraph: (event: MouseEvent<HTMLButtonElement>, fileId: string) => void;
 }
 
 const FileTreeFileRow = ({
   ariaLevel,
-  checkedFileIds,
   duplicatingNodeId,
   file,
+  isChecked,
   isInspected,
   onInspect,
   onToggleChecked,
   onViewInGraph,
 }: FileTreeFileRowProps) => {
-  const isChecked = checkedFileIds.has(file.id);
   const timestamp = file.details.earliest_appearing_snapshot_timestamp;
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (
@@ -34,7 +33,7 @@ const FileTreeFileRow = ({
       return;
     }
     event.preventDefault();
-    onInspect(file);
+    onInspect();
   };
 
   return (
@@ -45,9 +44,7 @@ const FileTreeFileRow = ({
       aria-level={ariaLevel}
       tabIndex={0}
       onKeyDown={handleKeyDown}
-      onClick={() => {
-        onInspect(file);
-      }}
+      onClick={onInspect}
       className={cn(
         "group flex cursor-pointer items-center gap-2.5 rounded-md border px-3 py-2 transition",
         isInspected
@@ -61,9 +58,7 @@ const FileTreeFileRow = ({
         type="checkbox"
         aria-label={`Select ${file.id}`}
         checked={isChecked}
-        onChange={() => {
-          onToggleChecked(file.id);
-        }}
+        onChange={onToggleChecked}
         onClick={(event) => {
           event.stopPropagation();
         }}

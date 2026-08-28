@@ -1,7 +1,7 @@
 import { useTable } from "@tanstack/react-table";
-import type { ReadableMetrics } from "../utils/readableMetrics";
-import { buildReadableMetricRows } from "../utils/readableMetricsStatistics";
-import { PanelSectionTitle } from "./PanelContent";
+import type { ReadableMetrics } from "./readableMetricValues";
+import { buildReadableMetricRows } from "./metricRows";
+import { PanelSectionTitle } from "../../components/PanelContent";
 import {
   getReadableMetricsColumns,
   METRICS_TABLE_FEATURES,

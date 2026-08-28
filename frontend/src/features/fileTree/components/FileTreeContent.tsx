@@ -1,101 +1,90 @@
 import type { MouseEvent } from "react";
-import { buildVisibleFileTreeRows } from "../model/fileTreeRows";
+import { getInspectedRowId } from "../model/fileTreeRows";
 import type { FileTreeRow } from "../model/fileTreeRows";
-import type {
-  DataFileNode,
-  FileTreeViewMode,
-  PartitionGroup,
-  PartitionPathNode,
-} from "../types";
-import FileTreeIndentedRow from "./FileTreeIndentedRow";
+import type { FileTreeSelection } from "../hooks/useFileTreeState";
+import type { DataFileNode } from "../types";
 import FileTreeFileRow from "./FileTreeFileRow";
 import FileTreeGroupRow from "./FileTreeGroupRow";
+import type { GroupCheckedState } from "./FileTreeGroupRow";
 import FileTreeVirtualList from "./FileTreeVirtualList";
 
+const getGroupCheckedState = (
+  files: DataFileNode[],
+  checkedFileIds: Set<string>,
+): GroupCheckedState => {
+  if (files.length === 0) return "none";
+  if (files.every((file) => checkedFileIds.has(file.id))) return "all";
+  return files.some((file) => checkedFileIds.has(file.id)) ? "some" : "none";
+};
+
 interface FileTreeContentProps {
-  checkedFileIds: Set<string>;
   duplicatingNodeId: string | null;
-  expandedItemIds: Set<string>;
-  inspectedFileId: string | null;
-  inspectedPartitionPathNodeId: string | null;
-  inspectedPartitionId: string | null;
-  onCollapseMany: (itemIds: string[]) => void;
-  onExpandMany: (itemIds: string[]) => void;
-  onInspectFile: (file: DataFileNode) => void;
-  onInspectPartitionPathNode: (node: PartitionPathNode) => void;
-  onInspectPartition: (partition: PartitionGroup) => void;
-  onToggleExpanded: (itemId: string) => void;
-  onToggleChecked: (fileId: string) => void;
-  onToggleFiles: (files: DataFileNode[]) => void;
   onViewInGraph: (event: MouseEvent<HTMLButtonElement>, fileId: string) => void;
-  partitions: PartitionGroup[];
-  partitionPathNodes: PartitionPathNode[];
+  rows: FileTreeRow[];
   search: string;
-  viewMode: FileTreeViewMode;
+  selection: FileTreeSelection;
 }
 
 const FileTreeContent = ({
-  checkedFileIds,
   duplicatingNodeId,
-  expandedItemIds,
-  inspectedFileId,
-  inspectedPartitionPathNodeId,
-  inspectedPartitionId,
-  onCollapseMany,
-  onExpandMany,
-  onInspectFile,
-  onInspectPartitionPathNode,
-  onInspectPartition,
-  onToggleExpanded,
-  onToggleChecked,
-  onToggleFiles,
   onViewInGraph,
-  partitions,
-  partitionPathNodes,
+  rows,
   search,
-  viewMode,
+  selection,
 }: FileTreeContentProps) => {
-  const visibleRows = buildVisibleFileTreeRows(
-    partitions,
-    partitionPathNodes,
-    expandedItemIds,
-    viewMode,
-  );
+  const inspectedRowId = getInspectedRowId(selection.inspectedItem);
   const renderVisibleRow = (row: FileTreeRow) => (
-    <FileTreeIndentedRow depth={row.depth}>
-      {row.kind === "file" ? (
-        <FileTreeFileRow
-          ariaLevel={row.isHierarchical ? row.depth + 1 : undefined}
-          checkedFileIds={checkedFileIds}
-          duplicatingNodeId={duplicatingNodeId}
-          file={row.file}
-          isInspected={inspectedFileId === row.file.id}
-          onInspect={onInspectFile}
-          onToggleChecked={onToggleChecked}
-          onViewInGraph={onViewInGraph}
-        />
-      ) : (
-        <FileTreeGroupRow
-          checkedFileIds={checkedFileIds}
-          expandedItemIds={expandedItemIds}
-          isInspected={
-            row.kind === "partition"
-              ? inspectedPartitionId === row.partition.id
-              : inspectedPartitionPathNodeId === row.partitionPathNode.id
-          }
-          onCollapseMany={onCollapseMany}
-          onExpandMany={onExpandMany}
-          onInspectPartitionPathNode={onInspectPartitionPathNode}
-          onInspectPartition={onInspectPartition}
-          onToggleExpanded={onToggleExpanded}
-          onToggleFiles={onToggleFiles}
-          row={row}
-        />
-      )}
-    </FileTreeIndentedRow>
+    <div role="none" className="flex w-full">
+      {Array.from({ length: row.depth }, (_, indentIndex) => (
+        <span key={indentIndex} aria-hidden="true" className="w-4 shrink-0" />
+      ))}
+      <div role="none" className="min-w-0 flex-1">
+        {row.kind === "file" ? (
+          <FileTreeFileRow
+            ariaLevel={row.ariaLevel}
+            duplicatingNodeId={duplicatingNodeId}
+            file={row.file}
+            isChecked={selection.checkedFileIds.has(row.file.id)}
+            isInspected={inspectedRowId === row.id}
+            onInspect={() => {
+              selection.inspect({ file: row.file, kind: "file" });
+            }}
+            onToggleChecked={() => {
+              selection.toggleChecked(row.file.id);
+            }}
+            onViewInGraph={onViewInGraph}
+          />
+        ) : (
+          <FileTreeGroupRow
+            checkedState={getGroupCheckedState(
+              row.files,
+              selection.checkedFileIds,
+            )}
+            isExpanded={selection.expandedItemIds.has(row.id)}
+            isInspected={inspectedRowId === row.id}
+            onCollapseNested={() => {
+              selection.collapseItems([row.id, ...row.nestedGroupIds]);
+            }}
+            onExpandNested={() => {
+              selection.expandItems([row.id, ...row.nestedGroupIds]);
+            }}
+            onInspect={() => {
+              selection.inspect(row.inspectionTarget);
+            }}
+            onToggleChecked={() => {
+              selection.toggleFiles(row.files);
+            }}
+            onToggleExpanded={() => {
+              selection.toggleExpanded(row.id);
+            }}
+            row={row}
+          />
+        )}
+      </div>
+    </div>
   );
 
-  if (partitions.length === 0) {
+  if (rows.length === 0) {
     return (
       <div
         data-testid="file-tree-content-scroll"
@@ -110,9 +99,7 @@ const FileTreeContent = ({
     );
   }
 
-  return (
-    <FileTreeVirtualList renderRow={renderVisibleRow} rows={visibleRows} />
-  );
+  return <FileTreeVirtualList renderRow={renderVisibleRow} rows={rows} />;
 };
 
 export default FileTreeContent;

@@ -1,7 +1,8 @@
+import { parseExactCount } from "../../../shared/readableMetrics/exactCounts";
 import type {
   ReadableColumnMetrics,
   ReadableMetrics,
-} from "../../../utils/readableMetrics";
+} from "../../../shared/readableMetrics/readableMetricValues";
 import type { DataFileNode } from "../types";
 
 const NUMERIC_BOUND_FIELD_TYPES = new Set(["int", "long", "float", "double"]);
@@ -33,27 +34,12 @@ interface MutableColumnMetrics {
   valueCount: bigint | null;
 }
 
-const addCountMetric = (
+const addExactCount = (
   currentTotal: bigint | null,
   value: unknown,
 ): bigint | null => {
-  const count =
-    typeof value === "bigint" && value >= 0n
-      ? value
-      : typeof value === "number" && Number.isSafeInteger(value) && value >= 0
-        ? BigInt(value)
-        : typeof value === "string" && /^\d+$/.test(value)
-          ? BigInt(value)
-          : null;
-  return count === null ? currentTotal : (currentTotal ?? 0n) + count;
-};
-
-const addByteMetric = (
-  currentTotal: bigint | null,
-  value: unknown,
-): bigint | null => {
-  if (typeof value !== "string" || !/^\d+$/.test(value)) return currentTotal;
-  return (currentTotal ?? 0n) + BigInt(value);
+  const count = parseExactCount(value);
+  return count === undefined ? currentTotal : (currentTotal ?? 0n) + count;
 };
 
 const compareBoundValues = (
@@ -151,19 +137,19 @@ const accumulateColumnMetrics = (
     return;
   }
 
-  aggregate.columnSizeInBytes = addByteMetric(
+  aggregate.columnSizeInBytes = addExactCount(
     aggregate.columnSizeInBytes,
     metrics.column_size_in_bytes,
   );
-  aggregate.valueCount = addCountMetric(
+  aggregate.valueCount = addExactCount(
     aggregate.valueCount,
     metrics.value_count,
   );
-  aggregate.nullValueCount = addCountMetric(
+  aggregate.nullValueCount = addExactCount(
     aggregate.nullValueCount,
     metrics.null_value_count,
   );
-  aggregate.nanValueCount = addCountMetric(
+  aggregate.nanValueCount = addExactCount(
     aggregate.nanValueCount,
     metrics.nan_value_count,
   );

@@ -1,25 +1,17 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { cn } from "../../../shared/lib/cn";
-import type {
-  Branch,
-  FileTreeViewMode,
-  SnapshotFileScope,
-  SnapshotNode,
-} from "../types";
+import { useOutsideClick } from "../../../shared/lib/useOutsideClick";
+import type { FileTreeViewSettings as FileTreeViewSettingsState } from "../hooks/useFileTreeState";
+import type { Branch, SnapshotNode } from "../types";
 import FileTreeSnapshotSelect from "./FileTreeSnapshotSelect";
 
 interface FileTreeViewSettingsProps {
   branches: Branch[];
   currentSnapshotId: string;
-  onBranchChange: (branchName: string | null) => void;
-  onScopeChange: (scope: SnapshotFileScope) => void;
-  onSnapshotChange: (snapshotId: string) => void;
-  onViewModeChange: (viewMode: FileTreeViewMode) => void;
-  scope: SnapshotFileScope;
   selectedBranchName: string | null;
   snapshots: SnapshotNode[];
-  viewMode: FileTreeViewMode;
+  viewSettings: FileTreeViewSettingsState;
 }
 
 const CONTROL_CLASS =
@@ -28,32 +20,17 @@ const CONTROL_CLASS =
 const FileTreeViewSettings = ({
   branches,
   currentSnapshotId,
-  onBranchChange,
-  onScopeChange,
-  onSnapshotChange,
-  onViewModeChange,
-  scope,
   selectedBranchName,
   snapshots,
-  viewMode,
+  viewSettings,
 }: FileTreeViewSettingsProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  useHotkey("Escape", setIsOpen.bind(null, false), { enabled: isOpen });
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleOutsideClick = (event: globalThis.MouseEvent) => {
-      const clickedInside =
-        event.target instanceof Node &&
-        containerRef.current?.contains(event.target);
-      if (!clickedInside) setIsOpen(false);
-    };
-    document.addEventListener("mousedown", handleOutsideClick);
-    return () => {
-      document.removeEventListener("mousedown", handleOutsideClick);
-    };
-  }, [isOpen]);
+  const close = () => {
+    setIsOpen(false);
+  };
+  useHotkey("Escape", close, { enabled: isOpen });
+  useOutsideClick(containerRef, close, isOpen);
 
   return (
     <div ref={containerRef} className="relative">
@@ -99,7 +76,7 @@ const FileTreeViewSettings = ({
                 <select
                   value={selectedBranchName ?? ""}
                   onChange={(event) => {
-                    onBranchChange(
+                    viewSettings.setBranch(
                       event.target.value === "" ? null : event.target.value,
                     );
                   }}
@@ -117,7 +94,7 @@ const FileTreeViewSettings = ({
             <FileTreeSnapshotSelect
               className={CONTROL_CLASS}
               currentSnapshotId={currentSnapshotId}
-              onChange={onSnapshotChange}
+              onChange={viewSettings.setSnapshot}
               snapshots={snapshots}
             />
             <fieldset>
@@ -128,11 +105,11 @@ const FileTreeViewSettings = ({
                 <button
                   type="button"
                   onClick={() => {
-                    onScopeChange("snapshot");
+                    viewSettings.setScope("snapshot");
                   }}
                   className={cn(
                     "cursor-pointer px-3 py-2 text-sm",
-                    scope === "snapshot"
+                    viewSettings.scope === "snapshot"
                       ? "bg-accent text-white"
                       : "bg-canvas text-slate-400 hover:text-ink",
                   )}
@@ -142,11 +119,11 @@ const FileTreeViewSettings = ({
                 <button
                   type="button"
                   onClick={() => {
-                    onScopeChange("commit");
+                    viewSettings.setScope("commit");
                   }}
                   className={cn(
                     "cursor-pointer border-l border-edge px-3 py-2 text-sm",
-                    scope === "commit"
+                    viewSettings.scope === "commit"
                       ? "bg-accent text-white"
                       : "bg-canvas text-slate-400 hover:text-ink",
                   )}
@@ -165,11 +142,11 @@ const FileTreeViewSettings = ({
                     key={mode}
                     type="button"
                     onClick={() => {
-                      onViewModeChange(mode);
+                      viewSettings.setViewMode(mode);
                     }}
                     className={cn(
                       "cursor-pointer px-3 py-2 text-sm capitalize first:border-r first:border-edge",
-                      viewMode === mode
+                      viewSettings.viewMode === mode
                         ? "bg-accent text-white"
                         : "bg-canvas text-slate-400 hover:text-ink",
                     )}

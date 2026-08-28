@@ -4,19 +4,21 @@ import {
   rowSortingFeature,
   tableFeatures,
 } from "@tanstack/react-table";
-import { formatBytesAsMebibytes } from "../shared/lib/formatBytes";
-import { formatReadableMetricValue } from "../utils/readableMetrics";
+import { formatBytesAsMebibytes } from "../lib/formatBytes";
+import { formatReadableMetricValue } from "./readableMetricValues";
 import {
   compareBigInts,
   compareMetricRatios,
+  type MetricRatio,
+} from "./exactCounts";
+import {
   compareReadableMetricBounds,
   compareSourceIds,
   formatAverageBytesPerValue,
   formatMetricInteger,
   formatMetricPercentage,
-  type MetricRatio,
   type ReadableMetricTableRow,
-} from "../utils/readableMetricsStatistics";
+} from "./metricRows";
 
 export const METRICS_TABLE_FEATURES = tableFeatures({
   rowSortingFeature,

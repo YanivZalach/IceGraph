@@ -1,5 +1,5 @@
 import type { GraphNode } from "./schemas";
-import type { ReadableMetrics } from "../../utils/readableMetrics";
+import type { ReadableMetrics } from "../../shared/readableMetrics/readableMetricValues";
 
 export type DataFileType = "data" | "position_delete" | "equality_delete";
 export type FileTreeViewMode = "flat" | "tree";
@@ -30,6 +30,7 @@ export interface FileStatistics {
 export interface PartitionPathNode {
   allFiles: DataFileNode[];
   children: PartitionPathNode[];
+  descendantIds: string[];
   directFiles: DataFileNode[];
   id: string;
   label: string;

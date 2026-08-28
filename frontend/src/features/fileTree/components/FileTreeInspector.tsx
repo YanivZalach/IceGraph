@@ -4,6 +4,7 @@ import { PanelHeader } from "../../../components/PanelContent";
 import SidePanelFrame, {
   SidePanelResizeHandle,
 } from "../../../components/SidePanelFrame";
+import { startHorizontalResize } from "../../../shared/lib/horizontalResize";
 import type { InspectedFileTreeItem } from "../types";
 import FileTreeInspectorContent from "./FileTreeInspectorContent";
 
@@ -47,37 +48,20 @@ const FileTreeInspector = ({
     "--panel-accent": PANEL_ACCENT,
   };
 
-  const startResize = (event: MouseEvent<HTMLDivElement>) => {
-    event.preventDefault();
+  const handleResizeStart = (event: MouseEvent<HTMLDivElement>) => {
     const panel = event.currentTarget.parentElement;
-    if (panel === null) return;
-    const container = panel.parentElement;
-    if (container === null) return;
+    const container = panel?.parentElement;
+    if (panel == null || container == null) return;
 
-    const startX = event.clientX;
-    const startWidth = panel.getBoundingClientRect().width;
-    const maximumWidth = Math.max(
-      PANEL_MIN_WIDTH_PX,
-      container.getBoundingClientRect().width * 0.7,
+    startHorizontalResize(
+      event,
+      {
+        maximumWidthPx: container.getBoundingClientRect().width * 0.7,
+        minimumWidthPx: PANEL_MIN_WIDTH_PX,
+        startWidthPx: panel.getBoundingClientRect().width,
+      },
+      setPanelWidthPx,
     );
-    const handleMove = (moveEvent: globalThis.MouseEvent) => {
-      const nextWidth = Math.min(
-        maximumWidth,
-        Math.max(PANEL_MIN_WIDTH_PX, startWidth + startX - moveEvent.clientX),
-      );
-      setPanelWidthPx(nextWidth);
-    };
-    const handleUp = () => {
-      document.removeEventListener("mousemove", handleMove);
-      document.removeEventListener("mouseup", handleUp);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-    };
-
-    document.body.style.cursor = "ew-resize";
-    document.body.style.userSelect = "none";
-    document.addEventListener("mousemove", handleMove);
-    document.addEventListener("mouseup", handleUp);
   };
 
   return (
@@ -100,7 +84,7 @@ const FileTreeInspector = ({
         <SidePanelResizeHandle
           accentColor={PANEL_ACCENT}
           className="hidden rounded-none md:block"
-          onMouseDown={startResize}
+          onMouseDown={handleResizeStart}
           title="Drag left or right to resize"
         />
       }

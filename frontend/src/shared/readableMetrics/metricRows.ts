@@ -1,9 +1,11 @@
-import type { ReadableMetrics } from "./readableMetrics";
-
-export interface MetricRatio {
-  denominator: bigint;
-  numerator: bigint;
-}
+import {
+  compareBigInts,
+  createMetricRatio,
+  parseExactCount,
+  parseExactSignedCount,
+  type MetricRatio,
+} from "./exactCounts";
+import type { ReadableMetrics } from "./readableMetricValues";
 
 export interface ReadableMetricTableRow {
   averageBytesPerValue: MetricRatio | undefined;
@@ -38,64 +40,17 @@ const DATE_FIELD_TYPES = new Set([
   "timestamptz_ns",
 ]);
 
-const parseMetricInteger = (value: unknown): bigint | undefined => {
-  if (typeof value === "bigint" && value >= 0n) return value;
-  if (typeof value === "number" && Number.isSafeInteger(value) && value >= 0) {
-    return BigInt(value);
-  }
-  if (typeof value === "string" && /^\d+$/.test(value)) {
-    return BigInt(value);
-  }
-  return undefined;
-};
-
-const parseSignedInteger = (value: unknown): bigint | undefined => {
-  if (typeof value === "bigint") return value;
-  if (typeof value === "number" && Number.isSafeInteger(value)) {
-    return BigInt(value);
-  }
-  if (typeof value === "string" && /^-?\d+$/.test(value)) {
-    return BigInt(value);
-  }
-  return undefined;
-};
-
-const parseTotalFileSize = (
-  totalFileSizeBytes: number | null,
-): bigint | undefined =>
-  totalFileSizeBytes !== null &&
-  Number.isSafeInteger(totalFileSizeBytes) &&
-  totalFileSizeBytes >= 0
-    ? BigInt(totalFileSizeBytes)
-    : undefined;
-
-export const createMetricRatio = (
-  numerator: bigint | undefined,
-  denominator: bigint | undefined,
-  requirePercentageRange = false,
-): MetricRatio | undefined => {
-  if (
-    numerator === undefined ||
-    denominator === undefined ||
-    denominator <= 0n ||
-    (requirePercentageRange && numerator > denominator)
-  ) {
-    return undefined;
-  }
-  return { denominator, numerator };
-};
-
 export const buildReadableMetricRows = (
   readableMetrics: ReadableMetrics,
   totalFileSizeBytes: number | null,
 ): ReadableMetricTableRow[] => {
-  const totalFileSize = parseTotalFileSize(totalFileSizeBytes);
+  const totalFileSize = parseExactCount(totalFileSizeBytes);
 
   return Object.entries(readableMetrics).map(([columnName, metrics]) => {
-    const columnSizeBytes = parseMetricInteger(metrics.column_size_in_bytes);
-    const valueCount = parseMetricInteger(metrics.value_count);
-    const nullValueCount = parseMetricInteger(metrics.null_value_count);
-    const nanValueCount = parseMetricInteger(metrics.nan_value_count);
+    const columnSizeBytes = parseExactCount(metrics.column_size_in_bytes);
+    const valueCount = parseExactCount(metrics.value_count);
+    const nullValueCount = parseExactCount(metrics.null_value_count);
+    const nanValueCount = parseExactCount(metrics.nan_value_count);
 
     return {
       averageBytesPerValue: createMetricRatio(columnSizeBytes, valueCount),
@@ -132,20 +87,8 @@ export const summarizeReadableMetrics = (
   };
 };
 
-export const compareBigInts = (first: bigint, second: bigint): number =>
-  first === second ? 0 : first < second ? -1 : 1;
-
-export const compareMetricRatios = (
-  first: MetricRatio,
-  second: MetricRatio,
-): number =>
-  compareBigInts(
-    first.numerator * second.denominator,
-    second.numerator * first.denominator,
-  );
-
 const normalizeSourceId = (value: unknown): bigint | string =>
-  parseMetricInteger(value) ?? String(value);
+  parseExactCount(value) ?? String(value);
 
 export const compareSourceIds = (first: unknown, second: unknown): number => {
   const normalizedFirst = normalizeSourceId(first);
@@ -225,8 +168,8 @@ const compareBoundValues = (
   fieldType: string,
 ): number => {
   if (INTEGER_FIELD_TYPES.has(fieldType)) {
-    const firstInteger = parseSignedInteger(first);
-    const secondInteger = parseSignedInteger(second);
+    const firstInteger = parseExactSignedCount(first);
+    const secondInteger = parseExactSignedCount(second);
     if (firstInteger !== undefined && secondInteger !== undefined) {
       return compareBigInts(firstInteger, secondInteger);
     }

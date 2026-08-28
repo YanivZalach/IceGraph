@@ -1,5 +1,5 @@
-import { formatLocaleDateTime, parseUtcDate } from "./dateUtils.js";
-import { formatBytesAsMebibytes } from "../shared/lib/formatBytes";
+import { formatLocaleDateTime, parseUtcDate } from "../../utils/dateUtils.js";
+import { formatBytesAsMebibytes } from "../lib/formatBytes";
 
 const LOCAL_TIMESTAMP_FIELD_TYPES = new Set<string>([
   "timestamp",

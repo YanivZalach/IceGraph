@@ -8,9 +8,10 @@ import {
   PANEL_STATUS_BADGE_CLASS,
 } from "../components/PanelContent";
 import PanelIssueNotice from "../components/PanelIssueNotice";
-import DataFileReadableMetricsTable from "../components/DataFileReadableMetricsTable";
-import ReadableMetricsSummary from "../components/ReadableMetricsSummary";
+import DataFileReadableMetricsTable from "../shared/readableMetrics/DataFileReadableMetricsTable";
+import ReadableMetricsSummary from "../shared/readableMetrics/ReadableMetricsSummary";
 import { isEmptyValue } from "../shared/lib/isEmptyValue";
+import { parseFileSizeBytes } from "../shared/readableMetrics/exactCounts";
 import {
   UI_DIALOG_SECTION_TITLE_CLASS,
   UI_POPUP_HINT_CLASS,
@@ -46,18 +47,6 @@ const DATA_AND_DELETE_FILE_TYPES = new Set([
   FileType.POSITION_DELETE,
   FileType.EQUALITY_DELETE,
 ]);
-
-function getFileSizeBytes(details) {
-  const rawFileSize = details?.file_size_in_bytes;
-  if (typeof rawFileSize !== "string" && typeof rawFileSize !== "number") {
-    return null;
-  }
-
-  const fileSizeBytes = Number(rawFileSize);
-  return Number.isSafeInteger(fileSizeBytes) && fileSizeBytes >= 0
-    ? fileSizeBytes
-    : null;
-}
 
 function getGraphNodeMetrics() {
   return {
@@ -761,7 +750,7 @@ export default function GraphPage() {
   const stickyFileSizeBytes =
     stickyReadableMetrics === null
       ? null
-      : getFileSizeBytes(stickyNode.details);
+      : parseFileSizeBytes(stickyNode.details.file_size_in_bytes);
 
   return (
     <div className="relative w-full overflow-hidden h-graph bg-graph-grid">
