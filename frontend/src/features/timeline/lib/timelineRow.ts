@@ -31,6 +31,7 @@ export interface TimelineRow {
 export interface TimelineData {
   rows: TimelineRow[];
   skippedNodeCount: number;
+  olderCommitCount: number;
   snapshotsById: ReadonlyMap<string, SnapshotNode>;
   filesByPath: ReadonlyMap<string, MetadataFileNode>;
 }

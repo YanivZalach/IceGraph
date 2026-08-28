@@ -136,6 +136,8 @@ export const buildTimeline = (
   return {
     rows: rowsNewestFirst,
     skippedNodeCount: skippedNodeCount + degradedRowCount,
+    // previous_file is nulled at the load cutoff; the metadata log count survives it
+    olderCommitCount: filesOldestFirst[0]?.pointed_metadata_log_count ?? 0,
     snapshotsById,
     filesByPath: new Map(
       filesOldestFirst.map((file) => [file.file_path, file]),
