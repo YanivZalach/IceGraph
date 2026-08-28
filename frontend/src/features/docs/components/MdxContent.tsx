@@ -1,36 +1,27 @@
-import ReactMarkdown from "react-markdown";
-import type { Components } from "react-markdown";
-import { Children } from "react";
+import type { MDXComponents } from "mdx/types";
+import type { ComponentType, ReactNode } from "react";
 import { cn } from "../../../shared/lib/cn";
 
-interface MarkdownContentProps {
-  markdown: string;
+interface MdxContentProps {
+  Content: ComponentType<{ components?: MDXComponents }>;
   sectionId: string;
 }
 
-const MarkdownContent = ({ markdown, sectionId }: MarkdownContentProps) => {
+interface AnchorProps {
+  children?: ReactNode;
+  href?: string;
+}
+
+const MdxContent = ({ Content, sectionId }: MdxContentProps) => {
   const isKeyboardShortcuts = sectionId === "keyboard-shortcuts";
   const isOverview = sectionId === "overview";
-  const isIssuesPanel = sectionId === "issues-panel";
 
-  const components: Components = {
-    h3: ({ children }) => {
-      const heading = Children.toArray(children)
-        .filter((child): child is string => typeof child === "string")
-        .join("");
-      const severityClass =
-        isIssuesPanel && heading === "Critical Errors"
-          ? "text-[#ff6b6b]"
-          : isIssuesPanel && heading === "Warnings"
-            ? "text-[#fbbf24]"
-            : "text-white";
-
-      return (
-        <h3 className={`mt-5 mb-2 first:mt-0 font-semibold ${severityClass}`}>
-          {children}
-        </h3>
-      );
-    },
+  const components: MDXComponents = {
+    h3: ({ children }) => (
+      <h3 className="mt-5 mb-2 first:mt-0 text-white font-semibold">
+        {children}
+      </h3>
+    ),
     p: ({ children }) => (
       <p
         className={cn(
@@ -44,27 +35,19 @@ const MarkdownContent = ({ markdown, sectionId }: MarkdownContentProps) => {
     strong: ({ children }) => (
       <strong className="text-white">{children}</strong>
     ),
-    a: ({ children, href }) => {
-      const className = cn(
-        "text-accent hover:text-blue-400 transition font-mono text-sm",
-        !isOverview && "underline",
-      );
-
-      return href?.endsWith("/SKILL.md") ? (
-        <a href={href} download="SKILL.md" className={className}>
-          {children}
-        </a>
-      ) : (
-        <a
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={className}
-        >
-          {children}
-        </a>
-      );
-    },
+    a: ({ children, href }: AnchorProps) => (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={cn(
+          "text-accent hover:text-blue-400 transition font-mono text-sm",
+          !isOverview && "underline",
+        )}
+      >
+        {children}
+      </a>
+    ),
     code: ({ children }) =>
       isKeyboardShortcuts ? (
         <kbd className="bg-surface-hover border border-[#3d4a5c] text-[#7dd3fc] text-xs font-mono px-2 py-0.5 rounded">
@@ -106,7 +89,7 @@ const MarkdownContent = ({ markdown, sectionId }: MarkdownContentProps) => {
     ),
   };
 
-  return <ReactMarkdown components={components}>{markdown}</ReactMarkdown>;
+  return <Content components={components} />;
 };
 
-export default MarkdownContent;
+export default MdxContent;

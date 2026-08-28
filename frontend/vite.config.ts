@@ -1,7 +1,9 @@
 import { defineConfig, loadEnv } from "vite";
+import mdx from "@mdx-js/rollup";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
+import { remarkSearchText } from "./mdxSearchText";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
@@ -10,6 +12,7 @@ export default defineConfig(({ mode }) => {
       // Must precede react() so route-file transforms run before Babel:
       // https://tanstack.com/router/latest/docs/framework/react/routing/installation-with-vite
       tanstackRouter({ target: "react", autoCodeSplitting: false }),
+      mdx({ remarkPlugins: [remarkSearchText] }),
       react({
         babel: {
           plugins: ["babel-plugin-react-compiler"],

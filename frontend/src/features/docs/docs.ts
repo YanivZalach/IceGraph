@@ -1,31 +1,59 @@
-import { APP_VERSION, BASE_PATH } from "../../appConstants";
-import clientCliMarkdown from "./content/client-cli.md?raw";
-import codingAgentMarkdown from "./content/coding-agent.md?raw";
-import fileTreeViewMarkdown from "./content/file-tree-view.md?raw";
-import graphViewMarkdown from "./content/graph-view.md?raw";
-import issuesPanelMarkdown from "./content/issues-panel.md?raw";
-import keyboardShortcutsMarkdown from "./content/keyboard-shortcuts.md?raw";
-import loadingTableMarkdown from "./content/loading-table.md?raw";
-import metadataViewMarkdown from "./content/metadata-view.md?raw";
-import overviewMarkdown from "./content/overview.md?raw";
-import specsPanelMarkdown from "./content/specs-panel.md?raw";
-import timelineViewMarkdown from "./content/timeline-view.md?raw";
-import tipsMarkdown from "./content/tips.md?raw";
+import type { MDXComponents } from "mdx/types";
+import type { ComponentType } from "react";
+import { APP_VERSION } from "../../appConstants";
+import { PIP_INSTALL_COMMAND } from "./docsContentValues";
+import ClientCliContent, {
+  searchText as clientCliText,
+} from "./content/client-cli.mdx";
+import CodingAgentContent, {
+  searchText as codingAgentText,
+} from "./content/coding-agent.mdx";
+import FileTreeViewContent, {
+  searchText as fileTreeViewText,
+} from "./content/file-tree-view.mdx";
+import GraphViewContent, {
+  searchText as graphViewText,
+} from "./content/graph-view.mdx";
+import IssuesPanelContent, {
+  searchText as issuesPanelText,
+} from "./content/issues-panel.mdx";
+import KeyboardShortcutsContent, {
+  searchText as keyboardShortcutsText,
+} from "./content/keyboard-shortcuts.mdx";
+import LoadingTableContent, {
+  searchText as loadingTableText,
+} from "./content/loading-table.mdx";
+import MetadataViewContent, {
+  searchText as metadataViewText,
+} from "./content/metadata-view.mdx";
+import OverviewContent, {
+  searchText as overviewText,
+} from "./content/overview.mdx";
+import SpecsPanelContent, {
+  searchText as specsPanelText,
+} from "./content/specs-panel.mdx";
+import TimelineViewContent, {
+  searchText as timelineViewText,
+} from "./content/timeline-view.mdx";
+import TipsContent, { searchText as tipsText } from "./content/tips.mdx";
 
 interface DocsSection {
   id: string;
   title: string;
-  markdown: string;
+  Content: ComponentType<{ components?: MDXComponents }>;
+  searchText: string;
 }
 
 const createSection = (
   id: string,
   title: string,
-  markdown: string,
+  Content: ComponentType<{ components?: MDXComponents }>,
+  searchText: string,
 ): DocsSection => ({
   id,
   title,
-  markdown: resolvePlaceholders(markdown),
+  Content,
+  searchText,
 });
 
 export interface SearchResult {
@@ -41,41 +69,71 @@ export interface Highlight {
   index: number;
 }
 
-const pipInstallCommand =
-  APP_VERSION === "dev"
-    ? "pip install icegraph-client"
-    : `pip install icegraph-client==${APP_VERSION.replace(/^v/, "")}`;
+export const OVERVIEW_SECTION = createSection(
+  "overview",
+  "Overview",
+  OverviewContent,
+  overviewText.replace("Version", `Version ${APP_VERSION}`),
+);
 
-const resolvePlaceholders = (markdown: string): string =>
-  markdown
-    .replaceAll("{{APP_VERSION}}", APP_VERSION)
-    .replaceAll("{{PIP_INSTALL_COMMAND}}", pipInstallCommand)
-    .replaceAll("{{BASE_PATH}}", BASE_PATH);
-
-export const OVERVIEW_SECTION: DocsSection = {
-  id: "overview",
-  title: "Overview",
-  markdown: resolvePlaceholders(overviewMarkdown),
-};
-
-/** Ordered documentation pages shown in the sidebar and searchable index. */
 export const DOC_SECTIONS: DocsSection[] = [
   OVERVIEW_SECTION,
-  createSection("coding-agent", "Connect to Coding Agent", codingAgentMarkdown),
-  createSection("loading-a-table", "Loading a Table", loadingTableMarkdown),
-  createSection("timeline-view", "Timeline View", timelineViewMarkdown),
-  createSection("metadata-view", "Metadata View", metadataViewMarkdown),
-  createSection("filetree-view", "FileTree View", fileTreeViewMarkdown),
-  createSection("graph-view", "Graph View", graphViewMarkdown),
-  createSection("specs-panel", "Specs Panel", specsPanelMarkdown),
-  createSection("issues-panel", "Issues Panel", issuesPanelMarkdown),
+  createSection(
+    "coding-agent",
+    "Connect to Coding Agent",
+    CodingAgentContent,
+    codingAgentText,
+  ),
+  createSection(
+    "loading-a-table",
+    "Loading a Table",
+    LoadingTableContent,
+    loadingTableText,
+  ),
+  createSection(
+    "timeline-view",
+    "Timeline View",
+    TimelineViewContent,
+    timelineViewText,
+  ),
+  createSection(
+    "metadata-view",
+    "Metadata View",
+    MetadataViewContent,
+    metadataViewText,
+  ),
+  createSection(
+    "filetree-view",
+    "FileTree View",
+    FileTreeViewContent,
+    fileTreeViewText,
+  ),
+  createSection("graph-view", "Graph View", GraphViewContent, graphViewText),
+  createSection(
+    "specs-panel",
+    "Specs Panel",
+    SpecsPanelContent,
+    specsPanelText,
+  ),
+  createSection(
+    "issues-panel",
+    "Issues Panel",
+    IssuesPanelContent,
+    issuesPanelText,
+  ),
   createSection(
     "keyboard-shortcuts",
     "Keyboard Shortcuts",
-    keyboardShortcutsMarkdown,
+    KeyboardShortcutsContent,
+    keyboardShortcutsText,
   ),
-  createSection("tips", "Tips & Tricks", tipsMarkdown),
-  createSection("cli", "CLI & Python Client", clientCliMarkdown),
+  createSection("tips", "Tips & Tricks", TipsContent, tipsText),
+  createSection(
+    "cli",
+    "CLI & Python Client",
+    ClientCliContent,
+    `${clientCliText} ${PIP_INSTALL_COMMAND}`,
+  ),
 ];
 
 const findAllIndices = (text: string, query: string): number[] => {
@@ -94,18 +152,6 @@ const findAllIndices = (text: string, query: string): number[] => {
   return indices;
 };
 
-const markdownToSearchText = (markdown: string): string => {
-  const withoutCodeBlocks = markdown
-    .replace(/```[^\n]*\n/g, "")
-    .replace(/```/g, "");
-  const withoutLinks = withoutCodeBlocks.replace(/\[([^\]]+)]\([^)]+\)/g, "$1");
-  const withoutMarkdownSyntax = withoutLinks
-    .replace(/[*#`]/g, "")
-    .replace(/^\s*-\s+/gm, "");
-
-  return withoutMarkdownSyntax.replace(/\s+/g, " ").trim();
-};
-
 export const buildSearchResults = (
   sections: DocsSection[],
   query: string,
@@ -113,7 +159,7 @@ export const buildSearchResults = (
   if (!query) return [];
 
   return sections.flatMap((section) => {
-    const content = markdownToSearchText(section.markdown);
+    const content = section.searchText;
     const contentMatches = findAllIndices(content, query);
 
     return contentMatches.map((matchIndex, occurrenceIndex) => {

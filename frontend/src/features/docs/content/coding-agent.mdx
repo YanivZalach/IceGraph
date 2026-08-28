@@ -1,3 +1,5 @@
+import { BASE_PATH } from "../../../appConstants";
+
 IceGraph ships an AI-assistant **skill** so you can ask an agent to inspect and debug your tables directly - list tables, read snapshot history, pull the metadata graph, and get links back into this UI, all in plain language.
 
 ### Claude Code
@@ -15,7 +17,13 @@ This is a **one-time install** - once it's done, the plugin is available in ever
 
 No plugin system needed - the skill is a single, self-contained instructions file. Grab it, then tell your agent to read and follow it:
 
-[Download SKILL.md]({{BASE_PATH}}/SKILL.md)
+<a
+  href={BASE_PATH + "/SKILL.md"}
+  download="SKILL.md"
+  className="text-accent hover:text-blue-400 transition font-mono text-sm underline"
+>
+  {"Download SKILL.md"}
+</a>
 
 ```bash
 Read the SKILL.md file I just downloaded and follow it as your instructions whenever you work with Iceberg tables and IceGraph.
