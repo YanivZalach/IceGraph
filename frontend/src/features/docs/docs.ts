@@ -18,6 +18,16 @@ interface DocsSection {
   markdown: string;
 }
 
+const createSection = (
+  id: string,
+  title: string,
+  markdown: string,
+): DocsSection => ({
+  id,
+  title,
+  markdown: resolvePlaceholders(markdown),
+});
+
 export interface SearchResult {
   section: DocsSection;
   occurrenceIndex: number;
@@ -48,67 +58,28 @@ export const OVERVIEW_SECTION: DocsSection = {
   markdown: resolvePlaceholders(overviewMarkdown),
 };
 
-export const SECTIONS: DocsSection[] = [
+/** Ordered documentation pages shown in the sidebar and searchable index. */
+export const DOC_SECTIONS: DocsSection[] = [
   OVERVIEW_SECTION,
-  {
-    id: "claude-code",
-    title: "Connect to Coding Agent",
-    markdown: resolvePlaceholders(codingAgentMarkdown),
-  },
-  {
-    id: "loading-a-table",
-    title: "Loading a Table",
-    markdown: resolvePlaceholders(loadingTableMarkdown),
-  },
-  {
-    id: "timeline-view",
-    title: "Timeline View",
-    markdown: resolvePlaceholders(timelineViewMarkdown),
-  },
-  {
-    id: "metadata-view",
-    title: "Metadata View",
-    markdown: resolvePlaceholders(metadataViewMarkdown),
-  },
-  {
-    id: "filetree-view",
-    title: "FileTree View",
-    markdown: resolvePlaceholders(fileTreeViewMarkdown),
-  },
-  {
-    id: "graph-view",
-    title: "Graph View",
-    markdown: resolvePlaceholders(graphViewMarkdown),
-  },
-  {
-    id: "specs-panel",
-    title: "Specs Panel",
-    markdown: resolvePlaceholders(specsPanelMarkdown),
-  },
-  {
-    id: "issues-panel",
-    title: "Issues Panel",
-    markdown: resolvePlaceholders(issuesPanelMarkdown),
-  },
-  {
-    id: "keyboard-shortcuts",
-    title: "Keyboard Shortcuts",
-    markdown: resolvePlaceholders(keyboardShortcutsMarkdown),
-  },
-  {
-    id: "tips",
-    title: "Tips & Tricks",
-    markdown: resolvePlaceholders(tipsMarkdown),
-  },
-  {
-    id: "cli",
-    title: "CLI & Python Client",
-    markdown: resolvePlaceholders(clientCliMarkdown),
-  },
+  createSection("claude-code", "Connect to Coding Agent", codingAgentMarkdown),
+  createSection("loading-a-table", "Loading a Table", loadingTableMarkdown),
+  createSection("timeline-view", "Timeline View", timelineViewMarkdown),
+  createSection("metadata-view", "Metadata View", metadataViewMarkdown),
+  createSection("filetree-view", "FileTree View", fileTreeViewMarkdown),
+  createSection("graph-view", "Graph View", graphViewMarkdown),
+  createSection("specs-panel", "Specs Panel", specsPanelMarkdown),
+  createSection("issues-panel", "Issues Panel", issuesPanelMarkdown),
+  createSection(
+    "keyboard-shortcuts",
+    "Keyboard Shortcuts",
+    keyboardShortcutsMarkdown,
+  ),
+  createSection("tips", "Tips & Tricks", tipsMarkdown),
+  createSection("cli", "CLI & Python Client", clientCliMarkdown),
 ];
 
 const findAllIndices = (text: string, query: string): number[] => {
-  const indices = [];
+  const indices: number[] = [];
   const lowerText = text.toLowerCase();
   const lowerQuery = query.toLowerCase();
   let from = 0;
@@ -123,15 +94,17 @@ const findAllIndices = (text: string, query: string): number[] => {
   return indices;
 };
 
-const markdownToSearchText = (markdown: string): string =>
-  markdown
+const markdownToSearchText = (markdown: string): string => {
+  const withoutCodeBlocks = markdown
     .replace(/```[^\n]*\n/g, "")
-    .replace(/```/g, "")
-    .replace(/\[([^\]]+)]\([^)]+\)/g, "$1")
+    .replace(/```/g, "");
+  const withoutLinks = withoutCodeBlocks.replace(/\[([^\]]+)]\([^)]+\)/g, "$1");
+  const withoutMarkdownSyntax = withoutLinks
     .replace(/[*#`]/g, "")
-    .replace(/^\s*-\s+/gm, "")
-    .replace(/\s+/g, " ")
-    .trim();
+    .replace(/^\s*-\s+/gm, "");
+
+  return withoutMarkdownSyntax.replace(/\s+/g, " ").trim();
+};
 
 export const buildSearchResults = (
   sections: DocsSection[],

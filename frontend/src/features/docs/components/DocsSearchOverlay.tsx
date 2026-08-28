@@ -1,5 +1,12 @@
+import { useHotkey } from "@tanstack/react-hotkeys";
 import { useEffect, useRef } from "react";
-import type { Dispatch, ReactNode, RefObject, SetStateAction } from "react";
+import type {
+  Dispatch,
+  MouseEvent,
+  ReactNode,
+  RefObject,
+  SetStateAction,
+} from "react";
 import type { SearchResult } from "../docs";
 
 const escapeRegExp = (text: string): string =>
@@ -21,6 +28,8 @@ const highlightMatch = (text: string, query: string): ReactNode => {
     ),
   );
 };
+
+const SEARCH_RESULT_ITEM_CLASS = "w-full text-left p-4 border-b border-edge";
 
 interface DocsSearchOverlayProps {
   query: string;
@@ -44,11 +53,71 @@ const DocsSearchOverlay = ({
   onSelectedResultIndexChange,
 }: DocsSearchOverlayProps) => {
   const lastMousePosition = useRef({ x: -1, y: -1 });
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     resultsContainerRef.current?.children[selectedResultIndex]?.scrollIntoView({
       block: "nearest",
     });
   }, [resultsContainerRef, selectedResultIndex]);
+
+  useHotkey(
+    "Control+N",
+    () => {
+      onSelectedResultIndexChange((index) =>
+        Math.min(index + 1, searchResults.length - 1),
+      );
+    },
+    {
+      target: searchInputRef,
+      enabled: searchResults.length > 0,
+      preventDefault: true,
+    },
+  );
+  useHotkey(
+    "Control+P",
+    () => {
+      onSelectedResultIndexChange((index) => Math.max(index - 1, 0));
+    },
+    {
+      target: searchInputRef,
+      enabled: searchResults.length > 0,
+      preventDefault: true,
+    },
+  );
+  useHotkey(
+    "Enter",
+    () => {
+      const result = searchResults[selectedResultIndex];
+      if (result) onResultSelect(result);
+    },
+    {
+      target: searchInputRef,
+      enabled: searchResults.length > 0,
+      preventDefault: true,
+    },
+  );
+
+  const handleQueryChange = (value: string) => {
+    onQueryChange(value);
+    onSelectedResultIndexChange(0);
+  };
+
+  const handleResultMouseMove = (
+    event: MouseEvent<HTMLButtonElement>,
+    index: number,
+  ) => {
+    if (
+      event.clientX === lastMousePosition.current.x &&
+      event.clientY === lastMousePosition.current.y
+    ) {
+      return;
+    }
+
+    lastMousePosition.current = { x: event.clientX, y: event.clientY };
+    onSelectedResultIndexChange(index);
+  };
+
   return (
     <div
       className="fixed inset-0 bg-black/50 z-50 flex justify-center items-start pt-20 px-4"
@@ -61,33 +130,11 @@ const DocsSearchOverlay = ({
         }}
       >
         <input
+          ref={searchInputRef}
           autoFocus
           value={query}
-          onChange={(e) => {
-            onQueryChange(e.target.value);
-            onSelectedResultIndexChange(0);
-          }}
-          onKeyDown={(e) => {
-            if (e.ctrlKey && e.key === "n") {
-              e.preventDefault();
-              onSelectedResultIndexChange((i) =>
-                Math.min(i + 1, searchResults.length - 1),
-              );
-              return;
-            }
-
-            if (e.ctrlKey && e.key === "p") {
-              e.preventDefault();
-              onSelectedResultIndexChange((i) => Math.max(i - 1, 0));
-              return;
-            }
-
-            if (e.key === "Enter") {
-              const result = searchResults[selectedResultIndex];
-              if (!result) return;
-              e.preventDefault();
-              onResultSelect(result);
-            }
+          onChange={(event) => {
+            handleQueryChange(event.target.value);
           }}
           placeholder="Search documentation..."
           className="w-full px-4 py-3 bg-surface-hover text-white outline-none rounded-t-lg shrink-0"
@@ -100,22 +147,13 @@ const DocsSearchOverlay = ({
                 {searchResults.map((result, index) => (
                   <button
                     key={`${result.section.id}-${String(result.occurrenceIndex)}`}
-                    onMouseMove={(e) => {
-                      if (
-                        e.clientX === lastMousePosition.current.x &&
-                        e.clientY === lastMousePosition.current.y
-                      )
-                        return;
-                      lastMousePosition.current = {
-                        x: e.clientX,
-                        y: e.clientY,
-                      };
-                      onSelectedResultIndexChange(index);
+                    onMouseMove={(event) => {
+                      handleResultMouseMove(event, index);
                     }}
                     onClick={() => {
                       onResultSelect(result);
                     }}
-                    className={`w-full text-left p-4 border-b border-edge ${
+                    className={`${SEARCH_RESULT_ITEM_CLASS} ${
                       index === selectedResultIndex ? "bg-surface-hover" : ""
                     }`}
                   >

@@ -8,8 +8,63 @@ import {
   type Highlight,
   OVERVIEW_SECTION,
   type SearchResult,
-  SECTIONS,
+  DOC_SECTIONS,
 } from "../features/docs/docs";
+
+const SEARCH_HIGHLIGHT_SELECTOR = "mark[data-docs-search-highlight]";
+const SEARCH_HIGHLIGHT_CLASS =
+  "bg-accent text-white px-1 rounded ring-2 ring-white";
+
+const highlightSearchResult = (
+  contentElement: HTMLDivElement,
+  highlight: Highlight,
+) => {
+  for (const previousMark of contentElement.querySelectorAll(
+    SEARCH_HIGHLIGHT_SELECTOR,
+  )) {
+    previousMark.replaceWith(...previousMark.childNodes);
+  }
+  contentElement.normalize();
+
+  const treeWalker = document.createTreeWalker(
+    contentElement,
+    NodeFilter.SHOW_TEXT,
+  );
+  const lowerTerm = highlight.term.toLowerCase();
+  let occurrenceIndex = 0;
+  let textNode = treeWalker.nextNode();
+
+  while (textNode) {
+    const text = textNode.nodeValue;
+    if (text === null) {
+      textNode = treeWalker.nextNode();
+      continue;
+    }
+
+    const lowerText = text.toLowerCase();
+    let matchIndex = lowerText.indexOf(lowerTerm);
+
+    while (matchIndex !== -1) {
+      if (occurrenceIndex === highlight.index) {
+        const range = document.createRange();
+        range.setStart(textNode, matchIndex);
+        range.setEnd(textNode, matchIndex + highlight.term.length);
+
+        const mark = document.createElement("mark");
+        mark.dataset.docsSearchHighlight = "true";
+        mark.className = SEARCH_HIGHLIGHT_CLASS;
+        range.surroundContents(mark);
+        mark.scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+      }
+
+      occurrenceIndex += 1;
+      matchIndex = lowerText.indexOf(lowerTerm, matchIndex + lowerTerm.length);
+    }
+
+    textNode = treeWalker.nextNode();
+  }
+};
 
 const DocsPage = () => {
   const [active, setActive] = useState(OVERVIEW_SECTION.id);
@@ -50,63 +105,17 @@ const DocsPage = () => {
     closeSearch();
   };
 
-  const searchResults = buildSearchResults(SECTIONS, query);
+  const searchResults = buildSearchResults(DOC_SECTIONS, query);
 
   useEffect(() => {
     const contentElement = contentRef.current;
     if (!contentElement || !highlight) return;
 
-    for (const previousMark of contentElement.querySelectorAll(
-      "mark[data-docs-search-highlight]",
-    )) {
-      previousMark.replaceWith(...previousMark.childNodes);
-    }
-    contentElement.normalize();
-
-    const treeWalker = document.createTreeWalker(
-      contentElement,
-      NodeFilter.SHOW_TEXT,
-    );
-    const lowerTerm = highlight.term.toLowerCase();
-    let occurrenceIndex = 0;
-    let textNode = treeWalker.nextNode();
-
-    while (textNode) {
-      const text = textNode.nodeValue;
-      if (text === null) {
-        textNode = treeWalker.nextNode();
-        continue;
-      }
-      const lowerText = text.toLowerCase();
-      let matchIndex = lowerText.indexOf(lowerTerm);
-
-      while (matchIndex !== -1) {
-        if (occurrenceIndex === highlight.index) {
-          const range = document.createRange();
-          range.setStart(textNode, matchIndex);
-          range.setEnd(textNode, matchIndex + highlight.term.length);
-          const mark = document.createElement("mark");
-          mark.dataset.docsSearchHighlight = "true";
-          mark.className =
-            "bg-accent text-white px-1 rounded ring-2 ring-white";
-          range.surroundContents(mark);
-          mark.scrollIntoView({ behavior: "smooth", block: "center" });
-          return;
-        }
-
-        occurrenceIndex += 1;
-        matchIndex = lowerText.indexOf(
-          lowerTerm,
-          matchIndex + lowerTerm.length,
-        );
-      }
-
-      textNode = treeWalker.nextNode();
-    }
+    highlightSearchResult(contentElement, highlight);
   }, [highlight, active]);
 
   const activeSection =
-    SECTIONS.find((section) => section.id === active) ?? OVERVIEW_SECTION;
+    DOC_SECTIONS.find((section) => section.id === active) ?? OVERVIEW_SECTION;
 
   return (
     <div className="flex flex-1 overflow-hidden">
@@ -141,7 +150,7 @@ const DocsPage = () => {
           </div>
 
           <nav className="flex flex-col gap-0.5">
-            {SECTIONS.map((section) => (
+            {DOC_SECTIONS.map((section) => (
               <button
                 key={section.id}
                 onClick={() => {
@@ -169,7 +178,7 @@ const DocsPage = () => {
             }}
             className="w-full bg-surface-hover text-white text-sm border border-edge rounded-md px-3 py-2"
           >
-            {SECTIONS.map((section) => (
+            {DOC_SECTIONS.map((section) => (
               <option key={section.id} value={section.id}>
                 {section.title}
               </option>
