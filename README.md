@@ -86,7 +86,7 @@ contribution and licensing process.
 
 ### Prerequisites
 
-- npm
+- pnpm 11.24.0, installed directly, or Corepack for managing the pinned pnpm version
 - UV (python)
 - Spark Connect server (Quick setup using https://github.com/YanivZalach/Docker_Spark_Connect_Iceberg)
 
@@ -106,7 +106,7 @@ uv sync
 
 ```bash
 cd frontend
-npm i
+pnpm install
 ```
 
 ### 2. Setup your Envs
@@ -129,7 +129,7 @@ uv run python main.py
 
 Open a second terminal in the front end directory and run:
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 Go to `http://localhost:3000` and explore your tables.
@@ -159,9 +159,9 @@ Run all three frontend checks from the `frontend` directory:
 ```bash
 cd frontend
 
-npm run format
-npm run lint
-npm run typecheck
+pnpm run format
+pnpm run lint
+pnpm run typecheck
 ```
 
 Each one catches a different class of problem, so all three are needed.

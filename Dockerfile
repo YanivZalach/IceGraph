@@ -3,11 +3,12 @@ ARG APP_VERSION=dev
 ENV VITE_APP_VERSION=$APP_VERSION
 WORKDIR /build
 
-COPY frontend/package*.json ./
-RUN npm ci
+RUN corepack enable
+COPY frontend/package.json frontend/pnpm-lock.yaml frontend/pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile
 COPY frontend ./
 COPY claude-plugin/skills/icegraph/SKILL.md /claude-plugin/skills/icegraph/SKILL.md
-RUN npm run build
+RUN pnpm run build
 
 FROM python:3.12-slim AS builder
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
