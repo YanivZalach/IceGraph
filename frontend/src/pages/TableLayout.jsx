@@ -16,7 +16,9 @@ import MetadataStructured from "../components/MetadataStructured";
 import PartitionSpecList, {
   PartitionDiffView,
 } from "../components/PartitionSpecList";
-import SchemaFieldList, { SchemaDiffView } from "../components/SchemaFieldList";
+import SchemaDiffView from "../features/schema/components/SchemaDiffView";
+import SchemaFieldList from "../features/schema/components/SchemaFieldList";
+import { findPreviousSchema } from "../features/schema/schemaHistory";
 import SortOrderList, { SortDiffView } from "../components/SortOrderList";
 import { useTableSpecs } from "../context/TableSpecsContext";
 import {
@@ -570,11 +572,16 @@ export default function TableLayout() {
                   const idx = list.findIndex(
                     (s) => s[config.idKey] === selectionDetail.id,
                   );
-                  const prevItem = idx > 0 ? list[idx - 1] : null;
+                  const prevItem =
+                    selectionDetail.type === "schema"
+                      ? findPreviousSchema(list, selectionDetail.data)
+                      : idx > 0
+                        ? list[idx - 1]
+                        : null;
                   const hasPrev = prevItem !== null;
 
                   const diff =
-                    showDiff && hasPrev
+                    showDiff && hasPrev && selectionDetail.type !== "schema"
                       ? diffFieldLists(
                           prevItem.fields,
                           selectionDetail.data.fields,
@@ -643,9 +650,12 @@ export default function TableLayout() {
                           <SortOrderList order={selectionDetail.data} />
                         )}
                         {showDiff &&
-                          diff &&
+                          hasPrev &&
                           selectionDetail.type === "schema" && (
-                            <SchemaDiffView diff={diff} />
+                            <SchemaDiffView
+                              previousSchema={prevItem}
+                              currentSchema={selectionDetail.data}
+                            />
                           )}
                         {showDiff &&
                           diff &&

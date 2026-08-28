@@ -6,4 +6,14 @@ The **Specs** button in the navbar opens the Table Specification panel, which sh
 
 - **Order History** - every sort order version, showing each by its order ID
 
-The currently active version in each section is highlighted with an **ACTIVE** badge. Click any version to expand its full field-level definition - schema fields render with their types (including nested structs, lists, and maps), while partition and sort order fields render as structured tables. Use the **Full** / **Diff** toggle to compare a version against the one before it, with added, removed, and changed fields highlighted.
+The currently active version in each section is highlighted with an **ACTIVE** badge. Click any version to expand its full field-level definition. Schema fields render with their types (including nested structs, lists, and maps), while partition and sort order fields render as structured tables. Use the **Full** / **Diff** toggle to compare a version against the one before it. Schema diffs follow Iceberg field IDs through nested structs, lists, and maps. They show only changed, added, removed, and moved fields, retaining unchanged parent fields only as the path to a nested change.
+
+Schema diff markers appear before each field ID:
+
+- `+` means added
+- `-` means removed
+- `~` means changed
+- `·` marks an unchanged parent containing a nested change
+
+Moved fields appear under both parent paths: `←` marks the old location and `→` marks the new location.
+Hovering a marker shows its meaning.
