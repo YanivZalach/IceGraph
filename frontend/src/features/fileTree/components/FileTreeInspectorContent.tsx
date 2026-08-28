@@ -1,17 +1,15 @@
 import type { MouseEvent } from "react";
-import DataFileReadableMetricsTable from "../../../components/DataFileReadableMetricsTable";
+import DataFileReadableMetricsTable from "../../../shared/readableMetrics/DataFileReadableMetricsTable";
 import {
   PanelDetailRow,
   PanelSectionTitle,
 } from "../../../components/PanelContent";
-import ReadableMetricsSummary from "../../../components/ReadableMetricsSummary";
+import ReadableMetricsSummary from "../../../shared/readableMetrics/ReadableMetricsSummary";
 import { fileTypeLabel } from "../../../graphConstants.js";
 import { formatBytesAsMebibytes } from "../../../shared/lib/formatBytes";
 import { isEmptyValue } from "../../../shared/lib/isEmptyValue";
-import {
-  calculateFileStatistics,
-  getFileSizeBytes,
-} from "../model/partitionModel";
+import { parseFileSizeBytes } from "../../../shared/readableMetrics/exactCounts";
+import { calculateFileStatistics } from "../model/partitionModel";
 import type { InspectedFileTreeItem } from "../types";
 import FileTreeStatistics from "./FileTreeStatistics";
 
@@ -55,7 +53,7 @@ const FileTreeInspectorContent = ({
   const hasReadableMetrics = Object.keys(readableMetrics).length > 0;
   const totalFileSizeBytes =
     file !== null
-      ? getFileSizeBytes(file)
+      ? parseFileSizeBytes(file.details.file_size_in_bytes)
       : statistics?.hasCompleteFileSizes === true
         ? statistics.totalSizeBytes
         : null;

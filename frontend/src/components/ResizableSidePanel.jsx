@@ -6,6 +6,7 @@ import {
   pxToRem,
   remToPx,
 } from "../layoutConstants";
+import { startHorizontalResize } from "../shared/lib/horizontalResize";
 import SidePanelFrame, { SidePanelResizeHandle } from "./SidePanelFrame";
 
 export { PANEL_WIDTH_RELAXED_REM as PANEL_WIDTH_RELAXED } from "../layoutConstants";
@@ -66,38 +67,17 @@ const ResizableSidePanel = forwardRef(function ResizableSidePanel(
     onClose();
   }, [onClose]);
 
-  const startResize = useCallback(
-    (e) => {
-      e.preventDefault();
-      const startX = e.clientX;
-      const startWidthRem = panelWidthRem;
-      const maxWidthRem = Math.max(
-        PANEL_WIDTH_MIN_REM,
-        pxToRem(maxContainerWidth),
+  const handleResizeStart = useCallback(
+    (event) => {
+      startHorizontalResize(
+        event,
+        {
+          maximumWidthPx: maxContainerWidth,
+          minimumWidthPx: remToPx(PANEL_WIDTH_MIN_REM),
+          startWidthPx: remToPx(panelWidthRem),
+        },
+        (widthPx) => setPanelWidthRem(pxToRem(widthPx)),
       );
-
-      const onMove = (ev) => {
-        const nextWidthRem = Math.min(
-          maxWidthRem,
-          Math.max(
-            PANEL_WIDTH_MIN_REM,
-            startWidthRem + pxToRem(startX - ev.clientX),
-          ),
-        );
-        setPanelWidthRem(nextWidthRem);
-      };
-
-      const onUp = () => {
-        document.removeEventListener("mousemove", onMove);
-        document.removeEventListener("mouseup", onUp);
-        document.body.style.cursor = "";
-        document.body.style.userSelect = "";
-      };
-
-      document.body.style.cursor = "ew-resize";
-      document.body.style.userSelect = "none";
-      document.addEventListener("mousemove", onMove);
-      document.addEventListener("mouseup", onUp);
     },
     [panelWidthRem, maxContainerWidth],
   );
@@ -124,7 +104,7 @@ const ResizableSidePanel = forwardRef(function ResizableSidePanel(
   const resizeHandle = !isFullscreen ? (
     <SidePanelResizeHandle
       accentColor={accentColor}
-      onMouseDown={startResize}
+      onMouseDown={handleResizeStart}
       title="Drag left to widen"
     />
   ) : null;

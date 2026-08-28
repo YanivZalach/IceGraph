@@ -1,3 +1,4 @@
+import { parseFileSizeBytes } from "../../../shared/readableMetrics/exactCounts";
 import type {
   DataFileNode,
   FileStatistics,
@@ -17,7 +18,7 @@ export const calculateFileStatistics = (
   files: DataFileNode[],
 ): FileStatistics => {
   const fileSizes = files
-    .map(getFileSizeBytes)
+    .map((file) => parseFileSizeBytes(file.details.file_size_in_bytes))
     .filter((fileSize): fileSize is number => fileSize !== null);
   const totalSizeBytes = fileSizes.reduce((total, size) => total + size, 0);
   return {
@@ -41,15 +42,6 @@ export const calculateFileStatistics = (
     ),
     totalSizeBytes,
   };
-};
-
-export const getFileSizeBytes = (file: DataFileNode): number | null => {
-  const rawFileSize = file.details.file_size_in_bytes;
-  if (rawFileSize === undefined) return null;
-  const fileSizeBytes = Number(rawFileSize);
-  return Number.isFinite(fileSizeBytes) && fileSizeBytes >= 0
-    ? fileSizeBytes
-    : null;
 };
 
 export const getLatestFileTimestamp = (files: DataFileNode[]): string | null =>
@@ -108,6 +100,10 @@ const convertMutablePartitionPathNode = (
   return {
     allFiles,
     children,
+    descendantIds: children.flatMap((child) => [
+      child.id,
+      ...child.descendantIds,
+    ]),
     directFiles: mutableNode.directFiles,
     id: `partition-path:${mutableNode.path}`,
     label: mutableNode.label,
@@ -155,8 +151,4 @@ export const buildPartitionPathTree = (
 
 export const getAllPartitionPathNodeIds = (
   nodes: PartitionPathNode[],
-): string[] =>
-  nodes.flatMap((node) => [
-    node.id,
-    ...getAllPartitionPathNodeIds(node.children),
-  ]);
+): string[] => nodes.flatMap((node) => [node.id, ...node.descendantIds]);
