@@ -4,7 +4,7 @@ IceGraph ships an AI-assistant **skill** so you can ask an agent to inspect and 
 
 Ships as a plugin. Inside Claude Code, run:
 
-```text
+```bash
 /plugin marketplace add YanivZalach/IceGraph
 /plugin install icegraph
 ```
@@ -17,7 +17,7 @@ No plugin system needed - the skill is a single, self-contained instructions fil
 
 [Download SKILL.md]({{BASE_PATH}}/SKILL.md)
 
-```text
+```bash
 Read the SKILL.md file I just downloaded and follow it as your instructions whenever you work with Iceberg tables and IceGraph.
 ```
 

@@ -4,7 +4,7 @@
 
 `icegraph-client` is only guaranteed compatible with the exact same version of the IceGraph server it talks to - they're released together. Install that version:
 
-```text
+```bash
 {{PIP_INSTALL_COMMAND}}
 ```
 
@@ -23,7 +23,7 @@ If your server uses a self-signed or otherwise untrusted TLS certificate, pass `
 
 ### Commands
 
-```text
+```bash
 icegraph tables
 icegraph snapshots <table>
 icegraph graph <table> [--start-snapshot-id ID] [--end-snapshot-id ID]
