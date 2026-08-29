@@ -47,11 +47,13 @@ const fetchGraphMetadataFile = async (
   parameters: GraphRequestParameters,
   signal: AbortSignal,
 ): Promise<string> => {
-  const searchParameters = new URLSearchParams({
-    end_snapshot_id: parameters.endSnapshotId,
-  });
+  const searchParameters = new URLSearchParams();
+  if (parameters.endSnapshotId !== "") {
+    searchParameters.set("end_snapshot_id", parameters.endSnapshotId);
+  }
+  const queryString = searchParameters.toString();
   const response = await fetchFromApi(
-    `/graph-metadata-file/${encodeURIComponent(parameters.tableName)}?${searchParameters.toString()}`,
+    `/graph-metadata-file/${encodeURIComponent(parameters.tableName)}${queryString === "" ? "" : `?${queryString}`}`,
     graphMetadataFileSchema,
     { signal },
   );
@@ -67,7 +69,7 @@ const buildGraph = async (
   if (parameters.startSnapshotId !== "") {
     formBody.set("start_snapshot_id", parameters.startSnapshotId);
   }
-  if (parameters.endSnapshotId !== "" && !shouldBypassPersistentGraphCache()) {
+  if (parameters.endSnapshotId !== "") {
     formBody.set("end_snapshot_id", parameters.endSnapshotId);
   }
 
@@ -124,7 +126,7 @@ const loadGraph = async (
     console.warn("Failed to clean expired graph caches", cacheError);
   }
 
-  if (parameters.endSnapshotId !== "") {
+  if (!shouldBypassPersistentGraphCache()) {
     try {
       const metadataFile = await fetchGraphMetadataFile(parameters, signal);
       const cachedGraph = await readGraphCache(parameters, metadataFile);

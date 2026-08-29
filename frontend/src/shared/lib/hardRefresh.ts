@@ -9,8 +9,11 @@ try {
   console.warn("Failed to read the hard refresh marker", storageError);
 }
 
-export const shouldBypassPersistentGraphCache = (): boolean =>
-  requestedHardRefreshUrl === window.location.href;
+export const shouldBypassPersistentGraphCache = (): boolean => {
+  const shouldBypass = requestedHardRefreshUrl === window.location.href;
+  requestedHardRefreshUrl = null;
+  return shouldBypass;
+};
 
 export const registerHardRefreshShortcut = (): void => {
   window.addEventListener(

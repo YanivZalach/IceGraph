@@ -8,7 +8,7 @@ import {
 import { env } from "../../../shared/lib/env";
 import { graphDataSchema, type GraphData } from "./graphSchemas";
 
-const GRAPH_CACHE_SCHEMA_VERSION = 2;
+const GRAPH_CACHE_SCHEMA_VERSION = 1;
 const GRAPH_CACHE_PREFIX = `graph:v${String(GRAPH_CACHE_SCHEMA_VERSION)}:${env.appVersion}:`;
 const GRAPH_CACHE_CLEANUP_KEY = "graph-cache:last-cleanup";
 const GRAPH_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
@@ -23,6 +23,8 @@ export interface GraphRequestParameters {
 const graphCacheEntrySchema = z.object({
   cacheKey: z.string(),
   data: graphDataSchema,
+  effectiveEndSnapshotId: z.string(),
+  effectiveStartSnapshotId: z.string(),
   lastAccessedAt: z.number(),
   metadataFile: z.string(),
   schemaVersion: z.literal(GRAPH_CACHE_SCHEMA_VERSION),
@@ -61,17 +63,46 @@ export const writeGraphCache = async (
   parameters: GraphRequestParameters,
   data: GraphData,
 ): Promise<void> => {
-  if (parameters.endSnapshotId === "") return;
-
-  const metadataFile = data.nodes.find(
+  const mainMetadataNode = data.nodes.find(
     (node) => node.type === "main_metadata",
-  )?.file_path;
-  if (metadataFile === undefined) return;
+  );
+  const metadataFile = mainMetadataNode?.file_path;
+  if (metadataFile === undefined) {
+    console.warn(
+      "Graph cache was not written because main metadata is missing",
+    );
+    return;
+  }
+
+  const snapshots = data.nodes
+    .filter((node) => node.type === "snapshot")
+    .map((node) => ({
+      snapshotId:
+        typeof node.snapshot_id === "string" ? node.snapshot_id : undefined,
+      timestamp: typeof node.timestamp === "string" ? node.timestamp : "",
+    }))
+    .filter(
+      (snapshot): snapshot is { snapshotId: string; timestamp: string } =>
+        snapshot.snapshotId !== undefined,
+    )
+    .sort((left, right) => left.timestamp.localeCompare(right.timestamp));
+  const mainMetadataSnapshotId =
+    typeof mainMetadataNode?.snapshot_id === "string"
+      ? mainMetadataNode.snapshot_id
+      : "";
+  const effectiveStartSnapshotId =
+    snapshots[0]?.snapshotId ?? parameters.startSnapshotId;
+  const effectiveEndSnapshotId =
+    snapshots.at(-1)?.snapshotId ||
+    mainMetadataSnapshotId ||
+    parameters.endSnapshotId;
 
   const cacheKey = getGraphCacheKey(parameters);
   await setCachedValue(cacheKey, {
     cacheKey,
     data,
+    effectiveEndSnapshotId,
+    effectiveStartSnapshotId,
     lastAccessedAt: Date.now(),
     metadataFile,
     schemaVersion: GRAPH_CACHE_SCHEMA_VERSION,

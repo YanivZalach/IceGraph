@@ -127,10 +127,7 @@ def graph_metadata_file(table_name):
     end_snapshot_id = request.args.get("end_snapshot_id")
 
     try:
-        if not end_snapshot_id:
-            raise ValueError("end_snapshot_id is required")
-
-        parsed_end_snapshot_id = int(end_snapshot_id)
+        parsed_end_snapshot_id = int(end_snapshot_id) if end_snapshot_id else None
         metadata_file = collect_graph_metadata_file(table_name, parsed_end_snapshot_id)
 
         return jsonify({"metadata_file": metadata_file})
