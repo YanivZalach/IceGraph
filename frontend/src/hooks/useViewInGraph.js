@@ -14,5 +14,5 @@ export function useViewInGraph() {
     window.open(url.toString(), "_blank", "noopener,noreferrer");
   };
 
-  return { viewInGraph, duplicatingNodeId: null, canViewInGraph: true };
+  return { viewInGraph };
 }

@@ -363,11 +363,11 @@ export default function NavBar() {
                     ? "opacity-50 cursor-not-allowed text-slate-500"
                     : "text-slate-400 hover:text-white hover:border-slate-400"
                 }`}
-                title="Discard the cached graph and rebuild it from Iceberg metadata"
+                title="Discard the cached graph and recompile it from Iceberg metadata"
                 onClick={() => void rebuildGraph()}
                 disabled={graphQuery.isFetching || !tableName}
               >
-                {graphQuery.isFetching ? "Rebuilding..." : "Rebuild graph"}
+                {graphQuery.isFetching ? "Recompiling..." : "Recompile graph"}
               </button>
 
               <div className="w-px h-4 bg-slate-700" />
@@ -496,14 +496,14 @@ export default function NavBar() {
                 ? "opacity-50 cursor-not-allowed text-slate-500"
                 : "text-slate-400 hover:text-white hover:border-slate-400"
             }`}
-            title="Discard the cached graph and rebuild it from Iceberg metadata"
+            title="Discard the cached graph and recompile it from Iceberg metadata"
             onClick={() => {
               void rebuildGraph();
               setMenuOpen(false);
             }}
             disabled={graphQuery.isFetching || !tableName}
           >
-            {graphQuery.isFetching ? "Rebuilding..." : "Rebuild graph"}
+            {graphQuery.isFetching ? "Recompiling..." : "Recompile graph"}
           </button>
 
           <Link

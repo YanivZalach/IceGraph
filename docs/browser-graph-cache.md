@@ -1,4 +1,4 @@
-# ADR 0001: Cache compiled graphs in browser storage
+# Browser graph cache
 
 ## Status
 
@@ -18,7 +18,7 @@ Before restoring a graph, request the metadata file associated with the selected
 
 Keep at most 20 graphs. Evict least-recently-used entries and entries unused for more than 24 hours. Browser storage failures must never prevent graph compilation or rendering.
 
-Normal refreshes and new tabs may restore validated data. Rebuild graph and keyboard hard refresh explicitly bypass restoration.
+Normal refreshes and new tabs may restore validated data. Recompile graph and keyboard hard refresh explicitly bypass restoration.
 
 ## Consequences
 
@@ -27,4 +27,4 @@ Normal refreshes and new tabs may restore validated data. Rebuild graph and keyb
 - A cache miss or validation failure falls back to normal graph compilation.
 - Application version changes isolate incompatible cache records.
 - Bounded historical graphs can remain stale if referenced files are removed without changing the pinned metadata file.
-- Backend collection-setting changes require an application version change or an explicit rebuild to invalidate existing graphs.
+- Backend collection-setting changes require an application version change or an explicit recompile to invalidate existing graphs.

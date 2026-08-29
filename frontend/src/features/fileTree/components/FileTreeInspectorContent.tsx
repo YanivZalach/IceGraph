@@ -16,7 +16,6 @@ import type { InspectedFileTreeItem } from "../types";
 import FileTreeStatistics from "./FileTreeStatistics";
 
 interface FileTreeInspectorContentProps {
-  duplicatingNodeId: string | null;
   inspectedItem: InspectedFileTreeItem;
   onViewInGraph: (event: MouseEvent<HTMLButtonElement>, fileId: string) => void;
 }
@@ -37,7 +36,6 @@ const humanizeKey = (key: string): string =>
     .replace(/^./, (firstCharacter) => firstCharacter.toUpperCase());
 
 const FileTreeInspectorContent = ({
-  duplicatingNodeId,
   inspectedItem,
   onViewInGraph,
 }: FileTreeInspectorContentProps) => {
@@ -123,10 +121,9 @@ const FileTreeInspectorContent = ({
               onClick={(event) => {
                 onViewInGraph(event, file.id);
               }}
-              disabled={duplicatingNodeId !== null}
-              className="w-full cursor-pointer rounded-lg border border-accent px-3 py-2 text-xs font-bold uppercase tracking-wide text-accent hover:bg-accent-muted disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full cursor-pointer rounded-lg border border-accent px-3 py-2 text-xs font-bold uppercase tracking-wide text-accent hover:bg-accent-muted"
             >
-              {duplicatingNodeId === file.id ? "Opening..." : "View in graph"}
+              View in graph
             </button>
           </div>
           <section>

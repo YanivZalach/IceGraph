@@ -24,9 +24,7 @@ interface FileTreeViewProps {
 }
 
 const FileTreeView = ({ graphData }: FileTreeViewProps) => {
-  const { duplicatingNodeId, viewInGraph } = useViewInGraph();
-  const activeDuplicatingNodeId =
-    typeof duplicatingNodeId === "string" ? duplicatingNodeId : null;
+  const { viewInGraph } = useViewInGraph();
 
   const pageState = useFileTreeState();
 
@@ -149,7 +147,6 @@ const FileTreeView = ({ graphData }: FileTreeViewProps) => {
           ) : (
             <FileTreeContent
               checkedFileIds={pageState.checkedFileIds}
-              duplicatingNodeId={activeDuplicatingNodeId}
               expandedItemIds={pageState.expandedItemIds}
               inspectedFileId={inspectedFileId}
               inspectedPartitionPathNodeId={inspectedPartitionPathNodeId}
@@ -172,7 +169,6 @@ const FileTreeView = ({ graphData }: FileTreeViewProps) => {
         </main>
         {pageState.inspectedItem !== null && (
           <FileTreeInspector
-            duplicatingNodeId={activeDuplicatingNodeId}
             inspectedItem={pageState.inspectedItem}
             onClose={pageState.closeInspector}
             onViewInGraph={handleViewInGraph}

@@ -14,7 +14,6 @@ import FileTreeVirtualList from "./FileTreeVirtualList";
 
 interface FileTreeContentProps {
   checkedFileIds: Set<string>;
-  duplicatingNodeId: string | null;
   expandedItemIds: Set<string>;
   inspectedFileId: string | null;
   inspectedPartitionPathNodeId: string | null;
@@ -36,7 +35,6 @@ interface FileTreeContentProps {
 
 const FileTreeContent = ({
   checkedFileIds,
-  duplicatingNodeId,
   expandedItemIds,
   inspectedFileId,
   inspectedPartitionPathNodeId,
@@ -67,7 +65,6 @@ const FileTreeContent = ({
         <FileTreeFileRow
           ariaLevel={row.isHierarchical ? row.depth + 1 : undefined}
           checkedFileIds={checkedFileIds}
-          duplicatingNodeId={duplicatingNodeId}
           file={row.file}
           isInspected={inspectedFileId === row.file.id}
           onInspect={onInspectFile}

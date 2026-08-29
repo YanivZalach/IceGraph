@@ -8,7 +8,6 @@ import type { InspectedFileTreeItem } from "../types";
 import FileTreeInspectorContent from "./FileTreeInspectorContent";
 
 interface FileTreeInspectorProps {
-  duplicatingNodeId: string | null;
   inspectedItem: InspectedFileTreeItem;
   onClose: () => void;
   onViewInGraph: (event: MouseEvent<HTMLButtonElement>, fileId: string) => void;
@@ -23,7 +22,6 @@ const PANEL_ACCENT = "#2e86c1";
 const PANEL_MIN_WIDTH_PX = 320;
 
 const FileTreeInspector = ({
-  duplicatingNodeId,
   inspectedItem,
   onClose,
   onViewInGraph,
@@ -108,7 +106,6 @@ const FileTreeInspector = ({
       style={panelStyle}
     >
       <FileTreeInspectorContent
-        duplicatingNodeId={duplicatingNodeId}
         inspectedItem={inspectedItem}
         onViewInGraph={onViewInGraph}
       />

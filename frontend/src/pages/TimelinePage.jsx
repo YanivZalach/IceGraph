@@ -137,14 +137,13 @@ function labelFor(type) {
   return "Init";
 }
 
-function GraphLinkButton({ label, onClick, loading, disabled }) {
+function GraphLinkButton({ label, onClick }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      disabled={disabled}
       title={`Open ${label.toLowerCase()} in a new tab, selected in the graph`}
-      className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-accent border border-accent/40 rounded-md px-2.5 py-1.5 hover:bg-accent-muted hover:border-accent transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+      className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-accent border border-accent/40 rounded-md px-2.5 py-1.5 hover:bg-accent-muted hover:border-accent transition-colors cursor-pointer"
     >
       <svg
         className="w-3.5 h-3.5 shrink-0"
@@ -158,7 +157,7 @@ function GraphLinkButton({ label, onClick, loading, disabled }) {
         <circle cx="12" cy="12" r="2" />
         <path d="M6 7.2L10 4.8M6 8.8L10 11.2" strokeLinecap="round" />
       </svg>
-      {loading ? "Opening…" : label}
+      {label}
     </button>
   );
 }
@@ -466,7 +465,7 @@ function DiffList({ diff }) {
 
 export default function TimelinePage() {
   const { nodes } = useTableGraphData();
-  const { viewInGraph, duplicatingNodeId, canViewInGraph } = useViewInGraph();
+  const { viewInGraph } = useViewInGraph();
   const [selected, setSelected] = useState(null);
   const [view, setView] = useState(DEFAULT_VIEW);
   const [isDragging, setIsDragging] = useState(false);
@@ -999,8 +998,6 @@ export default function TimelinePage() {
             <GraphLinkButton
               label="Metadata"
               onClick={(e) => viewInGraph(e, selected.metadataNodeId)}
-              loading={duplicatingNodeId === selected.metadataNodeId}
-              disabled={!canViewInGraph || !!duplicatingNodeId}
             />
             {snapshotNodeIdMap[selected.snapshotId] && (
               <GraphLinkButton
@@ -1008,10 +1005,6 @@ export default function TimelinePage() {
                 onClick={(e) =>
                   viewInGraph(e, snapshotNodeIdMap[selected.snapshotId])
                 }
-                loading={
-                  duplicatingNodeId === snapshotNodeIdMap[selected.snapshotId]
-                }
-                disabled={!canViewInGraph || !!duplicatingNodeId}
               />
             )}
           </div>
