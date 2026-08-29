@@ -46,18 +46,48 @@ export interface BranchAccent {
   chip: string;
 }
 
+const MAIN_ACCENT: BranchAccent = {
+  node: "border-blue-400",
+  chip: "bg-blue-500/15 text-blue-400",
+};
+
+/**
+ * Each branch gets the next palette color the first time it appears. main stays
+ * unmarked on single-branch tables and gets a fixed blue once other branches exist.
+ */
 export const branchAccentsByName = (
   rows: TimelineRow[],
 ): ReadonlyMap<string, BranchAccent> => {
   const accents = new Map<string, BranchAccent>();
-  for (const row of rows) {
-    const name = row.branchName;
+  const assign = (name: string | null) => {
     if (name !== null && name !== "main" && !accents.has(name)) {
       accents.set(
         name,
         BRANCH_ACCENTS[accents.size % BRANCH_ACCENTS.length] ?? FALLBACK_ACCENT,
       );
     }
+  };
+
+  for (const row of rows) {
+    assign(row.branchName);
+    for (const segment of row.impact) {
+      if (segment.kind === "ref" && segment.refType === "branch") {
+        assign(segment.name);
+      }
+    }
+  }
+
+  const hasOtherBranches = accents.size > 0;
+  if (hasOtherBranches) {
+    accents.set("main", MAIN_ACCENT);
   }
   return accents;
+};
+
+/** A published write with no pointer yet is the table's own line — display it as main. */
+export const displayBranchNameFor = (row: TimelineRow): string | null => {
+  if (row.branchName !== null) {
+    return row.branchName;
+  }
+  return row.kind === "published-write" ? "main" : null;
 };
