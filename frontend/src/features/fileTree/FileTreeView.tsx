@@ -69,7 +69,7 @@ const FileTreeView = ({ graphData }: FileTreeViewProps) => {
     event: MouseEvent<HTMLButtonElement>,
     fileId: string,
   ) => {
-    void viewInGraph(event, fileId);
+    viewInGraph(event, fileId);
   };
 
   const inspectedFileId =

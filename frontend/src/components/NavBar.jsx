@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Link,
   useLocation,
@@ -9,8 +10,15 @@ import {
 import logo from "../assets/icegraph.png";
 import CatalogTableList from "./CatalogTableList";
 import { useTableSpecs } from "../context/TableSpecsContext";
-import { cacheData, clearCachedData } from "../utils/cacheUtils";
-import { BASE_PATH, IS_MOCK, MOCK_HOME, MOCK_TABLE } from "../appConstants";
+import { catalogQueryOptions } from "../features/catalog/api/catalogQueries";
+import {
+  BASE_PATH,
+  IS_MOCK,
+  MOCK_HOME,
+  MOCK_HOME_ROUTE,
+  MOCK_TABLE,
+  MOCK_TABLE_SEARCH,
+} from "../appConstants";
 import {
   UI_ERROR_TEXT_SPACED_CLASS,
   UI_FORM_LABEL_CLASS,
@@ -66,7 +74,8 @@ export default function NavBar() {
   const {
     detailsOpen,
     setDetailsOpen,
-    rawData,
+    graphQuery,
+    rebuildGraph,
     errors,
     warnings,
     issuesOpen,
@@ -75,15 +84,20 @@ export default function NavBar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [tablePickerOpen, setTablePickerOpen] = useState(false);
   const [pickerTableName, setPickerTableName] = useState("");
-  const [catalogTables, setCatalogTables] = useState(null);
-  const [includeNoneIcebergCatalogs, setIncludeNoneIcebergCatalogs] =
-    useState(false);
+  const [isCatalogListOpen, setIsCatalogListOpen] = useState(false);
   const [catalogFilter, setCatalogFilter] = useState("");
-  const [catalogLoading, setCatalogLoading] = useState(false);
-  const [catalogError, setCatalogError] = useState(null);
-  const [isDuplicating, setIsDuplicating] = useState(false);
+  const catalogQuery = useQuery(catalogQueryOptions());
   const navRef = useRef(null);
   const tablePickerRef = useRef(null);
+  const catalogTables = isCatalogListOpen
+    ? (catalogQuery.data?.tables ?? null)
+    : null;
+  const includeNoneIcebergCatalogs =
+    catalogQuery.data?.include_none_iceberg_catalogs ?? false;
+  const catalogError =
+    isCatalogListOpen && catalogQuery.isError
+      ? catalogQuery.error.message
+      : null;
 
   useEffect(() => {
     if (!menuOpen && !tablePickerOpen) return;
@@ -141,32 +155,15 @@ export default function NavBar() {
 
   function openTablePicker() {
     setPickerTableName(tableName || "");
-    setCatalogTables(null);
+    setIsCatalogListOpen(false);
     setCatalogFilter("");
-    setCatalogError(null);
     setTablePickerOpen(true);
   }
 
-  async function fetchCatalogTables() {
-    setCatalogLoading(true);
-    setCatalogError(null);
+  function fetchCatalogTables() {
+    setIsCatalogListOpen(true);
     setCatalogFilter("");
-
-    try {
-      const res = await fetch("/api/v1/tables");
-      const data = await res.json();
-      if (!res.ok || data.error)
-        throw new Error(data.error || "Failed to fetch tables");
-      setCatalogTables(data.tables ?? []);
-      setIncludeNoneIcebergCatalogs(
-        Boolean(data.include_none_iceberg_catalogs),
-      );
-    } catch (e) {
-      setCatalogError(e.message);
-      setCatalogTables(null);
-    } finally {
-      setCatalogLoading(false);
-    }
+    void catalogQuery.refetch();
   }
 
   function changeTable(newName) {
@@ -187,7 +184,7 @@ export default function NavBar() {
     if (IS_MOCK) {
       const tab =
         location.pathname.match(/\/table\/([^/]+)/)?.[1] || "timeline";
-      targetUrl = `${BASE_PATH}/table/${tab}?table=${tableParam}`;
+      targetUrl = `${BASE_PATH}${MOCK_HOME_ROUTE.replace("/table/timeline", `/table/${tab}`)}`;
     } else {
       targetUrl = `${BASE_PATH}/snapshots-selection?table=${tableParam}`;
     }
@@ -213,10 +210,14 @@ export default function NavBar() {
           <button
             type="button"
             onClick={fetchCatalogTables}
-            disabled={catalogLoading}
+            disabled={catalogQuery.isFetching}
             className={UI_LINK_BUTTON_CLASS}
           >
-            {catalogLoading ? "Loading…" : "Browse catalog"}
+            {catalogQuery.isFetching
+              ? catalogQuery.data
+                ? "Refreshing…"
+                : "Loading…"
+              : "Browse catalog"}
           </button>
         </div>
         <input
@@ -247,33 +248,6 @@ export default function NavBar() {
     </form>
   );
 
-  const handleDuplicateTab = async () => {
-    if (isDuplicating || !rawData) return;
-    setIsDuplicating(true);
-
-    const url = new URL(window.location.href);
-    url.searchParams.set("dup", "1");
-    url.searchParams.set("cache_id", crypto.randomUUID());
-
-    const cacheKey = url.toString();
-    const newTab = window.open("about:blank", "_blank");
-
-    try {
-      await cacheData(cacheKey, rawData);
-      if (newTab) {
-        newTab.location.href = url.toString();
-      }
-    } catch (err) {
-      console.error("Failed to duplicate tab:", err);
-      if (newTab) newTab.close();
-    }
-
-    setTimeout(async () => {
-      await clearCachedData(cacheKey).catch(console.error);
-      setIsDuplicating(false);
-    }, 2000);
-  };
-
   return (
     <nav
       ref={navRef}
@@ -300,7 +274,7 @@ export default function NavBar() {
           <>
             <Link
               to={IS_MOCK ? "/table/timeline" : "/"}
-              search={IS_MOCK ? { table: MOCK_TABLE } : undefined}
+              search={IS_MOCK ? MOCK_TABLE_SEARCH : undefined}
               activeOptions={{ exact: true }}
               activeProps={{ className: tabClass({ isActive: true }) }}
               inactiveProps={{ className: tabClass({ isActive: false }) }}
@@ -384,19 +358,15 @@ export default function NavBar() {
             <div className="ml-auto flex items-center gap-3">
               <button
                 className={`text-sm font-medium border border-slate-600 px-3 py-1 rounded-md transition ${
-                  isDuplicating || !rawData
+                  graphQuery.isFetching || !tableName
                     ? "opacity-50 cursor-not-allowed text-slate-500"
                     : "text-slate-400 hover:text-white hover:border-slate-400"
                 }`}
-                title={
-                  !rawData
-                    ? "Wait for data to load..."
-                    : "Opens this view in a new tab using cached data, no backend request is made"
-                }
-                onClick={handleDuplicateTab}
-                disabled={isDuplicating || !rawData}
+                title="Discard the cached graph and rebuild it from Iceberg metadata"
+                onClick={() => void rebuildGraph()}
+                disabled={graphQuery.isFetching || !tableName}
               >
-                {isDuplicating ? "Duplicating..." : "Duplicate tab"}
+                {graphQuery.isFetching ? "Rebuilding..." : "Rebuild graph"}
               </button>
 
               <div className="w-px h-4 bg-slate-700" />
@@ -521,22 +491,18 @@ export default function NavBar() {
 
           <button
             className={`text-sm font-medium border border-slate-600 px-3 py-2 rounded-md transition text-left ${
-              isDuplicating || !rawData
+              graphQuery.isFetching || !tableName
                 ? "opacity-50 cursor-not-allowed text-slate-500"
                 : "text-slate-400 hover:text-white hover:border-slate-400"
             }`}
-            title={
-              !rawData
-                ? "Wait for data to load..."
-                : "Opens this view in a new tab using cached data, no backend request is made"
-            }
+            title="Discard the cached graph and rebuild it from Iceberg metadata"
             onClick={() => {
-              handleDuplicateTab();
+              void rebuildGraph();
               setMenuOpen(false);
             }}
-            disabled={isDuplicating || !rawData}
+            disabled={graphQuery.isFetching || !tableName}
           >
-            {isDuplicating ? "Duplicating..." : "Duplicate tab"}
+            {graphQuery.isFetching ? "Rebuilding..." : "Rebuild graph"}
           </button>
 
           <Link

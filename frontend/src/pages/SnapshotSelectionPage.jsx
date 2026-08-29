@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearch } from "@tanstack/react-router";
+import { snapshotMapQueryOptions } from "../features/snapshots/api/snapshotQueries";
 import {
   UI_BODY_MUTED_CLASS,
   UI_FORM_LABEL_MB_CLASS,
@@ -72,6 +74,40 @@ export default function SnapshotSelectionPage() {
   const startListRef = useRef(null);
   const endListRef = useRef(null);
   const submitBtnRef = useRef(null);
+  const snapshotQuery = useQuery(snapshotMapQueryOptions(tableName ?? ""));
+  const snapshots = snapshotQuery.data ?? {};
+  const sortedSnapshots = Object.entries(snapshots).sort((a, b) =>
+    b[0].localeCompare(a[0]),
+  );
+  const latestSnapshotId = sortedSnapshots[0]?.[1].snapshot_id ?? "";
+  const defaultStartSnapshot =
+    sortedSnapshots[Math.min(sortedSnapshots.length - 1, 4)]?.[1].snapshot_id ??
+    "";
+  const [startSelection, setStartSelection] = useState({
+    tableName: null,
+    snapshotId: "",
+  });
+  const [endSelection, setEndSelection] = useState({
+    tableName: null,
+    snapshotId: "",
+  });
+  const startSnapshot =
+    startSelection.tableName === tableName
+      ? startSelection.snapshotId
+      : defaultStartSnapshot;
+  const endSnapshot =
+    endSelection.tableName === tableName ? endSelection.snapshotId : "";
+  const setStartSnapshot = (snapshotId) =>
+    setStartSelection({ tableName, snapshotId });
+  const setEndSnapshot = (snapshotId) =>
+    setEndSelection({ tableName, snapshotId });
+  const loading = tableName !== null && snapshotQuery.isPending;
+  const error =
+    tableName === null
+      ? "Missing table name"
+      : snapshotQuery.isError
+        ? snapshotQuery.error.message
+        : null;
 
   useEffect(() => {
     const handleKey = (e) => {
@@ -84,12 +120,6 @@ export default function SnapshotSelectionPage() {
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, []);
-
-  const [snapshots, setSnapshots] = useState({});
-  const [startSnapshot, setStartSnapshot] = useState("");
-  const [endSnapshot, setEndSnapshot] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   const navigate = useNavigate();
 
@@ -104,40 +134,6 @@ export default function SnapshotSelectionPage() {
   };
 
   useEffect(() => {
-    if (!tableName) {
-      setError("Missing table name");
-      setLoading(false);
-      return;
-    }
-
-    fetch(`/api/v1/snapshot-map/${tableName}`)
-      .then(async (res) => {
-        const data = await res.json();
-        if (!res.ok || data.error)
-          throw new Error(data.error || "Failed to fetch snapshots");
-        return data;
-      })
-      .then((data) => {
-        if (Object.keys(data).length === 0) {
-          setSnapshots({});
-          setLoading(false);
-          return;
-        }
-        setSnapshots(data);
-        const sorted = Object.entries(data).sort((a, b) =>
-          b[0].localeCompare(a[0]),
-        );
-        setStartSnapshot(sorted[Math.min(sorted.length - 1, 4)][1].snapshot_id);
-        setEndSnapshot("");
-        setLoading(false);
-      })
-      .catch((e) => {
-        setError(e.message);
-        setLoading(false);
-      });
-  }, [tableName]);
-
-  useEffect(() => {
     if (!loading) {
       setTimeout(() => {
         scrollToActive(startListRef, startSnapshot);
@@ -148,12 +144,13 @@ export default function SnapshotSelectionPage() {
 
   function handleSubmit(e) {
     e.preventDefault();
-    if (startSnapshot && endSnapshot) {
+    const selectedEndSnapshot = endSnapshot || latestSnapshotId;
+    if (startSnapshot && selectedEndSnapshot) {
       const startTs = Object.keys(snapshots).find(
         (ts) => snapshots[ts]?.snapshot_id === startSnapshot,
       );
       const endTs = Object.keys(snapshots).find(
-        (ts) => snapshots[ts]?.snapshot_id === endSnapshot,
+        (ts) => snapshots[ts]?.snapshot_id === selectedEndSnapshot,
       );
       if (startTs && endTs && startTs > endTs) {
         alert("Start snapshot must be before End snapshot");
@@ -166,7 +163,9 @@ export default function SnapshotSelectionPage() {
       search: {
         table: tableName,
         ...(startSnapshot ? { start_snapshot_id: startSnapshot } : {}),
-        ...(endSnapshot ? { end_snapshot_id: endSnapshot } : {}),
+        ...(selectedEndSnapshot
+          ? { end_snapshot_id: selectedEndSnapshot }
+          : {}),
       },
     });
   }
@@ -174,7 +173,11 @@ export default function SnapshotSelectionPage() {
   function handleJumpToLatest(latestSnapshotId) {
     navigate({
       to: "/table/metadata",
-      search: { table: tableName, start_snapshot_id: latestSnapshotId },
+      search: {
+        table: tableName,
+        start_snapshot_id: latestSnapshotId,
+        end_snapshot_id: latestSnapshotId,
+      },
     });
   }
 
@@ -208,15 +211,11 @@ export default function SnapshotSelectionPage() {
     );
   }
 
-  const entries = Object.entries(snapshots)
-    .sort((a, b) => b[0].localeCompare(a[0]))
-    .map(([ts, val]) => {
-      const dateObj = parseUtcDate(ts);
-      const readableTs = dateObj ? formatLocaleDateTime(dateObj) : ts;
-      return [readableTs, val.snapshot_id, val.operation];
-    });
-  const latestSnapshotId = entries[0]?.[1];
-
+  const entries = sortedSnapshots.map(([ts, val]) => {
+    const dateObj = parseUtcDate(ts);
+    const readableTs = dateObj ? formatLocaleDateTime(dateObj) : ts;
+    return [readableTs, val.snapshot_id, val.operation];
+  });
   return (
     <div className="flex-1 flex items-center justify-center p-8">
       <div className="bg-surface rounded-2xl shadow-xl p-10 w-full max-w-6xl border border-edge">

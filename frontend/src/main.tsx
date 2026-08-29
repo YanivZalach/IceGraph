@@ -1,7 +1,9 @@
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { env } from "./shared/lib/env";
+import { registerHardRefreshShortcut } from "./shared/lib/hardRefresh";
 import { parseSearch, stringifySearch } from "./shared/lib/searchParams";
 import { routeTree } from "./routeTree.gen";
 import "./index.css";
@@ -13,6 +15,16 @@ const router = createRouter({
   stringifySearch,
   defaultNotFoundComponent: () => null,
 });
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
+registerHardRefreshShortcut();
 
 declare module "@tanstack/react-router" {
   interface Register {
@@ -36,7 +48,9 @@ void enableMocking().then(() => {
   }
   ReactDOM.createRoot(rootElement).render(
     <StrictMode>
-      <RouterProvider router={router} />
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
     </StrictMode>,
   );
 });

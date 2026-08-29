@@ -1611,6 +1611,12 @@ export const handlers = [
     });
   }),
 
+  http.get("/api/v1/graph-metadata-file/:tableName", () => {
+    return HttpResponse.json({
+      metadata_file: "/warehouse/default/events/metadata/v10.metadata.json",
+    });
+  }),
+
   http.post("/api/v1/graph-data", () => {
     graphProgressResponseIndex = 0;
     return HttpResponse.json(

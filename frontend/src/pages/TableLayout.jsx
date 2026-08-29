@@ -1,11 +1,11 @@
 import JSONbig from "json-bigint";
-import { Suspense, useEffect, useEffectEvent, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { Outlet, useNavigate, useSearch } from "@tanstack/react-router";
 import { TableGraphDataContext } from "../features/table/tableGraphData";
 import PageLoader from "../components/PageLoader";
 import GraphCollectionChecklist from "../components/GraphCollectionChecklist";
 import { formatLocaleDateTime, parseUtcDate } from "../utils/dateUtils";
-import { IS_MOCK, MOCK_TABLE } from "../appConstants";
+import { IS_MOCK, MOCK_TABLE_SEARCH } from "../appConstants";
 import {
   UI_BODY_MUTED_CLASS,
   UI_DIALOG_TITLE_CLASS,
@@ -27,7 +27,6 @@ import {
   MAIN_BRANCH_NAME,
   NODE_STYLE_MAP,
 } from "../graphConstants";
-import { getCachedData } from "../utils/cacheUtils";
 import { diffFieldLists } from "../utils/diffFieldLists";
 
 const DETAIL_TYPE_CONFIG = {
@@ -172,9 +171,8 @@ export default function TableLayout() {
     setDetailsOpen,
     selectionDetail,
     setSelectionDetail,
-    setRawData,
-    setErrors,
-    setWarnings,
+    graphQuery,
+    collectionStages,
     issuesOpen,
     setIssuesOpen,
     errors,
@@ -207,19 +205,6 @@ export default function TableLayout() {
   }, [errors, warnings, setIssuesOpen]);
 
   const tableName = search.table || "";
-  const startSnapshot = search.start_snapshot_id || "";
-  const endSnapshot = search.end_snapshot_id || "";
-  const isDup = search.dup === "1";
-  const cacheKey = isDup
-    ? window.location.href
-    : `graphData_${tableName}_${startSnapshot}_${endSnapshot}`;
-
-  const [loading, setLoading] = useState(true);
-  const [collectionStages, setCollectionStages] = useState(null);
-  const [error, setError] = useState(null);
-  const [graphData, setGraphData] = useState(null);
-  const [jobId, setJobId] = useState(null);
-  const [jobToken, setJobToken] = useState(null);
   const [showDiff, setShowDiff] = useState(false);
   const [specJsonCopied, setSpecJsonCopied] = useState(false);
 
@@ -280,152 +265,14 @@ export default function TableLayout() {
     };
   };
 
-  const submitGraphJob = async (table, start, end) => {
-    try {
-      const body = new URLSearchParams();
-      body.append("table_name", table);
-      if (start) body.append("start_snapshot_id", start);
-      if (end) body.append("end_snapshot_id", end);
-
-      const res = await fetch("/api/v1/graph-data", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: body.toString(),
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to submit job");
-      }
-
-      const result = await res.json();
-      setJobToken(result["X-IceGraph-Job-Token"]);
-      setJobId(result.key);
-    } catch (err) {
-      setError(err.message || "Failed to submit job");
-      setLoading(false);
-    }
-  };
-
-  const pollJobStatus = useEffectEvent(
-    async (polledJobId, polledJobToken, signal) => {
-      try {
-        const response = await fetch(`/api/v1/graph-data/${polledJobId}`, {
-          headers: { "X-IceGraph-Job-Token": polledJobToken },
-          signal,
-        });
-        if (response.status === 200) {
-          const text = await response.text();
-          setRawData(text);
-          const data = JSONbig({ storeAsString: true }).parse(text);
-
-          setGraphData(buildGraphData(data));
-          setErrors(data.errors || {});
-          setWarnings(data.warnings || {});
-          setLoading(false);
-          setJobId(null);
-          setJobToken(null);
-
-          return false;
-        } else if (response.status === 202) {
-          const data = await response.json();
-          setCollectionStages(data.stages || null);
-          return true;
-        } else {
-          const data = await response.json();
-          setCollectionStages(data.stages || null);
-          setError(data.error || "Job failed");
-          setLoading(false);
-          setJobId(null);
-          setJobToken(null);
-
-          return false;
-        }
-      } catch (error) {
-        if (signal.aborted) return false;
-
-        setError(error.message || "Failed to check job status");
-        setLoading(false);
-        setJobId(null);
-        setJobToken(null);
-
-        return false;
-      }
-    },
-  );
-
-  useEffect(() => {
-    if (!tableName) {
-      setError("No table name provided.");
-      setLoading(false);
-      return;
-    }
-
-    if (isDup) {
-      (async () => {
-        try {
-          const cached = await getCachedData(cacheKey);
-          if (cached) {
-            setRawData(cached);
-            const data = JSONbig({ storeAsString: true }).parse(cached);
-            setGraphData(buildGraphData(data));
-            setErrors(data.errors || {});
-            setWarnings(data.warnings || {});
-            setLoading(false);
-
-            navigate({
-              to: ".",
-              search: (prev) => ({
-                ...prev,
-                dup: undefined,
-                cache_id: undefined,
-              }),
-              replace: true,
-            });
-            return;
-          } else {
-            throw new Error("No cached data found.");
-          }
-        } catch (err) {
-          console.error("Failed to restore from cache:", err);
-          setError("No cached data found.");
-          setLoading(false);
-        }
-      })();
-      return;
-    }
-
-    setError(null);
-    setErrors({});
-    setWarnings({});
-    setCollectionStages(null);
-    submitGraphJob(tableName, startSnapshot, endSnapshot);
-  }, [tableName, startSnapshot, endSnapshot]);
-
-  useEffect(() => {
-    if (!jobId || !jobToken) return;
-
-    const abortController = new AbortController();
-    let pollTimeoutId = null;
-
-    const poll = async () => {
-      const shouldContinuePolling = await pollJobStatus(
-        jobId,
-        jobToken,
-        abortController.signal,
-      );
-
-      if (shouldContinuePolling && !abortController.signal.aborted) {
-        pollTimeoutId = setTimeout(poll, 700);
-      }
-    };
-
-    poll();
-
-    return () => {
-      abortController.abort();
-      if (pollTimeoutId) clearTimeout(pollTimeoutId);
-    };
-  }, [jobId, jobToken]);
+  const loading = tableName !== "" && graphQuery.isPending;
+  const error =
+    tableName === ""
+      ? "No table name provided."
+      : graphQuery.isError
+        ? graphQuery.error?.message || "Failed to load graph"
+        : null;
+  const graphData = graphQuery.data ? buildGraphData(graphQuery.data) : null;
 
   if (loading) {
     return (
@@ -482,7 +329,7 @@ export default function TableLayout() {
               IS_MOCK
                 ? navigate({
                     to: "/table/timeline",
-                    search: { table: MOCK_TABLE },
+                    search: MOCK_TABLE_SEARCH,
                   })
                 : navigate({ to: "/" })
             }
