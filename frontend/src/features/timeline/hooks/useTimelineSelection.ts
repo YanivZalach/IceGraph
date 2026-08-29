@@ -37,7 +37,11 @@ export const useTimelineSelection = (
     }
   };
 
-  useHotkey("Escape", clearSelection);
+  useHotkey("Escape", clearSelection, {
+    enabled: selectedFilePath !== null,
+    stopPropagation: false,
+    preventDefault: false,
+  });
   useHotkey("ArrowDown", () => {
     handleArrowKey("ArrowDown");
   });

@@ -23,7 +23,7 @@ const TimelineList = ({
   selectedFilePath,
   onSelect,
 }: TimelineListProps) => {
-  const { rows, skippedNodeCount, olderCommitCount } = timeline;
+  const { rows, unreadableCommitCount, olderCommitCount } = timeline;
   const [nowMs] = useState(() => Date.now());
   const branchAccents = branchAccentsByName(rows);
 
@@ -34,21 +34,29 @@ const TimelineList = ({
     getRowId: (row) => row.filePath,
   });
 
+  const unreadableWord = unreadableCommitCount === 1 ? "commit" : "commits";
+  const unreadableBanner = unreadableCommitCount > 0 && (
+    <p className="px-3 pb-4 text-xs text-amber-400">
+      {`${unreadableCommitCount.toString()} ${unreadableWord} could not be read`}
+    </p>
+  );
+
   const hasEventRows = rows.some((row) => row.kind !== "boundary");
   if (!hasEventRows) {
-    return <TimelineEmptyState tableName={table} />;
+    return (
+      <div className="mx-auto max-w-5xl px-3">
+        {unreadableBanner}
+        <TimelineEmptyState tableName={table} />
+      </div>
+    );
   }
 
-  const skippedWord = skippedNodeCount === 1 ? "commit" : "commits";
-  const skippedLabel = `${skippedNodeCount.toString()} ${skippedWord} could not be read`;
   const commitsWord = olderCommitCount === 1 ? "commit" : "commits";
   const olderHistoryLabel = `↓ ${olderCommitCount.toString()} earlier ${commitsWord} not loaded`;
 
   return (
     <div className="mx-auto max-w-5xl px-3">
-      {skippedNodeCount > 0 && (
-        <p className="px-3 pb-4 text-xs text-amber-400">{skippedLabel}</p>
-      )}
+      {unreadableBanner}
       <table className="w-full">
         <thead>
           {timelineTable.getHeaderGroups().map((headerGroup) => (
