@@ -127,6 +127,7 @@ def graph_metadata_file(table_name):
     end_snapshot_id = request.args.get("end_snapshot_id")
 
     try:
+        verify_iceberg_table(table_name)
         parsed_end_snapshot_id = int(end_snapshot_id) if end_snapshot_id else None
         metadata_file = collect_graph_metadata_file(table_name, parsed_end_snapshot_id)
 

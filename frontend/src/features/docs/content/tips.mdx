@@ -4,8 +4,10 @@ Loading all snapshots at once produces an overwhelming graph. Start with the 2â€
 
 ### Reuse cached graphs
 
-IceGraph keeps completed graphs in browser storage for up to 24 hours after their last use. Refreshing the page, opening the same URL in another tab, or using **View in graph** restores the graph without rebuilding it when the table metadata is unchanged.
+IceGraph keeps up to 20 completed graphs in browser storage for 24 hours after their last use. Refreshing the page, opening the same URL in another tab, or using **View in graph** restores the graph without rebuilding it when the table metadata is unchanged.
 
 Use **Rebuild graph** in the navbar when you explicitly want to discard the cached result and collect the graph again.
 
 A keyboard hard refresh (Shift+Command+R, Shift+Control+R, or Shift+F5) also bypasses the saved graph and performs a full rebuild.
+
+For a bounded snapshot range, IceGraph validates the metadata file associated with the selected end snapshot. Later removal of referenced files, or backend collection-setting changes made without an application version change, may not invalidate that cached graph. Use **Rebuild graph** when investigating either case.

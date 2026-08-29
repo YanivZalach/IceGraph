@@ -1,20 +1,21 @@
 import { createContext, useContext, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMatchRoute, useSearch } from "@tanstack/react-router";
+import { useRouterState, useSearch } from "@tanstack/react-router";
 import {
   graphProgressQueryKey,
   graphQueryKey,
   graphQueryOptions,
+  requestGraphRebuild,
 } from "../features/table/api/graphQueries";
-import { deleteGraphCache } from "../features/table/api/graphCache";
 
 const TableSpecsContext = createContext();
 
 export function TableSpecsProvider({ children }) {
   const search = useSearch({ strict: false });
-  const matchRoute = useMatchRoute();
   const queryClient = useQueryClient();
-  const isTablePage = Boolean(matchRoute({ to: "/table", fuzzy: true }));
+  const isTablePage = useRouterState({
+    select: (state) => state.location.pathname.startsWith("/table/"),
+  });
   const graphRequestParameters = {
     tableName: search.table ?? "",
     startSnapshotId: search.start_snapshot_id ?? "",
@@ -38,11 +39,7 @@ export function TableSpecsProvider({ children }) {
   const rebuildGraph = async () => {
     if (!isTablePage || graphRequestParameters.tableName === "") return;
 
-    try {
-      await deleteGraphCache(graphRequestParameters);
-    } catch (cacheError) {
-      console.warn("Failed to delete the graph cache", cacheError);
-    }
+    requestGraphRebuild(graphRequestParameters);
     await queryClient.resetQueries({
       queryKey: graphQueryKey(graphRequestParameters),
       exact: true,

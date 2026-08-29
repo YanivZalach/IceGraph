@@ -3,8 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Link,
   useLocation,
-  useMatchRoute,
   useNavigate,
+  useRouterState,
   useSearch,
 } from "@tanstack/react-router";
 import logo from "../assets/icegraph.png";
@@ -68,8 +68,9 @@ export default function NavBar() {
   const location = useLocation();
   const search = useSearch({ strict: false });
   const navigate = useNavigate();
-  const matchRoute = useMatchRoute();
-  const isTablePage = Boolean(matchRoute({ to: "/table", fuzzy: true }));
+  const isTablePage = useRouterState({
+    select: (state) => state.location.pathname.startsWith("/table/"),
+  });
   const tableName = search.table ?? null;
   const {
     detailsOpen,

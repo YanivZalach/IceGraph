@@ -1,6 +1,9 @@
 import { queryOptions, type QueryClient } from "@tanstack/react-query";
 import { fetchFromApi } from "../../../shared/lib/api";
-import { shouldBypassPersistentGraphCache } from "../../../shared/lib/hardRefresh";
+import {
+  clearHardRefreshRequest,
+  shouldBypassPersistentGraphCache,
+} from "../../../shared/lib/hardRefresh";
 import {
   cleanupExpiredGraphCache,
   readGraphCache,
@@ -8,16 +11,15 @@ import {
   type GraphRequestParameters,
 } from "./graphCache";
 import {
-  graphDataSchema,
   graphJobPollResponseSchema,
   graphJobSubmissionSchema,
   graphMetadataFileSchema,
-  graphProgressSchema,
   type GraphData,
 } from "./graphSchemas";
 
 const GRAPH_POLL_INTERVAL_MS = 700;
-const GRAPH_CACHE_READ_TIMEOUT_MS = 1000;
+const GRAPH_CACHE_READ_TIMEOUT_MS = 5000;
+const requestedGraphRebuilds = new Set<string>();
 
 export const graphQueryKey = (parameters: GraphRequestParameters) =>
   [
@@ -29,6 +31,22 @@ export const graphQueryKey = (parameters: GraphRequestParameters) =>
 
 export const graphProgressQueryKey = (parameters: GraphRequestParameters) =>
   [...graphQueryKey(parameters), "progress"] as const;
+
+const getGraphRequestKey = (parameters: GraphRequestParameters): string =>
+  JSON.stringify(graphQueryKey(parameters));
+
+export const requestGraphRebuild = (
+  parameters: GraphRequestParameters,
+): void => {
+  requestedGraphRebuilds.add(getGraphRequestKey(parameters));
+};
+
+const shouldRebuildGraph = (parameters: GraphRequestParameters): boolean =>
+  requestedGraphRebuilds.has(getGraphRequestKey(parameters));
+
+const clearGraphRebuildRequest = (parameters: GraphRequestParameters): void => {
+  requestedGraphRebuilds.delete(getGraphRequestKey(parameters));
+};
 
 const waitForNextPoll = (signal: AbortSignal): Promise<void> => {
   return new Promise((resolve, reject) => {
@@ -112,21 +130,21 @@ const buildGraph = async (
       },
     );
 
-    const completedGraph = graphDataSchema.safeParse(jobResult);
-    if (completedGraph.success) {
+    if ("nodes" in jobResult) {
       queryClient.setQueryData(graphProgressQueryKey(parameters), null);
-      void writeGraphCache(parameters, completedGraph.data).catch(
+      void writeGraphCache(parameters, jobResult).catch(
         (cacheError: unknown) => {
           console.warn("Failed to persist graph cache", cacheError);
         },
       );
-      return completedGraph.data;
+      clearGraphRebuildRequest(parameters);
+      clearHardRefreshRequest();
+      return jobResult;
     }
 
-    const progress = graphProgressSchema.parse(jobResult);
     queryClient.setQueryData(
       graphProgressQueryKey(parameters),
-      progress.stages ?? null,
+      jobResult.stages ?? null,
     );
     await waitForNextPoll(signal);
   }
@@ -145,7 +163,7 @@ const loadGraph = async (
     console.warn("Failed to clean expired graph caches", cacheError);
   });
 
-  if (!shouldBypassPersistentGraphCache()) {
+  if (!shouldRebuildGraph(parameters) && !shouldBypassPersistentGraphCache()) {
     try {
       const metadataFile = await fetchGraphMetadataFile(parameters, signal);
       const cachedGraph = await readGraphCacheWithTimeout(
