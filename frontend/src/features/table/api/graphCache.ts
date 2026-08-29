@@ -1,7 +1,8 @@
 import { z } from "zod";
 import {
   deleteCachedValue,
-  getAllCachedEntries,
+  getAllCachedKeys,
+  getCachedEntriesByPrefix,
   getCachedValue,
   setCachedValue,
 } from "../../../shared/lib/indexedDb";
@@ -10,6 +11,7 @@ import { graphDataSchema, type GraphData } from "./graphSchemas";
 
 const GRAPH_CACHE_SCHEMA_VERSION = 1;
 const GRAPH_CACHE_PREFIX = `graph:v${String(GRAPH_CACHE_SCHEMA_VERSION)}:${env.appVersion}:`;
+const GRAPH_CACHE_INDEX_PREFIX = "graph-cache-index:";
 const GRAPH_CACHE_CLEANUP_KEY = "graph-cache:last-cleanup";
 const GRAPH_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const GRAPH_CACHE_CLEANUP_INTERVAL_MS = 60 * 60 * 1000;
@@ -23,12 +25,12 @@ export interface GraphRequestParameters {
 
 const graphCacheEntrySchema = z.object({
   data: graphDataSchema,
-  lastAccessedAt: z.number(),
   metadataFile: z.string(),
   schemaVersion: z.literal(GRAPH_CACHE_SCHEMA_VERSION),
 });
 
-const graphCacheCleanupEntrySchema = z.object({
+const graphCacheIndexEntrySchema = z.object({
+  cacheKey: z.string(),
   lastAccessedAt: z.number(),
 });
 
@@ -38,6 +40,16 @@ export const getGraphCacheKey = (parameters: GraphRequestParameters): string =>
     parameters.startSnapshotId,
     parameters.endSnapshotId,
   ])}`;
+
+const getGraphCacheIndexKey = (cacheKey: string): string =>
+  `${GRAPH_CACHE_INDEX_PREFIX}${cacheKey}`;
+
+const writeGraphCacheIndex = async (cacheKey: string): Promise<void> => {
+  await setCachedValue(getGraphCacheIndexKey(cacheKey), {
+    cacheKey,
+    lastAccessedAt: Date.now(),
+  });
+};
 
 export const readGraphCache = async (
   parameters: GraphRequestParameters,
@@ -51,10 +63,7 @@ export const readGraphCache = async (
   }
 
   try {
-    await setCachedValue(cacheKey, {
-      ...parsedCache.data,
-      lastAccessedAt: Date.now(),
-    });
+    await writeGraphCacheIndex(cacheKey);
   } catch (cacheError) {
     console.warn("Failed to update graph cache access time", cacheError);
   }
@@ -79,7 +88,6 @@ export const writeGraphCache = async (
   const cacheKey = getGraphCacheKey(parameters);
   const cacheEntry = {
     data,
-    lastAccessedAt: Date.now(),
     metadataFile,
     schemaVersion: GRAPH_CACHE_SCHEMA_VERSION,
   };
@@ -87,11 +95,13 @@ export const writeGraphCache = async (
   await pruneGraphCacheEntries(Date.now(), GRAPH_CACHE_MAX_ENTRIES - 1);
   try {
     await setCachedValue(cacheKey, cacheEntry);
+    await writeGraphCacheIndex(cacheKey);
   } catch (cacheError) {
     if (!isQuotaExceededError(cacheError)) throw cacheError;
 
     await evictOldestGraphCacheEntry(cacheKey);
     await setCachedValue(cacheKey, cacheEntry);
+    await writeGraphCacheIndex(cacheKey);
   }
 };
 
@@ -102,15 +112,30 @@ const isQuotaExceededError = (error: unknown): boolean =>
   error.name === "QuotaExceededError";
 
 const getGraphCacheRecords = async () => {
-  const cachedEntries = await getAllCachedEntries();
+  const cachedEntries = await getCachedEntriesByPrefix(
+    GRAPH_CACHE_INDEX_PREFIX,
+  );
   return cachedEntries.flatMap(({ key, value }) => {
-    if (typeof key !== "string" || !key.startsWith("graph:")) return [];
+    if (typeof key !== "string") return [];
 
-    const parsedCache = graphCacheCleanupEntrySchema.safeParse(value);
+    const parsedCache = graphCacheIndexEntrySchema.safeParse(value);
     return parsedCache.success
-      ? [{ key, lastAccessedAt: parsedCache.data.lastAccessedAt }]
+      ? [
+          {
+            cacheKey: parsedCache.data.cacheKey,
+            indexKey: key,
+            lastAccessedAt: parsedCache.data.lastAccessedAt,
+          },
+        ]
       : [];
   });
+};
+
+const deleteGraphCacheRecord = async (
+  cacheKey: string,
+  indexKey: string,
+): Promise<void> => {
+  await Promise.all([deleteCachedValue(cacheKey), deleteCachedValue(indexKey)]);
 };
 
 const pruneGraphCacheEntries = async (
@@ -127,7 +152,7 @@ const pruneGraphCacheEntries = async (
       const isExpired =
         currentTime - record.lastAccessedAt > GRAPH_CACHE_MAX_AGE_MS;
       if (isExpired || index >= maximumEntries) {
-        await deleteCachedValue(record.key);
+        await deleteGraphCacheRecord(record.cacheKey, record.indexKey);
       }
     }),
   );
@@ -138,10 +163,10 @@ const evictOldestGraphCacheEntry = async (
 ): Promise<void> => {
   const graphRecords = await getGraphCacheRecords();
   const oldestRecord = graphRecords
-    .filter((record) => record.key !== preservedCacheKey)
+    .filter((record) => record.cacheKey !== preservedCacheKey)
     .sort((left, right) => left.lastAccessedAt - right.lastAccessedAt)[0];
   if (oldestRecord !== undefined) {
-    await deleteCachedValue(oldestRecord.key);
+    await deleteGraphCacheRecord(oldestRecord.cacheKey, oldestRecord.indexKey);
   }
 };
 
@@ -158,9 +183,9 @@ export const cleanupExpiredGraphCache = async (): Promise<void> => {
 
   await pruneGraphCacheEntries(currentTime, GRAPH_CACHE_MAX_ENTRIES);
 
-  const cachedEntries = await getAllCachedEntries();
+  const cachedKeys = await getAllCachedKeys();
   await Promise.all(
-    cachedEntries.map(async ({ key }) => {
+    cachedKeys.map(async (key) => {
       if (typeof key !== "string") return;
 
       if (key.startsWith("graphData_") || key.includes("cache_id=")) {

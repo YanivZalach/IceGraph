@@ -109,12 +109,15 @@ export const deleteCachedValue = async (key: IDBValidKey): Promise<void> => {
   });
 };
 
-export const getAllCachedEntries = async (): Promise<CachedEntry[]> => {
+export const getCachedEntriesByPrefix = async (
+  prefix: string,
+): Promise<CachedEntry[]> => {
   const database = await openDatabase();
+  const keyRange = IDBKeyRange.bound(prefix, `${prefix}\uffff`);
   const request = database
     .transaction(OBJECT_STORE_NAME, "readonly")
     .objectStore(OBJECT_STORE_NAME)
-    .openCursor();
+    .openCursor(keyRange);
 
   return new Promise((resolve, reject) => {
     const entries: CachedEntry[] = [];
@@ -129,6 +132,32 @@ export const getAllCachedEntries = async (): Promise<CachedEntry[]> => {
     };
     request.onerror = () => {
       reject(getDatabaseError(request.error, "Failed to scan browser cache"));
+    };
+  });
+};
+
+export const getAllCachedKeys = async (): Promise<IDBValidKey[]> => {
+  const database = await openDatabase();
+  const request = database
+    .transaction(OBJECT_STORE_NAME, "readonly")
+    .objectStore(OBJECT_STORE_NAME)
+    .openKeyCursor();
+
+  return new Promise((resolve, reject) => {
+    const keys: IDBValidKey[] = [];
+    request.onsuccess = () => {
+      const cursor = request.result;
+      if (cursor === null) {
+        resolve(keys);
+        return;
+      }
+      keys.push(cursor.primaryKey);
+      cursor.continue();
+    };
+    request.onerror = () => {
+      reject(
+        getDatabaseError(request.error, "Failed to scan browser cache keys"),
+      );
     };
   });
 };
