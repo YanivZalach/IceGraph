@@ -18,7 +18,7 @@ Before restoring a graph, request the metadata file associated with the selected
 
 Keep at most 20 graphs. Evict least-recently-used entries and entries unused for more than 24 hours. Browser storage failures must never prevent graph compilation or rendering.
 
-Normal refreshes and new tabs may restore validated data. Recompile graph and keyboard hard refresh explicitly bypass restoration.
+Normal refreshes and new tabs may restore validated data. Recompile graph explicitly bypasses restoration.
 
 ## Consequences
 

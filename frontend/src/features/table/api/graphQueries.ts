@@ -1,10 +1,6 @@
 import { queryOptions, type QueryClient } from "@tanstack/react-query";
 import { fetchFromApi } from "../../../shared/lib/api";
 import {
-  clearHardRefreshRequest,
-  shouldBypassPersistentGraphCache,
-} from "../../../shared/lib/hardRefresh";
-import {
   cleanupExpiredGraphCache,
   readGraphCache,
   writeGraphCache,
@@ -144,7 +140,6 @@ const buildGraph = async (
         },
       );
       clearGraphRebuildRequest(parameters);
-      clearHardRefreshRequest();
       return jobResult;
     }
 
@@ -165,7 +160,7 @@ const loadGraph = async (
 ): Promise<GraphData> => {
   queryClient.setQueryData(graphProgressQueryKey(parameters), null);
 
-  if (!shouldRebuildGraph(parameters) && !shouldBypassPersistentGraphCache()) {
+  if (!shouldRebuildGraph(parameters)) {
     try {
       const metadataFile = await fetchGraphMetadataFile(parameters, signal);
       const cachedGraph = await readGraphCacheWithTimeout(
