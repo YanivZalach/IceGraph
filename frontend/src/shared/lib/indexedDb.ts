@@ -7,6 +7,11 @@ interface CachedEntry {
   value: unknown;
 }
 
+interface CachedValueWrite {
+  key: IDBValidKey;
+  value: unknown;
+}
+
 let databasePromise: Promise<IDBDatabase> | undefined;
 
 const getDatabaseError = (
@@ -81,6 +86,31 @@ export const setCachedValue = async (
   });
 };
 
+export const setCachedValues = async (
+  writes: CachedValueWrite[],
+): Promise<void> => {
+  const database = await openDatabase();
+
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(OBJECT_STORE_NAME, "readwrite");
+    transaction.oncomplete = () => {
+      resolve();
+    };
+    transaction.onerror = () => {
+      reject(
+        getDatabaseError(transaction.error, "Failed to write browser cache"),
+      );
+    };
+    transaction.onabort = () => {
+      reject(
+        getDatabaseError(transaction.error, "Browser cache write was aborted"),
+      );
+    };
+    const objectStore = transaction.objectStore(OBJECT_STORE_NAME);
+    writes.forEach(({ key, value }) => objectStore.put(value, key));
+  });
+};
+
 export const deleteCachedValue = async (key: IDBValidKey): Promise<void> => {
   const database = await openDatabase();
 
@@ -106,6 +136,37 @@ export const deleteCachedValue = async (key: IDBValidKey): Promise<void> => {
       );
     };
     transaction.objectStore(OBJECT_STORE_NAME).delete(key);
+  });
+};
+
+export const deleteCachedValues = async (
+  keys: IDBValidKey[],
+): Promise<void> => {
+  const database = await openDatabase();
+
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(OBJECT_STORE_NAME, "readwrite");
+    transaction.oncomplete = () => {
+      resolve();
+    };
+    transaction.onerror = () => {
+      reject(
+        getDatabaseError(
+          transaction.error,
+          "Failed to delete browser cache entries",
+        ),
+      );
+    };
+    transaction.onabort = () => {
+      reject(
+        getDatabaseError(
+          transaction.error,
+          "Browser cache deletion was aborted",
+        ),
+      );
+    };
+    const objectStore = transaction.objectStore(OBJECT_STORE_NAME);
+    keys.forEach((key) => objectStore.delete(key));
   });
 };
 

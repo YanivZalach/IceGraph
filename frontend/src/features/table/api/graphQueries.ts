@@ -48,6 +48,12 @@ const clearGraphRebuildRequest = (parameters: GraphRequestParameters): void => {
   requestedGraphRebuilds.delete(getGraphRequestKey(parameters));
 };
 
+const cleanupGraphCacheInBackground = (): void => {
+  void cleanupExpiredGraphCache().catch((cacheError: unknown) => {
+    console.warn("Failed to clean expired graph caches", cacheError);
+  });
+};
+
 const waitForNextPoll = (signal: AbortSignal): Promise<void> => {
   return new Promise((resolve, reject) => {
     const handleAbort = () => {
@@ -159,10 +165,6 @@ const loadGraph = async (
 ): Promise<GraphData> => {
   queryClient.setQueryData(graphProgressQueryKey(parameters), null);
 
-  void cleanupExpiredGraphCache().catch((cacheError: unknown) => {
-    console.warn("Failed to clean expired graph caches", cacheError);
-  });
-
   if (!shouldRebuildGraph(parameters) && !shouldBypassPersistentGraphCache()) {
     try {
       const metadataFile = await fetchGraphMetadataFile(parameters, signal);
@@ -170,7 +172,10 @@ const loadGraph = async (
         parameters,
         metadataFile,
       );
-      if (cachedGraph !== undefined) return cachedGraph;
+      if (cachedGraph !== undefined) {
+        cleanupGraphCacheInBackground();
+        return cachedGraph;
+      }
     } catch (cacheError) {
       if (signal.aborted) {
         throw new DOMException("Graph request aborted", "AbortError");
@@ -182,6 +187,7 @@ const loadGraph = async (
     }
   }
 
+  cleanupGraphCacheInBackground();
   return buildGraph(parameters, queryClient, signal);
 };
 
