@@ -64,6 +64,7 @@ export const describeWriteCommit = (
       snapshotId: gainedSnapshotId,
       branchName: null,
       repointTargetId: null,
+      movedToBranchName: null,
     };
   }
 
@@ -75,5 +76,6 @@ export const describeWriteCommit = (
     snapshotId: gainedSnapshotId,
     branchName: pointingBranchName,
     repointTargetId: null,
+    movedToBranchName: null,
   };
 };

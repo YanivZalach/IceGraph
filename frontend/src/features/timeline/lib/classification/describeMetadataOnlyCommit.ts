@@ -123,5 +123,6 @@ export const describeMetadataOnlyCommit = (
     snapshotId: null,
     branchName: null,
     repointTargetId: null,
+    movedToBranchName: null,
   };
 };

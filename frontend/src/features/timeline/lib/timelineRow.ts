@@ -23,6 +23,7 @@ export interface TimelineRow {
   timestampMs: number;
   badges: RefBadge[];
   branchName: string | null;
+  movedToBranchName: string | null;
   isDraftPublishedLater: boolean;
   publishedAsSnapshotId: string | null;
   publishedAtMs: number | null;
@@ -48,6 +49,7 @@ export const boundaryRow = (file: MetadataFileNode): TimelineRow => ({
   timestampMs: file.timestamp,
   badges: [],
   branchName: null,
+  movedToBranchName: null,
   isDraftPublishedLater: false,
   publishedAsSnapshotId: null,
   publishedAtMs: null,
