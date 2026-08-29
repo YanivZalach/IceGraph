@@ -77,23 +77,6 @@ const findBranchHeadName = (
   return branchHeadEntry?.[0] ?? null;
 };
 
-const rePointTitle = (
-  previousFile: MetadataFileNode,
-  targetId: string,
-  snapshotsById: SnapshotsById,
-): string => {
-  if (isRolledBack(previousFile.snapshot_id, targetId, snapshotsById)) {
-    return "Rolled back";
-  }
-
-  const branchHeadName = findBranchHeadName(previousFile.refs, targetId);
-  if (branchHeadName !== null) {
-    return `main moved to ${branchHeadName}`;
-  }
-
-  return "Switched snapshots";
-};
-
 export const describeRePointCommit = (
   previousFile: MetadataFileNode,
   targetId: string,
@@ -101,13 +84,19 @@ export const describeRePointCommit = (
   definitionChanges: DescribedChange[],
 ): CommitDescription => {
   const targetRecord = snapshotsById.get(targetId);
-  const movedToBranchName = isRolledBack(
+  const rolledBack = isRolledBack(
     previousFile.snapshot_id,
     targetId,
     snapshotsById,
-  )
+  );
+  const movedToBranchName = rolledBack
     ? null
     : findBranchHeadName(previousFile.refs, targetId);
+  const title = rolledBack
+    ? "Rolled back"
+    : movedToBranchName !== null
+      ? `main moved to ${movedToBranchName}`
+      : "Switched snapshots";
   const targetImpact =
     targetRecord === undefined
       ? `→ snapshot ${formatShortId(targetId)} (expired or not loaded)`
@@ -115,7 +104,7 @@ export const describeRePointCommit = (
 
   return {
     kind: "re-point",
-    title: rePointTitle(previousFile, targetId, snapshotsById),
+    title,
     impactSegments: [
       impactText(targetImpact),
       ...definitionChanges.map((change) => impactText(change.impact)),
