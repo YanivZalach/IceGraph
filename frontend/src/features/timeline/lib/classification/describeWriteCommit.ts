@@ -41,7 +41,7 @@ export const describeWriteCommit = (
   const snapshotImpact =
     snapshotRecord === undefined
       ? [impactText(`snapshot ${formatShortId(gainedSnapshotId)} unavailable`)]
-      : readSnapshotImpact(snapshotRecord.summary);
+      : readSnapshotImpact(snapshotRecord.summary, snapshotRecord.operation);
   const impactSegments = [
     ...snapshotImpact,
     ...definitionChanges.map((change) => impactText(change.impact)),

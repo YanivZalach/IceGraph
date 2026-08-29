@@ -22,9 +22,14 @@ const readSummaryCount = (summary: SnapshotSummary, key: string): number =>
 
 export const readSnapshotImpact = (
   summary: SnapshotSummary,
+  operation: string | null,
 ): ImpactSegment[] => {
   const addedRows = readSummaryCount(summary, "added-records");
   const removedRows = readSummaryCount(summary, "deleted-records");
+  // A replace rewrites files without logically changing data
+  // (https://iceberg.apache.org/spec/#snapshots), so its row churn is
+  // bookkeeping, not information.
+  const isLogicalRowChange = operation !== "replace";
 
   const addedFiles =
     readSummaryCount(summary, "added-data-files") +
@@ -38,7 +43,7 @@ export const readSnapshotImpact = (
     parseBackendSizeToBytes(summary["removed-files-size"]) ?? 0;
   const netBytes = addedBytes - removedBytes;
 
-  const hasRowChange = addedRows > 0 || removedRows > 0;
+  const hasRowChange = isLogicalRowChange && (addedRows > 0 || removedRows > 0);
   const hasFileChange = addedFiles > 0 || removedFiles > 0;
   const hasSizeChange = netBytes !== 0;
 
