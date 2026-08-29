@@ -90,6 +90,7 @@ export const DOC_SECTIONS: DocsSection[] = [
     LoadingTableContent,
     loadingTableText,
   ),
+  createSection("tips", "Tips & Tricks", TipsContent, tipsText),
   createSection(
     "timeline-view",
     "Timeline View",
@@ -127,7 +128,6 @@ export const DOC_SECTIONS: DocsSection[] = [
     KeyboardShortcutsContent,
     keyboardShortcutsText,
   ),
-  createSection("tips", "Tips & Tricks", TipsContent, tipsText),
   createSection(
     "cli",
     "CLI & Python Client",
