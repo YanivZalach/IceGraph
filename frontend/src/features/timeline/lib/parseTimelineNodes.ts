@@ -9,22 +9,18 @@ import {
 export interface ParsedTimelineNodes {
   metadataFiles: MetadataFileNode[];
   snapshotsById: Map<string, SnapshotNode>;
-  skippedNodeCount: number;
+  unreadableCommitCount: number;
 }
-
-const hasBackendReadError = (node: {
-  error?: string | null | undefined;
-}): boolean => node.error !== null && node.error !== undefined;
 
 export const parseTimelineNodes = (nodes: unknown[]): ParsedTimelineNodes => {
   const metadataFiles: MetadataFileNode[] = [];
   const snapshotsById = new Map<string, SnapshotNode>();
-  let skippedNodeCount = 0;
+  let unreadableCommitCount = 0;
 
   for (const node of nodes) {
     const typedNode = nodeTypeSchema.safeParse(node);
     if (!typedNode.success) {
-      skippedNodeCount += 1;
+      unreadableCommitCount += 1;
       continue;
     }
 
@@ -33,23 +29,24 @@ export const parseTimelineNodes = (nodes: unknown[]): ParsedTimelineNodes => {
       typedNode.data.type === "main_metadata"
     ) {
       const metadataFile = metadataFileNodeSchema.safeParse(node);
-      if (!metadataFile.success || hasBackendReadError(metadataFile.data)) {
-        skippedNodeCount += 1;
-      } else {
+      // An unreadable metadata file is skipped so its neighbors merge into one
+      // degraded row — the spec's rule for broken windows. Errored snapshots
+      // stay: their row renders and the details panel shows the error banner.
+      if (metadataFile.success && metadataFile.data.error == null) {
         metadataFiles.push(metadataFile.data);
+      } else {
+        unreadableCommitCount += 1;
       }
       continue;
     }
 
     if (typedNode.data.type === "snapshot") {
       const snapshot = snapshotNodeSchema.safeParse(node);
-      if (!snapshot.success || hasBackendReadError(snapshot.data)) {
-        skippedNodeCount += 1;
-      } else {
+      if (snapshot.success) {
         snapshotsById.set(snapshot.data.snapshot_id, snapshot.data);
       }
     }
   }
 
-  return { metadataFiles, snapshotsById, skippedNodeCount };
+  return { metadataFiles, snapshotsById, unreadableCommitCount };
 };

@@ -102,13 +102,14 @@ export const buildTimeline = (
   nodes: unknown[],
   tableMetadata: TableMetadata,
 ): TimelineData => {
-  const { metadataFiles, snapshotsById, skippedNodeCount } =
+  const { metadataFiles, snapshotsById, unreadableCommitCount } =
     parseTimelineNodes(nodes);
   const filesOldestFirst = [...metadataFiles].sort(
-    (fileA, fileB) => fileA.timestamp - fileB.timestamp,
+    (fileA, fileB) =>
+      fileA.timestamp - fileB.timestamp ||
+      fileA.file_path.localeCompare(fileB.file_path),
   );
   const newestRefs = filesOldestFirst.at(-1)?.refs ?? {};
-  let degradedRowCount = 0;
 
   const rowsOldestFirst = filesOldestFirst.map((file, index): TimelineRow => {
     const previousFile = filesOldestFirst[index - 1];
@@ -121,7 +122,7 @@ export const buildTimeline = (
     try {
       commit = describeCommit(previousFile, file, snapshotsById, tableMetadata);
     } catch {
-      degradedRowCount += 1;
+      // the row still renders, titled by the fallback
     }
 
     const row = attachRefBadges(toTimelineRow(file, commit), newestRefs);
@@ -137,7 +138,7 @@ export const buildTimeline = (
 
   return {
     rows: rowsNewestFirst,
-    skippedNodeCount: skippedNodeCount + degradedRowCount,
+    unreadableCommitCount,
     // previous_file is nulled at the load cutoff; the metadata log count survives it
     olderCommitCount: filesOldestFirst[0]?.pointed_metadata_log_count ?? 0,
     snapshotsById,

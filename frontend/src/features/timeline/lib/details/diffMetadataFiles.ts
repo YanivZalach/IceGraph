@@ -14,6 +14,7 @@ const TRACKED_KEYS = [
   "sort_order_id",
   "refs",
   "properties",
+  "pointed_snapshots_files",
 ] as const;
 
 const hasFieldChanged = (before: unknown, after: unknown): boolean =>
