@@ -163,9 +163,7 @@ export default function SnapshotSelectionPage() {
       search: {
         table: tableName,
         ...(startSnapshot ? { start_snapshot_id: startSnapshot } : {}),
-        ...(selectedEndSnapshot
-          ? { end_snapshot_id: selectedEndSnapshot }
-          : {}),
+        ...(endSnapshot ? { end_snapshot_id: endSnapshot } : {}),
       },
     });
   }
