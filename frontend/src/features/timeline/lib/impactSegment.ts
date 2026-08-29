@@ -4,6 +4,7 @@ import { parseBackendSizeToBytes } from "./format/backendSize";
 export type ImpactSegment =
   | { kind: "count"; added: number; removed: number; unit: "rows" | "files" }
   | { kind: "size"; netBytes: number }
+  | { kind: "ref"; refType: "branch" | "tag"; name: string; action: string }
   | { kind: "text"; text: string };
 
 export const impactText = (text: string): ImpactSegment => ({

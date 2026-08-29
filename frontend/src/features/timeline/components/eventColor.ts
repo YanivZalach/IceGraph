@@ -16,3 +16,48 @@ export const eventColorFor = (row: TimelineRow): string => {
   }
   return METADATA_COLOR;
 };
+
+export const eventBorderClassFor = (row: TimelineRow): string => {
+  const color = eventColorFor(row);
+  if (color === WRITE_COLOR) {
+    return "border-l-[#1964B9]";
+  }
+  if (color === BRANCH_COLOR) {
+    return "border-l-[#0EA5E9]";
+  }
+  return "border-l-[#6437D2]";
+};
+
+const BRANCH_ACCENTS = [
+  { node: "border-sky-400", chip: "bg-sky-500/15 text-sky-400" },
+  { node: "border-violet-400", chip: "bg-violet-500/15 text-violet-400" },
+  { node: "border-teal-400", chip: "bg-teal-500/15 text-teal-400" },
+  { node: "border-rose-400", chip: "bg-rose-500/15 text-rose-400" },
+  { node: "border-amber-400", chip: "bg-amber-500/15 text-amber-400" },
+  { node: "border-emerald-400", chip: "bg-emerald-500/15 text-emerald-400" },
+  { node: "border-fuchsia-400", chip: "bg-fuchsia-500/15 text-fuchsia-400" },
+  { node: "border-orange-400", chip: "bg-orange-500/15 text-orange-400" },
+] as const;
+
+const FALLBACK_ACCENT = BRANCH_ACCENTS[0];
+
+export interface BranchAccent {
+  node: string;
+  chip: string;
+}
+
+export const branchAccentsByName = (
+  rows: TimelineRow[],
+): ReadonlyMap<string, BranchAccent> => {
+  const accents = new Map<string, BranchAccent>();
+  for (const row of rows) {
+    const name = row.branchName;
+    if (name !== null && name !== "main" && !accents.has(name)) {
+      accents.set(
+        name,
+        BRANCH_ACCENTS[accents.size % BRANCH_ACCENTS.length] ?? FALLBACK_ACCENT,
+      );
+    }
+  }
+  return accents;
+};
