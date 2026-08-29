@@ -110,6 +110,17 @@ The test: could a new maintainer read the name alone and know exactly what it ho
 - **TanStack Query** for all server state. Server data never lives in atoms.
 - Query keys are typed and centralized per feature.
 
+## Ownership boundaries
+
+- The backend owns Iceberg interpretation, analysis, and graph normalization. The frontend presents
+  normalized results and must not independently recreate domain rules.
+- API schemas own runtime validation at the network boundary.
+- Routes and validated search parameters own shareable and refresh-survivable URL state.
+- TanStack Query owns server state. Jotai owns client-only state.
+- Components own presentation and interaction local to their feature.
+- Shared abstractions follow a real ownership boundary or repeated responsibility. Similar-looking
+  code alone is not enough reason to create one.
+
 ## Routing
 
 - **TanStack Router**, file-based in `src/routes/` — route files stay thin and compose feature components.

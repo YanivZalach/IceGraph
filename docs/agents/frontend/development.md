@@ -5,9 +5,20 @@ Guidance for work under `frontend/`. The repo-root [AGENTS.md](../../../AGENTS.m
 Read and follow [philosophy.md](philosophy.md) for mandatory technical conventions. This guide
 defines how to approach a frontend change and navigate the existing application.
 
+## Product invariants
+
+Frontend changes must preserve these properties:
+
+- IceGraph remains read-only. The frontend never mutates Iceberg tables or metadata.
+- The UI represents Iceberg metadata exactly. Presentation must not reinterpret domain meaning.
+- Supported URL parameters round-trip without silent removal, coercion, or stale propagation.
+- The application works with a remote Spark Connect backend, the Docker demo, and MSW mock mode.
+
 ## Implementation approach
 
-Optimize for the smallest coherent change, not the largest reusable design.
+Understand the real constraint, then choose the smallest coherent model that makes correct behavior
+unsurprising. Do not preserve complexity only because it exists, and do not introduce machinery
+because it appears architecturally complete.
 
 Before proposing an implementation:
 
@@ -30,6 +41,8 @@ When implementing:
 - Prefer fewer lines when the result is clearer. Do not compress code, combine responsibilities, or
   use clever expressions only to reduce line count.
 - Preserve established architecture and behavior outside the requested change.
+- If a convention would make the result less clear or correct, explain the conflict and get the
+  user's approval before departing from it.
 
 Before presenting the result, simplify it once:
 
@@ -40,6 +53,29 @@ Before presenting the result, simplify it once:
 - Can a maintainer understand the full change from the primary file and its direct dependencies?
 
 If simplification changes behavior or expands scope, stop and ask the user instead.
+
+## Change impact checklist
+
+Before calling a frontend change complete, inspect every category below and state which ones apply:
+
+- **Entry points:** routes, navigation tabs, buttons, keyboard shortcuts, and cross-tab links that
+  reach the behavior.
+- **Views:** Timeline, Metadata, FileTree, and Graph when they consume the same graph or snapshot
+  state.
+- **URL and cache state:** path parameters, search parameters, browser-cached graph data, reset
+  behavior, and navigation away from the changed flow.
+- **Contracts:** API schemas, backend response shapes, and MSW handlers that represent the same
+  data.
+- **Documentation:** the relevant user-facing Docs page section.
+- **External skill:** `claude-plugin/skills/icegraph/SKILL.md` when routes, parameters, or deep-link
+  behavior change.
+
+Check reverse flows as well as entry flows. State introduced by opening, selecting, filtering, or
+locking must have a clear way to close, clear, reset, or leave without leaking into the next view.
+
+Use the smallest direct proof that demonstrates the requested behavior. Then run the repository's
+mandatory format, lint, and typecheck commands. Targeted proof complements those checks; it does not
+replace them.
 
 ## Frontend Change Policy
 

@@ -49,3 +49,13 @@ If the concept you need isn't in the glossary yet, that's a signal — either yo
 If your output contradicts an existing ADR, surface it explicitly rather than silently overriding:
 
 > _Contradicts ADR-0007 (event-sourced orders) — but worth reopening because…_
+
+## Keep only durable knowledge
+
+Repository documentation stores facts that should remain useful after the current task: domain
+language, architectural constraints, accepted decisions, and maintained operational guidance.
+
+Do not commit implementation plans, temporary investigation notes, agent scratch files, or
+speculative designs as documentation. Keep temporary reasoning outside the repository. When a
+decision becomes durable, record the decision and its rationale in the appropriate domain document
+or ADR instead of preserving the task checklist that produced it.
