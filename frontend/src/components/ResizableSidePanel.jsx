@@ -6,7 +6,7 @@ import {
   pxToRem,
   remToPx,
 } from "../layoutConstants";
-import { startHorizontalResize } from "../shared/lib/horizontalResize";
+import { useHorizontalResize } from "../shared/lib/useHorizontalResize";
 import SidePanelFrame, { SidePanelResizeHandle } from "./SidePanelFrame";
 
 export { PANEL_WIDTH_RELAXED_REM as PANEL_WIDTH_RELAXED } from "../layoutConstants";
@@ -67,20 +67,17 @@ const ResizableSidePanel = forwardRef(function ResizableSidePanel(
     onClose();
   }, [onClose]);
 
-  const handleResizeStart = useCallback(
-    (event) => {
-      startHorizontalResize(
-        event,
-        {
-          maximumWidthPx: maxContainerWidth,
-          minimumWidthPx: remToPx(PANEL_WIDTH_MIN_REM),
-          startWidthPx: remToPx(panelWidthRem),
-        },
-        (widthPx) => setPanelWidthRem(pxToRem(widthPx)),
-      );
-    },
-    [panelWidthRem, maxContainerWidth],
-  );
+  const startResize = useHorizontalResize((widthPx) => {
+    setPanelWidthRem(pxToRem(widthPx));
+  });
+
+  const handleResizeStart = (event) => {
+    startResize(event, {
+      maximumWidthPx: maxContainerWidth,
+      minimumWidthPx: remToPx(PANEL_WIDTH_MIN_REM),
+      startWidthPx: remToPx(panelWidthRem),
+    });
+  };
 
   useEffect(() => {
     onLayoutChange?.({ isFullscreen, panelWidthRem });

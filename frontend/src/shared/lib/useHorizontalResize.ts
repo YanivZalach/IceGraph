@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+
 interface HorizontalResizeBounds {
   maximumWidthPx: number;
   minimumWidthPx: number;
@@ -5,11 +7,14 @@ interface HorizontalResizeBounds {
 }
 
 interface ResizePointerEvent {
+  button: number;
   clientX: number;
   preventDefault: () => void;
 }
 
-export const startHorizontalResize = (
+const PRIMARY_BUTTON = 0;
+
+const startHorizontalResize = (
   event: ResizePointerEvent,
   bounds: HorizontalResizeBounds,
   onWidthChange: (widthPx: number) => void,
@@ -20,6 +25,7 @@ export const startHorizontalResize = (
   const controller = new AbortController();
 
   const finishResize = () => {
+    if (controller.signal.aborted) return;
     controller.abort();
     document.body.style.cursor = "";
     document.body.style.userSelect = "";
@@ -49,4 +55,27 @@ export const startHorizontalResize = (
   window.addEventListener("blur", finishResize, { signal });
 
   return finishResize;
+};
+
+export const useHorizontalResize = (
+  onWidthChange: (widthPx: number) => void,
+): ((event: ResizePointerEvent, bounds: HorizontalResizeBounds) => void) => {
+  const cancelResizeRef = useRef<(() => void) | null>(null);
+
+  useEffect(
+    () => () => {
+      cancelResizeRef.current?.();
+    },
+    [],
+  );
+
+  return (event, bounds) => {
+    if (event.button !== PRIMARY_BUTTON) return;
+    cancelResizeRef.current?.();
+    cancelResizeRef.current = startHorizontalResize(
+      event,
+      bounds,
+      onWidthChange,
+    );
+  };
 };

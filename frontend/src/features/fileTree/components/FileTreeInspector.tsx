@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import type { CSSProperties, MouseEvent } from "react";
 import { PanelHeader } from "../../../components/PanelContent";
 import SidePanelFrame, {
   SidePanelResizeHandle,
 } from "../../../components/SidePanelFrame";
-import { startHorizontalResize } from "../../../shared/lib/horizontalResize";
+import { useHorizontalResize } from "../../../shared/lib/useHorizontalResize";
 import type { InspectedFileTreeItem } from "../types";
 import FileTreeInspectorContent from "./FileTreeInspectorContent";
 
@@ -30,14 +30,7 @@ const FileTreeInspector = ({
   onViewInGraph,
 }: FileTreeInspectorProps) => {
   const [panelWidthPx, setPanelWidthPx] = useState<number | null>(null);
-  const cancelResizeRef = useRef<(() => void) | null>(null);
-
-  useEffect(
-    () => () => {
-      cancelResizeRef.current?.();
-    },
-    [],
-  );
+  const startResize = useHorizontalResize(setPanelWidthPx);
   const title =
     inspectedItem.kind === "file"
       ? "Data file"
@@ -61,15 +54,11 @@ const FileTreeInspector = ({
     const container = panel?.parentElement;
     if (panel == null || container == null) return;
 
-    cancelResizeRef.current = startHorizontalResize(
-      event,
-      {
-        maximumWidthPx: container.getBoundingClientRect().width * 0.7,
-        minimumWidthPx: PANEL_MIN_WIDTH_PX,
-        startWidthPx: panel.getBoundingClientRect().width,
-      },
-      setPanelWidthPx,
-    );
+    startResize(event, {
+      maximumWidthPx: container.getBoundingClientRect().width * 0.7,
+      minimumWidthPx: PANEL_MIN_WIDTH_PX,
+      startWidthPx: panel.getBoundingClientRect().width,
+    });
   };
 
   return (
