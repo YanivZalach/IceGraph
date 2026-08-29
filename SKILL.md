@@ -182,7 +182,7 @@ For example, this opens files added by a specific commit across all branches, gr
 URI-encode branch names and search text as well as table names. Omit FileTree parameters that use
 their defaults unless an explicit value makes the requested view clearer.
 
-**Three hard rules:**
+**Two hard rules:**
 
 1. **Always set both `start_snapshot_id` and `end_snapshot_id` — never emit `end_snapshot_id`
    alone.** A link with no `start_snapshot_id` opens onto an unbounded range instead of the
@@ -196,12 +196,6 @@ their defaults unless an explicit value makes the requested view clearer.
    naturally to one of those views, link to that page (`/table/metadata`, `/table/timeline`,
    `/table/filetree`, same `table`/snapshot query params) *without* `select_node_id`, and say
    plainly that node-level selection is only available on the Graph view.
-3. **Never add `dup` or `cache_id` to a URL you construct.** Those params belong to the app's own
-   "Duplicate tab" / "View in graph" buttons, which cache the current in-memory data into that
-   browser's IndexedDB for about two seconds before deleting it. A URL built with them from outside
-   the running app will fail with "No cached data found" for anyone who opens it. Only ever emit
-   the plain form above.
-
 Don't invent table names, snapshot ids, or node ids — they must come from an actual CLI call or
 from what the user told you directly.
 
