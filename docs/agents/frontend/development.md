@@ -57,7 +57,7 @@ Do not broaden scope during this pass. Ask before a simplification changes behav
 
 ## Repository-specific constraints
 
-- Generated skill copies are documented in `docs/agents/README.md`; never edit them directly.
+- Generated skill copies are documented in `AGENTS.md`; never edit them directly.
 - Use Vite's configured base path. Never hardcode deployment-root asset or route paths.
 
 Use the smallest direct proof for the changed behavior, then run the mandatory checks from

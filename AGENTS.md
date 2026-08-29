@@ -86,11 +86,17 @@ why.
 
 ## Repository guidance
 
-The canonical index is [`docs/agents/README.md`](docs/agents/README.md).
-
 - GitHub issue usage: [`docs/agents/issue-tracker.md`](docs/agents/issue-tracker.md)
 - Frontend workflow: [`docs/agents/frontend/development.md`](docs/agents/frontend/development.md)
 - Frontend technical conventions:
   [`docs/agents/frontend/philosophy.md`](docs/agents/frontend/philosophy.md)
 - Frontend smoke test:
   [`docs/agents/skills/frontend-smoke-test/SKILL.md`](docs/agents/skills/frontend-smoke-test/SKILL.md)
+- Browser graph-cache contract: [`docs/browser-graph-cache.md`](docs/browser-graph-cache.md)
+
+`CLAUDE.md` loads this file. Legacy frontend guidance paths and the Claude smoke-test discovery path
+are compatibility symlinks to the canonical files above.
+
+`claude-plugin/skills/icegraph/SKILL.md` is the distributable skill for IceGraph users and is outside
+this repository-guidance structure. `frontend/public/SKILL.md` is refreshed by `copy-skill`, while
+`frontend/dist/SKILL.md` reflects the last build. Both are generated and must not be edited.
