@@ -94,8 +94,8 @@ why.
   [`docs/agents/skills/frontend-smoke-test/SKILL.md`](docs/agents/skills/frontend-smoke-test/SKILL.md)
 - Browser graph-cache contract: [`docs/browser-graph-cache.md`](docs/browser-graph-cache.md)
 
-`CLAUDE.md` loads this file. Legacy frontend guidance paths and the Claude smoke-test discovery path
-are compatibility symlinks to the canonical files above.
+`CLAUDE.md` loads this file. `.claude/skills/frontend-smoke-test/SKILL.md` is a symlink to the smoke
+test above; Claude Code only discovers skills at that path, so it is required, not a leftover.
 
 `claude-plugin/skills/icegraph/SKILL.md` is the distributable skill for IceGraph users and is outside
 this repository-guidance structure. `frontend/public/SKILL.md` is refreshed by `copy-skill`, while
