@@ -25,7 +25,7 @@ This file provides guidance to coding agents working in this repository.
 - Agents may run read-only Git commands such as `git status` and `git diff`. Never run `git add`, `git commit`, or `git push`: those commands are reserved for the user.
 - When `icegraph-client`'s public API or CLI commands change, update the CLI section in `frontend/src/pages/DocsPage.jsx` and the Python Client & CLI bullet in `README.md` to match.
 - Whenever creating a setting that is configurable via an environment variable, define it in `backend/env.py`.
-- Before modifying anything under `frontend/`, read and follow [frontend/DEVELOPMENT.md](frontend/DEVELOPMENT.md) and [frontend/PHILOSOPHY.md](frontend/PHILOSOPHY.md).
+- Before modifying anything under `frontend/`, read and follow [docs/agents/frontend/development.md](docs/agents/frontend/development.md) and [docs/agents/frontend/philosophy.md](docs/agents/frontend/philosophy.md).
 
 ## Project Overview
 
@@ -89,7 +89,7 @@ uv run icegraph --base-url http://localhost:5050 tables    # Run the CLI against
 - `base_classes/`: Abstractions for files and Spark actions
 - `env.py` / `constants.py`: Environment-backed settings and fixed constants
 
-**Frontend** (`/frontend/src/`): React SPA (Vite + Tailwind v4), migrating from legacy JSX to strict TypeScript per [frontend/PHILOSOPHY.md](frontend/PHILOSOPHY.md). Page/component layout, dev notes, and styling conventions live in [frontend/DEVELOPMENT.md](frontend/DEVELOPMENT.md).
+**Frontend** (`/frontend/src/`): React SPA (Vite + Tailwind v4), migrating from legacy JSX to strict TypeScript per [docs/agents/frontend/philosophy.md](docs/agents/frontend/philosophy.md). Page/component layout, dev notes, and styling conventions live in [docs/agents/frontend/development.md](docs/agents/frontend/development.md).
 
 **icegraph-client** (`/icegraph-client/`): Python client + CLI for the backend API, published to PyPI:
 
@@ -126,7 +126,9 @@ uv run icegraph --base-url http://localhost:5050 tables    # Run the CLI against
 - GitHub Pages demo uses MSW to mock API responses (no backend); enabled via `VITE_USE_MSW=true` in the deploy workflow
 - The Vite `base` path is `/IceGraph/` for GitHub Pages but `/` for Docker
 
-## Agent skills
+## Agent guidance
+
+The canonical index for repository-local guidance and internal skills is [`docs/agents/README.md`](docs/agents/README.md).
 
 ### Issue tracker
 
