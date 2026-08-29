@@ -1,5 +1,6 @@
 import { cn } from "../../../../shared/lib/cn";
 import { UI_FIELD_LABEL_CLASS } from "../../../../uiTypography";
+import Chip, { type ChipTone } from "../Chip";
 import type { DetailRowData } from "../../lib/details/buildEventDetails";
 import type { ChangeCountRow } from "../../lib/details/summaryTables";
 import { parseBackendSizeToBytes } from "../../lib/format/backendSize";
@@ -17,24 +18,21 @@ const isZeroValue = (value: string): boolean =>
 
 interface CountCell {
   text: string;
-  colorClass: string;
+  tone: ChipTone | null;
 }
 
-const SIGN_COLOR_CLASS = {
-  "+": "font-semibold text-green-400",
-  "−": "font-semibold text-red-400",
-} as const;
+const TONE_BY_SIGN = { "+": "added", "−": "removed" } as const;
 
 const countCell = (value: string | null, sign: "+" | "−"): CountCell => {
   if (value === null) {
-    return { text: "—", colorClass: "text-slate-600" };
+    return { text: "—", tone: null };
   }
   if (isZeroValue(value)) {
-    return { text: humanizeValue(value, false), colorClass: "text-slate-400" };
+    return { text: humanizeValue(value, false), tone: null };
   }
   return {
     text: `${sign}${humanizeValue(value, false)}`,
-    colorClass: SIGN_COLOR_CLASS[sign],
+    tone: TONE_BY_SIGN[sign],
   };
 };
 
@@ -84,9 +82,19 @@ const ChangeCountsSection = ({
               <td className={LABEL_CELL_CLASS}>
                 {humanizeLabel(count.metric)}
               </td>
-              <td className={cn(CELL_CLASS, added.colorClass)}>{added.text}</td>
-              <td className={cn(CELL_CLASS, removed.colorClass)}>
-                {removed.text}
+              <td className={cn(CELL_CLASS, "text-slate-400")}>
+                {added.tone === null ? (
+                  added.text
+                ) : (
+                  <Chip text={added.text} tone={added.tone} />
+                )}
+              </td>
+              <td className={cn(CELL_CLASS, "text-slate-400")}>
+                {removed.tone === null ? (
+                  removed.text
+                ) : (
+                  <Chip text={removed.text} tone={removed.tone} />
+                )}
               </td>
             </tr>
           );

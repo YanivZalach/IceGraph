@@ -1,9 +1,15 @@
+import { cn } from "../../../../shared/lib/cn";
 import type { ImpactSegment } from "../../lib/impactSegment";
+import { CHIP_BASE_CLASS } from "../Chip";
+import type { BranchAccent } from "../eventColor";
 import ImpactCount from "./ImpactCount";
 import ImpactSize from "./ImpactSize";
 
+const TAG_CHIP_CLASS = "bg-slate-500/15 text-slate-300";
+
 interface ImpactLineProps {
   segments: ImpactSegment[];
+  branchAccents: ReadonlyMap<string, BranchAccent>;
 }
 
 const isBalancedRowChurn = (segment: ImpactSegment): boolean =>
@@ -19,10 +25,13 @@ const segmentKey = (segment: ImpactSegment): string => {
   if (segment.kind === "size") {
     return "size";
   }
+  if (segment.kind === "ref") {
+    return `${segment.name} ${segment.action}`;
+  }
   return segment.unit;
 };
 
-const ImpactLine = ({ segments }: ImpactLineProps) => {
+const ImpactLine = ({ segments, branchAccents }: ImpactLineProps) => {
   const shownSegments = segments.filter(
     (segment) => !isBalancedRowChurn(segment),
   );
@@ -36,6 +45,19 @@ const ImpactLine = ({ segments }: ImpactLineProps) => {
         >
           {segment.kind === "text" ? (
             segment.text
+          ) : segment.kind === "ref" ? (
+            <>
+              {segment.refType}{" "}
+              <span
+                className={cn(
+                  CHIP_BASE_CLASS,
+                  branchAccents.get(segment.name)?.chip ?? TAG_CHIP_CLASS,
+                )}
+              >
+                {segment.name}
+              </span>{" "}
+              {segment.action}
+            </>
           ) : segment.kind === "size" ? (
             <ImpactSize netBytes={segment.netBytes} />
           ) : (

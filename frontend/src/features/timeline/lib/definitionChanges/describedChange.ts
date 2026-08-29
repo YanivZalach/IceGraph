@@ -1,6 +1,9 @@
+import type { ImpactSegment } from "../impactSegment";
+
 export interface DescribedChange {
   impact: string;
   detail: string;
+  impactSegment?: ImpactSegment;
 }
 
 export const sameTextChange = (text: string): DescribedChange => ({

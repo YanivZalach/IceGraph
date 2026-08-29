@@ -2,6 +2,15 @@ import type { SnapshotRefs } from "../../api/nodeSchemas";
 import { sameTextChange, type DescribedChange } from "./describedChange";
 import { formatShortId } from "../format/formatShortId";
 
+const refChange = (
+  refType: "branch" | "tag",
+  name: string,
+  action: string,
+): DescribedChange => ({
+  ...sameTextChange(`${refType} ${name} ${action}`),
+  impactSegment: { kind: "ref", refType, name, action },
+});
+
 export const describeRefChanges = (
   previousRefs: SnapshotRefs,
   currentRefs: SnapshotRefs,
@@ -13,7 +22,7 @@ export const describeRefChanges = (
     const previousRef = previousRefs[name];
 
     if (previousRef === undefined) {
-      changes.push(sameTextChange(`${currentRef.type} ${name} created`));
+      changes.push(refChange(currentRef.type, name, "created"));
       continue;
     }
 
@@ -23,8 +32,10 @@ export const describeRefChanges = (
       currentRef["snapshot-id"] === rowSnapshotId;
     if (hasMoved && !isTheRowsOwnBranchMove) {
       changes.push(
-        sameTextChange(
-          `${currentRef.type} ${name} moved to snapshot ${formatShortId(currentRef["snapshot-id"])}`,
+        refChange(
+          currentRef.type,
+          name,
+          `moved to snapshot ${formatShortId(currentRef["snapshot-id"])}`,
         ),
       );
     }
@@ -32,7 +43,7 @@ export const describeRefChanges = (
 
   for (const [name, previousRef] of Object.entries(previousRefs)) {
     if (currentRefs[name] === undefined) {
-      changes.push(sameTextChange(`${previousRef.type} ${name} deleted`));
+      changes.push(refChange(previousRef.type, name, "deleted"));
     }
   }
 
