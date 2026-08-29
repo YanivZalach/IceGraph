@@ -12,6 +12,7 @@ from pyspark.errors import AnalysisException
 from base_classes.utils import verify_iceberg_table
 from constants import APPLICATION_PORT, COLLECTION_STAGES, JOB_TOKEN_FIELD, STAGE_BUILD_GRAPH
 from env import Env
+from graph_cache.metadata_file import collect_graph_metadata_file
 from graph_normalizer.graph_normalizer import GraphNormalizer
 from icegraph_logger import logger
 from snapshot_analyzer.snapshot_analyzer import SnapshotAnalyzer
@@ -111,6 +112,30 @@ def list_tables():
                 "include_none_iceberg_catalogs": Env.INCLUDE_NONE_ICEBERG_CATALOGS,
             }
         )
+
+    except AnalysisException as e:
+        logger.error(f"Spark Error: {e}\n{traceback.format_exc()}")
+        return jsonify({"error": str(e)}), 400
+
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}\n{traceback.format_exc()}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/v1/graph-metadata-file/<path:table_name>", methods=["GET"])
+def graph_metadata_file(table_name):
+    end_snapshot_id = request.args.get("end_snapshot_id")
+
+    try:
+        verify_iceberg_table(table_name)
+        parsed_end_snapshot_id = int(end_snapshot_id) if end_snapshot_id else None
+        metadata_file = collect_graph_metadata_file(table_name, parsed_end_snapshot_id)
+
+        return jsonify({"metadata_file": metadata_file})
+
+    except ValueError as e:
+        logger.error(f"Invalid graph metadata request: {e}\n{traceback.format_exc()}")
+        return jsonify({"error": str(e)}), 400
 
     except AnalysisException as e:
         logger.error(f"Spark Error: {e}\n{traceback.format_exc()}")

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
+import { catalogQueryOptions } from "../features/catalog/api/catalogQueries";
 import logo from "../assets/icegraph.png";
 import CatalogTableList from "../components/CatalogTableList";
 import JSONbig from "json-bigint";
@@ -16,13 +18,17 @@ import {
 export default function HomePage() {
   const [tableName, setTableName] = useState("");
   const [history, setHistory] = useState([]);
-  const [catalogTables, setCatalogTables] = useState(null);
-  const [includeNoneIcebergCatalogs, setIncludeNoneIcebergCatalogs] =
-    useState(false);
+  const [isCatalogOpen, setIsCatalogOpen] = useState(false);
   const [catalogFilter, setCatalogFilter] = useState("");
-  const [catalogLoading, setCatalogLoading] = useState(false);
-  const [catalogError, setCatalogError] = useState(null);
+  const catalogQuery = useQuery(catalogQueryOptions());
   const navigate = useNavigate();
+  const catalogTables = isCatalogOpen
+    ? (catalogQuery.data?.tables ?? null)
+    : null;
+  const includeNoneIcebergCatalogs =
+    catalogQuery.data?.include_none_iceberg_catalogs ?? false;
+  const catalogError =
+    isCatalogOpen && catalogQuery.isError ? catalogQuery.error.message : null;
 
   useEffect(() => {
     const savedHistory = localStorage.getItem("tableHistory");
@@ -41,26 +47,10 @@ export default function HomePage() {
     navigate({ to: "/snapshots-selection", search: { table: tableName } });
   }
 
-  async function fetchCatalogTables() {
-    setCatalogLoading(true);
-    setCatalogError(null);
+  function fetchCatalogTables() {
+    setIsCatalogOpen(true);
     setCatalogFilter("");
-
-    try {
-      const res = await fetch("/api/v1/tables");
-      const data = await res.json();
-      if (!res.ok || data.error)
-        throw new Error(data.error || "Failed to fetch tables");
-      setCatalogTables(data.tables ?? []);
-      setIncludeNoneIcebergCatalogs(
-        Boolean(data.include_none_iceberg_catalogs),
-      );
-    } catch (e) {
-      setCatalogError(e.message);
-      setCatalogTables(null);
-    } finally {
-      setCatalogLoading(false);
-    }
+    void catalogQuery.refetch();
   }
 
   function selectCatalogTable(name) {
@@ -92,10 +82,14 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={fetchCatalogTables}
-                  disabled={catalogLoading}
+                  disabled={catalogQuery.isFetching}
                   className={UI_LINK_BUTTON_CLASS}
                 >
-                  {catalogLoading ? "Loading…" : "Browse catalog"}
+                  {catalogQuery.isFetching
+                    ? catalogQuery.data
+                      ? "Refreshing…"
+                      : "Loading…"
+                    : "Browse catalog"}
                 </button>
               </div>
               <input

@@ -2,6 +2,10 @@
 
 Loading all snapshots at once produces an overwhelming graph. Start with the 2–7 most recent snapshots and expand only if you need more history.
 
-### Duplicate tab for side-by-side comparison
+### Reuse cached graphs
 
-Use the **Duplicate tab** button in the navbar to open the current view in a new browser tab using cached data - no extra backend request. Load a different snapshot range in the original tab to compare two states of the same table.
+IceGraph keeps up to 20 completed graphs in browser storage for 24 hours after their last use. Refreshing the page, opening the same URL in another tab, or using **View in graph** restores the graph without rebuilding it when the table metadata is unchanged.
+
+Use **Recompile graph** in the navbar when you explicitly want to discard the cached result and collect the graph again.
+
+For a bounded snapshot range, IceGraph validates the metadata file associated with the selected end snapshot. Later removal of referenced files, or backend collection-setting changes made without an application version change, may not invalidate that cached graph. Use **Recompile graph** when investigating either case.

@@ -1,5 +1,6 @@
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { env } from "./shared/lib/env";
 import { parseSearch, stringifySearch } from "./shared/lib/searchParams";
@@ -12,6 +13,14 @@ const router = createRouter({
   parseSearch,
   stringifySearch,
   defaultNotFoundComponent: () => null,
+});
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+    },
+  },
 });
 
 declare module "@tanstack/react-router" {
@@ -36,7 +45,9 @@ void enableMocking().then(() => {
   }
   ReactDOM.createRoot(rootElement).render(
     <StrictMode>
-      <RouterProvider router={router} />
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
     </StrictMode>,
   );
 });

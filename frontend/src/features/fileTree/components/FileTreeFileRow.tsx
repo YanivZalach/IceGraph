@@ -6,7 +6,6 @@ import type { DataFileNode } from "../types";
 interface FileTreeFileRowProps {
   ariaLevel: number | undefined;
   checkedFileIds: Set<string>;
-  duplicatingNodeId: string | null;
   file: DataFileNode;
   isInspected: boolean;
   onInspect: (file: DataFileNode) => void;
@@ -17,7 +16,6 @@ interface FileTreeFileRowProps {
 const FileTreeFileRow = ({
   ariaLevel,
   checkedFileIds,
-  duplicatingNodeId,
   file,
   isInspected,
   onInspect,
@@ -103,9 +101,8 @@ const FileTreeFileRow = ({
         onClick={(event) => {
           onViewInGraph(event, file.id);
         }}
-        disabled={duplicatingNodeId !== null}
-        title={duplicatingNodeId === file.id ? "Opening..." : "View in graph"}
-        className="ml-2 shrink-0 cursor-pointer rounded p-1 text-slate-500 transition-colors hover:bg-accent-muted hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
+        title="View in graph"
+        className="ml-2 shrink-0 cursor-pointer rounded p-1 text-slate-500 transition-colors hover:bg-accent-muted hover:text-accent"
       >
         <svg
           className="size-3.5"

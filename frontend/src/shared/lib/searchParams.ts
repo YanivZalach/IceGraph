@@ -2,8 +2,7 @@ import { z } from "zod";
 
 // TanStack's default parse/stringify JSON-parses each value, which silently
 // rounds snapshot IDs above Number.MAX_SAFE_INTEGER. URLSearchParams also keeps
-// emitted URLs byte-identical to the legacy pages', which the dup-tab cache key
-// (window.location.href) depends on.
+// emitted URLs byte-identical to the documented URL structure.
 // See claude-plugin/skills/icegraph/SKILL.md "URL structure".
 export const parseSearch = (searchString: string): Record<string, string> =>
   Object.fromEntries(
@@ -32,8 +31,6 @@ export const tableSearchSchema = z.looseObject({
   table: z.string().optional(),
   start_snapshot_id: z.string().optional(),
   end_snapshot_id: z.string().optional(),
-  dup: z.string().optional(),
-  cache_id: z.string().optional(),
 });
 
 export const graphSearchSchema = tableSearchSchema.extend({

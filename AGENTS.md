@@ -102,8 +102,9 @@ uv run icegraph --base-url http://localhost:5050 tables    # Run the CLI against
 
 1. `GET /api/v1/tables`: list Iceberg tables from the Spark catalog (for Home and navbar picker)
 2. `GET /api/v1/snapshot-map/<table>`: load snapshot history for UI selection
-3. `POST /api/v1/graph-data`: submit async job with table name + snapshot range
-4. `GET /api/v1/graph-data/<job_id>`: poll until complete, returns graph JSON. The job token returned by step 3 must be sent in the `X-IceGraph-Job-Token` header; without it the endpoint answers 404
+3. `GET /api/v1/graph-metadata-file/<table>`: return the metadata file for an optional `end_snapshot_id`, or the latest metadata file when omitted, so the frontend can validate its browser-cached graph
+4. `POST /api/v1/graph-data`: submit async job with table name + snapshot range
+5. `GET /api/v1/graph-data/<job_id>`: poll until complete, returns graph JSON. The job token returned by step 4 must be sent in the `X-IceGraph-Job-Token` header; without it the endpoint answers 404
 
 ## Table Catalog (Backend)
 
