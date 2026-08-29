@@ -1,4 +1,9 @@
+import { useState } from "react";
 import { Group, Panel, Separator } from "react-resizable-panels";
+import {
+  filterTimelineRows,
+  type CommitKindFilter,
+} from "../lib/filterTimelineRows";
 import type { TimelineData } from "../lib/timelineRow";
 import { useTimelineSelection } from "../hooks/useTimelineSelection";
 import EventDetailsPanel from "./details/EventDetailsPanel";
@@ -10,10 +15,13 @@ interface TimelineContentProps {
 }
 
 const TimelineContent = ({ timeline, table }: TimelineContentProps) => {
+  const [kindFilter, setKindFilter] = useState<CommitKindFilter>("all");
+  const [branchFilter, setBranchFilter] = useState<string | null>(null);
+  const shownRows = filterTimelineRows(timeline.rows, kindFilter, branchFilter);
   const { selectedFilePath, handleSelect, clearSelection } =
-    useTimelineSelection(timeline.rows);
+    useTimelineSelection(shownRows);
   const selectedRow =
-    timeline.rows.find((row) => row.filePath === selectedFilePath) ?? null;
+    shownRows.find((row) => row.filePath === selectedFilePath) ?? null;
 
   return (
     <div className="h-graph flex-1 overflow-hidden bg-canvas">
@@ -25,7 +33,12 @@ const TimelineContent = ({ timeline, table }: TimelineContentProps) => {
         >
           <TimelineList
             timeline={timeline}
+            rows={shownRows}
             table={table}
+            kindFilter={kindFilter}
+            onKindFilterChange={setKindFilter}
+            branchFilter={branchFilter}
+            onBranchFilterChange={setBranchFilter}
             selectedFilePath={selectedFilePath}
             onSelect={handleSelect}
           />
