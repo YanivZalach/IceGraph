@@ -1,8 +1,7 @@
 import { cn } from "../../../../shared/lib/cn";
 import type { TimelineRow } from "../../lib/timelineRow";
 import { CHIP_BASE_CLASS } from "../Chip";
-import type { BranchAccent } from "../eventColor";
-import RefBadge from "./RefBadge";
+import { displayBranchNameFor, type BranchAccent } from "../eventColor";
 
 interface CommitCellProps {
   row: TimelineRow;
@@ -18,20 +17,16 @@ const CommitCell = ({ row, branchAccents }: CommitCellProps) => {
     );
   }
 
+  const branchName = displayBranchNameFor(row);
   const accent =
-    row.branchName === null ? undefined : branchAccents.get(row.branchName);
+    branchName === null ? undefined : branchAccents.get(branchName);
 
   return (
     <span className="flex items-center gap-2">
       <span className="max-w-72 truncate text-sm text-ink">{row.title}</span>
       {accent !== undefined && (
-        <span className={cn(CHIP_BASE_CLASS, accent.chip)}>
-          {row.branchName}
-        </span>
+        <span className={cn(CHIP_BASE_CLASS, accent.chip)}>{branchName}</span>
       )}
-      {row.badges.map((badge) => (
-        <RefBadge key={badge.name} name={badge.name} type={badge.type} />
-      ))}
     </span>
   );
 };

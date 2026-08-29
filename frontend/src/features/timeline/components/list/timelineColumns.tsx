@@ -1,7 +1,7 @@
 import { createColumnHelper, tableFeatures } from "@tanstack/table-core";
 import type { DisplayColumnDef } from "@tanstack/table-core";
 import type { TimelineRow } from "../../lib/timelineRow";
-import type { BranchAccent } from "../eventColor";
+import { displayBranchNameFor, type BranchAccent } from "../eventColor";
 import CommitCell from "./CommitCell";
 import EventRail from "./EventRail";
 import ImpactLine from "./ImpactLine";
@@ -33,11 +33,12 @@ export const buildTimelineColumns = (
     cell: ({ row }) => (
       <EventRail
         marker={railMarker(row.original)}
-        nodeClassName={
-          row.original.branchName === null
+        nodeClassName={(() => {
+          const branchName = displayBranchNameFor(row.original);
+          return branchName === null
             ? undefined
-            : branchAccents.get(row.original.branchName)?.node
-        }
+            : branchAccents.get(branchName)?.node;
+        })()}
       />
     ),
   }),
