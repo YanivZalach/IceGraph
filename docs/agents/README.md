@@ -13,7 +13,6 @@ These entry points remain at the repository root so supported agents discover th
 
 - [`domain.md`](domain.md) describes domain documentation and ADR conventions.
 - [`issue-tracker.md`](issue-tracker.md) describes GitHub issue workflows.
-- [`triage-labels.md`](triage-labels.md) defines the issue-triage labels.
 - [`frontend/development.md`](frontend/development.md) describes frontend development and navigation.
 - [`frontend/philosophy.md`](frontend/philosophy.md) defines frontend engineering rules.
 

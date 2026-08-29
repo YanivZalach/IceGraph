@@ -2,18 +2,44 @@
 
 Guidance for work under `frontend/`. The repo-root [AGENTS.md](../../../AGENTS.md) also applies. Read it for workflow rules (plan-first, bugs, scope), project overview, commands, backend architecture, API flow, and deployment notes. Paths below are relative to the repo root.
 
-All frontend code conventions live in the project philosophy and are mandatory:
+Read and follow [philosophy.md](philosophy.md) for mandatory technical conventions. This guide
+defines how to approach a frontend change and navigate the existing application.
 
-Before modifying frontend code, read and follow [philosophy.md](philosophy.md).
+## Implementation approach
 
-## Hard rules most often violated
+Optimize for the smallest coherent change, not the largest reusable design.
 
-- No `any`, ever.
-- No `useEffect` without justifying it to the user first.
-- No `memo` / `useMemo` / `useCallback`: React Compiler handles it.
-- `useSuspenseQuery` by default; plain `useQuery` needs justification.
-- No what-comments; why-comments must carry a URL/issue number.
-- No shortened names: `overdueInvoices`, never `fltrd`. Full naming rules in the philosophy.
+Before proposing an implementation:
+
+1. Trace the existing behavior from route or user action through state, data transformation,
+   rendering, and error handling.
+2. Identify the primary file that owns the behavior and its direct dependencies.
+3. Describe the proposed change as one end-to-end flow. Do not present disconnected edits without
+   explaining how data and control move between them.
+
+When implementing:
+
+- Extend an existing path when it already owns the behavior. Do not create a parallel path.
+- Keep related logic together until extracting it creates an immediate, concrete improvement.
+- Add a file, hook, component, atom, helper, or abstraction only when it has a clear responsibility
+  that cannot remain readable in the current location.
+- Prefer direct data flow and derived values. Do not duplicate state, synchronize representations,
+  or pass the same concept through unnecessary layers.
+- Reuse an existing abstraction when it fits exactly. Do not distort a simple change to make it fit
+  a generic abstraction.
+- Prefer fewer lines when the result is clearer. Do not compress code, combine responsibilities, or
+  use clever expressions only to reduce line count.
+- Preserve established architecture and behavior outside the requested change.
+
+Before presenting the result, simplify it once:
+
+- Can any new file, layer, state value, or abstraction be removed?
+- Does the logic jump between files when it could be read in one primary place?
+- Is any derived value stored or synchronized instead of calculated?
+- Is one concept represented in multiple forms without a boundary requiring it?
+- Can a maintainer understand the full change from the primary file and its direct dependencies?
+
+If simplification changes behavior or expands scope, stop and ask the user instead.
 
 ## Frontend Change Policy
 
@@ -30,7 +56,7 @@ Before modifying frontend code, read and follow [philosophy.md](philosophy.md).
 
 ## Current codebase (pre-refactor)
 
-The sections below describe the existing code, which predates [PHILOSOPHY.md](PHILOSOPHY.md) (plain JSX, no TypeScript, no router/query/state libraries, hand-rolled UI tokens). A refactor toward the philosophy is planned. **New and refactored code follows the philosophy; use this section only to navigate code not yet migrated.** Delete each part as the migration lands.
+The sections below describe the existing code, which predates [philosophy.md](philosophy.md) (plain JSX, no TypeScript, no router/query/state libraries, hand-rolled UI tokens). A refactor toward the philosophy is planned. **New and refactored code follows the philosophy; use this section only to navigate code not yet migrated.** Delete each part as the migration lands.
 
 ### Layout
 

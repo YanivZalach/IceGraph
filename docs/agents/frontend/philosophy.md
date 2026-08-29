@@ -1,6 +1,6 @@
 # Frontend Philosophy
 
-React + TypeScript. Guiding principle: **minimum cognitive load** — understandable at a glance, no cleverness, no indirection, no premature abstraction.
+React + TypeScript. Guiding principle: **minimum cognitive load**, understandable at a glance, with no cleverness, unnecessary indirection, or premature abstraction. The implementation workflow lives in [development.md](development.md); this file defines technical conventions.
 
 ## Platform
 
