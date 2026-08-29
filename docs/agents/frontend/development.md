@@ -1,133 +1,73 @@
-# Frontend Development Guide
+# Frontend Development
 
-Guidance for work under `frontend/`. The repo-root [AGENTS.md](../../../AGENTS.md) also applies. Read it for workflow rules (plan-first, bugs, scope), project overview, commands, backend architecture, API flow, and deployment notes. Paths below are relative to the repo root.
-
-Read and follow [philosophy.md](philosophy.md) for mandatory technical conventions. This guide
-defines how to approach a frontend change and navigate the existing application.
+Read [`philosophy.md`](philosophy.md) before changing `frontend/`. This file defines the workflow;
+the philosophy defines technical conventions. Paths are relative to the repository root.
 
 ## Product invariants
 
-Frontend changes must preserve these properties:
+- IceGraph remains read-only.
+- The frontend presents normalized Iceberg data without recreating backend domain rules.
+- Snapshot IDs and large metric values retain exact precision.
+- Supported URL parameters round-trip without coercion, loss, or leaking into unrelated routes.
+- The application supports a remote backend, the Docker demo, and MSW mock mode.
 
-- IceGraph remains read-only. The frontend never mutates Iceberg tables or metadata.
-- The UI represents Iceberg metadata exactly. Presentation must not reinterpret domain meaning.
-- Supported URL parameters round-trip without silent removal, coercion, or stale propagation.
-- The application works with a remote Spark Connect backend, the Docker demo, and MSW mock mode.
+## Before planning
 
-## Implementation approach
+Trace the current behavior from its route or user action through URL state, client state, server
+data, transformation, rendering, and errors. Identify one primary owner and its direct dependencies.
 
-Understand the real constraint, then choose the smallest coherent model that makes correct behavior
-unsurprising. Do not preserve complexity only because it exists, and do not introduce machinery
-because it appears architecturally complete.
+Describe the proposed change as one end-to-end flow. Explain any new ownership boundary. Do not
+present disconnected file edits as an architecture.
 
-Before proposing an implementation:
+## Implementation choices
 
-1. Trace the existing behavior from route or user action through state, data transformation,
-   rendering, and error handling.
-2. Identify the primary file that owns the behavior and its direct dependencies.
-3. Describe the proposed change as one end-to-end flow. Do not present disconnected edits without
-   explaining how data and control move between them.
+- Choose the smallest coherent model that makes correct behavior unsurprising.
+- Extend the existing owner instead of creating a parallel path.
+- Keep related logic together until extraction creates an immediate readability or ownership
+  benefit.
+- Add a file, hook, component, helper, or state container only when it has one clear responsibility.
+- Prefer direct data flow and derived values over duplicated or synchronized state.
+- Reuse an abstraction only when its contract fits exactly. Similar-looking code is not sufficient.
+- Prefer fewer lines when readability improves. Do not compress responsibilities or use clever code
+  to reduce line count.
+- Preserve behavior and architecture outside the approved scope.
 
-When implementing:
+If a convention would make the result less clear or correct, explain the conflict and ask before
+departing from it.
 
-- Extend an existing path when it already owns the behavior. Do not create a parallel path.
-- Keep related logic together until extracting it creates an immediate, concrete improvement.
-- Add a file, hook, component, atom, helper, or abstraction only when it has a clear responsibility
-  that cannot remain readable in the current location.
-- Prefer direct data flow and derived values. Do not duplicate state, synchronize representations,
-  or pass the same concept through unnecessary layers.
-- Reuse an existing abstraction when it fits exactly. Do not distort a simple change to make it fit
-  a generic abstraction.
-- Prefer fewer lines when the result is clearer. Do not compress code, combine responsibilities, or
-  use clever expressions only to reduce line count.
-- Preserve established architecture and behavior outside the requested change.
-- If a convention would make the result less clear or correct, explain the conflict and get the
-  user's approval before departing from it.
+## Impact check
 
-Before presenting the result, simplify it once:
+Before finishing, inspect each category and report which ones applied:
 
-- Can any new file, layer, state value, or abstraction be removed?
-- Does the logic jump between files when it could be read in one primary place?
-- Is any derived value stored or synchronized instead of calculated?
-- Is one concept represented in multiple forms without a boundary requiring it?
-- Can a maintainer understand the full change from the primary file and its direct dependencies?
+- **Entry points:** routes, tabs, buttons, keyboard shortcuts, and cross-tab links.
+- **Views:** Timeline, Metadata, FileTree, and Graph when they share graph or snapshot state.
+- **State:** URL parameters, cached graph data, reset behavior, and navigation cleanup.
+- **Contracts:** API schemas, backend responses, and MSW handlers.
+- **Documentation:** the relevant content under `frontend/src/features/docs/content/`.
+- **External skill:** `claude-plugin/skills/icegraph/SKILL.md` for route or deep-link changes.
 
-If simplification changes behavior or expands scope, stop and ask the user instead.
+Check the reverse flow. State introduced by opening, selecting, filtering, or locking must have a
+clear way to close, clear, reset, or leave without affecting the next view.
 
-## Change impact checklist
+## Simplification pass
 
-Before calling a frontend change complete, inspect every category below and state which ones apply:
+Before presenting the result, ask:
 
-- **Entry points:** routes, navigation tabs, buttons, keyboard shortcuts, and cross-tab links that
-  reach the behavior.
-- **Views:** Timeline, Metadata, FileTree, and Graph when they consume the same graph or snapshot
-  state.
-- **URL and cache state:** path parameters, search parameters, browser-cached graph data, reset
-  behavior, and navigation away from the changed flow.
-- **Contracts:** API schemas, backend response shapes, and MSW handlers that represent the same
-  data.
-- **Documentation:** the relevant user-facing Docs page section.
-- **External skill:** `claude-plugin/skills/icegraph/SKILL.md` when routes, parameters, or deep-link
-  behavior change.
+- Can a new file, layer, state value, or abstraction be removed?
+- Does understanding the change require unnecessary jumps between files?
+- Is a derived value stored or synchronized?
+- Is one concept represented multiple ways without a boundary requiring it?
+- Can the full change be understood from the primary owner and its direct dependencies?
 
-Check reverse flows as well as entry flows. State introduced by opening, selecting, filtering, or
-locking must have a clear way to close, clear, reset, or leave without leaking into the next view.
+Do not broaden scope during this pass. Ask before a simplification changes behavior.
 
-Use the smallest direct proof that demonstrates the requested behavior. Then run the repository's
-mandatory format, lint, and typecheck commands. Targeted proof complements those checks; it does not
-replace them.
+## Repository-specific constraints
 
-## Frontend Change Policy
+- `frontend/public/SKILL.md` is generated by `copy-skill`; never edit it directly.
+- API response changes must be reflected in `frontend/src/mocks/handlers.js` when applicable.
+- Use Vite's configured base path. Never hardcode deployment-root asset or route paths.
+- User-visible behavior changes require user-facing Docs updates.
+- Route or deep-link changes require the external IceGraph skill to stay in sync.
 
-- When a change affects the user interface (behavior, navigation, interactions, views), update the relevant section in the Docs page (`frontend/src/pages/DocsPage.jsx`).
-- When a change affects the frontend's URL structure (routes, path params, query params), update `claude-plugin/skills/icegraph/SKILL.md` to match.
-- The Issues panel content (errors and warnings) is driven entirely by the backend response (`data.errors`, `data.warnings`). UI changes to this panel must be coordinated with backend error/warning emission logic.
-
-## Dev Notes
-
-- `pnpm run dev` / `pnpm run build` run `copy-skill` first, which copies `claude-plugin/skills/icegraph/SKILL.md` into `public/`: `public/SKILL.md` is generated, never edit it directly.
-- Set `VITE_USE_MSW=true` to run against `mocks/` instead of a live backend (this is how the GitHub Pages demo works). New or changed API responses must be reflected in `mocks/` or the demo breaks.
-- The Vite `base` path is `/IceGraph/` for GitHub Pages but `/` for Docker: never hardcode absolute asset or route paths.
-- Vite dev server runs on port 3000 and proxies `/api` to the backend on port 5050.
-
-## Current codebase (pre-refactor)
-
-The sections below describe the existing code, which predates [philosophy.md](philosophy.md) (plain JSX, no TypeScript, no router/query/state libraries, hand-rolled UI tokens). A refactor toward the philosophy is planned. **New and refactored code follows the philosophy; use this section only to navigate code not yet migrated.** Delete each part as the migration lands.
-
-### Layout
-
-React SPA in `frontend/src/`:
-
-- Routing: TanStack Router, file-based under `src/routes/`: thin `.tsx` route files lazy-load the legacy pages. Search-param Zod schemas and the string-preserving `parseSearch`/`stringifySearch` (snapshot IDs must never be JSON-parsed) live in `shared/lib/searchParams.ts`
-- Pages: `GraphPage` (force-graph visualization), `MetadataPage`, `TimelinePage`, `FileTreePage`, `SnapshotSelectionPage`, `HomePage`, `DocsPage`
-- `TableLayout.jsx` wraps all table-specific pages and provides graph data via `features/table/tableGraphData.ts`; `context/TableSpecsContext.jsx` shares table state
-- `graphConstants.js` defines node/link visual constants and `fileTypeLabel()` for human-readable node types
-- `uiTypography.js`: shared Tailwind class tokens for labels, body text, inputs, buttons, and toolbar controls
-- `layoutConstants.js` / `appConstants.js`: layout dimensions and app-wide constants
-- `components/PanelContent.jsx`: side-panel components (`PanelHeader`, `PanelDetailRow`, `PanelSectionTitle`) and panel-specific typography tokens
-- `components/ResizableSidePanel.jsx`: draggable side panel shell used by Graph and Timeline
-- `hooks/`, `utils/`: shared behavior and helpers; check here before writing a new one
-- `mocks/`: MSW handlers used in the GitHub Pages demo (no real backend)
-
-### Styling Conventions (legacy token system)
-
-Typography and repeated UI patterns live in `frontend/src/uiTypography.js`. When touching unmigrated code, prefer importing tokens from there instead of duplicating Tailwind class strings.
-
-**Token layers:**
-
-| File                | Role                                                                                      |
-| ------------------- | ----------------------------------------------------------------------------------------- |
-| `uiTypography.js`   | App-wide tokens: form labels, muted body text, inputs, primary/toolbar buttons, mono text |
-| `PanelContent.jsx`  | Side-panel tokens and components; re-exports field-label tokens from `uiTypography.js`    |
-| `graphConstants.js` | Graph-specific visuals (`NODE_STYLE_MAP`, `fileTypeLabel`)                                |
-
-**Common tokens:**
-
-- `UI_BODY_MUTED_CLASS`: secondary paragraph text (`text-sm text-slate-400`)
-- `UI_FIELD_LABEL_CLASS`: uppercase field labels in panels and metadata rows (caption size, slate-500)
-- `UI_FORM_LABEL_CLASS`: uppercase form labels (xs size, slate-400, block)
-- `UI_TOOLBAR_BUTTON_BASE`: standard graph toolbar button with `py-2.5`
-- `UI_TOOLBAR_BUTTON_LAYOUT`: same toolbar look **without** vertical padding; use for split buttons (e.g. Inspect/Locked) where inner spans supply `py-2.5`
-- `toolbarButtonClass(active)`: active/inactive toolbar button variant
-
-**Side panel:** Graph and Timeline both use `ResizableSidePanel` + `PanelContent`. Panel headers call `fileTypeLabel(nodeType)` from `graphConstants.js`. Timeline diff rows use `PANEL_DIFF_*` tokens for Before/After labels and values.
+Use the smallest direct proof for the changed behavior, then run the mandatory checks from
+`AGENTS.md`.
