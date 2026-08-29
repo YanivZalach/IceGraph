@@ -8,6 +8,7 @@ def collect_graph_metadata_file(table_name: str, end_snapshot_id: int) -> str:
     metadata_entries = spark.sql(f"SELECT timestamp, file, latest_snapshot_id FROM {table_name}.metadata_log_entries")
 
     selected_entry = metadata_entries.filter(F.col("latest_snapshot_id") == end_snapshot_id).orderBy(F.desc("timestamp")).select("file").first()
+
     if not selected_entry:
         raise ValueError(f"No metadata file found for table {table_name} at snapshot {end_snapshot_id}")
 
