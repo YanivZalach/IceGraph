@@ -9,6 +9,7 @@ export interface CommitDescription {
   snapshotId: string | null;
   branchName: string | null;
   repointTargetId: string | null;
+  movedToBranchName: string | null;
 }
 
 export type SnapshotsById = ReadonlyMap<string, SnapshotNode>;

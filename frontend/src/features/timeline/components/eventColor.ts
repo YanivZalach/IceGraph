@@ -29,7 +29,6 @@ export const eventBorderClassFor = (row: TimelineRow): string => {
 };
 
 const BRANCH_ACCENTS = [
-  { node: "border-sky-400", chip: "bg-sky-500/15 text-sky-400" },
   { node: "border-violet-400", chip: "bg-violet-500/15 text-violet-400" },
   { node: "border-teal-400", chip: "bg-teal-500/15 text-teal-400" },
   { node: "border-rose-400", chip: "bg-rose-500/15 text-rose-400" },
@@ -37,6 +36,7 @@ const BRANCH_ACCENTS = [
   { node: "border-emerald-400", chip: "bg-emerald-500/15 text-emerald-400" },
   { node: "border-fuchsia-400", chip: "bg-fuchsia-500/15 text-fuchsia-400" },
   { node: "border-orange-400", chip: "bg-orange-500/15 text-orange-400" },
+  { node: "border-sky-400", chip: "bg-sky-500/15 text-sky-400" },
 ] as const;
 
 const FALLBACK_ACCENT = BRANCH_ACCENTS[0];
@@ -82,12 +82,4 @@ export const branchAccentsByName = (
     accents.set("main", MAIN_ACCENT);
   }
   return accents;
-};
-
-/** A published write with no pointer yet is the table's own line — display it as main. */
-export const displayBranchNameFor = (row: TimelineRow): string | null => {
-  if (row.branchName !== null) {
-    return row.branchName;
-  }
-  return row.kind === "published-write" ? "main" : null;
 };

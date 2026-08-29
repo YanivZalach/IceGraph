@@ -101,6 +101,13 @@ export const describeRePointCommit = (
   definitionChanges: DescribedChange[],
 ): CommitDescription => {
   const targetRecord = snapshotsById.get(targetId);
+  const movedToBranchName = isRolledBack(
+    previousFile.snapshot_id,
+    targetId,
+    snapshotsById,
+  )
+    ? null
+    : findBranchHeadName(previousFile.refs, targetId);
   const targetImpact =
     targetRecord === undefined
       ? `→ snapshot ${formatShortId(targetId)} (expired or not loaded)`
@@ -117,5 +124,6 @@ export const describeRePointCommit = (
     snapshotId: null,
     branchName: null,
     repointTargetId: targetId,
+    movedToBranchName,
   };
 };
