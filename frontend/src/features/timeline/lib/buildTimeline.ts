@@ -43,7 +43,7 @@ const buildOldestRow = (
     ...boundaryRow(file),
     kind: "published-write",
     title: writeTitle(ownSnapshot.operation_description),
-    impact: readSnapshotImpact(ownSnapshot.summary),
+    impact: readSnapshotImpact(ownSnapshot.summary, ownSnapshot.operation),
     shortId: formatShortId(ownSnapshot.snapshot_id),
     snapshotId: ownSnapshot.snapshot_id,
   };

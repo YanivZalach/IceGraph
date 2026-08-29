@@ -12,12 +12,6 @@ interface ImpactLineProps {
   branchAccents: ReadonlyMap<string, BranchAccent>;
 }
 
-const isBalancedRowChurn = (segment: ImpactSegment): boolean =>
-  segment.kind === "count" &&
-  segment.unit === "rows" &&
-  segment.added > 0 &&
-  segment.added === segment.removed;
-
 const segmentKey = (segment: ImpactSegment): string => {
   if (segment.kind === "text") {
     return segment.text;
@@ -32,13 +26,9 @@ const segmentKey = (segment: ImpactSegment): string => {
 };
 
 const ImpactLine = ({ segments, branchAccents }: ImpactLineProps) => {
-  const shownSegments = segments.filter(
-    (segment) => !isBalancedRowChurn(segment),
-  );
-
   return (
     <>
-      {shownSegments.map((segment) => (
+      {segments.map((segment) => (
         <span
           key={segmentKey(segment)}
           className="not-first:before:mx-1.5 not-first:before:content-['·']"
