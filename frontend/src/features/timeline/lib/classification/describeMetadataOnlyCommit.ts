@@ -116,7 +116,9 @@ export const describeMetadataOnlyCommit = (
   return {
     kind: "metadata-only",
     title: pickTitle(),
-    impactSegments: shownChanges.map((change) => impactText(change.impact)),
+    impactSegments: shownChanges.map(
+      (change) => change.impactSegment ?? impactText(change.impact),
+    ),
     detailTexts: shownChanges.map((change) => change.detail),
     snapshotId: null,
     branchName: null,

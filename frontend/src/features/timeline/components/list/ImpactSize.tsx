@@ -1,4 +1,5 @@
 import { formatByteSize } from "../../lib/format/backendSize";
+import Chip from "../Chip";
 
 interface ImpactSizeProps {
   netBytes: number;
@@ -6,9 +7,9 @@ interface ImpactSizeProps {
 
 const ImpactSize = ({ netBytes }: ImpactSizeProps) =>
   netBytes > 0 ? (
-    <span className="text-green-400">+{formatByteSize(netBytes)}</span>
+    <Chip text={`+${formatByteSize(netBytes)}`} tone="added" />
   ) : (
-    <span className="text-red-400">−{formatByteSize(-netBytes)}</span>
+    <Chip text={`−${formatByteSize(-netBytes)}`} tone="removed" />
   );
 
 export default ImpactSize;
