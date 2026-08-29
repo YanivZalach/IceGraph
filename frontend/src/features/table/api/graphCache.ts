@@ -30,6 +30,10 @@ const graphCacheEntrySchema = z.object({
   schemaVersion: z.literal(GRAPH_CACHE_SCHEMA_VERSION),
 });
 
+const graphCacheCleanupEntrySchema = z.object({
+  lastAccessedAt: z.number(),
+});
+
 export const getGraphCacheKey = (parameters: GraphRequestParameters): string =>
   `${GRAPH_CACHE_PREFIX}${JSON.stringify([
     parameters.tableName,
@@ -129,19 +133,16 @@ export const cleanupExpiredGraphCache = async (): Promise<void> => {
   const cachedEntries = await getAllCachedEntries();
   await Promise.all(
     cachedEntries.map(async ({ key, value }) => {
-      const parsedCache = graphCacheEntrySchema.safeParse(value);
+      if (typeof key !== "string") return;
+
+      const parsedCache = graphCacheCleanupEntrySchema.safeParse(value);
       if (
+        key.startsWith("graph:") &&
         parsedCache.success &&
         currentTime - parsedCache.data.lastAccessedAt > GRAPH_CACHE_MAX_AGE_MS
       ) {
-        await deleteCachedValue(parsedCache.data.cacheKey);
-      } else if (
-        !parsedCache.success &&
-        typeof key === "string" &&
-        (key.startsWith("graph:") ||
-          key.startsWith("graphData_") ||
-          key.includes("cache_id="))
-      ) {
+        await deleteCachedValue(key);
+      } else if (key.startsWith("graphData_") || key.includes("cache_id=")) {
         await deleteCachedValue(key);
       }
     }),

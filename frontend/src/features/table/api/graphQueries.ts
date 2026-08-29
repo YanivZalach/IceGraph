@@ -17,6 +17,7 @@ import {
 } from "./graphSchemas";
 
 const GRAPH_POLL_INTERVAL_MS = 700;
+const GRAPH_CACHE_READ_TIMEOUT_MS = 1000;
 
 export const graphQueryKey = (parameters: GraphRequestParameters) =>
   [
@@ -41,6 +42,26 @@ const waitForNextPoll = (signal: AbortSignal): Promise<void> => {
     }, GRAPH_POLL_INTERVAL_MS);
     signal.addEventListener("abort", handleAbort, { once: true });
   });
+};
+
+const readGraphCacheWithTimeout = async (
+  parameters: GraphRequestParameters,
+  metadataFile: string,
+): Promise<GraphData | undefined> => {
+  let timeoutId: number | undefined;
+
+  try {
+    return await Promise.race([
+      readGraphCache(parameters, metadataFile),
+      new Promise<never>((_, reject) => {
+        timeoutId = window.setTimeout(() => {
+          reject(new Error("Graph cache read timed out"));
+        }, GRAPH_CACHE_READ_TIMEOUT_MS);
+      }),
+    ]);
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
 };
 
 const fetchGraphMetadataFile = async (
@@ -94,11 +115,11 @@ const buildGraph = async (
     const completedGraph = graphDataSchema.safeParse(jobResult);
     if (completedGraph.success) {
       queryClient.setQueryData(graphProgressQueryKey(parameters), null);
-      try {
-        await writeGraphCache(parameters, completedGraph.data);
-      } catch (cacheError) {
-        console.warn("Failed to persist graph cache", cacheError);
-      }
+      void writeGraphCache(parameters, completedGraph.data).catch(
+        (cacheError: unknown) => {
+          console.warn("Failed to persist graph cache", cacheError);
+        },
+      );
       return completedGraph.data;
     }
 
@@ -120,16 +141,17 @@ const loadGraph = async (
 ): Promise<GraphData> => {
   queryClient.setQueryData(graphProgressQueryKey(parameters), null);
 
-  try {
-    await cleanupExpiredGraphCache();
-  } catch (cacheError) {
+  void cleanupExpiredGraphCache().catch((cacheError: unknown) => {
     console.warn("Failed to clean expired graph caches", cacheError);
-  }
+  });
 
   if (!shouldBypassPersistentGraphCache()) {
     try {
       const metadataFile = await fetchGraphMetadataFile(parameters, signal);
-      const cachedGraph = await readGraphCache(parameters, metadataFile);
+      const cachedGraph = await readGraphCacheWithTimeout(
+        parameters,
+        metadataFile,
+      );
       if (cachedGraph !== undefined) return cachedGraph;
     } catch (cacheError) {
       if (signal.aborted) {

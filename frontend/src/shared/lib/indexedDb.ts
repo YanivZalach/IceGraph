@@ -61,10 +61,9 @@ export const setCachedValue = async (
   value: unknown,
 ): Promise<void> => {
   const database = await openDatabase();
-  const transaction = database.transaction(OBJECT_STORE_NAME, "readwrite");
-  transaction.objectStore(OBJECT_STORE_NAME).put(value, key);
 
   return new Promise((resolve, reject) => {
+    const transaction = database.transaction(OBJECT_STORE_NAME, "readwrite");
     transaction.oncomplete = () => {
       resolve();
     };
@@ -78,15 +77,15 @@ export const setCachedValue = async (
         getDatabaseError(transaction.error, "Browser cache write was aborted"),
       );
     };
+    transaction.objectStore(OBJECT_STORE_NAME).put(value, key);
   });
 };
 
 export const deleteCachedValue = async (key: IDBValidKey): Promise<void> => {
   const database = await openDatabase();
-  const transaction = database.transaction(OBJECT_STORE_NAME, "readwrite");
-  transaction.objectStore(OBJECT_STORE_NAME).delete(key);
 
   return new Promise((resolve, reject) => {
+    const transaction = database.transaction(OBJECT_STORE_NAME, "readwrite");
     transaction.oncomplete = () => {
       resolve();
     };
@@ -106,6 +105,7 @@ export const deleteCachedValue = async (key: IDBValidKey): Promise<void> => {
         ),
       );
     };
+    transaction.objectStore(OBJECT_STORE_NAME).delete(key);
   });
 };
 
