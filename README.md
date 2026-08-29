@@ -78,7 +78,7 @@ Graph jobs are tracked in each pod's memory, so if you run more than one replica
 
 Before contributing, read [ARCHITECTURE_PHILOSOPHY.md](ARCHITECTURE_PHILOSOPHY.md) — the design pillars IceGraph is built on.
 
-Work is tracked as tickets of three types: Frontend Refactor, Enrichments, and Bugs, on the [IceGraph Roadmap](https://github.com/users/YanivZalach/projects/3) board.
+Work is tracked in GitHub Issues and organized on the [IceGraph Roadmap](https://github.com/users/YanivZalach/projects/3) board.
 
 All contributors must accept the [Contributor License Agreement](CLA.md) before
 a pull request can be merged. See [CONTRIBUTING.md](CONTRIBUTING.md) for the
@@ -154,7 +154,7 @@ cd icegraph-client
 uv run ruff format .
 ```
 
-Run all three frontend checks from the `frontend` directory:
+Run the frontend checks and production build from the `frontend` directory:
 
 ```bash
 cd frontend
@@ -162,9 +162,12 @@ cd frontend
 pnpm run format
 pnpm run lint
 pnpm run typecheck
+VITE_OUT_DIR=dist pnpm run build
 ```
 
-Each one catches a different class of problem, so all three are needed.
+Each command catches a different class of problem, so all four are needed. Tests may be used
+temporarily during development, but test files must be removed before submission and must not be
+included in the contribution.
 
 ### 5. icegraph-client
 

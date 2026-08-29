@@ -3,9 +3,14 @@
 Optimize for minimum cognitive load. Code should be obvious from its names, ownership, and data
 flow, without cleverness or speculative abstractions.
 
+These conventions govern new TypeScript code and substantially changed TypeScript files. Legacy
+JavaScript and JSX under `src/pages/`, `src/components/`, `src/utils/`, `src/hooks/`, and
+`src/context/` use reduced lint rules while migration continues. Touching a legacy file does not
+authorize converting or restructuring unrelated code. New architecture belongs under
+`src/features/` or `src/shared/` according to ownership.
+
 ## Tooling & enforcement
 
-- `frontend/package.json` defines available packages and scripts.
 - `frontend/tsconfig.json` defines TypeScript requirements.
 - `frontend/eslint.config.js` and `.prettierrc.json` define enforceable style.
 - Do not copy configuration into code or weaken it to silence a failure.
@@ -35,18 +40,17 @@ flow, without cleverness or speculative abstractions.
 - Keep one primary component per file and match the filename to it.
 - Extract a component or hook when it owns meaningful behavior or makes the primary flow easier to
   read, not merely because a block is long.
-- Keep components within the enforced line limit.
+- TypeScript component files have a lint-enforced 200-line limit, excluding blank lines and comments.
 - Pass intent-named callbacks such as `onSelect`, not state setters or dispatch functions.
 - Avoid prop spreading outside low-level shared UI primitives.
-- Do not add manual memoization unless measured behavior requires it and the user approves it.
+- React Compiler owns memoization. Do not import `memo`, `useMemo`, or `useCallback`.
 
 ## State and effects
 
 - Derive values during render instead of storing synchronized copies.
 - Handle user actions in event handlers and server data through TanStack Query.
 - Use local state for local interaction and URL state for shareable behavior.
-- Use `useEffect` only to synchronize with a non-React system. Explain why it is necessary before
-  adding one.
+- Use `useEffect` only to synchronize with a non-React system.
 
 ## Data and errors
 
@@ -72,7 +76,8 @@ flow, without cleverness or speculative abstractions.
 - Use `handleX` for internal handlers and `onX` for callback props.
 - Comments explain a non-obvious reason, constraint, or external workaround. Prefer clearer code over
   comments that narrate behavior.
-- Rule exceptions and suppressions require a linked issue and must remain narrowly scoped.
+- Suppressions must remain narrowly scoped and satisfy the justification enforced by ESLint.
+  `@ts-expect-error` requires a URL or issue number.
 
 ## Styling and structure
 

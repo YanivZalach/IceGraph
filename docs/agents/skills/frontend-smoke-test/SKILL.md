@@ -1,152 +1,195 @@
 ---
 name: frontend-smoke-test
-description: Runs a deterministic browser smoke test of the IceGraph frontend across Home, Snapshot Selection, Timeline, Metadata, FileTree, Graph, and Docs. Verifies full and bounded snapshot ranges, cross-view navigation, URL cleanup, keyboard shortcuts, console errors, and visible failures. Use when asked to smoke-test, QA, or check the frontend for regressions.
+description: Runs a deterministic browser smoke test of IceGraph across table selection, snapshot ranges, Timeline, Metadata, FileTree, Graph, Docs, URL cleanup, browser caching, keyboard controls, and console errors. Supports full testing with a real backend or Docker demo and a reduced MSW profile. Use when asked to smoke-test, QA, or check frontend regressions.
 user-invocable: true
 ---
 
 # Frontend smoke test
 
-Test a real running IceGraph frontend in the fixed order below. Do not start or stop servers.
+Test an already running IceGraph frontend. Never start or stop a server.
 
-## Required inputs
+## Preconditions
 
-Establish these before opening the browser:
+Establish and report:
 
-1. Frontend URL.
-2. Data mode: real backend, Docker demo, or MSW.
-3. Test table, unless it will be selected from Browse catalog.
+1. Frontend URL and whether it is reachable.
+2. Profile: `full` for a real backend or Docker demo, or `msw` for mock mode.
+3. Test table. In MSW use `default.events`; in full mode it may be selected through Browse catalog.
+4. Browser capabilities: navigation, keyboard input, page inspection, tabs, screenshots, and console
+   inspection.
 
-Ask only for missing inputs. Reuse values already established in the conversation. If the frontend
-is not running, stop and wait for the user to start it.
+Ask only for missing information. If the URL is unreachable, stop and wait for the user. If a
+browser capability is unavailable, mark only its dependent checks `NOT RUN`; never silently pass
+them.
+
+## Profiles
+
+| Check | Full | MSW |
+| --- | --- | --- |
+| Home and catalog | Required | N/A, redirects to Timeline |
+| Snapshot Selection | Required | N/A, redirects to Timeline |
+| Full-range graph | Required | Required with fixed mock graph |
+| Bounded-range rendered data | Required | N/A, mock serves one fixed graph |
+| Table views and keyboard controls | Required | Required |
+| Cache restoration and Recompile | Required | N/A |
+| Docs | Required | Required |
+
+Use `PASS`, `FAIL`, `N/A`, `BLOCKED`, or `NOT RUN` for every result.
 
 ## Test rules
 
 - Use browser automation available in the current environment.
-- Run tests in the order specified so later checks reuse the loaded graph.
-- Wait for loading indicators to disappear before evaluating a page.
-- After each page, inspect error-level console messages and visible error states.
-- Record actual and expected behavior immediately when a check fails.
+- Follow the phases in order.
+- Wait up to 120 seconds for each graph load, polling loading state rather than sleeping once.
+- Inspect visible error states and error-level console messages after every page.
+- Record expected and observed behavior immediately after a failure.
 - Capture screenshots only for failures or ambiguous visual states.
-- Do not treat a correct empty state as a failure.
-- Close every extra tab opened by the test.
+- Treat valid empty and mode-limited states as `N/A`, not failures.
+- Preserve full snapshot IDs digit-for-digit. Never compare them as JavaScript numbers.
+- Close extra tabs and remove temporary screenshots before finishing.
 
-## Phase 1: Home and table selection
+## Phase 1: Entry and ranges
 
-### Home
+### Full profile
 
-- The logo, table input, Continue action, and Browse catalog action render.
-- Browse catalog loads tables and filtering works when available.
-- Select the test table and continue to Snapshot Selection.
+Home:
 
-### Snapshot Selection
+- Logo, table input, Continue, and Browse catalog render.
+- Browse catalog loads and filtering works.
+- Select a table with at least three ordered snapshots. If unavailable, mark bounded-range checks
+  `BLOCKED` and explain why.
 
-- Start and End snapshot lists load.
-- Latest Metadata Only opens Metadata with `start_snapshot_id` and without `end_snapshot_id`.
+Snapshot Selection:
 
-Run both graph ranges:
-
-1. **Full range:** Start is Full History and End is Latest. Generate Graph. Confirm neither snapshot
-   parameter remains in the URL and Timeline contains the complete history.
-2. **Bounded range:** choose non-default Start and End snapshots that form a strict subset. Generate
-   Graph. Confirm both URL values and visibly fewer Timeline nodes than the full range.
-
-Keep the bounded range loaded for the remaining table views. Confirm:
-
-- Timeline begins at the selected Start snapshot.
+- Start and End lists load.
+- Latest Metadata Only opens Metadata with `start_snapshot_id` and `end_snapshot_id` both equal to
+  the latest snapshot ID. Current Snapshot matches that exact ID.
+- Full range: select Full History and Latest, then Generate Graph. Neither snapshot parameter remains
+  in the URL and Timeline renders the loaded history.
+- Bounded range: select non-default Start and End values forming a strict subset, then Generate
+  Graph. Both URL values match the selected IDs digit-for-digit, including IDs above `2^53`.
+- The bounded Timeline visibly contains fewer snapshot nodes than the full range and begins at the
+  selected Start snapshot.
 - Metadata Current Snapshot equals the selected End snapshot.
 - FileTree treats the selected End snapshot as the latest available snapshot in the bounded range.
 
 A branch-write event may appear after the End timestamp when its diff explains another branch ref
-moving. Do not report that documented case as a range failure.
+moving. That documented case is not a range failure.
+
+Reload the bounded URL and confirm Timeline, Metadata, and FileTree still represent the same range.
+Use browser Back and Forward once and confirm the restored route and range match their URLs.
+
+### MSW profile
+
+- Open the configured URL and confirm it redirects to Timeline for `default.events`.
+- Confirm the fixed mock graph loads.
+- Mark Home, catalog, Snapshot Selection, and bounded-range rendered-data checks `N/A`.
 
 ## Phase 2: Table views
 
+Keep the bounded range loaded in full mode and the fixed graph loaded in MSW mode.
+
 ### Timeline
 
-- Nodes and all legend types render.
+- Timeline nodes and the legend render.
 - Selecting a node opens its details.
-- Metadata and Snapshot actions, when present, open Graph in a new tab with the corresponding node
-  selected and locked.
-- Close the extra Graph tab after verification.
-
-Keyboard checks:
-
-- `h` or Left and `l` or Right move between snapshots, including first or last selection when none
-  is selected.
-- `j` and `k` scroll the open panel.
-- `f` toggles panel fullscreen.
-- `r` fits the timeline.
-- Escape closes the panel.
+- Metadata and Snapshot actions, when present, open Graph in a new tab with the intended node
+  selected and locked. Close the extra tab afterward.
+- `h` or Left and `l` or Right move between snapshots, including selecting the first or last node
+  when none is selected.
+- `j` and `k` scroll the panel, `f` toggles fullscreen, `r` fits the timeline, and Escape closes the
+  panel.
 
 ### Metadata
 
 - Structured metadata renders without an error state.
-- Current Snapshot matches the bounded End snapshot.
+- In full mode Current Snapshot matches the bounded End snapshot.
 - `j` and `k` scroll the page.
 
 ### FileTree
 
-- Tree and Flat modes both render.
-- Expand all, individual expansion, filters, and available scope controls respond.
-- The snapshot selector reflects the bounded range.
-- View in Graph opens a new tab with the selected file node.
-- Close the extra Graph tab after verification.
+- Tree and Flat modes render.
+- Expansion, search, filters, and available scope controls respond.
+- In full mode the snapshot selector reflects the bounded range.
+- View in Graph opens a new tab with the selected file node. Close the extra tab afterward.
+- Set at least one non-default `filetree_*` option for the cleanup check in Phase 3.
 
 ### Graph
 
 - Nodes and links render without an error state.
 - Center Graph and Reset Full View respond.
-- Press `i` to enter Lineage Traversal mode.
+- Ensure the mode control reads Lineage Traversal. Press `i` only if it currently reads Inspect
+  (Locked).
 - Enter or Space selects Main Metadata and opens its panel.
 - `h` or Left and `l` or Right traverse parents and children.
-- When a traversal choice popup appears, select one displayed option and confirm traversal.
-- `j` and `k` scroll the panel, `f` toggles fullscreen, and Escape closes it.
-- `c` centers the graph and `r` resets it.
+- If a traversal choice popup appears, choose one displayed option and confirm traversal.
+- `j` and `k` scroll the panel, `f` toggles fullscreen, Escape closes it, `c` centers the graph, and
+  `r` resets it.
 
-Canvas node clicks are not required. Keyboard traversal is the deterministic node-selection path.
+Canvas node clicks are not required. Keyboard traversal is the deterministic selection path.
+
+### Cache, full profile only
+
+- Reload the graph route and confirm a validated graph can restore from browser cache.
+- Use Recompile graph and confirm collection progress appears and a fresh graph replaces the cached
+  result.
+- Confirm the final graph renders and no stale selection remains.
 
 ## Phase 3: Cross-view state
 
-- From each table view, press `1`, `2`, `3`, and `4` and confirm navigation to Timeline, Metadata,
-  FileTree, and Graph.
-- After arriving in Graph through a cross-tab selection, use a top navigation tab to leave Graph.
-- Confirm `dup`, `cache_id`, and `select_node_id` do not leak into routes that do not own them.
-- Confirm table and bounded snapshot parameters remain where required.
+- Use one continuous keyboard sequence: Timeline `2` to Metadata, `3` to FileTree, `4` to Graph, and
+  `1` back to Timeline.
+- After a Graph deep-link selection is applied, confirm `select_node_id` is removed while table and
+  snapshot-range parameters remain.
+- Navigate away from FileTree and confirm all `filetree_*` parameters are removed from Timeline,
+  Metadata, and Graph.
+- Confirm closing selections, resetting controls, and leaving each view do not affect the next view.
+- Confirm no extra browser tabs remain.
 
 ## Phase 4: Docs
 
-- `/docs` loads without a table.
-- Content and navigation render.
+- `/docs` loads without a table and renders content and navigation.
 - `k` opens search.
 - Control+n and Control+p change the selected result.
 - Enter opens the result and Escape closes search.
 
-## Result format
+## Report
 
-Report exactly these sections:
+Use exactly this structure:
 
 ```text
 Environment
 - URL: ...
-- Mode: ...
+- Reachable: yes|no
+- Profile: full|msw
 - Table: ...
-- Range: ...
+- Range: ...|N/A
+- Capabilities: navigation ..., keyboard ..., inspection ..., tabs ..., screenshots ..., console ...
 
 Results
-- Home and catalog: PASS|FAIL
-- Snapshot ranges: PASS|FAIL
-- Timeline and keys: PASS|FAIL
-- Metadata and keys: PASS|FAIL
-- FileTree: PASS|FAIL
-- Graph and keys: PASS|FAIL
-- Cross-view state: PASS|FAIL
-- Docs and keys: PASS|FAIL
+- Home and catalog: PASS|FAIL|N/A|BLOCKED|NOT RUN
+- Snapshot ranges and precision: PASS|FAIL|N/A|BLOCKED|NOT RUN
+- Reload, history, and cache: PASS|FAIL|N/A|BLOCKED|NOT RUN
+- Timeline and keys: PASS|FAIL|N/A|BLOCKED|NOT RUN
+- Metadata and keys: PASS|FAIL|N/A|BLOCKED|NOT RUN
+- FileTree: PASS|FAIL|N/A|BLOCKED|NOT RUN
+- Graph and keys: PASS|FAIL|N/A|BLOCKED|NOT RUN
+- Cross-view state: PASS|FAIL|N/A|BLOCKED|NOT RUN
+- Docs and keys: PASS|FAIL|N/A|BLOCKED|NOT RUN
 
 Failures
 - <page or flow>: expected ..., observed ...
 
 Console errors
 - <page>: <error>
+
+Not run or limited
+- <check>: <reason>
+
+Cleanup
+- Extra tabs: 0
+- Temporary artifacts: 0
 ```
 
-Use `None` when Failures or Console errors is empty. Include screenshots only for listed failures.
+Use `None` for empty Failures, Console errors, or Not run or limited sections. Include screenshots
+only for listed failures.

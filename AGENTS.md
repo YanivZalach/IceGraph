@@ -18,9 +18,11 @@ Instructions for coding agents working in IceGraph.
   and its maintenance cost. Read [`ARCHITECTURE_PHILOSOPHY.md`](ARCHITECTURE_PHILOSOPHY.md) before
   proposing dependencies, services, or persistent state.
 - Never run `git add`, `git commit`, or `git push`. Read-only Git commands are allowed.
+- Do not create or mutate issues, pull requests, releases, deployments, or other external state
+  unless the user explicitly requests it.
 - Do not disable lint, type, or formatting rules to make checks pass.
-- Python files must not exceed 400 lines.
-- Define every environment-backed setting in `backend/env.py`.
+- Python files must not exceed 400 lines. This is a repository convention, not a formatter check.
+- Define every backend runtime environment setting in `backend/env.py`.
 
 ## Product invariants
 
@@ -53,6 +55,15 @@ cd backend
 uv run ruff format .
 ```
 
+### Python client
+
+Run when `icegraph-client` changes:
+
+```bash
+cd icegraph-client
+uv run ruff format .
+```
+
 ### Frontend
 
 Use pnpm `11.24.0`, as pinned in `frontend/package.json`. If the installed version differs, use
@@ -63,10 +74,15 @@ cd frontend
 pnpm run format
 pnpm run lint
 pnpm run typecheck
+VITE_OUT_DIR=dist pnpm run build
 ```
 
-Run focused tests or builds that directly prove the changed behavior. Do not start a dev server or
-browser session unless the user requests it or approves it.
+Tests may be created and run temporarily while developing. Remove every temporary test file before
+handoff and never commit it to IceGraph. Verify removal with `git status` and `git diff`.
+
+Use focused behavioral checks that directly prove the change. Do not start a dev server or browser
+session unless the user requests it or approves it. Report any required check that was not run and
+why.
 
 ## Repository guidance
 
