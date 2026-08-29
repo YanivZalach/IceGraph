@@ -25,6 +25,7 @@ const DEGRADED_COMMIT: CommitDescription = {
   snapshotId: null,
   branchName: null,
   repointTargetId: null,
+  movedToBranchName: null,
 };
 
 const buildOldestRow = (
@@ -61,6 +62,7 @@ const toTimelineRow = (
   shortId: formatShortId(commit.snapshotId),
   snapshotId: commit.snapshotId,
   branchName: commit.branchName,
+  movedToBranchName: commit.movedToBranchName,
 });
 
 const attachRefBadges = (
