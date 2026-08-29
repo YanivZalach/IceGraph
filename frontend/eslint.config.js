@@ -17,7 +17,7 @@ const philosophyRules = {
           name: "react",
           importNames: ["memo", "useMemo", "useCallback"],
           message:
-            "React Compiler handles memoization — see PHILOSOPHY.md 'Functions & components'.",
+            "React Compiler handles memoization — see docs/agents/frontend/philosophy.md 'Functions & components'.",
         },
       ],
     },
@@ -27,17 +27,17 @@ const philosophyRules = {
     {
       selector: "TSEnumDeclaration",
       message:
-        "Use union types or `as const` objects instead of enums — see PHILOSOPHY.md 'TypeScript'.",
+        "Use union types or `as const` objects instead of enums — see docs/agents/frontend/philosophy.md 'TypeScript'.",
     },
     {
       selector: "TSTypeAssertion",
       message:
-        "Type assertions are banned except `as const` — see PHILOSOPHY.md 'TypeScript'.",
+        "Type assertions are banned except `as const` — see docs/agents/frontend/philosophy.md 'TypeScript'.",
     },
     {
       selector: 'TSAsExpression:not([typeAnnotation.typeName.name="const"])',
       message:
-        "Type assertions are banned except `as const` — see PHILOSOPHY.md 'TypeScript'.",
+        "Type assertions are banned except `as const` — see docs/agents/frontend/philosophy.md 'TypeScript'.",
     },
   ],
 };
@@ -45,7 +45,7 @@ const philosophyRules = {
 export default tseslint.config(
   { ignores: ["dist", "public", "node_modules", "src/routeTree.gen.ts"] },
 
-  // eslint-disable comments must carry a justification (PHILOSOPHY.md 'Tooling & enforcement')
+  // eslint-disable comments must carry a justification (docs/agents/frontend/philosophy.md 'Tooling & enforcement')
   {
     files: ["**/*.{js,jsx,ts,tsx}"],
     plugins: { "@eslint-community/eslint-comments": eslintComments },
@@ -99,7 +99,7 @@ export default tseslint.config(
     },
   },
 
-  // Component files: 200-line cap (lint-enforced per PHILOSOPHY.md)
+  // Component files: 200-line cap (lint-enforced per docs/agents/frontend/philosophy.md)
   {
     files: ["**/*.tsx"],
     rules: {

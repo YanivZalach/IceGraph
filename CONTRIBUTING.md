@@ -7,7 +7,9 @@ Thank you for contributing.
 1. Read [ARCHITECTURE_PHILOSOPHY.md](ARCHITECTURE_PHILOSOPHY.md).
 2. Open or reference an issue for substantial changes.
 3. Read the [IceGraph Individual Contributor License Agreement](CLA.md).
-4. Keep changes focused and include tests where practical.
+4. Keep changes focused. Tests may be used temporarily during development, but test files must be
+   removed before submission and must not be included in the contribution. Run the applicable
+   format, lint, typecheck, build, and behavioral checks instead.
 5. Commit with an email linked to your GitHub account, so the `CLA` check can
    identify you. Unlinked commits block the pull request.
 

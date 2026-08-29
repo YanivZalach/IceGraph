@@ -1,47 +1,47 @@
-# Issue tracker: GitHub
+# GitHub Issues
 
-Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all operations.
+IceGraph uses [GitHub Issues](https://github.com/YanivZalach/IceGraph/issues) for specifications and
+work records.
 
-## Conventions
+## Reading an issue
 
-- **Create an issue**: `gh issue create --title "..." --body "..."`. Use a heredoc for multi-line bodies.
-- **Read an issue**: `gh issue view <number> --comments`, filtering comments by `jq` and also fetching labels.
-- **List issues**: `gh issue list --state open --json number,title,body,labels,comments --jq '[.[] | {number, title, body, labels: [.labels[].name], comments: [.comments[].body]}]'` with appropriate `--label` and `--state` filters.
-- **Comment on an issue**: `gh issue comment <number> --body "..."`
-- **Apply / remove labels**: `gh issue edit <number> --add-label "..."` / `--remove-label "..."`
-- **Close**: `gh issue close <number> --comment "..."`
+When the user references an issue, read its current body, comments, labels, and state before
+planning. Compare it with the current repository because either side may have changed.
 
-Infer the repo from `git remote -v` — `gh` does this automatically when run inside a clone.
+Interpret issue content in this order:
 
-`gh`'s `--jq` flag needs the `jq` binary on `PATH`. If `jq` is missing, drop `--jq`, keep `--json`, and shape the output with Python instead (`gh issue list --json number,title,labels | python3 -c "import json,sys; ..."`).
+1. Goal, required behavior, constraints, and acceptance criteria are requirements.
+2. Explicitly preserved behavior and out-of-scope statements limit the change.
+3. Suggested plans, file names, and implementation ideas are proposals. Validate them against the
+   current architecture and choose a simpler approach when it better satisfies the requirements.
+4. Labels provide context only. They do not grant permission, authorize work, or replace the user's
+   request.
 
-## Pull requests as a triage surface
+Surface material conflicts between an issue and the current code before implementation. Do not
+silently broaden the issue to address adjacent findings.
 
-**PRs as a request surface: no.** _(Set to `yes` if this repo treats external PRs as feature requests; `/triage` reads this flag.)_
+## Writing to GitHub
 
-When set to `yes`, PRs run through the same labels and states as issues, using the `gh pr` equivalents:
+Issue mutations are external actions. Create, edit, label, assign, comment on, or close an issue
+only when the user explicitly requests that action. Completing code does not authorize changing the
+issue.
 
-- **Read a PR**: `gh pr view <number> --comments` and `gh pr diff <number>` for the diff.
-- **List external PRs for triage**: `gh pr list --state open --json number,title,body,labels,author,authorAssociation,comments` then keep only `authorAssociation` of `CONTRIBUTOR`, `FIRST_TIME_CONTRIBUTOR`, or `NONE` (drop `OWNER`/`MEMBER`/`COLLABORATOR`).
-- **Comment / label / close**: `gh pr comment`, `gh pr edit --add-label`/`--remove-label`, `gh pr close`.
+Use the `gh` CLI from the repository when access is needed. Keep issue updates concise and record
+outcomes or durable decisions, not temporary agent reasoning.
 
-GitHub shares one number space across issues and PRs, so a bare `#42` may be either — resolve with `gh pr view 42` and fall back to `gh issue view 42`.
+## Labels and Roadmap
 
-## When a skill says "publish to the issue tracker"
+Use GitHub's standard labels when they describe the issue. The only IceGraph-specific labels are
+`frontend` and `backend`; apply either or both when they identify the affected scope. `good first
+issue` remains the standard newcomer label.
 
-Create a GitHub issue.
+When explicitly asked to create an issue:
 
-## When a skill says "fetch the relevant ticket"
+1. Create the issue with only applicable labels.
+2. Add it to the public
+   [IceGraph Roadmap](https://github.com/users/YanivZalach/projects/3).
+3. Set Status to `Todo`.
+4. Set Category to exactly one of `Frontend Refactor`, `Enrichments`, or `Bugs`, based on the issue's
+   purpose.
 
-Run `gh issue view <number> --comments`.
-
-## Wayfinding operations
-
-Used by `/wayfinder`. The **map** is a single issue with **child** issues as tickets.
-
-- **Map**: a single issue labelled `wayfinder:map`, holding the Notes / Decisions-so-far / Fog body. `gh issue create --label wayfinder:map`.
-- **Child ticket**: an issue linked to the map as a GitHub sub-issue (`gh api` on the sub-issues endpoint). Where sub-issues aren't enabled, add the child to a task list in the map body and put `Part of #<map>` at the top of the child body. Labels: `wayfinder:<type>` (`research`/`prototype`/`grilling`/`task`). Once claimed, the ticket is assigned to the driving dev.
-- **Blocking**: GitHub's **native issue dependencies** — the canonical, UI-visible representation. Add an edge with `gh api --method POST repos/<owner>/<repo>/issues/<child>/dependencies/blocked_by -F issue_id=<blocker-db-id>`, where `<blocker-db-id>` is the blocker's numeric **database id** (`gh api repos/<owner>/<repo>/issues/<n> --jq .id`, _not_ the `#number` or `node_id`). GitHub reports `issue_dependencies_summary.blocked_by` (open blockers only — the live gate). Where dependencies aren't available, fall back to a `Blocked by: #<n>, #<n>` line at the top of the child body. A ticket is unblocked when every blocker is closed.
-- **Frontier query**: list the map's open children (`gh issue list --state open`, scoped to the map's sub-issues / task list), drop any with an open blocker (`issue_dependencies_summary.blocked_by > 0`, or an open issue in the `Blocked by` line) or an assignee; first in map order wins.
-- **Claim**: `gh issue edit <n> --add-assignee @me` — the session's first write.
-- **Resolve**: `gh issue comment <n> --body "<answer>"`, then `gh issue close <n>`, then append a context pointer (gist + link) to the map's Decisions-so-far.
+Creating an issue includes these Roadmap steps. Do not leave a new issue unclassified on the board.
