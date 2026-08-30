@@ -5,6 +5,7 @@ const STEP_BY_KEY = { ArrowDown: 1, ArrowUp: -1 } as const;
 export const selectionAfterArrowKey = (
   rows: TimelineRow[],
   selectedFilePath: string | null,
+  rememberedFilePath: string | null,
   key: "ArrowDown" | "ArrowUp",
 ): string | null => {
   const selectableRows = rows.filter((row) => row.kind !== "boundary");
@@ -20,7 +21,12 @@ export const selectionAfterArrowKey = (
   );
   const isNothingSelected = selectedIndex === -1;
   if (isNothingSelected) {
-    return newestRow.filePath;
+    const rememberedRow = selectableRows.find(
+      (row) => row.filePath === rememberedFilePath,
+    );
+    return rememberedRow === undefined
+      ? newestRow.filePath
+      : rememberedRow.filePath;
   }
 
   const neighbor = selectableRows[selectedIndex + STEP_BY_KEY[key]];
