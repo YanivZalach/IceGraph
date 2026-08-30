@@ -1,5 +1,5 @@
 import { FlexRender } from "@tanstack/react-table";
-import type { Row } from "@tanstack/table-core";
+import type { Row } from "@tanstack/react-table";
 import { cn } from "../../../../shared/lib/cn";
 import type { TimelineRow } from "../../lib/timelineRow";
 import { CELL_CLASS_BY_COLUMN } from "./columnClasses";
