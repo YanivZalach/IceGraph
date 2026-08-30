@@ -80,9 +80,10 @@ Before contributing, read [ARCHITECTURE_PHILOSOPHY.md](ARCHITECTURE_PHILOSOPHY.m
 
 Work is tracked in GitHub Issues and organized on the [IceGraph Roadmap](https://github.com/users/YanivZalach/projects/3) board.
 
-All contributors must accept the [Contributor License Agreement](CLA.md) before
-a pull request can be merged. See [CONTRIBUTING.md](CONTRIBUTING.md) for the
-contribution and licensing process.
+All contributors must accept the
+[Contributor License Agreement](https://gist.github.com/YanivZalach/dde6f1bf88b42628f64609e5b2d4f860)
+through CLA Assistant before a pull request can be merged. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for the contribution and licensing process.
 
 ### Prerequisites
 
@@ -188,8 +189,10 @@ offer a modified version to users over a network, the AGPL includes correspondin
 source obligations.
 
 Revisions released before the license change remain available under the
-[MIT License](https://github.com/YanivZalach/IceGraph/blob/v0.16.2/LICENSE). Contributions require the
-[Contributor License Agreement](CLA.md), which permits future relicensing and
-separate commercial or enterprise licensing.
+[MIT License](https://github.com/YanivZalach/IceGraph/blob/v0.16.2/LICENSE).
+Contributions require the
+[Contributor License Agreement](https://gist.github.com/YanivZalach/dde6f1bf88b42628f64609e5b2d4f860),
+which permits future relicensing and separate commercial or enterprise
+licensing.
 
 Copyright (c) 2026 Yaniv Zalach and the IceGraph contributors.
