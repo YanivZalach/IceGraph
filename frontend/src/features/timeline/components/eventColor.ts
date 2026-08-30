@@ -1,6 +1,6 @@
 import type { TimelineRow } from "../lib/timelineRow";
 
-/** The legend colors of the legacy Timeline (TimelinePage.jsx COLOR_*). */
+/** Details-panel title colors: published main writes, metadata-only commits, branch writes. */
 const WRITE_COLOR = "#1964B9";
 const METADATA_COLOR = "#6437D2";
 const BRANCH_COLOR = "#0EA5E9";
