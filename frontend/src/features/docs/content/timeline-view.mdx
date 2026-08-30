@@ -22,4 +22,4 @@ Click a commit (or press **↓**) to open its details in a resizable panel: what
 
 When the commit's snapshot points at the job that wrote it, an **`action_link`** row links out to it, opening in a new tab.
 
-The list is honest about its edges: a muted **N earlier commits not loaded** link at the bottom jumps to snapshot selection when the range is truncated, and commits the backend could not read are counted in an amber notice instead of silently disappearing.
+The list is honest about its edges: a muted **N earlier commits not loaded** link at the bottom jumps to snapshot selection when the range is truncated, and commits the backend could not read are counted in an amber notice instead of silently disappearing. The bottom row is **Start of history** — the table's first surviving metadata file — when the full history is loaded and that file wrote no snapshot; when older commits exist beyond the cutoff, it is an italic _start of loaded range_ marker instead.
