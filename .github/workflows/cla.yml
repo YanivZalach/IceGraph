@@ -1,10 +1,8 @@
 name: CLA automation
 
 on:
-  pull_request_target:
-    types: [opened, reopened, synchronize, ready_for_review]
   issue_comment:
-    types: [created, edited, deleted]
+    types: [created, edited]
 
 permissions:
   contents: read
@@ -14,12 +12,16 @@ permissions:
 jobs:
   record:
     name: Record permanent acceptance
-    if: github.event_name == 'issue_comment' && github.event.issue.pull_request && (github.event.action == 'created' || github.event.action == 'edited')
+    # Run only when a PR comment exactly matches the CLA acceptance statement.
+    if: >-
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request &&
+      github.event.comment.body == 'I have read and agree to the IceGraph Individual Contributor License Agreement, Harmony HA-CLA-I-ANY version 1.0, and I confirm that I have authority to submit my contribution.'
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
           ref: ${{ github.sha }}
@@ -32,7 +34,7 @@ jobs:
   verify:
     name: Update CLA status
     needs: record
-    if: always() && (github.event_name == 'pull_request_target' || github.event.issue.pull_request)
+    if: always() && needs.record.result != 'skipped'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -40,7 +42,7 @@ jobs:
       statuses: write
     steps:
       # Checks out the base branch, never the pull request head, so no untrusted
-      # code runs with the elevated pull_request_target token.
+      # code runs with the write-enabled issue_comment token.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
