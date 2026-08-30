@@ -4,9 +4,11 @@ import base64
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import time
+from datetime import datetime
 
 CLA_VERSION = "1.0"
 CLA_STATEMENT = (
@@ -16,6 +18,17 @@ CLA_STATEMENT = (
 )
 RECORDS_BRANCH = "cla-records"
 MAX_PUSH_ATTEMPTS = 5
+RECORD_FIELDS = {
+    "github_login",
+    "github_user_id",
+    "cla_version",
+    "cla_sha256",
+    "accepted_at",
+    "pull_request",
+    "comment_id",
+    "comment_url",
+    "statement",
+}
 
 
 def github_api(arguments, payload=None, allow_failure=False):
@@ -42,7 +55,7 @@ def main():
     # Ignore every comment except a personal, exact acceptance of the current CLA.
     comment = event["comment"]
     account = comment["user"]
-    if account.get("type") == "Bot" or comment["body"].strip() != CLA_STATEMENT:
+    if account.get("type") == "Bot" or comment["body"] != CLA_STATEMENT:
         print("Comment is not a CLA acceptance; nothing to record.")
         return 0
 
@@ -84,16 +97,53 @@ def main():
             if existing_result.returncode == 0:
                 response = json.loads(existing_result.stdout)
                 existing = json.loads(base64.b64decode(response["content"]).decode())
-                identity_fields = {
-                    "github_user_id",
-                    "cla_version",
-                    "cla_sha256",
-                    "statement",
-                }
-                if all(existing.get(field) == record[field] for field in identity_fields):
+                missing_fields = RECORD_FIELDS - existing.keys()
+                valid_url = None
+                if isinstance(existing.get("comment_url"), str):
+                    valid_url = re.fullmatch(
+                        r"https://github\.com/([^/]+/[^/]+)/pull/(\d+)#issuecomment-(\d+)",
+                        existing["comment_url"],
+                        re.IGNORECASE,
+                    )
+                valid_timestamp = False
+                if isinstance(existing.get("accepted_at"), str) and re.fullmatch(
+                    r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z",
+                    existing["accepted_at"],
+                ):
+                    try:
+                        datetime.strptime(
+                            existing["accepted_at"], "%Y-%m-%dT%H:%M:%S%z"
+                        )
+                        valid_timestamp = True
+                    except ValueError:
+                        pass
+                valid_metadata = (
+                    not missing_fields
+                    and isinstance(existing["github_login"], str)
+                    and bool(existing["github_login"])
+                    and type(existing["github_user_id"]) is int
+                    and type(existing["pull_request"]) is int
+                    and existing["pull_request"] > 0
+                    and type(existing["comment_id"]) is int
+                    and existing["comment_id"] > 0
+                    and valid_url
+                    and valid_url.group(1).lower() == repo.lower()
+                    and int(valid_url.group(2)) == existing["pull_request"]
+                    and int(valid_url.group(3)) == existing["comment_id"]
+                    and valid_timestamp
+                )
+                same_agreement = (
+                    existing.get("github_user_id") == record["github_user_id"]
+                    and existing.get("cla_version") == record["cla_version"]
+                    and existing.get("cla_sha256") == record["cla_sha256"]
+                    and existing.get("statement") == record["statement"]
+                )
+                if valid_metadata and same_agreement:
                     print(f"CLA acceptance already recorded at {record_path}.")
                     return 0
-                raise RuntimeError(f"Conflicting CLA record already exists at {record_path}")
+                raise RuntimeError(
+                    f"Invalid or conflicting CLA record at {record_path}"
+                )
             if "HTTP 404" not in existing_result.stderr:
                 raise RuntimeError(existing_result.stderr.strip())
 
@@ -125,16 +175,28 @@ def main():
                 ]
             }
             if parent_sha:
-                parent = json.loads(github_api([f"repos/{repo}/git/commits/{parent_sha}"]).stdout)
+                parent = json.loads(
+                    github_api([f"repos/{repo}/git/commits/{parent_sha}"]).stdout
+                )
                 tree_payload["base_tree"] = parent["tree"]["sha"]
-            tree = json.loads(github_api(["-X", "POST", f"repos/{repo}/git/trees"], tree_payload).stdout)
+            tree = json.loads(
+                github_api(
+                    ["-X", "POST", f"repos/{repo}/git/trees"], tree_payload
+                ).stdout
+            )
 
             commit_payload = {
-                "message": (f"Record CLA v{CLA_VERSION} acceptance for GitHub user {account['id']}"),
+                "message": (
+                    f"Record CLA v{CLA_VERSION} acceptance for GitHub user {account['id']}"
+                ),
                 "tree": tree["sha"],
                 "parents": [parent_sha] if parent_sha else [],
             }
-            commit = json.loads(github_api(["-X", "POST", f"repos/{repo}/git/commits"], commit_payload).stdout)
+            commit = json.loads(
+                github_api(
+                    ["-X", "POST", f"repos/{repo}/git/commits"], commit_payload
+                ).stdout
+            )
 
             if parent_sha:
                 update_result = github_api(
@@ -159,7 +221,10 @@ def main():
             if update_result.returncode == 0:
                 print(f"Recorded CLA acceptance at {record_path}.")
                 return 0
-            if "HTTP 409" not in update_result.stderr and "HTTP 422" not in update_result.stderr:
+            if (
+                "HTTP 409" not in update_result.stderr
+                and "HTTP 422" not in update_result.stderr
+            ):
                 raise RuntimeError(update_result.stderr.strip())
             time.sleep(2**attempt)
 

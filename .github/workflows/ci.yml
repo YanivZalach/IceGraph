@@ -5,16 +5,12 @@ on:
     branches: [master]
   pull_request:
     branches: [master]
-  pull_request_target:
-    branches: [master]
-    types: [opened, reopened, synchronize, ready_for_review]
 
 permissions:
   contents: read
 
 jobs:
   python-format:
-    if: github.event_name != 'pull_request_target'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -32,7 +28,6 @@ jobs:
           src: icegraph-client
 
   frontend:
-    if: github.event_name != 'pull_request_target'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -50,27 +45,3 @@ jobs:
       - run: pnpm run build
         env:
           VITE_OUT_DIR: dist
-
-  cla:
-    name: Verify CLA acceptance
-    if: github.event_name == 'pull_request_target'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
-      statuses: write
-    steps:
-      # Run only trusted base-branch code with the elevated pull_request_target token.
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-          ref: ${{ github.sha }}
-
-      - name: Verify CLA acceptance
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          SERVER_URL: ${{ github.server_url }}
-          RUN_ID: ${{ github.run_id }}
-        run: python3 .github/scripts/check_cla.py

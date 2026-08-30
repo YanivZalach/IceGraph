@@ -4,8 +4,10 @@ import base64
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
+from datetime import datetime
 
 CLA_VERSION = "1.0"
 CLA_STATEMENT = (
@@ -30,7 +32,9 @@ RECORD_FIELDS = {
 
 
 def github_api(arguments, allow_failure=False):
-    result = subprocess.run(["gh", "api", *arguments], capture_output=True, text=True, check=False)
+    result = subprocess.run(
+        ["gh", "api", *arguments], capture_output=True, text=True, check=False
+    )
     if result.returncode and not allow_failure:
         raise RuntimeError(result.stderr.strip())
     return result
@@ -39,7 +43,9 @@ def github_api(arguments, allow_failure=False):
 def main():
     repo = os.environ["REPO"]
     pr_number = os.environ["PR_NUMBER"]
-    target_url = f"{os.environ['SERVER_URL']}/{repo}/actions/runs/{os.environ['RUN_ID']}"
+    target_url = (
+        f"{os.environ['SERVER_URL']}/{repo}/actions/runs/{os.environ['RUN_ID']}"
+    )
 
     try:
         # Read the PR and every commit, then identify each GitHub account that
@@ -101,23 +107,86 @@ def main():
                 continue
             missing_fields = RECORD_FIELDS - record.keys()
             if missing_fields:
-                print(f"::warning::Ignoring incomplete CLA record, missing: {', '.join(sorted(missing_fields))}")
+                print(
+                    f"::warning::Ignoring incomplete CLA record, missing: {', '.join(sorted(missing_fields))}"
+                )
                 continue
-            if record["github_user_id"] != user_id:
-                print(f"::warning::Ignoring CLA signer ID mismatch: {record['github_login']}")
+            if (
+                not isinstance(record["github_login"], str)
+                or not record["github_login"]
+            ):
+                print("::warning::Ignoring CLA record with an invalid GitHub login")
+                continue
+            if (
+                type(record["github_user_id"]) is not int
+                or record["github_user_id"] != user_id
+            ):
+                print(
+                    f"::warning::Ignoring CLA signer ID mismatch: {record['github_login']}"
+                )
                 continue
             if record["cla_version"] != CLA_VERSION:
-                print(f"::warning::Ignoring CLA version mismatch: {record['github_login']}")
+                print(
+                    f"::warning::Ignoring CLA version mismatch: {record['github_login']}"
+                )
                 continue
             if record["statement"] != CLA_STATEMENT:
-                print(f"::warning::Ignoring CLA statement mismatch: {record['github_login']}")
+                print(
+                    f"::warning::Ignoring CLA statement mismatch: {record['github_login']}"
+                )
                 continue
             if record["cla_sha256"] != expected_cla_hash:
-                print(f"::warning::Ignoring CLA document hash mismatch: {record['github_login']}")
+                print(
+                    f"::warning::Ignoring CLA document hash mismatch: {record['github_login']}"
+                )
+                continue
+            if type(record["pull_request"]) is not int or record["pull_request"] <= 0:
+                print(
+                    f"::warning::Ignoring invalid CLA PR number: {record['github_login']}"
+                )
+                continue
+            if type(record["comment_id"]) is not int or record["comment_id"] <= 0:
+                print(
+                    f"::warning::Ignoring invalid CLA comment ID: {record['github_login']}"
+                )
+                continue
+            if isinstance(record["comment_url"], str):
+                comment_url = re.fullmatch(
+                    r"https://github\.com/([^/]+/[^/]+)/pull/(\d+)#issuecomment-(\d+)",
+                    record["comment_url"],
+                    re.IGNORECASE,
+                )
+            else:
+                comment_url = None
+            if (
+                not comment_url
+                or comment_url.group(1).lower() != repo.lower()
+                or int(comment_url.group(2)) != record["pull_request"]
+                or int(comment_url.group(3)) != record["comment_id"]
+            ):
+                print(
+                    f"::warning::Ignoring invalid CLA comment URL: {record['github_login']}"
+                )
+                continue
+            if not isinstance(record["accepted_at"], str) or not re.fullmatch(
+                r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z", record["accepted_at"]
+            ):
+                print(
+                    f"::warning::Ignoring invalid CLA timestamp: {record['github_login']}"
+                )
+                continue
+            try:
+                datetime.strptime(record["accepted_at"], "%Y-%m-%dT%H:%M:%S%z")
+            except ValueError:
+                print(
+                    f"::warning::Ignoring invalid CLA timestamp: {record['github_login']}"
+                )
                 continue
             accepted.add(user_id)
 
-        missing_logins = [required[user_id] for user_id in sorted(required.keys() - accepted)]
+        missing_logins = [
+            required[user_id] for user_id in sorted(required.keys() - accepted)
+        ]
         if unlinked_emails:
             state = "failure"
             description = f"Commit email not linked to a GitHub account: {', '.join(sorted(unlinked_emails))}"
