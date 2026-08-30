@@ -8,22 +8,18 @@ import subprocess
 import sys
 import time
 
-CLA_PATH = "CLA.md"
 CLA_VERSION = "1.0"
+CLA_STATEMENT = (
+    "I have read and agree to the IceGraph Individual Contributor License Agreement, "
+    f"Harmony HA-CLA-I-ANY version {CLA_VERSION}, "
+    "and I confirm that I have authority to submit my contribution."
+)
 RECORDS_BRANCH = "cla-records"
 MAX_PUSH_ATTEMPTS = 5
 
 
-def statement(version):
-    return (
-        "I have read and agree to the IceGraph Individual Contributor License Agreement, "
-        f"Harmony HA-CLA-I-ANY version {version}, "
-        "and I confirm that I have authority to submit my contribution."
-    )
-
-
-def gh(args, payload=None, check=True):
-    command = ["gh", "api", *args]
+def github_api(arguments, payload=None, allow_failure=False):
+    command = ["gh", "api", *arguments]
     if payload is not None:
         command.extend(["--input", "-"])
     result = subprocess.run(
@@ -33,161 +29,144 @@ def gh(args, payload=None, check=True):
         text=True,
         check=False,
     )
-    if check and result.returncode:
+    if result.returncode and not allow_failure:
         raise RuntimeError(result.stderr.strip())
     return result
 
 
-def api_json(args, payload=None):
-    return json.loads(gh(args, payload).stdout)
+def main():
+    repo = os.environ["GITHUB_REPOSITORY"]
+    with open(os.environ["GITHUB_EVENT_PATH"]) as file:
+        event = json.load(file)
 
-
-def event_record(event):
+    # Ignore every comment except a personal, exact acceptance of the current CLA.
     comment = event["comment"]
     account = comment["user"]
-    if account.get("type") == "Bot":
-        return None
-    if comment["body"].strip() != statement(CLA_VERSION):
-        return None
+    if account.get("type") == "Bot" or comment["body"].strip() != CLA_STATEMENT:
+        print("Comment is not a CLA acceptance; nothing to record.")
+        return 0
 
-    with open(CLA_PATH, "rb") as file:
+    with open("CLA.md", "rb") as file:
         cla_hash = hashlib.sha256(file.read()).hexdigest()
 
-    return {
+    accepted_at = comment["created_at"]
+    if event["action"] == "edited":
+        accepted_at = comment["updated_at"]
+
+    record = {
         "github_login": account["login"].lower(),
         "github_user_id": account["id"],
         "cla_version": CLA_VERSION,
         "cla_sha256": cla_hash,
-        "accepted_at": (comment["updated_at"] if event["action"] == "edited" else comment["created_at"]),
+        "accepted_at": accepted_at,
         "pull_request": event["issue"]["number"],
         "comment_id": comment["id"],
         "comment_url": comment["html_url"],
-        "statement": statement(CLA_VERSION),
+        "statement": CLA_STATEMENT,
     }
+    record_path = f"signers/v{CLA_VERSION}/{account['id']}.json"
+    record_content = json.dumps(record, indent=2, sort_keys=True) + "\n"
 
-
-def record_path(record):
-    return f"signers/v{record['cla_version']}/{record['github_user_id']}.json"
-
-
-def encoded_record(record):
-    return json.dumps(record, indent=2, sort_keys=True) + "\n"
-
-
-def existing_record(repo, path):
-    result = gh(
-        [
-            "--method",
-            "GET",
-            f"repos/{repo}/contents/{path}",
-            "-f",
-            f"ref={RECORDS_BRANCH}",
-        ],
-        check=False,
-    )
-    if result.returncode:
-        if "HTTP 404" in result.stderr:
-            return None
-        raise RuntimeError(result.stderr.strip())
-    response = json.loads(result.stdout)
-    return json.loads(base64.b64decode(response["content"]).decode())
-
-
-def same_acceptance(existing, record):
-    immutable_fields = {
-        "github_user_id",
-        "cla_version",
-        "cla_sha256",
-        "statement",
-    }
-    return all(existing.get(field) == record[field] for field in immutable_fields)
-
-
-def branch_tip(repo):
-    result = gh([f"repos/{repo}/git/ref/heads/{RECORDS_BRANCH}"], check=False)
-    if result.returncode:
-        if "HTTP 404" in result.stderr:
-            return None
-        raise RuntimeError(result.stderr.strip())
-    return json.loads(result.stdout)["object"]["sha"]
-
-
-def create_blob(repo, content):
-    response = api_json(
-        ["-X", "POST", f"repos/{repo}/git/blobs"],
-        {"content": content, "encoding": "utf-8"},
-    )
-    return response["sha"]
-
-
-def create_tree(repo, path, blob_sha, parent):
-    payload = {"tree": [{"path": path, "mode": "100644", "type": "blob", "sha": blob_sha}]}
-    if parent:
-        commit = api_json([f"repos/{repo}/git/commits/{parent}"])
-        payload["base_tree"] = commit["tree"]["sha"]
-    return api_json(["-X", "POST", f"repos/{repo}/git/trees"], payload)["sha"]
-
-
-def create_commit(repo, record, tree_sha, parent):
-    payload = {
-        "message": (f"Record CLA v{record['cla_version']} acceptance for GitHub user {record['github_user_id']}"),
-        "tree": tree_sha,
-        "parents": [parent] if parent else [],
-    }
-    return api_json(["-X", "POST", f"repos/{repo}/git/commits"], payload)["sha"]
-
-
-def update_branch(repo, commit_sha, parent):
-    if parent:
-        return gh(
-            ["-X", "PATCH", f"repos/{repo}/git/refs/heads/{RECORDS_BRANCH}"],
-            {"sha": commit_sha, "force": False},
-            check=False,
-        )
-    return gh(
-        ["-X", "POST", f"repos/{repo}/git/refs"],
-        {"ref": f"refs/heads/{RECORDS_BRANCH}", "sha": commit_sha},
-        check=False,
-    )
-
-
-def store(repo, record):
-    path = record_path(record)
-    for attempt in range(MAX_PUSH_ATTEMPTS):
-        existing = existing_record(repo, path)
-        if existing is not None:
-            if same_acceptance(existing, record):
-                print(f"CLA acceptance already recorded at {path}.")
-                return
-            raise RuntimeError(f"Conflicting CLA record already exists at {path}")
-
-        parent = branch_tip(repo)
-        blob_sha = create_blob(repo, encoded_record(record))
-        tree_sha = create_tree(repo, path, blob_sha, parent)
-        commit_sha = create_commit(repo, record, tree_sha, parent)
-        result = update_branch(repo, commit_sha, parent)
-        if result.returncode == 0:
-            print(f"Recorded CLA acceptance at {path}.")
-            return
-        if "HTTP 409" not in result.stderr and "HTTP 422" not in result.stderr:
-            raise RuntimeError(result.stderr.strip())
-        time.sleep(2**attempt)
-    raise RuntimeError("CLA records branch kept changing; retry limit reached")
-
-
-def main():
-    with open(os.environ["GITHUB_EVENT_PATH"]) as file:
-        event = json.load(file)
-    record = event_record(event)
-    if record is None:
-        print("Comment is not a CLA acceptance; nothing to record.")
-        return 0
     try:
-        store(os.environ["GITHUB_REPOSITORY"], record)
+        # Each attempt reads the latest branch tip. A stale, non-fast-forward update
+        # fails safely, then the next attempt rebuilds the commit on the new tip.
+        for attempt in range(MAX_PUSH_ATTEMPTS):
+            existing_result = github_api(
+                [
+                    "--method",
+                    "GET",
+                    f"repos/{repo}/contents/{record_path}",
+                    "-f",
+                    f"ref={RECORDS_BRANCH}",
+                ],
+                allow_failure=True,
+            )
+            if existing_result.returncode == 0:
+                response = json.loads(existing_result.stdout)
+                existing = json.loads(base64.b64decode(response["content"]).decode())
+                identity_fields = {
+                    "github_user_id",
+                    "cla_version",
+                    "cla_sha256",
+                    "statement",
+                }
+                if all(existing.get(field) == record[field] for field in identity_fields):
+                    print(f"CLA acceptance already recorded at {record_path}.")
+                    return 0
+                raise RuntimeError(f"Conflicting CLA record already exists at {record_path}")
+            if "HTTP 404" not in existing_result.stderr:
+                raise RuntimeError(existing_result.stderr.strip())
+
+            tip_result = github_api(
+                [f"repos/{repo}/git/ref/heads/{RECORDS_BRANCH}"],
+                allow_failure=True,
+            )
+            if tip_result.returncode == 0:
+                parent_sha = json.loads(tip_result.stdout)["object"]["sha"]
+            elif "HTTP 404" in tip_result.stderr:
+                parent_sha = None
+            else:
+                raise RuntimeError(tip_result.stderr.strip())
+
+            blob = json.loads(
+                github_api(
+                    ["-X", "POST", f"repos/{repo}/git/blobs"],
+                    {"content": record_content, "encoding": "utf-8"},
+                ).stdout
+            )
+            tree_payload = {
+                "tree": [
+                    {
+                        "path": record_path,
+                        "mode": "100644",
+                        "type": "blob",
+                        "sha": blob["sha"],
+                    }
+                ]
+            }
+            if parent_sha:
+                parent = json.loads(github_api([f"repos/{repo}/git/commits/{parent_sha}"]).stdout)
+                tree_payload["base_tree"] = parent["tree"]["sha"]
+            tree = json.loads(github_api(["-X", "POST", f"repos/{repo}/git/trees"], tree_payload).stdout)
+
+            commit_payload = {
+                "message": (f"Record CLA v{CLA_VERSION} acceptance for GitHub user {account['id']}"),
+                "tree": tree["sha"],
+                "parents": [parent_sha] if parent_sha else [],
+            }
+            commit = json.loads(github_api(["-X", "POST", f"repos/{repo}/git/commits"], commit_payload).stdout)
+
+            if parent_sha:
+                update_result = github_api(
+                    [
+                        "-X",
+                        "PATCH",
+                        f"repos/{repo}/git/refs/heads/{RECORDS_BRANCH}",
+                    ],
+                    {"sha": commit["sha"], "force": False},
+                    allow_failure=True,
+                )
+            else:
+                update_result = github_api(
+                    ["-X", "POST", f"repos/{repo}/git/refs"],
+                    {
+                        "ref": f"refs/heads/{RECORDS_BRANCH}",
+                        "sha": commit["sha"],
+                    },
+                    allow_failure=True,
+                )
+
+            if update_result.returncode == 0:
+                print(f"Recorded CLA acceptance at {record_path}.")
+                return 0
+            if "HTTP 409" not in update_result.stderr and "HTTP 422" not in update_result.stderr:
+                raise RuntimeError(update_result.stderr.strip())
+            time.sleep(2**attempt)
+
+        raise RuntimeError("CLA records branch kept changing; retry limit reached")
     except (RuntimeError, OSError, ValueError, KeyError, TypeError) as error:
         print(f"::error::Could not record CLA acceptance: {error}")
         return 1
-    return 0
 
 
 if __name__ == "__main__":

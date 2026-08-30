@@ -8,10 +8,15 @@ import subprocess
 import sys
 
 CLA_VERSION = "1.0"
-STATUS_CONTEXT = "CLA"
+CLA_STATEMENT = (
+    "I have read and agree to the IceGraph Individual Contributor License Agreement, "
+    f"Harmony HA-CLA-I-ANY version {CLA_VERSION}, "
+    "and I confirm that I have authority to submit my contribution."
+)
 RECORDS_BRANCH = "cla-records"
+STATUS_CONTEXT = "CLA"
 EXEMPT_LOGINS = {"yanivzalach"}
-SIGNER_FIELDS = {
+RECORD_FIELDS = {
     "github_login",
     "github_user_id",
     "cla_version",
@@ -24,156 +29,153 @@ SIGNER_FIELDS = {
 }
 
 
-def statement(version):
-    return (
-        "I have read and agree to the IceGraph Individual Contributor License Agreement, "
-        f"Harmony HA-CLA-I-ANY version {version}, "
-        "and I confirm that I have authority to submit my contribution."
-    )
-
-
-def gh(args, check=True):
-    result = subprocess.run(["gh", "api", *args], capture_output=True, text=True, check=False)
-    if check and result.returncode:
+def github_api(arguments, allow_failure=False):
+    result = subprocess.run(["gh", "api", *arguments], capture_output=True, text=True, check=False)
+    if result.returncode and not allow_failure:
         raise RuntimeError(result.stderr.strip())
     return result
 
 
-def api_get(path):
-    return json.loads(gh([path]).stdout)
-
-
-def repo_get(repo, path):
-    return api_get(f"repos/{repo}/{path}")
-
-
-def repo_list(repo, path):
-    output = gh(["--paginate", f"repos/{repo}/{path}", "--jq", ".[]"]).stdout
-    return [json.loads(line) for line in output.splitlines() if line]
-
-
-def signer_identity(account):
-    if not account:
-        return None
-    login = account["login"].lower()
-    if account.get("type") == "Bot" or login in EXEMPT_LOGINS:
-        return None
-    return account["id"], login
-
-
-def contributors(pr, commits):
-    required = {}
-    unlinked = set()
-    identity = signer_identity(pr["user"])
-    if identity:
-        required[identity[0]] = identity[1]
-    for commit in commits:
-        if commit.get("author"):
-            identity = signer_identity(commit["author"])
-            if identity:
-                required[identity[0]] = identity[1]
-        else:
-            email = commit.get("commit", {}).get("author", {}).get("email")
-            unlinked.add((email or "commit with no author email").lower())
-    return required, unlinked
-
-
-def cla_hash():
-    with open("CLA.md", "rb") as file:
-        return hashlib.sha256(file.read()).hexdigest()
-
-
-def verify_signer_record(record, user_id):
-    missing = SIGNER_FIELDS - record.keys()
-    if missing:
-        raise RuntimeError(f"Incomplete signer record, missing: {', '.join(sorted(missing))}")
-    if record["github_user_id"] != user_id:
-        raise RuntimeError(f"CLA signer ID mismatch: {record['github_login']}")
-    if record["cla_version"] != CLA_VERSION:
-        raise RuntimeError(f"CLA version mismatch: {record['github_login']}")
-    if record["statement"] != statement(CLA_VERSION):
-        raise RuntimeError(f"CLA statement mismatch: {record['github_login']}")
-    if record["cla_sha256"] != cla_hash():
-        raise RuntimeError(f"CLA document hash mismatch: {record['github_login']}")
-    return user_id
-
-
-def permanent_signers(repo, required):
-    accepted = set()
-    for user_id in required:
-        path = f"signers/v{CLA_VERSION}/{user_id}.json"
-        result = gh(
-            [
-                "--method",
-                "GET",
-                f"repos/{repo}/contents/{path}",
-                "-f",
-                f"ref={RECORDS_BRANCH}",
-            ],
-            check=False,
-        )
-        if result.returncode:
-            if "HTTP 404" in result.stderr:
-                continue
-            raise RuntimeError(result.stderr.strip())
-        response = json.loads(result.stdout)
-        record = json.loads(base64.b64decode(response["content"]).decode())
-        try:
-            accepted.add(verify_signer_record(record, user_id))
-        except (RuntimeError, OSError, ValueError, KeyError, TypeError) as error:
-            print(f"::warning::Ignoring signer record: {error}")
-    return accepted
-
-
-def set_status(repo, sha, state, description, target_url):
-    gh(
-        [
-            "-X",
-            "POST",
-            f"repos/{repo}/statuses/{sha}",
-            "-f",
-            f"state={state}",
-            "-f",
-            f"context={STATUS_CONTEXT}",
-            "-f",
-            f"description={description[:140]}",
-            "-f",
-            f"target_url={target_url}",
-        ]
-    )
-
-
-def verify(repo, number, target_url):
-    pr = repo_get(repo, f"pulls/{number}")
-    commits = repo_list(repo, f"pulls/{number}/commits")
-    required, unlinked = contributors(pr, commits)
-    accepted = permanent_signers(repo, required)
-    missing = [required[user_id] for user_id in sorted(required.keys() - accepted)]
-    if unlinked:
-        problem = f"Commit email not linked to a GitHub account: {', '.join(sorted(unlinked))}"
-    elif missing:
-        problem = f"CLA not accepted by: {', '.join(missing)}"
-    else:
-        message = f"All contributors accepted CLA v{CLA_VERSION}."
-        set_status(repo, pr["head"]["sha"], "success", message, target_url)
-        print(message)
-        return 0
-    set_status(repo, pr["head"]["sha"], "failure", problem, target_url)
-    print(f"::error::{problem}")
-    print(f"Required statement: {statement(CLA_VERSION)}")
-    return 1
-
-
 def main():
     repo = os.environ["REPO"]
-    number = os.environ["PR_NUMBER"]
+    pr_number = os.environ["PR_NUMBER"]
     target_url = f"{os.environ['SERVER_URL']}/{repo}/actions/runs/{os.environ['RUN_ID']}"
+
     try:
-        return verify(repo, number, target_url)
+        # Read the PR and every commit, then identify each GitHub account that
+        # personally needs to accept the CLA.
+        pr = json.loads(github_api([f"repos/{repo}/pulls/{pr_number}"]).stdout)
+        commits_output = github_api(
+            [
+                "--paginate",
+                f"repos/{repo}/pulls/{pr_number}/commits",
+                "--jq",
+                ".[]",
+            ]
+        ).stdout
+        commits = [json.loads(line) for line in commits_output.splitlines() if line]
+
+        required = {}
+        unlinked_emails = set()
+        accounts = [pr["user"]]
+        for commit in commits:
+            if commit.get("author"):
+                accounts.append(commit["author"])
+            else:
+                email = commit.get("commit", {}).get("author", {}).get("email")
+                unlinked_emails.add((email or "commit with no author email").lower())
+
+        for account in accounts:
+            login = account["login"].lower()
+            if account.get("type") != "Bot" and login not in EXEMPT_LOGINS:
+                required[account["id"]] = login
+
+        # A stored record is valid only for this user, CLA version, exact
+        # statement, and exact contents of the current CLA document.
+        with open("CLA.md", "rb") as file:
+            expected_cla_hash = hashlib.sha256(file.read()).hexdigest()
+
+        accepted = set()
+        for user_id in required:
+            record_path = f"signers/v{CLA_VERSION}/{user_id}.json"
+            result = github_api(
+                [
+                    "--method",
+                    "GET",
+                    f"repos/{repo}/contents/{record_path}",
+                    "-f",
+                    f"ref={RECORDS_BRANCH}",
+                ],
+                allow_failure=True,
+            )
+            if result.returncode:
+                if "HTTP 404" in result.stderr:
+                    continue
+                raise RuntimeError(result.stderr.strip())
+
+            try:
+                response = json.loads(result.stdout)
+                record = json.loads(base64.b64decode(response["content"]).decode())
+            except (ValueError, KeyError, TypeError) as error:
+                print(f"::warning::Ignoring unreadable CLA record: {error}")
+                continue
+            missing_fields = RECORD_FIELDS - record.keys()
+            if missing_fields:
+                print(f"::warning::Ignoring incomplete CLA record, missing: {', '.join(sorted(missing_fields))}")
+                continue
+            if record["github_user_id"] != user_id:
+                print(f"::warning::Ignoring CLA signer ID mismatch: {record['github_login']}")
+                continue
+            if record["cla_version"] != CLA_VERSION:
+                print(f"::warning::Ignoring CLA version mismatch: {record['github_login']}")
+                continue
+            if record["statement"] != CLA_STATEMENT:
+                print(f"::warning::Ignoring CLA statement mismatch: {record['github_login']}")
+                continue
+            if record["cla_sha256"] != expected_cla_hash:
+                print(f"::warning::Ignoring CLA document hash mismatch: {record['github_login']}")
+                continue
+            accepted.add(user_id)
+
+        missing_logins = [required[user_id] for user_id in sorted(required.keys() - accepted)]
+        if unlinked_emails:
+            state = "failure"
+            description = f"Commit email not linked to a GitHub account: {', '.join(sorted(unlinked_emails))}"
+            exit_code = 1
+        elif missing_logins:
+            state = "failure"
+            description = f"CLA not accepted by: {', '.join(missing_logins)}"
+            exit_code = 1
+        else:
+            state = "success"
+            description = f"All contributors accepted CLA v{CLA_VERSION}."
+            exit_code = 0
+
+        # Publish one status after every check has completed.
+        github_api(
+            [
+                "-X",
+                "POST",
+                f"repos/{repo}/statuses/{pr['head']['sha']}",
+                "-f",
+                f"state={state}",
+                "-f",
+                f"context={STATUS_CONTEXT}",
+                "-f",
+                f"description={description[:140]}",
+                "-f",
+                f"target_url={target_url}",
+            ]
+        )
+        if exit_code:
+            print(f"::error::{description}")
+            print(f"Required statement: {CLA_STATEMENT}")
+        else:
+            print(description)
+        return exit_code
+
     except (RuntimeError, OSError, ValueError, KeyError, TypeError) as error:
+        # If possible, publish an error status instead of leaving an old result
+        # on the PR after an unexpected API or record failure.
         try:
-            sha = repo_get(repo, f"pulls/{number}")["head"]["sha"]
-            set_status(repo, sha, "error", f"CLA check could not run: {error}", target_url)
+            if "pr" not in locals():
+                pr = json.loads(github_api([f"repos/{repo}/pulls/{pr_number}"]).stdout)
+            error_description = f"CLA check could not run: {error}"
+            github_api(
+                [
+                    "-X",
+                    "POST",
+                    f"repos/{repo}/statuses/{pr['head']['sha']}",
+                    "-f",
+                    "state=error",
+                    "-f",
+                    f"context={STATUS_CONTEXT}",
+                    "-f",
+                    f"description={error_description[:140]}",
+                    "-f",
+                    f"target_url={target_url}",
+                ]
+            )
         except (RuntimeError, OSError, ValueError, KeyError, TypeError):
             pass
         print(f"::error::CLA check could not run: {error}")
