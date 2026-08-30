@@ -6,7 +6,7 @@ const TimelinePage = () => {
   const { table } = useSearch({ from: "/table" });
   const timeline = useTimelineData();
 
-  return <TimelineContent timeline={timeline} table={table} />;
+  return <TimelineContent key={table} timeline={timeline} table={table} />;
 };
 
 export default TimelinePage;
