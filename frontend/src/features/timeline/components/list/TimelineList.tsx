@@ -2,14 +2,7 @@ import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useTable } from "@tanstack/react-table";
 import { cn } from "../../../../shared/lib/cn";
-import {
-  UI_FIELD_LABEL_CLASS,
-  UI_TEXT_INPUT_CLASS,
-} from "../../../../uiTypography";
-import {
-  commitKindFilterSchema,
-  type CommitKindFilter,
-} from "../../lib/filterTimelineRows";
+import { UI_FIELD_LABEL_CLASS } from "../../../../uiTypography";
 import type { TimelineData, TimelineRow } from "../../lib/timelineRow";
 import { branchAccentsByName } from "../eventColor";
 import TimelineEmptyState from "../TimelineEmptyState";
@@ -21,10 +14,8 @@ interface TimelineListProps {
   timeline: TimelineData;
   rows: TimelineRow[];
   table: string | undefined;
-  kindFilter: CommitKindFilter;
-  onKindFilterChange: (kind: CommitKindFilter) => void;
-  branchFilter: string | null;
-  onBranchFilterChange: (branchName: string | null) => void;
+  isFiltering: boolean;
+  onClearFilters: () => void;
   selectedFilePath: string | null;
   onSelect: (filePath: string) => void;
 }
@@ -33,14 +24,12 @@ const TimelineList = ({
   timeline,
   rows,
   table,
-  kindFilter,
-  onKindFilterChange,
-  branchFilter,
-  onBranchFilterChange,
+  isFiltering,
+  onClearFilters,
   selectedFilePath,
   onSelect,
 }: TimelineListProps) => {
-  const { unreadableCommitCount, olderCommitCount } = timeline;
+  const { olderCommitCount } = timeline;
   const [nowMs] = useState(() => Date.now());
   const branchAccents = branchAccentsByName(timeline.rows);
 
@@ -51,72 +40,32 @@ const TimelineList = ({
     getRowId: (row) => row.filePath,
   });
 
-  const unreadableWord = unreadableCommitCount === 1 ? "commit" : "commits";
-  const unreadableBanner = unreadableCommitCount > 0 && (
-    <p className="px-3 pb-4 text-xs text-amber-400">
-      {`${unreadableCommitCount.toString()} ${unreadableWord} could not be read`}
-    </p>
-  );
-
   const hasEventRows = timeline.rows.some((row) => row.kind !== "boundary");
   if (!hasEventRows) {
+    return <TimelineEmptyState tableName={table} />;
+  }
+
+  const hasMatches = rows.length > 0;
+  if (!hasMatches) {
     return (
-      <div className="mx-auto max-w-5xl px-3">
-        {unreadableBanner}
-        <TimelineEmptyState tableName={table} />
-      </div>
+      <p className="flex items-baseline gap-1.5 px-6 py-6 text-sm text-slate-500">
+        <span>No commits match the filters.</span>
+        <button
+          type="button"
+          onClick={onClearFilters}
+          className="cursor-pointer text-accent hover:text-accent-dark hover:underline"
+        >
+          Clear filters
+        </button>
+      </p>
     );
   }
 
   const commitsWord = olderCommitCount === 1 ? "commit" : "commits";
   const olderHistoryLabel = `↓ ${olderCommitCount.toString()} earlier ${commitsWord} not loaded`;
-  const isFiltering = kindFilter !== "all" || branchFilter !== null;
-  const hasMatches = rows.length > 0;
-  const branchOptions = [...branchAccents.keys()];
 
   return (
     <div className="mx-auto max-w-5xl px-3">
-      {unreadableBanner}
-      <div className="mb-2 flex justify-end gap-2">
-        {branchOptions.length > 0 && (
-          <select
-            value={branchFilter ?? ""}
-            onChange={(event) => {
-              onBranchFilterChange(
-                event.target.value === "" ? null : event.target.value,
-              );
-            }}
-            aria-label="Filter by branch"
-            className={cn(UI_TEXT_INPUT_CLASS, "w-auto py-1 text-xs")}
-          >
-            <option value="">All branches</option>
-            {branchOptions.map((branchName) => (
-              <option key={branchName} value={branchName}>
-                {branchName}
-              </option>
-            ))}
-          </select>
-        )}
-        <select
-          value={kindFilter}
-          onChange={(event) => {
-            onKindFilterChange(
-              commitKindFilterSchema.parse(event.target.value),
-            );
-          }}
-          aria-label="Filter by commit kind"
-          className={cn(UI_TEXT_INPUT_CLASS, "w-auto py-1 text-xs")}
-        >
-          <option value="all">All commits</option>
-          <option value="writes">Data writes</option>
-          <option value="metadata">Metadata changes</option>
-        </select>
-      </div>
-      {!hasMatches && (
-        <p className="px-3 py-6 text-sm text-slate-500">
-          No commits match the filters.
-        </p>
-      )}
       <table className="w-full">
         <thead>
           {timelineTable.getHeaderGroups().map((headerGroup) => (

@@ -36,8 +36,8 @@ const ImpactLine = ({ segments, branchAccents }: ImpactLineProps) => {
           {segment.kind === "text" ? (
             segment.text
           ) : segment.kind === "ref" ? (
-            <>
-              {segment.refType}{" "}
+            <span className="inline-flex items-center gap-1">
+              {segment.refType}
               <span
                 className={cn(
                   CHIP_BASE_CLASS,
@@ -45,9 +45,9 @@ const ImpactLine = ({ segments, branchAccents }: ImpactLineProps) => {
                 )}
               >
                 {segment.name}
-              </span>{" "}
+              </span>
               {segment.action}
-            </>
+            </span>
           ) : segment.kind === "size" ? (
             <ImpactSize netBytes={segment.netBytes} />
           ) : (
