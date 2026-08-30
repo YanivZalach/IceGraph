@@ -112,7 +112,7 @@ Keep the bounded range loaded in both modes.
 
 - The commit list renders and the toolbar count matches the number of commit rows.
 - Clicking a commit opens its details panel; Down and Up move the selection; Escape closes the
-  panel.
+  panel, and the next arrow key reopens the commit that was selected.
 - The Writes and Metadata segments and the branch select narrow the list, and the count changes to
   `N of M commits`. Clearing the filters restores the full list.
 - The Snapshot and Metadata buttons in the details panel, when present, open Graph in a new tab
