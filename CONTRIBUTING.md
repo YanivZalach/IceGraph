@@ -22,6 +22,11 @@ their own GitHub account:
 
 > I have read and agree to the IceGraph Individual Contributor License Agreement, Harmony HA-CLA-I-ANY version 1.0, and I confirm that I have authority to submit my contribution.
 
+Automation permanently records a valid acceptance on the repository's
+`cla-records` branch. After it is recorded, later editing or deletion of the
+original comment does not revoke the acceptance. The same recorded acceptance
+covers later contributions under this CLA version.
+
 ## Third-party material
 
 Required by Section 3(d) of the [CLA](CLA.md). If any part of your contribution

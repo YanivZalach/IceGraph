@@ -107,18 +107,21 @@ request that contains Your Contribution:
 > authority to submit my contribution.
 
 Each pull request author and commit author must accept separately. No other
-person may accept on Your behalf, and the comment must remain published when
-the pull request is merged.
+person may accept on Your behalf. After Our automation records a valid
+acceptance, later editing or deletion of the GitHub comment does not revoke the
+acceptance or invalidate Our record of it.
 
 Acceptance is required once for this version of the Agreement. After We record
-Your acceptance in `.github/cla-signers.json`, it covers Your later
-Contributions without a further comment. If We publish a new version of this
-Agreement, a recorded acceptance of an earlier version does not carry over, and
-You accept the new version the same way.
+Your acceptance on the repository's `cla-records` branch, it covers Your later
+Contributions without a further comment. The permanent record includes Your
+GitHub user ID, the Agreement version and document hash, the exact acceptance
+statement, and the original comment metadata. If We publish a new version of
+this Agreement, a recorded acceptance of an earlier version does not carry
+over, and You accept the new version the same way.
 
-Your authenticated GitHub account, the comment, the pull request, the recorded
-entry, and this identified Agreement version form the electronic signature
-record.
+Your authenticated GitHub account, the acceptance event, the pull request, the
+permanent record, and this identified Agreement version form the electronic
+signature record.
 
 This Agreement is derived from the Project Harmony contributor agreement
 template at [harmonyagreements.org](https://www.harmonyagreements.org/). The

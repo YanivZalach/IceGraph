@@ -1,26 +1,26 @@
 """Require every contributor on a pull request to accept the IceGraph CLA."""
 
+import base64
+import hashlib
 import json
 import os
-import re
 import subprocess
 import sys
 
 CLA_VERSION = "1.0"
 STATUS_CONTEXT = "CLA"
-SIGNERS_PATH = ".github/cla-signers.json"
+RECORDS_BRANCH = "cla-records"
 EXEMPT_LOGINS = {"yanivzalach"}
-COMMENT_URL_RE = re.compile(
-    r"^https://github\.com/([^/]+/[^/]+)/pull/(\d+)#issuecomment-(\d+)$",
-    re.IGNORECASE,
-)
 SIGNER_FIELDS = {
     "github_login",
     "github_user_id",
     "cla_version",
+    "cla_sha256",
     "accepted_at",
     "pull_request",
+    "comment_id",
     "comment_url",
+    "statement",
 }
 
 
@@ -32,17 +32,15 @@ def statement(version):
     )
 
 
-def gh(args):
-    result = subprocess.run(
-        ["gh", "api", *args], capture_output=True, text=True, check=False
-    )
-    if result.returncode:
+def gh(args, check=True):
+    result = subprocess.run(["gh", "api", *args], capture_output=True, text=True, check=False)
+    if check and result.returncode:
         raise RuntimeError(result.stderr.strip())
-    return result.stdout
+    return result
 
 
 def api_get(path):
-    return json.loads(gh([path]))
+    return json.loads(gh([path]).stdout)
 
 
 def repo_get(repo, path):
@@ -50,7 +48,7 @@ def repo_get(repo, path):
 
 
 def repo_list(repo, path):
-    output = gh(["--paginate", f"repos/{repo}/{path}", "--jq", ".[]"])
+    output = gh(["--paginate", f"repos/{repo}/{path}", "--jq", ".[]"]).stdout
     return [json.loads(line) for line in output.splitlines() if line]
 
 
@@ -58,9 +56,7 @@ def signer_identity(account):
     if not account:
         return None
     login = account["login"].lower()
-    if account.get("type") == "Bot":
-        return None
-    if login in EXEMPT_LOGINS:
+    if account.get("type") == "Bot" or login in EXEMPT_LOGINS:
         return None
     return account["id"], login
 
@@ -68,11 +64,9 @@ def signer_identity(account):
 def contributors(pr, commits):
     required = {}
     unlinked = set()
-
     identity = signer_identity(pr["user"])
     if identity:
         required[identity[0]] = identity[1]
-
     for commit in commits:
         if commit.get("author"):
             identity = signer_identity(commit["author"])
@@ -81,54 +75,51 @@ def contributors(pr, commits):
         else:
             email = commit.get("commit", {}).get("author", {}).get("email")
             unlinked.add((email or "commit with no author email").lower())
-
     return required, unlinked
 
 
-def verify_signer_record(repo, record):
+def cla_hash():
+    with open("CLA.md", "rb") as file:
+        return hashlib.sha256(file.read()).hexdigest()
+
+
+def verify_signer_record(record, user_id):
     missing = SIGNER_FIELDS - record.keys()
     if missing:
-        raise RuntimeError(
-            f"Incomplete signer record, missing: {', '.join(sorted(missing))}"
-        )
-
-    match = COMMENT_URL_RE.fullmatch(record["comment_url"])
-    if not match or match.group(1).lower() != repo.lower():
-        raise RuntimeError(f"Invalid CLA comment URL: {record['comment_url']}")
-    if int(match.group(2)) != record["pull_request"]:
-        raise RuntimeError(f"CLA comment PR mismatch: {record['comment_url']}")
-
-    comment = repo_get(repo, f"issues/comments/{match.group(3)}")
-    expected_issue = (
-        f"https://api.github.com/repos/{repo}/issues/{record['pull_request']}"
-    )
-    if comment["issue_url"].lower() != expected_issue.lower():
-        raise RuntimeError(
-            f"CLA comment belongs to another PR: {record['comment_url']}"
-        )
-    if comment["html_url"] != record["comment_url"]:
-        raise RuntimeError(
-            f"CLA comment URL does not match GitHub: {record['comment_url']}"
-        )
-    if comment["user"]["id"] != record["github_user_id"]:
+        raise RuntimeError(f"Incomplete signer record, missing: {', '.join(sorted(missing))}")
+    if record["github_user_id"] != user_id:
         raise RuntimeError(f"CLA signer ID mismatch: {record['github_login']}")
-    if comment["created_at"] != record["accepted_at"]:
-        raise RuntimeError(f"CLA acceptance time mismatch: {record['github_login']}")
-    if comment["body"].strip() != statement(record["cla_version"]):
+    if record["cla_version"] != CLA_VERSION:
+        raise RuntimeError(f"CLA version mismatch: {record['github_login']}")
+    if record["statement"] != statement(CLA_VERSION):
         raise RuntimeError(f"CLA statement mismatch: {record['github_login']}")
-    return record["github_user_id"]
+    if record["cla_sha256"] != cla_hash():
+        raise RuntimeError(f"CLA document hash mismatch: {record['github_login']}")
+    return user_id
 
 
-def permanent_signers(repo):
-    with open(SIGNERS_PATH) as file:
-        registry = json.load(file)
-
+def permanent_signers(repo, required):
     accepted = set()
-    for record in registry.get("signers", []):
-        if record.get("cla_version") != CLA_VERSION:
-            continue
+    for user_id in required:
+        path = f"signers/v{CLA_VERSION}/{user_id}.json"
+        result = gh(
+            [
+                "--method",
+                "GET",
+                f"repos/{repo}/contents/{path}",
+                "-f",
+                f"ref={RECORDS_BRANCH}",
+            ],
+            check=False,
+        )
+        if result.returncode:
+            if "HTTP 404" in result.stderr:
+                continue
+            raise RuntimeError(result.stderr.strip())
+        response = json.loads(result.stdout)
+        record = json.loads(base64.b64decode(response["content"]).decode())
         try:
-            accepted.add(verify_signer_record(repo, record))
+            accepted.add(verify_signer_record(record, user_id))
         except (RuntimeError, OSError, ValueError, KeyError, TypeError) as error:
             print(f"::warning::Ignoring signer record: {error}")
     return accepted
@@ -155,16 +146,9 @@ def set_status(repo, sha, state, description, target_url):
 def verify(repo, number, target_url):
     pr = repo_get(repo, f"pulls/{number}")
     commits = repo_list(repo, f"pulls/{number}/commits")
-    comments = repo_list(repo, f"issues/{number}/comments")
-
     required, unlinked = contributors(pr, commits)
-    accepted = permanent_signers(repo) | {
-        comment["user"]["id"]
-        for comment in comments
-        if comment["body"].strip() == statement(CLA_VERSION)
-    }
+    accepted = permanent_signers(repo, required)
     missing = [required[user_id] for user_id in sorted(required.keys() - accepted)]
-
     if unlinked:
         problem = f"Commit email not linked to a GitHub account: {', '.join(sorted(unlinked))}"
     elif missing:
@@ -174,7 +158,6 @@ def verify(repo, number, target_url):
         set_status(repo, pr["head"]["sha"], "success", message, target_url)
         print(message)
         return 0
-
     set_status(repo, pr["head"]["sha"], "failure", problem, target_url)
     print(f"::error::{problem}")
     print(f"Required statement: {statement(CLA_VERSION)}")
@@ -184,17 +167,13 @@ def verify(repo, number, target_url):
 def main():
     repo = os.environ["REPO"]
     number = os.environ["PR_NUMBER"]
-    target_url = (
-        f"{os.environ['SERVER_URL']}/{repo}/actions/runs/{os.environ['RUN_ID']}"
-    )
+    target_url = f"{os.environ['SERVER_URL']}/{repo}/actions/runs/{os.environ['RUN_ID']}"
     try:
         return verify(repo, number, target_url)
     except (RuntimeError, OSError, ValueError, KeyError, TypeError) as error:
         try:
             sha = repo_get(repo, f"pulls/{number}")["head"]["sha"]
-            set_status(
-                repo, sha, "error", f"CLA check could not run: {error}", target_url
-            )
+            set_status(repo, sha, "error", f"CLA check could not run: {error}", target_url)
         except (RuntimeError, OSError, ValueError, KeyError, TypeError):
             pass
         print(f"::error::CLA check could not run: {error}")

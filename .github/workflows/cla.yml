@@ -9,18 +9,35 @@ on:
 permissions:
   contents: read
   pull-requests: read
-  issues: read
   statuses: write
 
-concurrency:
-  group: cla-${{ github.event.pull_request.number || github.event.issue.number }}
-  cancel-in-progress: true
-
 jobs:
+  record:
+    name: Record permanent acceptance
+    if: github.event_name == 'issue_comment' && github.event.issue.pull_request && (github.event.action == 'created' || github.event.action == 'edited')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - name: Record CLA acceptance
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 .github/scripts/record_cla.py
+
   verify:
     name: Update CLA status
-    if: github.event_name == 'pull_request_target' || github.event.issue.pull_request
+    needs: record
+    if: always() && (github.event_name == 'pull_request_target' || github.event.issue.pull_request)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      statuses: write
     steps:
       # Checks out the base branch, never the pull request head, so no untrusted
       # code runs with the elevated pull_request_target token.
