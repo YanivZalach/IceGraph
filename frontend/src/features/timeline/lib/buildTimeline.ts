@@ -36,7 +36,16 @@ const buildOldestRow = (
     file.snapshot_id === null ? undefined : snapshotsById.get(file.snapshot_id);
 
   if (ownSnapshot === undefined) {
-    return boundaryRow(file);
+    const hasUnknowableSnapshot = file.snapshot_id !== null;
+    const isHistoryCutOff = (file.pointed_metadata_log_count ?? 0) > 0;
+    if (hasUnknowableSnapshot || isHistoryCutOff) {
+      return boundaryRow(file);
+    }
+    return {
+      ...boundaryRow(file),
+      kind: "metadata-only",
+      title: "Start of history",
+    };
   }
 
   return {
