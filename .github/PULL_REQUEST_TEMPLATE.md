@@ -21,3 +21,7 @@ I have read and agree to the IceGraph Individual Contributor License Agreement, 
 Do not place the statement only in this pull request description. The automated
 `CLA` check accepts it only as a separate comment from each pull request author
 and commit author's own authenticated GitHub account.
+
+After `CLA acceptance recording` succeeds, push another commit to trigger the
+checks again, or ask a maintainer to rerun the failed `CLA verification`
+workflow so it reads the permanent acceptance record.

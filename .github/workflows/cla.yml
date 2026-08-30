@@ -1,13 +1,10 @@
-name: CLA automation
+name: CLA acceptance recording
 
 on:
   issue_comment:
     types: [created, edited]
 
-permissions:
-  contents: read
-  pull-requests: read
-  statuses: write
+permissions: {}
 
 jobs:
   record:
@@ -30,28 +27,3 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: python3 .github/scripts/record_cla.py
-
-  verify:
-    name: Update CLA status
-    needs: record
-    if: always() && needs.record.result != 'skipped'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
-      statuses: write
-    steps:
-      # Checks out the base branch, never the pull request head, so no untrusted
-      # code runs with the write-enabled issue_comment token.
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-
-      - name: Verify CLA acceptance
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
-          SERVER_URL: ${{ github.server_url }}
-          RUN_ID: ${{ github.run_id }}
-        run: python3 .github/scripts/check_cla.py

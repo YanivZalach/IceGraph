@@ -27,6 +27,10 @@ Automation permanently records a valid acceptance on the repository's
 original comment does not revoke the acceptance. The same recorded acceptance
 covers later contributions under this CLA version.
 
+After `CLA acceptance recording` succeeds, push another commit to trigger the
+checks again, or ask a maintainer to rerun the failed `CLA verification`
+workflow so it reads the permanent acceptance record.
+
 ## Third-party material
 
 Required by Section 3(d) of the [CLA](CLA.md). If any part of your contribution
