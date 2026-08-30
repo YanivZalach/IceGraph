@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useHotkey } from "@tanstack/react-hotkeys";
+import { useTableSpecs } from "../../specs/tableSpecs";
 import { selectionAfterArrowKey } from "../lib/timelineNavigation";
 import type { TimelineRow } from "../lib/timelineRow";
 
@@ -13,6 +14,7 @@ export const useTimelineSelection = (
   rows: TimelineRow[],
 ): TimelineSelection => {
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
+  const { detailsOpen, issuesOpen } = useTableSpecs();
 
   const handleSelect = (filePath: string) => {
     setSelectedFilePath((current) => (current === filePath ? null : filePath));
@@ -38,7 +40,8 @@ export const useTimelineSelection = (
   };
 
   useHotkey("Escape", clearSelection, {
-    enabled: selectedFilePath !== null,
+    enabled: selectedFilePath !== null && !detailsOpen && !issuesOpen,
+    conflictBehavior: "allow",
     stopPropagation: false,
     preventDefault: false,
   });
