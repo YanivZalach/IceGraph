@@ -1,5 +1,5 @@
-import { createColumnHelper, tableFeatures } from "@tanstack/table-core";
-import type { DisplayColumnDef } from "@tanstack/table-core";
+import { createColumnHelper, tableFeatures } from "@tanstack/react-table";
+import type { DisplayColumnDef } from "@tanstack/react-table";
 import type { TimelineRow } from "../../lib/timelineRow";
 import { displayBranchNameFor } from "../../lib/displayBranchName";
 import type { BranchAccent } from "../eventColor";
