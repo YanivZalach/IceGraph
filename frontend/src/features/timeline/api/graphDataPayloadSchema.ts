@@ -2,8 +2,8 @@ import { z } from "zod";
 import { tableMetadataSchema } from "./tableMetadataSchema";
 
 /**
- * The `/api/v1/graph-data` response, parsed straight from the unmodified response text so ids stay
- * strings and timestamps stay UTC.
+ * The `/api/v1/graph-data` response as the shared graph query delivers it: `shared/lib/api.ts`
+ * parses the response text with big integers kept as strings, so ids never lose precision.
  *
  * Field names throughout these schemas are the backend's own — the `snake_case` of its dataclasses
  * and the `kebab-case` of Iceberg's metadata format — so a validation error names the key the
