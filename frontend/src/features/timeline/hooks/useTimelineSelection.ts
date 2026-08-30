@@ -13,8 +13,12 @@ export const useTimelineSelection = (
   rows: TimelineRow[],
 ): TimelineSelection => {
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
+  const [rememberedFilePath, setRememberedFilePath] = useState<string | null>(
+    null,
+  );
 
   const handleSelect = (filePath: string) => {
+    setRememberedFilePath(filePath);
     setSelectedFilePath((current) => (current === filePath ? null : filePath));
   };
 
@@ -23,11 +27,17 @@ export const useTimelineSelection = (
   };
 
   const handleArrowKey = (key: "ArrowDown" | "ArrowUp") => {
-    const targetFilePath = selectionAfterArrowKey(rows, selectedFilePath, key);
+    const targetFilePath = selectionAfterArrowKey(
+      rows,
+      selectedFilePath,
+      rememberedFilePath,
+      key,
+    );
     setSelectedFilePath(targetFilePath);
     if (targetFilePath === null) {
       return;
     }
+    setRememberedFilePath(targetFilePath);
     const targetButton = document.querySelector(
       `[data-file-path="${CSS.escape(targetFilePath)}"]`,
     );
