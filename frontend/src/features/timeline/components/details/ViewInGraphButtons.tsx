@@ -17,8 +17,6 @@ const ViewInGraphButtons = ({
       {snapshotFilePath !== null && (
         <GraphLinkButton
           label="Snapshot"
-          isLoading={false}
-          isDisabled={false}
           onOpen={(event) => {
             viewInGraph(event, snapshotFilePath);
           }}
@@ -26,8 +24,6 @@ const ViewInGraphButtons = ({
       )}
       <GraphLinkButton
         label="Metadata"
-        isLoading={false}
-        isDisabled={false}
         onOpen={(event) => {
           viewInGraph(event, metadataFilePath);
         }}
