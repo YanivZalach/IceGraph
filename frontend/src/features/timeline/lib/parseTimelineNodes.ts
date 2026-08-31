@@ -30,7 +30,7 @@ export const parseTimelineNodes = (nodes: unknown[]): ParsedTimelineNodes => {
     ) {
       const metadataFile = metadataFileNodeSchema.safeParse(node);
       // An unreadable metadata file is skipped so its neighbors merge into one
-      // degraded row — the spec's rule for broken windows. Errored snapshots
+      // degraded row. Errored snapshots
       // stay: their row renders and the details panel shows the error banner.
       if (metadataFile.success && metadataFile.data.error == null) {
         metadataFiles.push(metadataFile.data);
