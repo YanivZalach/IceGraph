@@ -13,9 +13,8 @@ export const impactText = (text: string): ImpactSegment => ({
 });
 
 /**
- * Iceberg's snapshot summary is an open string map — engines add arbitrary keys — so no schema
- * types its entries (https://iceberg.apache.org/spec/#snapshots). A missing or non-numeric value
- * counts as zero.
+ * Iceberg's snapshot summary is an open string map — engines add arbitrary keys
+ * (https://iceberg.apache.org/spec/#snapshots) — so a missing or non-numeric value counts as zero.
  */
 const readSummaryCount = (summary: SnapshotSummary, key: string): number =>
   Number(summary[key]) || 0;

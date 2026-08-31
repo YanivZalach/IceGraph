@@ -11,10 +11,7 @@ const isPointedAtByAnyRef = (
 ): boolean =>
   Object.values(file.refs).some((ref) => ref["snapshot-id"] === snapshotId);
 
-/**
- * One commit gains one snapshot, so several gained ids should be impossible — but the code must
- * still pick one: the new current, else a ref target, else the newest.
- */
+/** One commit gains one snapshot; the fallback chain is defensive ordering, not expectation. */
 export const pickGainedSnapshotId = (
   previousFile: MetadataFileNode,
   currentFile: MetadataFileNode,

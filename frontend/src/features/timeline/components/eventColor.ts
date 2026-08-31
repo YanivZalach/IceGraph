@@ -1,6 +1,5 @@
 import type { TimelineRow } from "../lib/timelineRow";
 
-/** Details-panel title colors: published main writes, metadata-only commits, branch writes. */
 const WRITE_COLOR = "#1964B9";
 const METADATA_COLOR = "#6437D2";
 const BRANCH_COLOR = "#0EA5E9";
@@ -51,10 +50,7 @@ const MAIN_ACCENT: BranchAccent = {
   chip: "bg-blue-500/15 text-blue-400",
 };
 
-/**
- * Each branch gets the next palette color the first time it appears. main stays
- * unmarked on single-branch tables and gets a fixed blue once other branches exist.
- */
+/** main stays unmarked on single-branch tables and gets a fixed blue once other branches exist. */
 export const branchAccentsByName = (
   rows: TimelineRow[],
 ): ReadonlyMap<string, BranchAccent> => {
