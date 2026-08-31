@@ -46,7 +46,6 @@ export const snapshotNodeSchema = z.object({
   summary: z.record(z.string(), z.string()),
 });
 
-/** Routes a node to its schema; every other file type is ignored by this feature. */
 export const nodeTypeSchema = z.object({ type: z.string() });
 
 export type MetadataFileNode = z.infer<typeof metadataFileNodeSchema>;
