@@ -10,8 +10,7 @@ const SIZE_UNITS = [
 
 /**
  * The backend pre-formats every `*files-size` summary value as `"0.08203 GB"` — bytes divided by
- * 1024³ (backend/collectors/collect_snapshots.py:68). This reverses that so the timeline can show
- * a readable unit instead.
+ * 1024³ (backend/collectors/collect_snapshots.py:68).
  */
 export const parseBackendSizeToBytes = (
   rawSize: string | undefined,

@@ -1,7 +1,6 @@
 import { format, intlFormatDistance } from "date-fns";
 
-/** Length of `yyyy-MM-ddTHH:mm:ss.SSS`, where the backend's six fractional digits get cut. */
-const ISO_MILLISECOND_LENGTH = 23;
+const ISO_MILLISECOND_LENGTH = "yyyy-MM-ddTHH:mm:ss.SSS".length;
 
 const MILLISECONDS_PER_HOUR = 60 * 60 * 1000;
 const MILLISECONDS_PER_DAY = 24 * MILLISECONDS_PER_HOUR;
@@ -19,9 +18,8 @@ const ABSOLUTE_PATTERN = "MMM d, yyyy, HH:mm:ss.SSS XXX";
 
 /**
  * The backend stamps every timestamp as `yyyy-MM-dd HH:mm:ss.SSSSSS` in UTC with no zone
- * (backend/constants.py:10). Swapping in the `T`, trimming to milliseconds and adding `Z` makes it
- * real ISO, which every engine parses identically — unlike the raw string, whose parsing is
- * implementation-defined.
+ * (backend/constants.py:10); swapping in the `T`, trimming to milliseconds and adding `Z` makes
+ * it real ISO.
  */
 export const parseUtcTimestampToMillis = (
   rawTimestamp: string,

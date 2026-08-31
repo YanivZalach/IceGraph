@@ -4,8 +4,8 @@ import { optionalSnapshotIdSchema } from "./snapshotIdSchemas";
 import { snapshotReferenceSchema } from "./snapshotReferenceSchema";
 
 /**
- * The newest loaded metadata file's own contents, which hold the definitions every event's ids
- * point at — Iceberg keeps these arrays append-only, so older versions stay present in newer files.
+ * Iceberg keeps these arrays append-only, so the newest loaded file holds every definition the
+ * ids point at.
  */
 export const tableMetadataSchema = z.object({
   "table-name": z.string().nullish(),

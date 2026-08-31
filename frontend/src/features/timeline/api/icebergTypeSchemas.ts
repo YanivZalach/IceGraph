@@ -37,7 +37,6 @@ const icebergMapTypeSchema = z.object({
   },
 });
 
-/** A column is a primitive name (`"int"`, `"decimal(9,2)"`) or a nestable complex type. */
 export const icebergTypeSchema = z.union([
   z.string(),
   icebergStructTypeSchema,

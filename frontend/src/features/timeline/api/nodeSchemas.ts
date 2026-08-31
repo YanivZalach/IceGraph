@@ -11,15 +11,11 @@ const pointedSnapshotFileSchema = z.object({
   "manifest-list": z.string().nullish(),
 });
 
-/**
- * `error`/`warning` are optional only because the MSW mock omits them; the live backend always
- * sends both. TODO: add them to the mock nodes, then require them here.
- */
 const baseNodeFields = {
   file_path: z.string(),
   child_files: z.array(z.string()),
-  error: z.string().nullish(),
-  warning: z.string().nullish(),
+  error: z.string().nullable(),
+  warning: z.string().nullable(),
 };
 
 export const metadataFileNodeSchema = z.object({

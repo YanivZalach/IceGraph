@@ -2,9 +2,8 @@ import { z } from "zod";
 import { parseUtcTimestampToMillis } from "../lib/format/formatTimelineTime";
 
 /**
- * Timestamps are parsed here rather than downstream, so `timestamp` holds epoch milliseconds
- * everywhere in the feature. A file whose instant cannot be read fails validation and is skipped:
- * a row with no trustworthy time has nowhere to sit on a timeline.
+ * Parsed here so `timestamp` holds epoch milliseconds everywhere in the feature; a file whose
+ * instant cannot be read fails validation and is skipped.
  */
 export const utcTimestampSchema = z
   .string()
