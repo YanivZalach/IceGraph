@@ -20,7 +20,6 @@ const shortenHash = (value: string | undefined): string => {
   return LONG_HASH_PATTERN.test(value) ? formatShortId(value) : value;
 };
 
-/** The always-hidden keys, for rows where they are the only thing that changed. */
 export const describeIgnoredPropertyChanges = (
   previousProperties: TableProperties,
   currentProperties: TableProperties,

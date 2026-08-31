@@ -6,8 +6,8 @@ import { buildTimeline } from "../lib/buildTimeline";
 import type { TimelineData } from "../lib/timelineRow";
 
 /**
- * Reads the graph `TableSpecsProvider` already fetched. The request parameters must be built the
- * same way it builds them, or the differing query key starts a second collection job.
+ * The request parameters must be built the same way `TableSpecsProvider` builds them, or the
+ * differing query key starts a second collection job.
  */
 export const useTimelineData = (): TimelineData => {
   const search = useSearch({ from: "/table" });

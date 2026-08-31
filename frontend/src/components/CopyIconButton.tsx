@@ -6,10 +6,6 @@ interface CopyIconButtonProps {
   title?: string;
 }
 
-// Ported from JSX as-is, types only. This code is weird — hand-drawn SVGs
-// instead of lucide-react, class strings instead of cn(), and the "Copied!"
-// timer is never cleaned up. Out of scope to fix here, it goes with the
-// refactor: https://github.com/YanivZalach/IceGraph/issues/100
 const CopyIconButton = ({
   text,
   className = "",

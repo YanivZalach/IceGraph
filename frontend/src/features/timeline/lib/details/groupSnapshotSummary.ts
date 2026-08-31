@@ -15,7 +15,6 @@ const isTableAfter = (key: string): boolean => key.startsWith("total-");
 const isEngine = (key: string): boolean =>
   ENGINE_KEYS.has(key) || key.startsWith("engine-") || key.startsWith("spark.");
 
-/** Every key lands in exactly one group, so nothing the engine writes goes missing. */
 export const groupSnapshotSummary = (
   summary: SnapshotSummary,
 ): SummaryGroups => {
