@@ -11,7 +11,7 @@ import {
 } from "./groupSnapshotSummary";
 import {
   buildBeforeAfterRows,
-  pairChangeCounts,
+  buildChangeCounts,
   type BeforeAfterRow,
   type ChangeCountRow,
 } from "./summaryTables";
@@ -21,11 +21,6 @@ export interface DetailRowData {
   label: string;
   value: string;
   isCopyable?: boolean;
-}
-
-export interface ThisChangeData {
-  counts: ChangeCountRow[];
-  rest: DetailRowData[];
 }
 
 export interface MetadataFileData {
@@ -43,7 +38,8 @@ export interface EventDetailData {
   actionLink: string | null;
   snapshotFilePath: string | null;
   topRows: DetailRowData[];
-  thisChange: ThisChangeData;
+  changeCounts: ChangeCountRow[];
+  otherFields: DetailRowData[];
   tableState: BeforeAfterRow[];
   engine: DetailRowData[];
   metadataFile: MetadataFileData;
@@ -193,7 +189,7 @@ export const buildEventDetails = (
     row.snapshotId === null ? undefined : snapshotsById.get(row.snapshotId);
   const summary =
     snapshot === undefined ? null : groupSnapshotSummary(snapshot.summary);
-  const { paired, rest } = pairChangeCounts(summary?.thisChange ?? []);
+  const { counts, rest } = buildChangeCounts(summary?.thisChange ?? []);
 
   const parentSnapshot =
     snapshot?.parent_id == null
@@ -228,7 +224,8 @@ export const buildEventDetails = (
       ...snapshotRows(row, snapshot),
       ...eventRows(row, repointTarget),
     ],
-    thisChange: { counts: paired, rest: toRows(rest) },
+    changeCounts: counts,
+    otherFields: toRows(rest),
     tableState: buildBeforeAfterRows(
       summary?.tableAfter ?? [],
       parentSnapshot?.summary ?? null,

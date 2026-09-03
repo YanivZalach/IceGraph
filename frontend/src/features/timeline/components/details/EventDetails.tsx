@@ -16,8 +16,6 @@ interface EventDetailsProps {
 
 const EventDetails = ({ timeline, row }: EventDetailsProps) => {
   const details = buildEventDetails(timeline, row);
-  const hasThisChange =
-    details.thisChange.counts.length > 0 || details.thisChange.rest.length > 0;
 
   return (
     <div className="flex flex-col gap-4">
@@ -56,11 +54,16 @@ const EventDetails = ({ timeline, row }: EventDetailsProps) => {
           value={rowData.value}
         />
       ))}
-      {hasThisChange && (
+      {details.changeCounts.length > 0 && (
         <ChangeCountsSection
           title="This change"
-          counts={details.thisChange.counts}
-          rows={details.thisChange.rest}
+          counts={details.changeCounts}
+        />
+      )}
+      {details.otherFields.length > 0 && (
+        <CollapsibleTableSection
+          title="Other fields"
+          rows={details.otherFields}
         />
       )}
       {details.tableState.length > 0 && (
