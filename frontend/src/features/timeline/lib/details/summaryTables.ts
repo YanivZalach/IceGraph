@@ -16,9 +16,15 @@ export interface ChangeCountRow {
   removed: ChangeCountCell | null;
 }
 
+export interface ChangeValueRow {
+  label: string;
+  text: string | null;
+  isEmphasized: boolean;
+}
+
 export interface ChangeCounts {
   counts: ChangeCountRow[];
-  rest: SummaryEntry[];
+  rest: ChangeValueRow[];
 }
 
 const SIGN_BY_SIDE: Record<ChangeSide, string> = { added: "+", removed: "−" };
@@ -51,6 +57,12 @@ const countCell = (
     : { text: `${SIGN_BY_SIDE[side]}${text}`, emphasis: side };
 };
 
+const changeValueRow = ([label, value]: SummaryEntry): ChangeValueRow => ({
+  label,
+  text: value === "" ? null : humanizeValue(value, false),
+  isEmphasized: value !== "" && !isZeroValue(value),
+});
+
 // Iceberg spells the negative side either `deleted-` or `removed-`.
 export const buildChangeCounts = (entries: SummaryEntry[]): ChangeCounts => {
   const sidesByMetric = new Map<
@@ -82,7 +94,7 @@ export const buildChangeCounts = (entries: SummaryEntry[]): ChangeCounts => {
       added: countCell(sides.added, "added"),
       removed: countCell(sides.removed, "removed"),
     })),
-    rest,
+    rest: rest.map(changeValueRow),
   };
 };
 

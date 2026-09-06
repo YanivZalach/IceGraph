@@ -13,7 +13,7 @@ import {
   buildBeforeAfterRows,
   buildChangeCounts,
   type BeforeAfterRow,
-  type ChangeCountRow,
+  type ChangeCounts,
 } from "./summaryTables";
 import type { TimelineData, TimelineRow } from "../timelineRow";
 
@@ -38,8 +38,7 @@ export interface EventDetailData {
   actionLink: string | null;
   snapshotFilePath: string | null;
   topRows: DetailRowData[];
-  changeCounts: ChangeCountRow[];
-  otherFields: DetailRowData[];
+  thisChange: ChangeCounts;
   tableState: BeforeAfterRow[];
   engine: DetailRowData[];
   metadataFile: MetadataFileData;
@@ -189,7 +188,7 @@ export const buildEventDetails = (
     row.snapshotId === null ? undefined : snapshotsById.get(row.snapshotId);
   const summary =
     snapshot === undefined ? null : groupSnapshotSummary(snapshot.summary);
-  const { counts, rest } = buildChangeCounts(summary?.thisChange ?? []);
+  const thisChange = buildChangeCounts(summary?.thisChange ?? []);
 
   const parentSnapshot =
     snapshot?.parent_id == null
@@ -224,8 +223,7 @@ export const buildEventDetails = (
       ...snapshotRows(row, snapshot),
       ...eventRows(row, repointTarget),
     ],
-    changeCounts: counts,
-    otherFields: toRows(rest),
+    thisChange,
     tableState: buildBeforeAfterRows(
       summary?.tableAfter ?? [],
       parentSnapshot?.summary ?? null,
