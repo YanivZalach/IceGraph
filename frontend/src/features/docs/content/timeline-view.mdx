@@ -1,25 +1,25 @@
-A chronological list of every snapshot in your selected range. Each row shows when the snapshot was created, what operation produced it, and how many files and records changed.
+A git-log-style list of every commit in your selected range, newest first. Each row shows what happened in plain language (**Data added**, **Files compacted**, **Schema changed**, ...), the rows and files it added or removed as +/− chips, the snapshot it produced, and when.
 
-### Operation types
+### Reading the rail
 
-- **append** - new data was added to the table
+The line on the left is the commit rail: a **circle** marks a commit that produced a snapshot (a write), a **tick** marks a metadata-only change (schema, settings, branch and tag bookkeeping).
 
-- **overwrite** - new data was written, and any existing data in the affected partitions was replaced
+### Branches
 
-- **replace** - files were rewritten without changing the actual records (compaction, rewriting manifests, etc)
+When the range contains branches, every write carries a colored chip naming the branch it landed on — **main** included. A branch merge or fast-forward renders as **main moved to branch** with both names as chips. Single-branch tables stay chip-free.
 
-- **delete** - rows or files were removed from the table
+### Filtering
 
-Use the Timeline to pinpoint when a large write happened, spot unexpected deletes, or verify that a compaction job ran as expected.
+The toolbar above the list shows how many commits are loaded and holds two filters: an **All / Writes / Metadata** switch, and on multi-branch tables a branch picker. Filtering by a branch shows its whole story — its writes, its creation and deletion, and the moves that landed it on main. While filtering, the count reads **9 of 19 commits** so you always know rows are hidden.
 
-A red **Unknown Events** marker appears when metadata or snapshot data could not be read. Snapshots that simply fall outside the selected range are not flagged. It indicates that one or more events occurred in that part of the timeline, even when the exact events cannot be determined. The next readable event is compared with the previous readable metadata. Its details show the metadata changes, and when the snapshot changed they also show that snapshot's operation.
+### Keyboard
 
-### Zoom & pan
-
-Scroll the mouse wheel to zoom in and out (text and nodes scale together, like Graph view). Drag the timeline background to pan. Use horizontal trackpad scroll or Shift + wheel to pan sideways without zooming. **Fit Timeline** scales the full history to the viewport and centers it.
+**↑** / **↓** move the selection through commits (starting from the newest); **Esc** closes the details panel. After **Esc**, the next arrow key reopens the commit you were on rather than starting over.
 
 ### Details panel
 
-Click a timeline event to open its details in a panel on the right - the same panel used in Graph view. Drag the left-edge grip to widen it, use fullscreen to expand, and copy field values with the clipboard icon. Long JSON diffs are collapsed by default and can be expanded or collapsed with **▼** / **▲**.
+Click a commit (or press **↓**) to open its details in a resizable panel: what this change did (added/removed counts), the table state before and after it, engine info, the metadata file, refs, properties, and a raw metadata diff against the previous commit. Values that matter as ids carry a clipboard icon. Backend read errors and warnings for the commit appear as banners at the top.
 
-When the event's snapshot points at the job that wrote it, an **`action_link`** row links out to it, opening in a new tab.
+When the commit's snapshot points at the job that wrote it, an **`action_link`** row links out to it, opening in a new tab.
+
+The list is honest about its edges: a muted **N earlier commits not loaded** link at the bottom jumps to snapshot selection when the range is truncated, and commits the backend could not read are counted in an amber notice instead of silently disappearing. The bottom row is **Start of history** — the table's first surviving metadata file — when the full history is loaded and that file wrote no snapshot; when older commits exist beyond the cutoff, it is an italic _start of loaded range_ marker instead.

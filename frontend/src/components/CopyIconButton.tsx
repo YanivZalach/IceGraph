@@ -1,26 +1,37 @@
 import { useState } from "react";
 
-export default function CopyIconButton({
+interface CopyIconButtonProps {
+  text: string;
+  className?: string;
+  title?: string;
+}
+
+const CopyIconButton = ({
   text,
   className = "",
   title = "Copy value",
-}) {
+}: CopyIconButtonProps) => {
   const [copied, setCopied] = useState(false);
 
   if (!text) return null;
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(String(text));
+    void navigator.clipboard.writeText(text);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => {
+      setCopied(false);
+    }, 2000);
   };
 
   return (
     <button
       type="button"
       onClick={handleCopy}
-      onMouseDown={(e) => e.preventDefault()}
+      onMouseDown={(event) => {
+        event.preventDefault();
+      }}
       title={copied ? "Copied!" : title}
+      aria-label={copied ? "Copied!" : title}
       className={`p-1 rounded border border-edge bg-surface/90 text-slate-500 hover:text-slate-300 hover:border-slate-500 transition-colors cursor-pointer ${className}`}
     >
       {copied ? (
@@ -54,4 +65,6 @@ export default function CopyIconButton({
       )}
     </button>
   );
-}
+};
+
+export default CopyIconButton;

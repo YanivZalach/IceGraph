@@ -24,15 +24,15 @@ them.
 
 ## Profiles
 
-| Check | Full | MSW |
-| --- | --- | --- |
-| Home and catalog | Required | N/A, redirects to Timeline |
-| Snapshot Selection | Required | N/A, redirects to Timeline |
-| Full-range graph | Required | Required with fixed mock graph |
-| Bounded-range rendered data | Required | N/A, mock serves one fixed graph |
-| Table views and keyboard controls | Required | Required |
-| Cache restoration and Recompile | Required | N/A |
-| Docs | Required | Required |
+| Check                             | Full     | MSW                              |
+| --------------------------------- | -------- | -------------------------------- |
+| Home and catalog                  | Required | N/A, redirects to Timeline       |
+| Snapshot Selection                | Required | N/A, redirects to Timeline       |
+| Full-range graph                  | Required | Required with fixed mock graph   |
+| Bounded-range rendered data       | Required | N/A, mock serves one fixed graph |
+| Table views and keyboard controls | Required | Required                         |
+| Cache restoration and Recompile   | Required | N/A                              |
+| Docs                              | Required | Required                         |
 
 Use `PASS`, `FAIL`, `N/A`, `BLOCKED`, or `NOT RUN` for every result.
 
@@ -68,7 +68,7 @@ Snapshot Selection:
   in the URL and Timeline renders the loaded history.
 - Bounded range: select non-default Start and End values forming a strict subset, then Generate
   Graph. Both URL values match the selected IDs digit-for-digit, including IDs above `2^53`.
-- The bounded Timeline visibly contains fewer snapshot nodes than the full range and begins at the
+- The bounded Timeline visibly contains fewer commit rows than the full range and begins at the
   selected Start snapshot.
 - Metadata Current Snapshot equals the selected End snapshot.
 - FileTree treats the selected End snapshot as the latest available snapshot in the bounded range.
@@ -91,14 +91,13 @@ Keep the bounded range loaded in full mode and the fixed graph loaded in MSW mod
 
 ### Timeline
 
-- Timeline nodes and the legend render.
-- Selecting a node opens its details.
-- Metadata and Snapshot actions, when present, open Graph in a new tab with the intended node
-  selected and locked. Close the extra tab afterward.
-- `h` or Left and `l` or Right move between snapshots, including selecting the first or last node
-  when none is selected.
-- `j` and `k` scroll the panel, `f` toggles fullscreen, `r` fits the timeline, and Escape closes the
-  panel.
+- The commit list renders and the toolbar count matches the number of commit rows.
+- Clicking a commit opens its details panel; Down and Up move the selection; Escape closes the
+  panel, and the next arrow key reopens the commit that was selected.
+- The Writes and Metadata segments and the branch select narrow the list, and the count changes to
+  `N of M commits`. Clearing the filters restores the full list.
+- The Snapshot and Metadata buttons in the details panel, when present, open Graph in a new tab
+  with the intended node selected and locked. Close the extra tab afterward.
 
 ### Metadata
 

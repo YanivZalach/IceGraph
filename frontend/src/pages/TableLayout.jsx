@@ -186,17 +186,27 @@ export default function TableLayout() {
     sessionStorage.removeItem("last_graph_selection");
   }, []);
 
+  // Capture phase, so an open modal consumes Escape before bubbling
+  // listeners (like the Timeline's row selection) also act on it.
   useEffect(() => {
     const handleKey = (e) => {
       if (e.key === "Escape") {
+        const modalOpen = detailsOpen || issuesOpen;
         setDetailsOpen(false);
         setSelectionDetail(null);
         setIssuesOpen(false);
+        if (modalOpen) e.stopPropagation();
       }
     };
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [setDetailsOpen, setSelectionDetail, setIssuesOpen]);
+    window.addEventListener("keydown", handleKey, true);
+    return () => window.removeEventListener("keydown", handleKey, true);
+  }, [
+    detailsOpen,
+    issuesOpen,
+    setDetailsOpen,
+    setSelectionDetail,
+    setIssuesOpen,
+  ]);
 
   useEffect(() => {
     const hasErrors = errors && Object.keys(errors).length > 0;
