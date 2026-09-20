@@ -29,21 +29,40 @@ export const SpecRow = ({
   </tr>
 );
 
+export const SpecDiffMarker = ({
+  marker,
+  label,
+  tone,
+}: {
+  marker: string;
+  label: string;
+  tone?: string;
+}) => (
+  <span
+    className={cn(
+      "inline-block w-3 shrink-0 text-center font-mono text-xs text-slate-500",
+      tone,
+    )}
+    title={label}
+  >
+    <span aria-hidden="true">{marker}</span>
+    <span className="sr-only">{label}</span>
+  </span>
+);
+
 // Values render exactly as Iceberg records them. Changed values show the
 // previous value struck through beside the current one rather than being
 // merged or relabelled.
 export const SpecValue = ({
   value,
   previous,
-  isMono = true,
   tone,
 }: {
   value: ReactNode;
   previous?: ReactNode;
-  isMono?: boolean;
   tone?: string;
 }) => (
-  <span className={cn(isMono && "font-mono", "text-xs", tone)}>
+  <span className={cn("font-mono text-xs", tone)}>
     {value}
     {previous !== undefined && previous !== null && previous !== value && (
       <span className="ml-2 text-amber-600 line-through">{previous}</span>

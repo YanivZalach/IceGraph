@@ -3,6 +3,7 @@ import {
   TableSpecsContext,
   resolveSpecSelection,
   type SpecSelection,
+  type SpecView,
 } from "../features/table/tableSpecs";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useRouterState, useSearch } from "@tanstack/react-router";
@@ -52,6 +53,7 @@ export const TableSpecsProvider = ({ children }: TableSpecsProviderProps) => {
       ? { kind: specKind, id: specId }
       : null;
   const detailsOpen = search.specs === "open" || selection !== null;
+  const specView: SpecView = search.spec_view === "diff" ? "diff" : "full";
   const selectionDetail = resolveSpecSelection(
     graphQuery.data?.metadata,
     selection,
@@ -70,6 +72,7 @@ export const TableSpecsProvider = ({ children }: TableSpecsProviderProps) => {
       spec_id?: string;
     },
     isReplacing: boolean,
+    clearView = false,
   ): void => {
     void navigate({
       to: ".",
@@ -78,6 +81,7 @@ export const TableSpecsProvider = ({ children }: TableSpecsProviderProps) => {
         delete carried.specs;
         delete carried.spec_kind;
         delete carried.spec_id;
+        if (clearView) delete carried.spec_view;
         return { ...carried, ...next };
       },
       replace: isReplacing,
@@ -88,10 +92,22 @@ export const TableSpecsProvider = ({ children }: TableSpecsProviderProps) => {
     setSpecSearch({ specs: "open" }, true);
   };
   const setDetailsOpen = (isOpen: boolean): void => {
-    setSpecSearch(isOpen ? { specs: "open" } : {}, !isOpen);
+    setSpecSearch(isOpen ? { specs: "open" } : {}, !isOpen, !isOpen);
   };
   const openSpec = (next: SpecSelection): void => {
     setSpecSearch({ spec_kind: next.kind, spec_id: String(next.id) }, false);
+  };
+  const setSpecView = (view: SpecView): void => {
+    void navigate({
+      to: ".",
+      search: (previous: Record<string, unknown>) => {
+        const next = { ...previous };
+        if (view === "diff") next.spec_view = "diff";
+        else delete next.spec_view;
+        return next;
+      },
+      replace: true,
+    });
   };
   const [issuesOpen, setIssuesOpen] = useState(false);
   const errors = isTablePage ? (graphQuery.data?.errors ?? {}) : {};
@@ -116,6 +132,8 @@ export const TableSpecsProvider = ({ children }: TableSpecsProviderProps) => {
         unresolvedSelection,
         clearSpecSelection,
         openSpec,
+        specView,
+        setSpecView,
         graphQuery,
         collectionStages: graphProgressQuery.data,
         rebuildGraph,

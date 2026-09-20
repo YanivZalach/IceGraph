@@ -19,6 +19,8 @@ export interface SpecSelection {
   id: IcebergInteger;
 }
 
+export type SpecView = "full" | "diff";
+
 export type SpecDetail =
   | { type: "schema"; id: IcebergInteger; label: string; data: TableSchema }
   | {
@@ -63,6 +65,38 @@ export const resolveSpecSelection = (
   return data ? { type: kind, id: data["order-id"], label, data } : null;
 };
 
+const integerValue = (value: unknown): bigint | null => {
+  if (typeof value !== "string" && typeof value !== "number") return null;
+  try {
+    return BigInt(value);
+  } catch {
+    return null;
+  }
+};
+
+export const findPreviousSpec = <T extends Record<string, unknown>>(
+  items: readonly T[],
+  selected: T,
+  idKey: keyof T,
+): T | null => {
+  const selectedId = integerValue(selected[idKey]);
+  if (selectedId === null) return null;
+  let previous: T | null = null;
+  let previousId: bigint | null = null;
+  items.forEach((item) => {
+    const itemId = integerValue(item[idKey]);
+    if (
+      itemId !== null &&
+      itemId < selectedId &&
+      (previousId === null || itemId > previousId)
+    ) {
+      previous = item;
+      previousId = itemId;
+    }
+  });
+  return previous;
+};
+
 export interface TableSpecsState {
   detailsOpen: boolean;
   setDetailsOpen: (isOpen: boolean) => void;
@@ -70,6 +104,8 @@ export interface TableSpecsState {
   unresolvedSelection: SpecSelection | null;
   clearSpecSelection: () => void;
   openSpec: (selection: SpecSelection) => void;
+  specView: SpecView;
+  setSpecView: (view: SpecView) => void;
   graphQuery: UseQueryResult<GraphData>;
   collectionStages: Record<string, string> | null | undefined;
   rebuildGraph: () => Promise<void>;

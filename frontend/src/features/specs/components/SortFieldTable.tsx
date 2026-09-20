@@ -3,6 +3,7 @@ import {
   SPEC_CELL_CLASS,
   SPEC_HEAD_CLASS,
   SPEC_TABLE_CLASS,
+  SpecDiffMarker,
   SpecHeaderCell,
   SpecRow,
   SpecSourceColumn,
@@ -21,7 +22,7 @@ interface SortFieldTableProps {
 
 const SortFieldTable = ({ rows, columnNames }: SortFieldTableProps) => {
   if (rows.length === 0)
-    return <p className="text-sm italic text-slate-400">Unsorted.</p>;
+    return <p className="px-5 py-4 text-sm italic text-slate-400">Unsorted.</p>;
   return (
     <div className="overflow-x-auto">
       <table className={SPEC_TABLE_CLASS}>
@@ -54,47 +55,61 @@ const SortFieldTable = ({ rows, columnNames }: SortFieldTableProps) => {
           </tr>
         </thead>
         <tbody>
-          {rows.map(({ status, field, previous }, index) => (
-            <SpecRow
-              key={`${String(field["source-id"] ?? "none")}.${String(index)}`}
-              status={status}
-            >
-              <td className={`${SPEC_CELL_CLASS} font-mono text-xs`}>
-                <span className="text-slate-400">
-                  {(status === null ? null : SPEC_ROW_MARKER[status]) ??
-                    index + 1}
-                </span>
-              </td>
-              <td className={SPEC_CELL_CLASS}>
-                <SpecSourceColumn
-                  columnNames={columnNames}
-                  sourceId={field["source-id"]}
-                  previousSourceId={previous?.["source-id"]}
-                />
-              </td>
-              <td className={SPEC_CELL_CLASS}>
-                <SpecValue
-                  value={field.transform ?? "—"}
-                  previous={previous?.transform}
-                  tone="text-accent-text"
-                />
-              </td>
-              <td className={SPEC_CELL_CLASS}>
-                <SpecValue
-                  value={field.direction ?? "—"}
-                  previous={previous?.direction}
-                  tone="text-ink"
-                />
-              </td>
-              <td className={SPEC_CELL_CLASS}>
-                <SpecValue
-                  value={field["null-order"] ?? "—"}
-                  previous={previous?.["null-order"]}
-                  tone="text-ink"
-                />
-              </td>
-            </SpecRow>
-          ))}
+          {rows.map(
+            (
+              { status, field, previous, position, previousPosition },
+              index,
+            ) => (
+              <SpecRow
+                key={`${String(field["source-id"] ?? "none")}.${String(index)}`}
+                status={status}
+              >
+                <td className={`${SPEC_CELL_CLASS} font-mono text-xs`}>
+                  <span className="flex items-center gap-2 text-slate-400">
+                    {status !== null && (
+                      <SpecDiffMarker
+                        marker={SPEC_ROW_MARKER[status] ?? ""}
+                        label={`${status} sort field`}
+                      />
+                    )}
+                    <SpecValue
+                      value={position}
+                      previous={previousPosition ?? undefined}
+                      tone="text-slate-400"
+                    />
+                  </span>
+                </td>
+                <td className={SPEC_CELL_CLASS}>
+                  <SpecSourceColumn
+                    columnNames={columnNames}
+                    sourceId={field["source-id"]}
+                    previousSourceId={previous?.["source-id"]}
+                  />
+                </td>
+                <td className={SPEC_CELL_CLASS}>
+                  <SpecValue
+                    value={field.transform ?? "?"}
+                    previous={previous?.transform}
+                    tone="text-accent-text"
+                  />
+                </td>
+                <td className={SPEC_CELL_CLASS}>
+                  <SpecValue
+                    value={field.direction ?? "?"}
+                    previous={previous?.direction}
+                    tone="text-ink"
+                  />
+                </td>
+                <td className={SPEC_CELL_CLASS}>
+                  <SpecValue
+                    value={field["null-order"] ?? "?"}
+                    previous={previous?.["null-order"]}
+                    tone="text-ink"
+                  />
+                </td>
+              </SpecRow>
+            ),
+          )}
         </tbody>
       </table>
     </div>

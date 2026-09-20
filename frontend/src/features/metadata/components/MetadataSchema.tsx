@@ -96,7 +96,7 @@ const MetadataSchema = ({
         role="region"
         aria-label="Schema fields"
         className={cn(
-          "overflow-auto border-t border-edge px-5 py-3 [scrollbar-gutter:stable] focus-visible:outline-2 focus-visible:outline-accent",
+          "overflow-auto border-t border-edge [scrollbar-gutter:stable] focus-visible:outline-2 focus-visible:outline-accent",
           !isExpanded && "max-h-96",
         )}
       >

@@ -6,34 +6,63 @@ import type {
   SchemaDiffStatus,
 } from "../schemaDiff";
 import { formatUnknownType } from "../schemaModel";
+import SchemaCollectionMember from "./SchemaCollectionMember";
 import SchemaDiffValue from "./SchemaDiffValue";
 import SchemaTypeView from "./SchemaTypeView";
+import SchemaTypeBadge from "./SchemaTypeBadge";
 
 interface SchemaDiffTypeViewProps {
   typeDiff: SchemaTypeDiff;
   renderNestedFields: (fields: SchemaFieldDiff[]) => ReactNode;
 }
 
-const formatId = (id: string | null): string =>
-  id === null ? "ID unknown" : `ID ${id}`;
+const formatId = (id: string | null): string => id ?? "?";
 
 const formatRequired = (isRequired: boolean | null): string =>
   isRequired === null ? "unknown" : isRequired ? "required" : "optional";
 
-const typeBadge = (label: string, status: SchemaDiffStatus): ReactNode => (
-  <span
-    className={cn(
-      "w-fit rounded px-2 py-0.5 font-mono text-xs",
-      label === "struct" && "bg-violet-900/30 text-violet-400",
-      label === "list" && "bg-amber-900/40 text-amber-400",
-      label === "map" && "bg-emerald-900/40 text-emerald-400",
-      status === "added" && "text-green-400",
-      status === "removed" && "text-red-400 line-through",
-    )}
-  >
-    {label}
-  </span>
-);
+const badgeTone = (status: SchemaDiffStatus): string | undefined => {
+  if (status === "added") return "text-green-400";
+  if (status === "removed") return "text-red-400 line-through";
+  return undefined;
+};
+
+const primitiveDiff = (
+  before: string | null,
+  after: string | null,
+  status: SchemaDiffStatus,
+): ReactNode => {
+  const beforeValue = before ?? "unknown";
+  const afterValue = after ?? "unknown";
+  if (status === "added") {
+    return (
+      <SchemaTypeBadge kind="primitive" className="text-green-400">
+        {afterValue}
+      </SchemaTypeBadge>
+    );
+  }
+  if (status === "removed") {
+    return (
+      <SchemaTypeBadge kind="primitive" className="text-red-400 line-through">
+        {beforeValue}
+      </SchemaTypeBadge>
+    );
+  }
+  if (beforeValue !== afterValue) {
+    return (
+      <span className="flex flex-wrap items-center gap-2">
+        <SchemaTypeBadge kind="primitive" className="text-red-400 line-through">
+          {beforeValue}
+        </SchemaTypeBadge>
+        <span className="text-slate-500">→</span>
+        <SchemaTypeBadge kind="primitive" className="text-green-400">
+          {afterValue}
+        </SchemaTypeBadge>
+      </span>
+    );
+  }
+  return <SchemaTypeBadge kind="primitive">{afterValue}</SchemaTypeBadge>;
+};
 
 const SchemaDiffTypeView = ({
   typeDiff,
@@ -41,14 +70,7 @@ const SchemaDiffTypeView = ({
 }: SchemaDiffTypeViewProps) => {
   switch (typeDiff.kind) {
     case "primitive":
-      return (
-        <SchemaDiffValue
-          label="Type"
-          before={typeDiff.before ?? "unknown"}
-          after={typeDiff.after ?? "unknown"}
-          status={typeDiff.status}
-        />
-      );
+      return primitiveDiff(typeDiff.before, typeDiff.after, typeDiff.status);
     case "unknown":
       return (
         <div className="grid gap-2">
@@ -91,26 +113,35 @@ const SchemaDiffTypeView = ({
     case "struct":
       return (
         <div className="flex flex-col gap-2">
-          {typeBadge("struct", typeDiff.status)}
+          <SchemaTypeBadge kind="struct" className={badgeTone(typeDiff.status)}>
+            struct
+          </SchemaTypeBadge>
           {renderNestedFields(typeDiff.fields)}
         </div>
       );
     case "list":
       return (
         <div className="flex flex-col gap-2">
-          {typeBadge("list", typeDiff.status)}
+          <SchemaTypeBadge kind="list" className={badgeTone(typeDiff.status)}>
+            list
+          </SchemaTypeBadge>
           <div className="ml-3 flex flex-col gap-2 border-l-2 border-edge py-1 pl-4">
-            <SchemaDiffValue
-              label="Element"
-              before={formatId(typeDiff.beforeElementId)}
-              after={formatId(typeDiff.afterElementId)}
-              status={typeDiff.status}
-            />
-            <SchemaDiffValue
-              label="Required"
-              before={formatRequired(typeDiff.beforeIsElementRequired)}
-              after={formatRequired(typeDiff.afterIsElementRequired)}
-              status={typeDiff.status}
+            <SchemaCollectionMember
+              id={
+                <SchemaDiffValue
+                  before={formatId(typeDiff.beforeElementId)}
+                  after={formatId(typeDiff.afterElementId)}
+                  status={typeDiff.status}
+                />
+              }
+              name="element"
+              requiredness={
+                <SchemaDiffValue
+                  before={formatRequired(typeDiff.beforeIsElementRequired)}
+                  after={formatRequired(typeDiff.afterIsElementRequired)}
+                  status={typeDiff.status}
+                />
+              }
             />
             <SchemaDiffTypeView
               typeDiff={typeDiff.element}
@@ -122,14 +153,20 @@ const SchemaDiffTypeView = ({
     case "map":
       return (
         <div className="flex flex-col gap-2">
-          {typeBadge("map", typeDiff.status)}
+          <SchemaTypeBadge kind="map" className={badgeTone(typeDiff.status)}>
+            map
+          </SchemaTypeBadge>
           <div className="ml-3 flex flex-col gap-4 border-l-2 border-edge py-1 pl-4">
             <div className="flex flex-col gap-2">
-              <SchemaDiffValue
-                label="Key"
-                before={formatId(typeDiff.beforeKeyId)}
-                after={formatId(typeDiff.afterKeyId)}
-                status={typeDiff.status}
+              <SchemaCollectionMember
+                id={
+                  <SchemaDiffValue
+                    before={formatId(typeDiff.beforeKeyId)}
+                    after={formatId(typeDiff.afterKeyId)}
+                    status={typeDiff.status}
+                  />
+                }
+                name="key"
               />
               <SchemaDiffTypeView
                 typeDiff={typeDiff.key}
@@ -137,17 +174,22 @@ const SchemaDiffTypeView = ({
               />
             </div>
             <div className="flex flex-col gap-2">
-              <SchemaDiffValue
-                label="Value"
-                before={formatId(typeDiff.beforeValueId)}
-                after={formatId(typeDiff.afterValueId)}
-                status={typeDiff.status}
-              />
-              <SchemaDiffValue
-                label="Required"
-                before={formatRequired(typeDiff.beforeIsValueRequired)}
-                after={formatRequired(typeDiff.afterIsValueRequired)}
-                status={typeDiff.status}
+              <SchemaCollectionMember
+                id={
+                  <SchemaDiffValue
+                    before={formatId(typeDiff.beforeValueId)}
+                    after={formatId(typeDiff.afterValueId)}
+                    status={typeDiff.status}
+                  />
+                }
+                name="value"
+                requiredness={
+                  <SchemaDiffValue
+                    before={formatRequired(typeDiff.beforeIsValueRequired)}
+                    after={formatRequired(typeDiff.afterIsValueRequired)}
+                    status={typeDiff.status}
+                  />
+                }
               />
               <SchemaDiffTypeView
                 typeDiff={typeDiff.value}

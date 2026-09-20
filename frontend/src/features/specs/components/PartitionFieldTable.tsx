@@ -3,6 +3,7 @@ import {
   SPEC_CELL_CLASS,
   SPEC_HEAD_CLASS,
   SPEC_TABLE_CLASS,
+  SpecDiffMarker,
   SpecHeaderCell,
   SpecRow,
   SpecSourceColumn,
@@ -24,7 +25,9 @@ const PartitionFieldTable = ({
   columnNames,
 }: PartitionFieldTableProps) => {
   if (rows.length === 0)
-    return <p className="text-sm italic text-slate-400">Unpartitioned.</p>;
+    return (
+      <p className="px-5 py-4 text-sm italic text-slate-400">Unpartitioned.</p>
+    );
   return (
     <div className="overflow-x-auto">
       <table className={SPEC_TABLE_CLASS}>
@@ -58,11 +61,18 @@ const PartitionFieldTable = ({
               status={status}
             >
               <td className={`${SPEC_CELL_CLASS} font-mono text-xs`}>
-                <span className="text-slate-400">
-                  {(status === null ? null : SPEC_ROW_MARKER[status]) ??
-                    (field["field-id"] === undefined
-                      ? "—"
-                      : String(field["field-id"]))}
+                <span className="flex items-center gap-2 text-slate-400">
+                  {status !== null && (
+                    <SpecDiffMarker
+                      marker={SPEC_ROW_MARKER[status] ?? ""}
+                      label={`${status} partition field`}
+                    />
+                  )}
+                  <span>
+                    {field["field-id"] === undefined
+                      ? "?"
+                      : String(field["field-id"])}
+                  </span>
                 </span>
               </td>
               <td className={SPEC_CELL_CLASS}>
@@ -74,14 +84,14 @@ const PartitionFieldTable = ({
               </td>
               <td className={SPEC_CELL_CLASS}>
                 <SpecValue
-                  value={field.transform ?? "—"}
+                  value={field.transform ?? "?"}
                   previous={previous?.transform}
                   tone="text-accent-text"
                 />
               </td>
               <td className={SPEC_CELL_CLASS}>
                 <SpecValue
-                  value={field.name ?? "—"}
+                  value={field.name ?? "?"}
                   previous={previous?.name}
                   tone="text-ink"
                 />

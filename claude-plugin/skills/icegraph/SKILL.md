@@ -218,9 +218,12 @@ link straight to one schema, partition spec, or sort order:
 - `specs=open` opens the panel with no definition selected.
 - `spec_kind=schema|partition|order` with `spec_id=<id>` opens that definition directly. Both
   are required together; `spec_kind` alone is ignored.
+- `spec_view=diff` opens the selected definition compared with its preceding version. When no
+  preceding version exists, the panel shows Full while keeping the Diff preference for the next
+  compatible selection.
 
 ```
-<base_url>/table/metadata?table=<uri-encoded database.table>&start_snapshot_id=<id>&end_snapshot_id=<id>&spec_kind=schema&spec_id=<schema id>
+<base_url>/table/metadata?table=<uri-encoded database.table>&start_snapshot_id=<id>&end_snapshot_id=<id>&spec_kind=schema&spec_id=<schema id>&spec_view=diff
 ```
 
 - Take `spec_id` from the metadata a `graph` command returns (`schemas[].schema-id`,

@@ -1,5 +1,6 @@
 export interface IcebergSchema {
   fields: IcebergSchemaField[];
+  identifierFieldIds: string[];
 }
 
 export interface IcebergSchemaField {
@@ -61,6 +62,14 @@ const parseId = (value: unknown): string | null => {
 
   return null;
 };
+
+const parseIds = (value: unknown): string[] =>
+  Array.isArray(value)
+    ? value.flatMap((id) => {
+        const parsedId = parseId(id);
+        return parsedId === null ? [] : [parsedId];
+      })
+    : [];
 
 const parseRequired = (value: unknown): boolean | null =>
   typeof value === "boolean" ? value : null;
@@ -127,6 +136,7 @@ const parseType = (value: unknown): IcebergType => {
 
 export const parseIcebergSchema = (value: unknown): IcebergSchema => ({
   fields: parseFields(readProperty(value, "fields")),
+  identifierFieldIds: parseIds(readProperty(value, "identifier-field-ids")),
 });
 
 export const formatUnknownType = (value: unknown): string => {

@@ -37,6 +37,7 @@ export const tableSearchSchema = z.looseObject({
   specs: z.literal("open").optional(),
   spec_kind: z.enum(["schema", "partition", "order"]).optional(),
   spec_id: z.string().optional(),
+  spec_view: z.literal("diff").optional(),
 });
 
 export const graphSearchSchema = tableSearchSchema.extend({

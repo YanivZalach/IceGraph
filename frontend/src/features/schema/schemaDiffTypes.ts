@@ -70,10 +70,14 @@ export interface SchemaFieldDiff {
   before: IcebergSchemaField | null;
   after: IcebergSchemaField | null;
   isNameChanged: boolean;
+  isDocChanged: boolean;
   isRequiredChanged: boolean;
   type: SchemaTypeDiff;
 }
 
 export interface SchemaDiff {
   fields: SchemaFieldDiff[];
+  beforeIdentifierFieldIds: string[];
+  afterIdentifierFieldIds: string[];
+  areIdentifierFieldsChanged: boolean;
 }

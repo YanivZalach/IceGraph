@@ -18,11 +18,14 @@ import SortFieldTable from "../features/specs/components/SortFieldTable";
 import { diffSpecRows, plainSpecRows } from "../features/specs/specFieldRows";
 import SchemaDiffView from "../features/schema/components/SchemaDiffView";
 import SchemaFieldList from "../features/schema/components/SchemaFieldList";
-import { findPreviousSchema } from "../features/schema/schemaHistory";
 import { parseIcebergSchema } from "../features/schema/schemaModel";
-import { schemaColumnNames } from "../features/metadata/metadataPresentation";
+import {
+  integerText,
+  schemaColumnNames,
+} from "../features/metadata/metadataPresentation";
 import {
   specSelectionLabel,
+  findPreviousSpec,
   useTableSpecs,
 } from "../features/table/tableSpecs";
 import {
@@ -33,25 +36,23 @@ import {
   MAIN_BRANCH_NAME,
   NODE_STYLE_MAP,
 } from "../graphConstants";
-import { diffFieldLists } from "../utils/diffFieldLists";
 
 const DETAIL_TYPE_CONFIG = {
   schema: {
     listKey: "schemas",
     idKey: "schema-id",
-    fieldIdKey: (f) => f["field-id"] ?? f.id,
     noPrevLabel: "No previous schema",
   },
   partition: {
     listKey: "partition-specs",
     idKey: "spec-id",
-    fieldIdKey: (f) => f["field-id"],
+    fieldIdentity: (field) => field["field-id"],
     noPrevLabel: "No previous partition spec",
   },
   order: {
     listKey: "sort-orders",
     idKey: "order-id",
-    fieldIdKey: (f) => f["source-id"],
+    fieldIdentity: (field) => field["source-id"],
     noPrevLabel: "No previous sort order",
   },
 };
@@ -179,6 +180,8 @@ export default function TableLayout() {
     unresolvedSelection,
     clearSpecSelection,
     openSpec,
+    specView,
+    setSpecView,
     graphQuery,
     collectionStages,
     issuesOpen,
@@ -244,14 +247,7 @@ export default function TableLayout() {
   }, [errors, warnings, setIssuesOpen]);
 
   const tableName = search.table || "";
-  const [showDiff, setShowDiff] = useState(false);
   const [specJsonCopied, setSpecJsonCopied] = useState(false);
-
-  // selectionDetail is rebuilt on every provider render, so the reset keys on
-  // the selection identity instead of the object reference.
-  useEffect(() => {
-    setShowDiff(false);
-  }, [selectionDetail?.type, selectionDetail?.id]);
 
   const selectedType = selectionDetail?.type;
   const selectedId = selectionDetail?.id;
@@ -391,7 +387,9 @@ export default function TableLayout() {
   const specColumnNames = schemaColumnNames(
     parseIcebergSchema(
       metadata?.schemas?.find(
-        (s) => s["schema-id"] === metadata["current-schema-id"],
+        (schema) =>
+          integerText(schema["schema-id"]) ===
+          integerText(metadata["current-schema-id"]),
       ),
     ),
   );
@@ -419,7 +417,7 @@ export default function TableLayout() {
             role="dialog"
             aria-modal="true"
             aria-label="Table Specification"
-            className="w-1/2 min-w-85 max-w-3xl bg-surface rounded-xl shadow-2xl border border-edge max-h-[80dvh] flex flex-col"
+            className="w-[90vw] max-w-6xl bg-surface rounded-xl shadow-2xl border border-edge max-h-[80dvh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-6 py-4 border-b border-edge shrink-0">
@@ -468,23 +466,21 @@ export default function TableLayout() {
                 (() => {
                   const config = DETAIL_TYPE_CONFIG[selectionDetail.type];
                   const list = metadata?.[config.listKey] ?? [];
-                  const idx = list.findIndex(
-                    (s) => s[config.idKey] === selectionDetail.id,
+                  const prevItem = findPreviousSpec(
+                    list,
+                    selectionDetail.data,
+                    config.idKey,
                   );
-                  const prevItem =
-                    selectionDetail.type === "schema"
-                      ? findPreviousSchema(list, selectionDetail.data)
-                      : idx > 0
-                        ? list[idx - 1]
-                        : null;
                   const hasPrev = prevItem !== null;
+                  const showDiff = specView === "diff" && hasPrev;
 
-                  const diff =
+                  const diffRows =
                     showDiff && hasPrev && selectionDetail.type !== "schema"
-                      ? diffFieldLists(
+                      ? diffSpecRows(
                           prevItem.fields,
                           selectionDetail.data.fields,
-                          config.fieldIdKey,
+                          config.fieldIdentity,
+                          selectionDetail.type === "order",
                         )
                       : null;
 
@@ -500,12 +496,16 @@ export default function TableLayout() {
                         <div className="flex items-center gap-2">
                           <div className="flex items-center gap-0">
                             <button
+                              type="button"
+                              aria-pressed={!showDiff}
                               className={`text-xs font-bold px-2 py-0.5 rounded-l-full border border-white/30 transition ${!showDiff ? "bg-white text-accent" : "bg-transparent text-white/70 hover:text-white"}`}
-                              onClick={() => setShowDiff(false)}
+                              onClick={() => setSpecView("full")}
                             >
                               Full
                             </button>
                             <button
+                              type="button"
+                              aria-pressed={showDiff}
                               disabled={!hasPrev}
                               title={
                                 !hasPrev
@@ -513,7 +513,7 @@ export default function TableLayout() {
                                   : "Show diff to previous version"
                               }
                               className={`text-xs font-bold px-2 py-0.5 rounded-r-full border border-white/30 transition ${showDiff ? "bg-white text-accent" : !hasPrev ? "bg-transparent text-white/30 cursor-not-allowed" : "bg-transparent text-white/70 hover:text-white cursor-pointer"}`}
-                              onClick={() => hasPrev && setShowDiff(true)}
+                              onClick={() => hasPrev && setSpecView("diff")}
                             >
                               Diff
                             </button>
@@ -538,7 +538,7 @@ export default function TableLayout() {
                           </button>
                         </div>
                       </div>
-                      <div className="px-4 py-3 max-h-[300px] overflow-y-auto">
+                      <div className="max-h-[300px] overflow-y-auto">
                         {!showDiff && selectionDetail.type === "schema" && (
                           <SchemaFieldList schema={selectionDetail.data} />
                         )}
@@ -563,18 +563,18 @@ export default function TableLayout() {
                             />
                           )}
                         {showDiff &&
-                          diff &&
+                          diffRows &&
                           selectionDetail.type === "partition" && (
                             <PartitionFieldTable
-                              rows={diffSpecRows(diff)}
+                              rows={diffRows}
                               columnNames={specColumnNames}
                             />
                           )}
                         {showDiff &&
-                          diff &&
+                          diffRows &&
                           selectionDetail.type === "order" && (
                             <SortFieldTable
-                              rows={diffSpecRows(diff)}
+                              rows={diffRows}
                               columnNames={specColumnNames}
                             />
                           )}
