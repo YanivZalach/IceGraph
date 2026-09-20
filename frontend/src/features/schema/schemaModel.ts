@@ -5,6 +5,7 @@ export interface IcebergSchema {
 export interface IcebergSchemaField {
   id: string | null;
   name: string;
+  doc?: string;
   isRequired: boolean | null;
   type: IcebergType;
 }
@@ -50,7 +51,7 @@ const readProperty = (value: unknown, property: string): unknown =>
   isUnknownRecord(value) ? value[property] : undefined;
 
 const parseId = (value: unknown): string | null => {
-  if (typeof value === "number" && Number.isFinite(value)) {
+  if (typeof value === "number" && Number.isSafeInteger(value)) {
     return String(value);
   }
 
@@ -75,9 +76,11 @@ const parseFields = (value: unknown): IcebergSchemaField[] => {
   return value.map((field) => {
     const id = parseFieldId(field);
     const name = readProperty(field, "name");
+    const doc = readProperty(field, "doc");
 
     return {
       id,
+      ...(typeof doc === "string" ? { doc } : {}),
       name: typeof name === "string" ? name : "Unnamed field",
       isRequired: parseRequired(readProperty(field, "required")),
       type: parseType(readProperty(field, "type")),

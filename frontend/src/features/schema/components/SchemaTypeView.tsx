@@ -48,11 +48,14 @@ const SchemaTypeView = ({ type }: SchemaTypeViewProps) => {
                     {field.name}
                   </span>
                   {field.isRequired === false && (
-                    <span className="text-xs font-bold uppercase text-slate-600">
+                    <span className="text-xs font-bold uppercase text-slate-400">
                       optional
                     </span>
                   )}
                 </div>
+                {field.doc && (
+                  <p className="ml-9 text-xs text-slate-400">{field.doc}</p>
+                )}
                 <div className="ml-9">
                   <SchemaTypeView type={field.type} />
                 </div>

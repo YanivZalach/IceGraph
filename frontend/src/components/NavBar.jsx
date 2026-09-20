@@ -9,7 +9,7 @@ import {
 } from "@tanstack/react-router";
 import logo from "../assets/icegraph.png";
 import CatalogTableList from "./CatalogTableList";
-import { useTableSpecs } from "../context/TableSpecsContext";
+import { useTableSpecs } from "../features/table/tableSpecs";
 import { catalogQueryOptions } from "../features/catalog/api/catalogQueries";
 import {
   BASE_PATH,
@@ -351,7 +351,7 @@ export default function NavBar() {
                   ? "bg-accent border-accent text-white"
                   : "border-slate-600 text-slate-400 hover:border-slate-400 hover:text-white"
               }`}
-              onClick={() => setDetailsOpen((p) => !p)}
+              onClick={() => setDetailsOpen(!detailsOpen)}
             >
               Specs
             </button>
@@ -483,7 +483,7 @@ export default function NavBar() {
                 : "border-slate-600 text-slate-400 hover:border-slate-400 hover:text-white"
             }`}
             onClick={() => {
-              setDetailsOpen((p) => !p);
+              setDetailsOpen(!detailsOpen);
               setMenuOpen(false);
             }}
           >

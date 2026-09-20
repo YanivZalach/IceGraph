@@ -37,6 +37,9 @@ const SchemaFieldList = ({ schema }: SchemaFieldListProps) => {
               <span />
             )}
           </div>
+          {field.doc && (
+            <p className="ml-16 mt-1 text-xs text-slate-400">{field.doc}</p>
+          )}
           <div className="ml-16 mt-3">
             <SchemaTypeView type={field.type} />
           </div>

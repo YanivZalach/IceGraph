@@ -13,14 +13,18 @@ import {
 } from "../uiTypography";
 
 import MetadataStructured from "../components/MetadataStructured";
-import PartitionSpecList, {
-  PartitionDiffView,
-} from "../components/PartitionSpecList";
+import PartitionFieldTable from "../features/specs/components/PartitionFieldTable";
+import SortFieldTable from "../features/specs/components/SortFieldTable";
+import { diffSpecRows, plainSpecRows } from "../features/specs/specFieldRows";
 import SchemaDiffView from "../features/schema/components/SchemaDiffView";
 import SchemaFieldList from "../features/schema/components/SchemaFieldList";
 import { findPreviousSchema } from "../features/schema/schemaHistory";
-import SortOrderList, { SortDiffView } from "../components/SortOrderList";
-import { useTableSpecs } from "../context/TableSpecsContext";
+import { parseIcebergSchema } from "../features/schema/schemaModel";
+import { schemaColumnNames } from "../features/metadata/metadataPresentation";
+import {
+  specSelectionLabel,
+  useTableSpecs,
+} from "../features/table/tableSpecs";
 import {
   BRANCH_CONNECTION_COLOR,
   DELETED_DATA_FILE_CONNECTION_COLOR,
@@ -38,7 +42,7 @@ const DETAIL_TYPE_CONFIG = {
     fieldIdKey: (f) => f["field-id"] ?? f.id,
     noPrevLabel: "No previous schema",
   },
-  spec: {
+  partition: {
     listKey: "partition-specs",
     idKey: "spec-id",
     fieldIdKey: (f) => f["field-id"],
@@ -172,7 +176,9 @@ export default function TableLayout() {
     detailsOpen,
     setDetailsOpen,
     selectionDetail,
-    setSelectionDetail,
+    unresolvedSelection,
+    clearSpecSelection,
+    openSpec,
     graphQuery,
     collectionStages,
     issuesOpen,
@@ -181,6 +187,38 @@ export default function TableLayout() {
     warnings,
   } = useTableSpecs();
   const detailPanelRef = useRef(null);
+  const specsDialogRef = useRef(null);
+
+  useEffect(() => {
+    if (!detailsOpen) return;
+    const previousFocus = document.activeElement;
+    const dialog = specsDialogRef.current;
+    const focusable = () => [
+      ...(dialog?.querySelectorAll(
+        'button:not([disabled]), [href], [tabindex="0"]',
+      ) ?? []),
+    ];
+    focusable()[0]?.focus();
+    const trapFocus = (event) => {
+      if (event.key !== "Tab") return;
+      const elements = focusable();
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    };
+    dialog?.addEventListener("keydown", trapFocus);
+    return () => {
+      dialog?.removeEventListener("keydown", trapFocus);
+      if (previousFocus instanceof HTMLElement && previousFocus.isConnected)
+        previousFocus.focus({ preventScroll: true });
+    };
+  }, [detailsOpen]);
 
   useEffect(() => {
     sessionStorage.removeItem("last_graph_selection");
@@ -190,13 +228,12 @@ export default function TableLayout() {
     const handleKey = (e) => {
       if (e.key === "Escape") {
         setDetailsOpen(false);
-        setSelectionDetail(null);
         setIssuesOpen(false);
       }
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [setDetailsOpen, setSelectionDetail, setIssuesOpen]);
+  }, [setDetailsOpen, setIssuesOpen]);
 
   useEffect(() => {
     const hasErrors = errors && Object.keys(errors).length > 0;
@@ -210,18 +247,22 @@ export default function TableLayout() {
   const [showDiff, setShowDiff] = useState(false);
   const [specJsonCopied, setSpecJsonCopied] = useState(false);
 
+  // selectionDetail is rebuilt on every provider render, so the reset keys on
+  // the selection identity instead of the object reference.
   useEffect(() => {
     setShowDiff(false);
-  }, [selectionDetail]);
+  }, [selectionDetail?.type, selectionDetail?.id]);
 
+  const selectedType = selectionDetail?.type;
+  const selectedId = selectionDetail?.id;
   useEffect(() => {
-    if (selectionDetail && detailPanelRef.current) {
+    if (selectedType && detailPanelRef.current) {
       detailPanelRef.current.scrollIntoView({
         behavior: "smooth",
         block: "nearest",
       });
     }
-  }, [selectionDetail]);
+  }, [selectedType, selectedId]);
 
   const buildGraphData = (data) => {
     const nodeDetails = data.nodes || [];
@@ -344,25 +385,16 @@ export default function TableLayout() {
   }
 
   const metadata = graphData.metadata;
-
-  const showDetail = (type, id) => {
-    if (!metadata) return;
-    let data = null;
-    let label = "";
-
-    if (type === "schema") {
-      data = metadata.schemas?.find((s) => s["schema-id"] === id);
-      label = `Schema ID: ${id}`;
-    } else if (type === "spec") {
-      data = metadata["partition-specs"]?.find((s) => s["spec-id"] === id);
-      label = `Partition ID: ${id}`;
-    } else if (type === "order") {
-      data = metadata["sort-orders"]?.find((s) => s["order-id"] === id);
-      label = `Order ID: ${id}`;
-    }
-
-    if (data) setSelectionDetail({ label, data, type, id });
-  };
+  // Source IDs are resolved against the current schema. The ID stays visible in
+  // every row, so an older spec pointing at a since-renamed column still shows
+  // the value Iceberg recorded.
+  const specColumnNames = schemaColumnNames(
+    parseIcebergSchema(
+      metadata?.schemas?.find(
+        (s) => s["schema-id"] === metadata["current-schema-id"],
+      ),
+    ),
+  );
 
   return (
     <div className="flex-1 flex overflow-hidden relative">
@@ -380,10 +412,13 @@ export default function TableLayout() {
           className="fixed inset-0 z-[9999] bg-black/50 flex items-center justify-center font-sans"
           onClick={() => {
             setDetailsOpen(false);
-            setSelectionDetail(null);
           }}
         >
           <div
+            ref={specsDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Table Specification"
             className="w-1/2 min-w-85 max-w-3xl bg-surface rounded-xl shadow-2xl border border-edge max-h-[80dvh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
@@ -395,10 +430,10 @@ export default function TableLayout() {
                 </div>
               </div>
               <button
+                aria-label="Close Specs"
                 className="w-7 h-7 rounded-full bg-edge text-slate-400 flex items-center justify-center text-base cursor-pointer hover:bg-edge-hover hover:text-slate-200 transition"
                 onClick={() => {
                   setDetailsOpen(false);
-                  setSelectionDetail(null);
                 }}
               >
                 ✕
@@ -408,9 +443,26 @@ export default function TableLayout() {
             <div className="overflow-y-auto px-6 py-5 flex flex-col gap-4">
               <MetadataStructured
                 metadata={metadata}
-                onSelect={showDetail}
-                selectedId={selectionDetail?.label}
+                onSelect={(kind, id) => openSpec({ kind, id })}
+                selection={selectionDetail}
               />
+
+              {unresolvedSelection && (
+                <div className="rounded-xl border border-amber-500/40 bg-amber-900/20 px-4 py-3">
+                  <p className="text-sm text-amber-300">
+                    {specSelectionLabel(unresolvedSelection)} is not in this
+                    table&apos;s loaded metadata. It may belong to another table
+                    or fall outside the selected snapshot range.
+                  </p>
+                  <button
+                    type="button"
+                    className="mt-2 text-xs text-accent-text hover:underline cursor-pointer"
+                    onClick={() => clearSpecSelection()}
+                  >
+                    Clear selection
+                  </button>
+                </div>
+              )}
 
               {selectionDetail &&
                 (() => {
@@ -480,7 +532,7 @@ export default function TableLayout() {
                           </button>
                           <button
                             className="text-white/70 hover:text-white text-xl leading-none cursor-pointer transition"
-                            onClick={() => setSelectionDetail(null)}
+                            onClick={() => clearSpecSelection()}
                           >
                             ×
                           </button>
@@ -490,11 +542,17 @@ export default function TableLayout() {
                         {!showDiff && selectionDetail.type === "schema" && (
                           <SchemaFieldList schema={selectionDetail.data} />
                         )}
-                        {!showDiff && selectionDetail.type === "spec" && (
-                          <PartitionSpecList spec={selectionDetail.data} />
+                        {!showDiff && selectionDetail.type === "partition" && (
+                          <PartitionFieldTable
+                            rows={plainSpecRows(selectionDetail.data.fields)}
+                            columnNames={specColumnNames}
+                          />
                         )}
                         {!showDiff && selectionDetail.type === "order" && (
-                          <SortOrderList order={selectionDetail.data} />
+                          <SortFieldTable
+                            rows={plainSpecRows(selectionDetail.data.fields)}
+                            columnNames={specColumnNames}
+                          />
                         )}
                         {showDiff &&
                           hasPrev &&
@@ -506,13 +564,19 @@ export default function TableLayout() {
                           )}
                         {showDiff &&
                           diff &&
-                          selectionDetail.type === "spec" && (
-                            <PartitionDiffView diff={diff} />
+                          selectionDetail.type === "partition" && (
+                            <PartitionFieldTable
+                              rows={diffSpecRows(diff)}
+                              columnNames={specColumnNames}
+                            />
                           )}
                         {showDiff &&
                           diff &&
                           selectionDetail.type === "order" && (
-                            <SortDiffView diff={diff} />
+                            <SortFieldTable
+                              rows={diffSpecRows(diff)}
+                              columnNames={specColumnNames}
+                            />
                           )}
                       </div>
                     </div>

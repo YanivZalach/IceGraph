@@ -1,6 +1,6 @@
 import { UI_STRUCTURED_SECTION_TITLE_CLASS } from "../uiTypography";
 
-export default function MetadataStructured({ metadata, onSelect, selectedId }) {
+export default function MetadataStructured({ metadata, onSelect, selection }) {
   const renderBoxes = (items, idKey, labelPrefix, activeId, type) => {
     if (!items || !Array.isArray(items)) return null;
     return (
@@ -14,18 +14,21 @@ export default function MetadataStructured({ metadata, onSelect, selectedId }) {
         <div className="flex flex-wrap gap-2.5">
           {items.map((item) => {
             const id = item[idKey];
-            const isActive = id === activeId;
-            const isSelected = selectedId === `${labelPrefix} ID: ${id}`;
+            const isActive = String(id) === String(activeId);
+            const isSelected =
+              selection?.type === type && String(selection.id) === String(id);
 
             return (
-              <div
+              <button
+                type="button"
                 key={id}
+                aria-pressed={isSelected}
                 className={`relative p-3 min-w-[70px] text-center cursor-pointer rounded-xl border-2 transition-all duration-200 group
                   ${
-                    isActive
-                      ? "border-accent bg-accent-muted shadow-sm"
-                      : isSelected
-                        ? "border-amber-400 bg-amber-900/20 shadow-sm"
+                    isSelected
+                      ? "border-amber-400 bg-amber-900/20 shadow-sm"
+                      : isActive
+                        ? "border-accent bg-accent-muted shadow-sm"
                         : "border-edge bg-surface-deep hover:border-edge-hover hover:shadow-sm"
                   }`}
                 onClick={() => onSelect(type, id)}
@@ -38,7 +41,7 @@ export default function MetadataStructured({ metadata, onSelect, selectedId }) {
                 )}
                 <span
                   className={`block text-xl font-black leading-none
-                  ${isActive ? "text-ink" : "text-slate-300"}
+                  ${isActive || isSelected ? "text-ink" : "text-slate-300"}
                 `}
                 >
                   {id}
@@ -47,7 +50,7 @@ export default function MetadataStructured({ metadata, onSelect, selectedId }) {
                 {isSelected && (
                   <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-amber-400 rounded-full" />
                 )}
-              </div>
+              </button>
             );
           })}
         </div>
@@ -69,7 +72,7 @@ export default function MetadataStructured({ metadata, onSelect, selectedId }) {
         "spec-id",
         "Partition",
         metadata["default-spec-id"],
-        "spec",
+        "partition",
       )}
       {renderBoxes(
         metadata["sort-orders"],
