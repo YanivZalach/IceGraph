@@ -22,7 +22,7 @@ const MetadataPartitioning = ({
     ? "Partition fields are unavailable."
     : activeFields?.length === 0
       ? "No active partition fields. New data is not grouped by column values."
-      : "Data is stored in separate sections (partitions) based on these columns. Filtering a query on them lets the engine read only the matching sections instead of the whole table.";
+      : "New files are grouped into partitions based on these columns. Filtering on them can let the engine skip unrelated files.";
   return (
     <div className="overflow-hidden rounded-xl border border-edge bg-surface">
       <div className="p-5">

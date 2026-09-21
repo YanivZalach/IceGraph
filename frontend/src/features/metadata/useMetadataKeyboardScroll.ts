@@ -1,45 +1,52 @@
-import { useEffect } from "react";
+import { useHotkey } from "@tanstack/react-hotkeys";
 
-// Native wheel scrolling hands off to the page at panel edges. Keyboard
-// scrolling follows the focused panel and yields to the Specs overlay.
+const canHandleScroll = (event: KeyboardEvent): boolean => {
+  const target = event.target;
+  return (
+    target instanceof HTMLElement &&
+    !target.isContentEditable &&
+    target.closest("input, textarea, select, button, a, summary") === null
+  );
+};
+
+const scrollFocusedRegion = (event: KeyboardEvent, delta: number): void => {
+  if (!canHandleScroll(event)) return;
+  const target = event.target;
+  const panel =
+    target instanceof HTMLElement
+      ? target.closest("[data-metadata-scroll]")
+      : null;
+  event.preventDefault();
+  if (
+    panel instanceof HTMLElement &&
+    (delta > 0
+      ? panel.scrollTop + panel.clientHeight < panel.scrollHeight - 1
+      : panel.scrollTop > 0)
+  ) {
+    panel.scrollBy({ top: delta, behavior: "smooth" });
+    return;
+  }
+  window.scrollBy({ top: delta, behavior: "smooth" });
+};
+
 export const useMetadataKeyboardScroll = (isOverlayOpen: boolean): void => {
-  useEffect(() => {
-    if (isOverlayOpen) return;
-    const handleKey = (event: KeyboardEvent): void => {
-      if (
-        event.defaultPrevented ||
-        event.ctrlKey ||
-        event.metaKey ||
-        event.altKey ||
-        event.shiftKey ||
-        !["j", "k"].includes(event.key)
-      )
-        return;
-      const target = event.target;
-      if (
-        !(target instanceof HTMLElement) ||
-        target.isContentEditable ||
-        target.closest("input, textarea, select, button, a, summary")
-      )
-        return;
-      const panel = target.closest("[data-metadata-scroll]");
-      const delta = event.key === "j" ? 80 : -80;
-      if (
-        panel instanceof HTMLElement &&
-        (delta > 0
-          ? panel.scrollTop + panel.clientHeight < panel.scrollHeight - 1
-          : panel.scrollTop > 0)
-      ) {
-        event.preventDefault();
-        panel.scrollBy({ top: delta, behavior: "smooth" });
-      } else {
-        event.preventDefault();
-        window.scrollBy({ top: delta, behavior: "smooth" });
-      }
-    };
-    window.addEventListener("keydown", handleKey);
-    return () => {
-      window.removeEventListener("keydown", handleKey);
-    };
-  }, [isOverlayOpen]);
+  const options = {
+    enabled: !isOverlayOpen,
+    preventDefault: false,
+    stopPropagation: false,
+  };
+  useHotkey(
+    "J",
+    (event) => {
+      scrollFocusedRegion(event, 80);
+    },
+    options,
+  );
+  useHotkey(
+    "K",
+    (event) => {
+      scrollFocusedRegion(event, -80);
+    },
+    options,
+  );
 };

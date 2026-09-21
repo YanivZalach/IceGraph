@@ -1,4 +1,4 @@
-import MetadataHelp from "../../metadata/components/MetadataHelp";
+import HelpTerm from "../../../shared/components/HelpTerm";
 import {
   SPEC_CELL_CLASS,
   SPEC_HEAD_CLASS,
@@ -11,6 +11,7 @@ import {
 } from "./SpecFieldTable";
 import {
   SPEC_ROW_MARKER,
+  SPEC_ROW_MARKER_TONE,
   type PartitionField,
   type SpecFieldRow,
 } from "../specFieldRows";
@@ -34,23 +35,23 @@ const PartitionFieldTable = ({
         <thead className={SPEC_HEAD_CLASS}>
           <tr>
             <SpecHeaderCell>
-              <MetadataHelp label="Partition field ID">
+              <HelpTerm label="Partition field ID">
                 The ID Iceberg assigns to the partition field itself, separate
                 from the source column ID.
-              </MetadataHelp>
+              </HelpTerm>
             </SpecHeaderCell>
             <SpecHeaderCell>Source column (schema ID)</SpecHeaderCell>
             <SpecHeaderCell>
-              <MetadataHelp label="Transform">
+              <HelpTerm label="Transform">
                 Derives the partition value: identity keeps it unchanged;
                 hour/day/month/year group time values; bucket[N] hashes into N
                 buckets; truncate[W] applies width W; void always produces null.
-              </MetadataHelp>
+              </HelpTerm>
             </SpecHeaderCell>
             <SpecHeaderCell>
-              <MetadataHelp label="Partition field name">
+              <HelpTerm label="Partition field name">
                 The name used for partition values in file exploration.
-              </MetadataHelp>
+              </HelpTerm>
             </SpecHeaderCell>
           </tr>
         </thead>
@@ -66,9 +67,18 @@ const PartitionFieldTable = ({
                     <SpecDiffMarker
                       marker={SPEC_ROW_MARKER[status] ?? ""}
                       label={`${status} partition field`}
+                      tone={SPEC_ROW_MARKER_TONE[status]}
                     />
                   )}
-                  <span>
+                  <span
+                    className={
+                      status === "removed"
+                        ? "text-red-400 line-through"
+                        : status === "added"
+                          ? "text-green-400"
+                          : undefined
+                    }
+                  >
                     {field["field-id"] === undefined
                       ? "?"
                       : String(field["field-id"])}
@@ -80,6 +90,7 @@ const PartitionFieldTable = ({
                   columnNames={columnNames}
                   sourceId={field["source-id"]}
                   previousSourceId={previous?.["source-id"]}
+                  status={status}
                 />
               </td>
               <td className={SPEC_CELL_CLASS}>
@@ -87,6 +98,7 @@ const PartitionFieldTable = ({
                   value={field.transform ?? "?"}
                   previous={previous?.transform}
                   tone="text-accent-text"
+                  status={status}
                 />
               </td>
               <td className={SPEC_CELL_CLASS}>
@@ -94,6 +106,7 @@ const PartitionFieldTable = ({
                   value={field.name ?? "?"}
                   previous={previous?.name}
                   tone="text-ink"
+                  status={status}
                 />
               </td>
             </SpecRow>

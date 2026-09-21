@@ -204,12 +204,6 @@ open it too, so the user is actually looking at the view you're describing inste
 click it themselves. Still always include the link text in your reply as well, since opening a
 browser tab isn't a substitute for giving the user something they can re-open, copy, or share.
 
-On `/table/metadata`, the version header identifies the newest metadata file within the
-requested range. Snapshot statistics are labeled separately from metadata time, and all times
-render in the viewer's local timezone. Keep the same snapshot range in links to reproduce the
-displayed state. **Change range** returns to `/snapshots-selection?table=<table>` to make a new
-selection.
-
 ### Specs panel links
 
 The Specs panel is available on every `/table/*` page, and its state is in the URL, so you can
@@ -218,9 +212,8 @@ link straight to one schema, partition spec, or sort order:
 - `specs=open` opens the panel with no definition selected.
 - `spec_kind=schema|partition|order` with `spec_id=<id>` opens that definition directly. Both
   are required together; `spec_kind` alone is ignored.
-- `spec_view=diff` opens the selected definition compared with its preceding version. When no
-  preceding version exists, the panel shows Full while keeping the Diff preference for the next
-  compatible selection.
+- `spec_view=diff` opens the selected definition compared with its preceding version. It is
+  removed when no preceding version exists.
 
 ```
 <base_url>/table/metadata?table=<uri-encoded database.table>&start_snapshot_id=<id>&end_snapshot_id=<id>&spec_kind=schema&spec_id=<schema id>&spec_view=diff
@@ -231,7 +224,7 @@ link straight to one schema, partition spec, or sort order:
 - The ID must exist in the metadata the link's snapshot range loads, so keep the same range you
   used to read it. If it doesn't resolve, the panel opens and says so rather than failing
   silently.
-- These parameters work on any `/table/*` page and survive tab switches. Changing table or
+- These parameters work on any `/table/*` page. Invalid values are ignored. Changing table or
   snapshot range clears them.
 
 ## 5. Tracing a snapshot back to the Spark job that wrote it

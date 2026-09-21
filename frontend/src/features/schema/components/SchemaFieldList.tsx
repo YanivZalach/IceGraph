@@ -1,6 +1,6 @@
 import SchemaTypeView from "./SchemaTypeView";
 import SchemaFieldHeader from "./SchemaFieldHeader";
-import { parseIcebergSchema } from "../schemaModel";
+import { formatRequiredness, parseIcebergSchema } from "../schemaModel";
 import {
   SPEC_CELL_CLASS,
   SPEC_TABLE_CLASS,
@@ -9,9 +9,6 @@ import {
 interface SchemaFieldListProps {
   schema: unknown;
 }
-
-const requirednessText = (isRequired: boolean | null): string =>
-  isRequired === null ? "unknown" : isRequired ? "required" : "optional";
 
 const SchemaFieldList = ({ schema }: SchemaFieldListProps) => {
   const parsedSchema = parseIcebergSchema(schema);
@@ -51,7 +48,7 @@ const SchemaFieldList = ({ schema }: SchemaFieldListProps) => {
                 <SchemaTypeView type={field.type} />
               </td>
               <td className={`${SPEC_CELL_CLASS} font-mono text-xs text-ink`}>
-                {requirednessText(field.isRequired)}
+                {formatRequiredness(field.isRequired)}
               </td>
             </tr>
           ))}

@@ -1,4 +1,4 @@
-import { Link, useSearch } from "@tanstack/react-router";
+import { useSearch } from "@tanstack/react-router";
 import { useTableSpecs } from "../table/tableSpecs";
 import { parseIcebergSchema } from "../schema/schemaModel";
 import { integerText, schemaColumnNames } from "./metadataPresentation";
@@ -14,13 +14,14 @@ import {
   METADATA_SECTION_BODY_CLASS,
   METADATA_SUMMARY_CLASS,
 } from "./metadataStyles";
+import { FileType } from "../../graphConstants";
 
 const MetadataPage = () => {
   const search = useSearch({ from: "/table/metadata" });
   const { graphQuery, openSpec, detailsOpen, issuesOpen } = useTableSpecs();
   const data = graphQuery.data;
   const path = data?.nodes.find(
-    (node) => node.type === "main_metadata",
+    (node) => node.type === FileType.MAIN_METADATA,
   )?.file_path;
   useMetadataKeyboardScroll(detailsOpen || issuesOpen);
   if (!data) return null;
@@ -28,7 +29,8 @@ const MetadataPage = () => {
   const snapshotId = integerText(metadata["current-snapshot-id"]);
   const snapshot = nodes.find(
     (node) =>
-      node.type === "snapshot" && integerText(node.snapshot_id) === snapshotId,
+      node.type === FileType.SNAPSHOT &&
+      integerText(node.snapshot_id) === snapshotId,
   );
   const schema = metadata.schemas?.find(
     (item) =>
@@ -56,19 +58,7 @@ const MetadataPage = () => {
             {metadata["table-name"] ?? search.table}
           </h1>
         </header>
-        <MetadataVersion
-          path={path}
-          updatedAt={metadata["last-updated-ms"]}
-          rangeAction={
-            <Link
-              to="/snapshots-selection"
-              search={{ table: search.table }}
-              className="text-sm text-accent-text hover:underline"
-            >
-              Change range ↗
-            </Link>
-          }
-        />
+        <MetadataVersion path={path} updatedAt={metadata["last-updated-ms"]} />
         <MetadataSummary snapshotId={snapshotId} snapshot={snapshot} />
         <MetadataSchema
           key={path}
@@ -104,10 +94,10 @@ const MetadataPage = () => {
           </summary>
           <div className={`${METADATA_SECTION_BODY_CLASS} space-y-3 px-5 py-4`}>
             <p className="text-xs leading-relaxed text-slate-400">
-              Reduced metadata: the backend omits or alters{" "}
-              <code>metadata-log</code>, <code>snapshot-log</code>,{" "}
-              <code>snapshots</code>, and <code>statistics</code> due to size.
-              This is the returned metadata, not the complete file.
+              Reduced metadata: the backend omits <code>metadata-log</code>,{" "}
+              <code>snapshot-log</code>, <code>snapshots</code>, and{" "}
+              <code>statistics</code> due to size. This is the returned
+              metadata, not the complete file.
             </p>
             <MetadataJson
               text={JSON.stringify(metadata, null, 2)}

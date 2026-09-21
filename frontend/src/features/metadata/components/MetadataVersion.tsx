@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import type { IcebergInteger } from "../../table/api/metadataSchemas";
 import { formatMetadataTime } from "../metadataPresentation";
 import CopyIconButton from "../../../components/CopyIconButton";
@@ -6,27 +5,19 @@ import CopyIconButton from "../../../components/CopyIconButton";
 interface MetadataVersionProps {
   path: string | undefined;
   updatedAt: IcebergInteger | null | undefined;
-  rangeAction: ReactNode;
 }
 
-const MetadataVersion = ({
-  path,
-  updatedAt,
-  rangeAction,
-}: MetadataVersionProps) => (
+const MetadataVersion = ({ path, updatedAt }: MetadataVersionProps) => (
   <section
     aria-labelledby="metadata-version-title"
     className="rounded-xl border border-accent/40 border-l-4 border-l-accent bg-surface p-5"
   >
-    <div className="flex flex-wrap items-baseline justify-between gap-3">
-      <h2
-        id="metadata-version-title"
-        className="text-base font-semibold text-ink"
-      >
-        Latest metadata in the selected range
-      </h2>
-      {rangeAction}
-    </div>
+    <h2
+      id="metadata-version-title"
+      className="text-base font-semibold text-ink"
+    >
+      Latest metadata in the selected range
+    </h2>
     <p className="mt-2 text-xl font-semibold text-ink">
       {formatMetadataTime(updatedAt)}
     </p>

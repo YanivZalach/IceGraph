@@ -1,4 +1,4 @@
-import MetadataHelp from "../../metadata/components/MetadataHelp";
+import HelpTerm from "../../../shared/components/HelpTerm";
 import {
   SPEC_CELL_CLASS,
   SPEC_HEAD_CLASS,
@@ -11,6 +11,7 @@ import {
 } from "./SpecFieldTable";
 import {
   SPEC_ROW_MARKER,
+  SPEC_ROW_MARKER_TONE,
   type SortField,
   type SpecFieldRow,
 } from "../specFieldRows";
@@ -29,28 +30,28 @@ const SortFieldTable = ({ rows, columnNames }: SortFieldTableProps) => {
         <thead className={SPEC_HEAD_CLASS}>
           <tr>
             <SpecHeaderCell>
-              <MetadataHelp label="#">
+              <HelpTerm label="#">
                 Sort priority. Rows are ordered by the first column, then ties
                 are broken by the next one down.
-              </MetadataHelp>
+              </HelpTerm>
             </SpecHeaderCell>
             <SpecHeaderCell>Source column (schema ID)</SpecHeaderCell>
             <SpecHeaderCell>
-              <MetadataHelp label="Transform">
+              <HelpTerm label="Transform">
                 Determines the sort key. identity uses the original column value
                 unchanged.
-              </MetadataHelp>
+              </HelpTerm>
             </SpecHeaderCell>
             <SpecHeaderCell>
-              <MetadataHelp label="Direction">
+              <HelpTerm label="Direction">
                 asc sorts ascending, desc sorts descending.
-              </MetadataHelp>
+              </HelpTerm>
             </SpecHeaderCell>
             <SpecHeaderCell>
-              <MetadataHelp label="Nulls">
+              <HelpTerm label="Nulls">
                 nulls-first places null values before non-null values;
                 nulls-last places them after.
-              </MetadataHelp>
+              </HelpTerm>
             </SpecHeaderCell>
           </tr>
         </thead>
@@ -70,12 +71,14 @@ const SortFieldTable = ({ rows, columnNames }: SortFieldTableProps) => {
                       <SpecDiffMarker
                         marker={SPEC_ROW_MARKER[status] ?? ""}
                         label={`${status} sort field`}
+                        tone={SPEC_ROW_MARKER_TONE[status]}
                       />
                     )}
                     <SpecValue
                       value={position}
                       previous={previousPosition ?? undefined}
                       tone="text-slate-400"
+                      status={status}
                     />
                   </span>
                 </td>
@@ -84,6 +87,7 @@ const SortFieldTable = ({ rows, columnNames }: SortFieldTableProps) => {
                     columnNames={columnNames}
                     sourceId={field["source-id"]}
                     previousSourceId={previous?.["source-id"]}
+                    status={status}
                   />
                 </td>
                 <td className={SPEC_CELL_CLASS}>
@@ -91,6 +95,7 @@ const SortFieldTable = ({ rows, columnNames }: SortFieldTableProps) => {
                     value={field.transform ?? "?"}
                     previous={previous?.transform}
                     tone="text-accent-text"
+                    status={status}
                   />
                 </td>
                 <td className={SPEC_CELL_CLASS}>
@@ -98,6 +103,7 @@ const SortFieldTable = ({ rows, columnNames }: SortFieldTableProps) => {
                     value={field.direction ?? "?"}
                     previous={previous?.direction}
                     tone="text-ink"
+                    status={status}
                   />
                 </td>
                 <td className={SPEC_CELL_CLASS}>
@@ -105,6 +111,7 @@ const SortFieldTable = ({ rows, columnNames }: SortFieldTableProps) => {
                     value={field["null-order"] ?? "?"}
                     previous={previous?.["null-order"]}
                     tone="text-ink"
+                    status={status}
                   />
                 </td>
               </SpecRow>

@@ -5,7 +5,7 @@ import SchemaFieldList from "../../schema/components/SchemaFieldList";
 import { parseIcebergSchema } from "../../schema/schemaModel";
 import { cn } from "../../../shared/lib/cn";
 import { schemaColumnNames } from "../metadataPresentation";
-import MetadataHelp from "./MetadataHelp";
+import HelpTerm from "../../../shared/components/HelpTerm";
 
 interface MetadataSchemaProps {
   schema: TableSchema | undefined;
@@ -75,10 +75,10 @@ const MetadataSchema = ({
         <p className="mt-3 text-sm text-slate-400">{summary}</p>
         {identifiers.length > 0 && (
           <p className="mt-3 text-sm text-slate-300">
-            <MetadataHelp label="Identifier fields">
+            <HelpTerm label="Identifier fields">
               Fields designated to identify rows. Iceberg does not enforce
               uniqueness; this does not itself enable upserts.
-            </MetadataHelp>
+            </HelpTerm>
             :{" "}
             {identifiers
               .map(

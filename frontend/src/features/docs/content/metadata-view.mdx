@@ -1,22 +1,22 @@
-The Metadata view describes the newest metadata file **within the selected snapshot range**. An older range can show an older table structure and settings. The copyable metadata path identifies the file being inspected.
+The Metadata view describes the newest metadata file **within the selected snapshot range**. An older range can show an older table structure and settings.
 
-The version header shows the metadata update time, the metadata file path, and a **Change range** link back to snapshot selection. That link starts a new selection for the same table. All times on this page are shown in your local timezone.
+The version header shows the metadata update time and metadata file path. All times on this page are shown in your local timezone.
 
 ### Snapshot statistics
 
-**At a glance** comes from the current snapshot referenced by the loaded metadata file. Its commit time is shown separately because it can precede the metadata update time.
+**At a glance** comes from the current snapshot referenced by the loaded metadata file. Its commit time can precede the metadata update time.
 
-- **Records in data files** is the snapshot's record count before subtracting row deletes, not a live SQL row count. Delete files are shown alongside it, with a notice when present.
-- **Total file size (data + deletes)** includes both file types and is always shown in GiB. Hover over the size for exact bytes, or expand **Exact bytes** to view and copy the original byte count.
-- Missing statistics are shown as **Unavailable**, not zero. The page distinguishes metadata without a current snapshot from a snapshot missing from the loaded graph.
+- **Records in data files** is the snapshot's record count before subtracting row deletes, not a live SQL row count. Delete files are shown alongside it.
+- **Total file size (data + deletes)** includes both file types and uses a readable unit based on its size. Hover over the size for exact bytes, or expand **Exact bytes** to view and copy the original byte count.
+- Missing statistics are shown as **Unavailable**. The page explains when no current snapshot exists or its statistics are outside the loaded graph.
 
 ### Schema and data organization
 
-The schema panel scrolls independently and uses the same field rendering as the Specs panel, so a column looks identical in both places. Use **Expand schema** to display its full height. Nested structs, list elements, and map keys and values retain their field IDs and requiredness, and optional fields are marked. Field comments and identifier fields appear when recorded. Identifier fields do not imply enforced uniqueness or automatic upsert behavior.
+The schema panel scrolls independently. Use **Expand schema** to display its full height. Nested structs, list elements, and map keys and values retain their field IDs and show whether they are required, optional, or unknown. Field comments and identifier fields appear when recorded. Identifier fields do not imply enforced uniqueness or automatic upsert behavior.
 
-Click the **Schema**, **Spec**, or **Order** link to open that definition directly in the existing Specs panel. Use **Full / Diff** there to inspect changes. The schema section also reports earlier schemas available in this metadata file. The open definition is recorded in the URL, so the page address can be shared to bring someone to the same definition.
+Click the **Schema**, **Spec**, or **Order** link to open that definition in the Specs panel. Use **Full / Diff** there to inspect changes. The schema section also reports earlier schemas available in this metadata file.
 
-Partitioning and write sort order use the same tables as the Specs panel, so a field looks identical in both places. Each row resolves the source column name against the current schema and always shows the source ID next to it. Values render exactly as Iceberg records them, so a transform reads `hour`, a direction reads `asc`, and a null order reads `nulls-first`. Sort fields are numbered in priority order, highest first. A write sort order applies when data is written and does not guarantee query result order.
+Each partition and sort row resolves the source column name against the current schema and shows its source ID. Values render exactly as Iceberg records them, so a transform reads `hour`, a direction reads `asc`, and a null order reads `nulls-first`. Sort fields are numbered in priority order. The sort order is a write preference, and it does not guarantee file or query result order.
 
 Help on Iceberg-specific terms opens on hover, focus, or click. Press Escape to dismiss it.
 
@@ -24,4 +24,4 @@ Help on Iceberg-specific terms opens on hover, focus, or click. Press Escape to 
 
 Expand the technical sections for storage paths and identifiers, branches and tags, properties, and delete statistics. JSON-valued properties are formatted and long values can be expanded.
 
-**Advanced: metadata JSON** shows the returned metadata in a scrollable, highlighted block. **Copy metadata JSON** copies exactly the displayed JSON. The backend omits or alters `metadata-log`, `snapshot-log`, `snapshots`, and `statistics` due to size; this export is not the full original metadata file. Large IDs and counts retain their precision when copied.
+**Advanced: metadata JSON** shows the returned metadata in a scrollable, highlighted block. **Copy metadata JSON** copies exactly the displayed JSON. The backend omits `metadata-log`, `snapshot-log`, `snapshots`, and `statistics` due to size; this export is not the full original metadata file. Large IDs and counts retain their precision when copied.

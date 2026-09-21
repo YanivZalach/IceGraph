@@ -1,7 +1,6 @@
 import { z } from "zod";
 
-// Preserve the wire representation for JSON export. Unsafe JSON integers have
-// already been decoded as strings by the API client.
+// The API decoder converts unsafe JSON integers to strings before validation.
 export const icebergIntegerSchema = z.union([
   z.number().int().refine(Number.isSafeInteger, "Unsafe Iceberg integer"),
   z.string().regex(/^-?\d+$/),
@@ -42,6 +41,9 @@ export const tableMetadataSchema = z.looseObject({
   "table-uuid": z.string().optional(),
   location: z.string().optional(),
   "format-version": icebergIntegerSchema.optional(),
+  "last-sequence-number": icebergIntegerSchema.optional(),
+  "last-column-id": icebergIntegerSchema.optional(),
+  "last-partition-id": icebergIntegerSchema.optional(),
   "last-updated-ms": icebergIntegerSchema.nullish(),
   "current-snapshot-id": icebergIntegerSchema.nullish(),
   "current-schema-id": icebergIntegerSchema.nullish(),

@@ -1,14 +1,11 @@
 import type { IcebergType } from "../schemaModel";
-import { formatUnknownType } from "../schemaModel";
+import { formatRequiredness, formatUnknownType } from "../schemaModel";
 import SchemaCollectionMember from "./SchemaCollectionMember";
 import SchemaTypeBadge from "./SchemaTypeBadge";
 
 interface SchemaTypeViewProps {
   type: IcebergType;
 }
-
-const formatRequired = (isRequired: boolean | null): string =>
-  isRequired === null ? "unknown" : isRequired ? "required" : "optional";
 
 const SchemaTypeView = ({ type }: SchemaTypeViewProps) => {
   switch (type.kind) {
@@ -32,11 +29,7 @@ const SchemaTypeView = ({ type }: SchemaTypeViewProps) => {
                     {field.name}
                   </span>
                   <span className="font-mono text-xs text-slate-400">
-                    {field.isRequired === null
-                      ? "unknown"
-                      : field.isRequired
-                        ? "required"
-                        : "optional"}
+                    {formatRequiredness(field.isRequired)}
                   </span>
                 </div>
                 {field.doc && (
@@ -61,7 +54,7 @@ const SchemaTypeView = ({ type }: SchemaTypeViewProps) => {
               <SchemaCollectionMember
                 id={type.elementId ?? "?"}
                 name="element"
-                requiredness={formatRequired(type.isElementRequired)}
+                requiredness={formatRequiredness(type.isElementRequired)}
               />
             </div>
             <SchemaTypeView type={type.element} />
@@ -75,7 +68,11 @@ const SchemaTypeView = ({ type }: SchemaTypeViewProps) => {
           <div className="ml-3 flex flex-col gap-4 border-l-2 border-edge py-1 pl-4">
             <div>
               <div className="mb-2">
-                <SchemaCollectionMember id={type.keyId ?? "?"} name="key" />
+                <SchemaCollectionMember
+                  id={type.keyId ?? "?"}
+                  name="key"
+                  requiredness="required"
+                />
               </div>
               <SchemaTypeView type={type.key} />
             </div>
@@ -84,7 +81,7 @@ const SchemaTypeView = ({ type }: SchemaTypeViewProps) => {
                 <SchemaCollectionMember
                   id={type.valueId ?? "?"}
                   name="value"
-                  requiredness={formatRequired(type.isValueRequired)}
+                  requiredness={formatRequiredness(type.isValueRequired)}
                 />
               </div>
               <SchemaTypeView type={type.value} />

@@ -1,5 +1,6 @@
 import JSONbig from "json-bigint";
 import { Suspense, useEffect, useRef, useState } from "react";
+import { useHotkey } from "@tanstack/react-hotkeys";
 import { Outlet, useNavigate, useSearch } from "@tanstack/react-router";
 import { TableGraphDataContext } from "../features/table/tableGraphData";
 import PageLoader from "../components/PageLoader";
@@ -40,19 +41,17 @@ import {
 const DETAIL_TYPE_CONFIG = {
   schema: {
     listKey: "schemas",
-    idKey: "schema-id",
     noPrevLabel: "No previous schema",
   },
   partition: {
     listKey: "partition-specs",
-    idKey: "spec-id",
     fieldIdentity: (field) => field["field-id"],
     noPrevLabel: "No previous partition spec",
   },
   order: {
     listKey: "sort-orders",
-    idKey: "order-id",
-    fieldIdentity: (field) => field["source-id"],
+    fieldIdentity: (field) =>
+      `${String(field["source-id"])}\u0000${field.transform ?? ""}`,
     noPrevLabel: "No previous sort order",
   },
 };
@@ -227,16 +226,14 @@ export default function TableLayout() {
     sessionStorage.removeItem("last_graph_selection");
   }, []);
 
-  useEffect(() => {
-    const handleKey = (e) => {
-      if (e.key === "Escape") {
-        setDetailsOpen(false);
-        setIssuesOpen(false);
-      }
-    };
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [setDetailsOpen, setIssuesOpen]);
+  useHotkey(
+    "Escape",
+    () => {
+      if (issuesOpen) setIssuesOpen(false);
+      else setDetailsOpen(false);
+    },
+    { enabled: detailsOpen || issuesOpen },
+  );
 
   useEffect(() => {
     const hasErrors = errors && Object.keys(errors).length > 0;
@@ -466,11 +463,7 @@ export default function TableLayout() {
                 (() => {
                   const config = DETAIL_TYPE_CONFIG[selectionDetail.type];
                   const list = metadata?.[config.listKey] ?? [];
-                  const prevItem = findPreviousSpec(
-                    list,
-                    selectionDetail.data,
-                    config.idKey,
-                  );
+                  const prevItem = findPreviousSpec(list, selectionDetail.data);
                   const hasPrev = prevItem !== null;
                   const showDiff = specView === "diff" && hasPrev;
 

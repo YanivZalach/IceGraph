@@ -45,6 +45,9 @@ export interface UnknownType {
 export type IcebergType =
   PrimitiveType | StructType | ListType | MapType | UnknownType;
 
+export const formatRequiredness = (isRequired: boolean | null): string =>
+  isRequired === null ? "unknown" : isRequired ? "required" : "optional";
+
 const isUnknownRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 

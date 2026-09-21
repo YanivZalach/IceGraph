@@ -15,8 +15,6 @@ export interface SpecFieldRow<TField> {
 
 type SpecFieldIdentity = string | number | bigint | null | undefined;
 
-// Both the Specs panel and the metadata page render the same tables. Plain and
-// compared definitions are normalized to one row shape before presentation.
 export const plainSpecRows = <TField>(
   fields: readonly TField[] | undefined,
 ): SpecFieldRow<TField>[] =>
@@ -66,15 +64,8 @@ export const diffSpecRows = <TField>(
     }
     matchedPrevious.add(previousIndex);
     const previousField = previous[previousIndex];
-    if (previousField === undefined) {
-      return {
-        status: "added",
-        field,
-        previous: null,
-        position: index + 1,
-        previousPosition: null,
-      };
-    }
+    if (previousField === undefined)
+      throw new Error("Matched spec field is missing");
     const hasChanged =
       JSON.stringify(previousField) !== JSON.stringify(field) ||
       (positionMatters && previousIndex !== index);
@@ -111,4 +102,11 @@ export const SPEC_ROW_MARKER: Record<SpecFieldStatus, string | null> = {
   removed: "−",
   changed: "~",
   unchanged: null,
+};
+
+export const SPEC_ROW_MARKER_TONE: Record<SpecFieldStatus, string> = {
+  added: "text-green-400",
+  removed: "text-red-400",
+  changed: "text-amber-400",
+  unchanged: "text-slate-500",
 };

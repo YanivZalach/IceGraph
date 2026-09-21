@@ -55,11 +55,3 @@ export const schemaColumnNames = (
   visit({ kind: "struct", fields: schema.fields }, "");
   return names;
 };
-
-export const columnName = (
-  names: ReadonlyMap<string, string>,
-  id: IcebergInteger | undefined,
-): string =>
-  id === undefined
-    ? "Unknown column"
-    : (names.get(String(id)) ?? "Unresolved column");

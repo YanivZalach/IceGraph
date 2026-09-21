@@ -65,36 +65,52 @@ export const resolveSpecSelection = (
   return data ? { type: kind, id: data["order-id"], label, data } : null;
 };
 
-const integerValue = (value: unknown): bigint | null => {
-  if (typeof value !== "string" && typeof value !== "number") return null;
-  try {
-    return BigInt(value);
-  } catch {
-    return null;
-  }
+type VersionedSpec = TableSchema | PartitionSpec | SortOrder;
+
+const icebergInteger = (value: unknown): IcebergInteger => {
+  if (typeof value === "string" || typeof value === "number") return value;
+  throw new Error("Spec ID is missing");
 };
 
-export const findPreviousSpec = <T extends Record<string, unknown>>(
+const specId = (spec: VersionedSpec): IcebergInteger => {
+  if ("schema-id" in spec) return icebergInteger(spec["schema-id"]);
+  if ("spec-id" in spec) return icebergInteger(spec["spec-id"]);
+  return spec["order-id"];
+};
+
+export const findPreviousSpec = <T extends VersionedSpec>(
   items: readonly T[],
   selected: T,
-  idKey: keyof T,
 ): T | null => {
-  const selectedId = integerValue(selected[idKey]);
-  if (selectedId === null) return null;
+  const selectedId = BigInt(String(specId(selected)));
   let previous: T | null = null;
   let previousId: bigint | null = null;
   items.forEach((item) => {
-    const itemId = integerValue(item[idKey]);
-    if (
-      itemId !== null &&
-      itemId < selectedId &&
-      (previousId === null || itemId > previousId)
-    ) {
+    const itemId = BigInt(String(specId(item)));
+    if (itemId < selectedId && (previousId === null || itemId > previousId)) {
       previous = item;
       previousId = itemId;
     }
   });
   return previous;
+};
+
+export const hasPreviousSpec = (
+  metadata: TableMetadata | undefined,
+  selection: SpecSelection,
+): boolean => {
+  const detail = resolveSpecSelection(metadata, selection);
+  if (detail === null) return false;
+  if (detail.type === "schema")
+    return findPreviousSpec(metadata?.schemas ?? [], detail.data) !== null;
+  if (detail.type === "partition")
+    return (
+      findPreviousSpec(metadata?.["partition-specs"] ?? [], detail.data) !==
+      null
+    );
+  return (
+    findPreviousSpec(metadata?.["sort-orders"] ?? [], detail.data) !== null
+  );
 };
 
 export interface TableSpecsState {

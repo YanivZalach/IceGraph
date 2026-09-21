@@ -11,6 +11,49 @@ interface MetadataPropertiesProps {
 }
 const jsonParser = JSONbig({ storeAsString: true });
 
+const prettyPrintJsonTokens = (value: string): string => {
+  let output = "";
+  let indent = 0;
+  let inString = false;
+  let escaped = false;
+  const newline = (): void => {
+    output = `${output.trimEnd()}\n${"  ".repeat(indent)}`;
+  };
+  for (const character of value.trim()) {
+    if (inString) {
+      output += character;
+      if (escaped) escaped = false;
+      else if (character === "\\") escaped = true;
+      else if (character === '"') inString = false;
+      continue;
+    }
+    if (character === '"') {
+      inString = true;
+      output += character;
+    } else if (character === "{" || character === "[") {
+      output += character;
+      indent += 1;
+      newline();
+    } else if (character === "}" || character === "]") {
+      indent -= 1;
+      const trimmed = output.trimEnd();
+      if (trimmed.endsWith("{") || trimmed.endsWith("[")) {
+        output = `${trimmed}${character}`;
+      } else {
+        output = `${trimmed}\n${"  ".repeat(indent)}${character}`;
+      }
+    } else if (character === ",") {
+      output += character;
+      newline();
+    } else if (character === ":") {
+      output += ": ";
+    } else if (!/\s/.test(character)) {
+      output += character;
+    }
+  }
+  return output;
+};
+
 const formattedJson = (value: unknown): string | null => {
   if (typeof value === "object" && value !== null)
     return JSON.stringify(value, null, 2);
@@ -18,7 +61,7 @@ const formattedJson = (value: unknown): string | null => {
   try {
     const parsed: unknown = jsonParser.parse(value);
     return typeof parsed === "object" && parsed !== null
-      ? JSON.stringify(parsed, null, 2)
+      ? prettyPrintJsonTokens(value)
       : null;
   } catch {
     return null;
@@ -32,7 +75,7 @@ const MetadataProperties = ({ properties }: MetadataPropertiesProps) => {
       <summary className={METADATA_SUMMARY_CLASS}>
         Table properties{" "}
         <span className="ml-2 text-xs font-normal text-slate-400">
-          {entries.length} properties
+          {entries.length} {entries.length === 1 ? "property" : "properties"}
         </span>
       </summary>
       <div className={`${METADATA_SECTION_BODY_CLASS} px-5 py-2`}>
@@ -65,7 +108,11 @@ const MetadataProperties = ({ properties }: MetadataPropertiesProps) => {
                   <summary className="mb-2 cursor-pointer text-xs text-slate-400">
                     JSON value ({json.split("\n").length} lines)
                   </summary>
-                  <MetadataJson text={json} label={key} />
+                  <MetadataJson
+                    text={json}
+                    {...(plain === undefined ? {} : { copyText: plain })}
+                    label={key}
+                  />
                 </details>
               ) : (
                 <div className="flex min-w-0 items-start gap-2">

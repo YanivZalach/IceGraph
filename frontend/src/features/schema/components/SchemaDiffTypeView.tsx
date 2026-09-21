@@ -5,7 +5,7 @@ import type {
   SchemaTypeDiff,
   SchemaDiffStatus,
 } from "../schemaDiff";
-import { formatUnknownType } from "../schemaModel";
+import { formatRequiredness, formatUnknownType } from "../schemaModel";
 import SchemaCollectionMember from "./SchemaCollectionMember";
 import SchemaDiffValue from "./SchemaDiffValue";
 import SchemaTypeView from "./SchemaTypeView";
@@ -17,9 +17,6 @@ interface SchemaDiffTypeViewProps {
 }
 
 const formatId = (id: string | null): string => id ?? "?";
-
-const formatRequired = (isRequired: boolean | null): string =>
-  isRequired === null ? "unknown" : isRequired ? "required" : "optional";
 
 const badgeTone = (status: SchemaDiffStatus): string | undefined => {
   if (status === "added") return "text-green-400";
@@ -137,8 +134,8 @@ const SchemaDiffTypeView = ({
               name="element"
               requiredness={
                 <SchemaDiffValue
-                  before={formatRequired(typeDiff.beforeIsElementRequired)}
-                  after={formatRequired(typeDiff.afterIsElementRequired)}
+                  before={formatRequiredness(typeDiff.beforeIsElementRequired)}
+                  after={formatRequiredness(typeDiff.afterIsElementRequired)}
                   status={typeDiff.status}
                 />
               }
@@ -167,6 +164,7 @@ const SchemaDiffTypeView = ({
                   />
                 }
                 name="key"
+                requiredness="required"
               />
               <SchemaDiffTypeView
                 typeDiff={typeDiff.key}
@@ -185,8 +183,8 @@ const SchemaDiffTypeView = ({
                 name="value"
                 requiredness={
                   <SchemaDiffValue
-                    before={formatRequired(typeDiff.beforeIsValueRequired)}
-                    after={formatRequired(typeDiff.afterIsValueRequired)}
+                    before={formatRequiredness(typeDiff.beforeIsValueRequired)}
+                    after={formatRequiredness(typeDiff.afterIsValueRequired)}
                     status={typeDiff.status}
                   />
                 }

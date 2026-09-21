@@ -4,12 +4,13 @@ import CopyIconButton from "../../../components/CopyIconButton";
 interface MetadataJsonProps {
   text: string;
   label: string;
+  copyText?: string;
 }
 
-const MetadataJson = ({ text, label }: MetadataJsonProps) => (
+const MetadataJson = ({ text, label, copyText = text }: MetadataJsonProps) => (
   <div className="relative">
     <CopyIconButton
-      text={text}
+      text={copyText}
       title={`Copy ${label}`}
       className="absolute top-1.5 right-1.5 z-10"
     />

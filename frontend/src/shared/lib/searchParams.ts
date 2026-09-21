@@ -34,10 +34,13 @@ export const tableSearchSchema = z.looseObject({
   table: z.string().optional(),
   start_snapshot_id: z.string().optional(),
   end_snapshot_id: z.string().optional(),
-  specs: z.literal("open").optional(),
-  spec_kind: z.enum(["schema", "partition", "order"]).optional(),
+  specs: z.literal("open").optional().catch(undefined),
+  spec_kind: z
+    .enum(["schema", "partition", "order"])
+    .optional()
+    .catch(undefined),
   spec_id: z.string().optional(),
-  spec_view: z.literal("diff").optional(),
+  spec_view: z.literal("diff").optional().catch(undefined),
 });
 
 export const graphSearchSchema = tableSearchSchema.extend({

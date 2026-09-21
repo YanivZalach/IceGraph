@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "../../../shared/lib/cn";
 import type { SchemaFieldDiff } from "../schemaDiff";
+import { formatRequiredness } from "../schemaModel";
 import {
   getSchemaFieldDiffLabel,
   getSchemaFieldDiffMarker,
@@ -19,9 +20,6 @@ interface SchemaDiffFieldRowProps {
   isNested: boolean;
   renderNestedFields: (fields: SchemaFieldDiff[]) => ReactNode;
 }
-
-const formatRequired = (isRequired: boolean | null): string =>
-  isRequired === null ? "unknown" : isRequired ? "required" : "optional";
 
 const tableStatus = (fieldDiff: SchemaFieldDiff): SpecFieldStatus => {
   if (
@@ -54,8 +52,10 @@ const SchemaDiffFieldRow = ({
 
   const beforeName = fieldDiff.before?.name ?? "missing";
   const afterName = fieldDiff.after?.name ?? "missing";
-  const beforeRequired = formatRequired(fieldDiff.before?.isRequired ?? null);
-  const afterRequired = formatRequired(fieldDiff.after?.isRequired ?? null);
+  const beforeRequired = formatRequiredness(
+    fieldDiff.before?.isRequired ?? null,
+  );
+  const afterRequired = formatRequiredness(fieldDiff.after?.isRequired ?? null);
   const marker = getSchemaFieldDiffMarker(fieldDiff);
   const markerLabel = getSchemaFieldDiffLabel(fieldDiff);
   const name = fieldDiff.isNameChanged ? (

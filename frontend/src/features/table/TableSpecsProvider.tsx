@@ -1,28 +1,47 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useNavigate,
+  useRouter,
+  useRouterState,
+  useSearch,
+} from "@tanstack/react-router";
 import {
   TableSpecsContext,
+  hasPreviousSpec,
   resolveSpecSelection,
   type SpecSelection,
   type SpecView,
-} from "../features/table/tableSpecs";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate, useRouterState, useSearch } from "@tanstack/react-router";
+} from "./tableSpecs";
 import {
   graphProgressQueryKey,
   graphQueryKey,
   graphQueryOptions,
   requestGraphRebuild,
-} from "../features/table/api/graphQueries";
+} from "./api/graphQueries";
 
-interface TableSpecsProviderProps {
-  children: ReactNode;
+interface SpecSearch {
+  specs?: "open";
+  spec_kind?: SpecSelection["kind"];
+  spec_id?: string;
 }
 
-export const TableSpecsProvider = ({ children }: TableSpecsProviderProps) => {
+const isSpecsOverlayState = (value: unknown): boolean =>
+  typeof value === "object" &&
+  value !== null &&
+  "specsOverlay" in value &&
+  value.specsOverlay === true;
+
+export const TableSpecsProvider = ({ children }: { children: ReactNode }) => {
   const search = useSearch({ strict: false });
+  const navigate = useNavigate();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const isTablePage = useRouterState({
     select: (state) => state.location.pathname.startsWith("/table/"),
+  });
+  const isSpecsHistoryEntry = useRouterState({
+    select: (state) => isSpecsOverlayState(state.location.state),
   });
   const graphRequestParameters = {
     tableName: typeof search.table === "string" ? search.table : "",
@@ -42,7 +61,6 @@ export const TableSpecsProvider = ({ children }: TableSpecsProviderProps) => {
     queryFn: (): Record<string, string> | null => null,
     enabled: false,
   });
-  const navigate = useNavigate();
   const specKind = search.spec_kind;
   const specId = search.spec_id;
   const selection: SpecSelection | null =
@@ -58,21 +76,20 @@ export const TableSpecsProvider = ({ children }: TableSpecsProviderProps) => {
     graphQuery.data?.metadata,
     selection,
   );
-  // A shared link can name a specification the loaded metadata does not
-  // contain. Report it once the graph has loaded rather than dropping it.
   const unresolvedSelection =
-    selection !== null && graphQuery.data !== undefined && selectionDetail
-      ? null
-      : selection;
+    selection !== null &&
+    graphQuery.data !== undefined &&
+    selectionDetail === null
+      ? selection
+      : null;
 
-  const setSpecSearch = (
-    next: {
-      specs?: "open";
-      spec_kind?: SpecSelection["kind"];
-      spec_id?: string;
+  const navigateSpecs = (
+    next: SpecSearch,
+    options: {
+      clearView?: boolean;
+      markEntry?: boolean;
+      replace: boolean;
     },
-    isReplacing: boolean,
-    clearView = false,
   ): void => {
     void navigate({
       to: ".",
@@ -81,22 +98,49 @@ export const TableSpecsProvider = ({ children }: TableSpecsProviderProps) => {
         delete carried.specs;
         delete carried.spec_kind;
         delete carried.spec_id;
-        if (clearView) delete carried.spec_view;
+        if (options.clearView) delete carried.spec_view;
         return { ...carried, ...next };
       },
-      replace: isReplacing,
+      state: (previous) => ({
+        ...previous,
+        specsOverlay: options.markEntry || isSpecsOverlayState(previous),
+      }),
+      replace: options.replace,
     });
   };
 
-  const clearSpecSelection = (): void => {
-    setSpecSearch({ specs: "open" }, true);
+  const closeSpecs = (): void => {
+    if (isSpecsHistoryEntry) {
+      router.history.back();
+      return;
+    }
+    navigateSpecs({}, { clearView: true, replace: true });
   };
+
   const setDetailsOpen = (isOpen: boolean): void => {
-    setSpecSearch(isOpen ? { specs: "open" } : {}, !isOpen, !isOpen);
+    if (!isOpen) {
+      closeSpecs();
+      return;
+    }
+    navigateSpecs({ specs: "open" }, { markEntry: true, replace: detailsOpen });
   };
+
+  const clearSpecSelection = (): void => {
+    navigateSpecs({ specs: "open" }, { replace: true });
+  };
+
   const openSpec = (next: SpecSelection): void => {
-    setSpecSearch({ spec_kind: next.kind, spec_id: String(next.id) }, false);
+    const canShowDiff = hasPreviousSpec(graphQuery.data?.metadata, next);
+    navigateSpecs(
+      { spec_kind: next.kind, spec_id: String(next.id) },
+      {
+        clearView: !canShowDiff,
+        markEntry: !detailsOpen,
+        replace: detailsOpen,
+      },
+    );
   };
+
   const setSpecView = (view: SpecView): void => {
     void navigate({
       to: ".",
@@ -109,13 +153,31 @@ export const TableSpecsProvider = ({ children }: TableSpecsProviderProps) => {
       replace: true,
     });
   };
+
+  const shouldClearDiff =
+    specView === "diff" &&
+    selection !== null &&
+    selectionDetail !== null &&
+    !hasPreviousSpec(graphQuery.data?.metadata, selection);
+  useEffect(() => {
+    if (!shouldClearDiff) return;
+    void navigate({
+      to: ".",
+      search: (previous: Record<string, unknown>) => {
+        const next = { ...previous };
+        delete next.spec_view;
+        return next;
+      },
+      replace: true,
+    });
+  }, [navigate, shouldClearDiff]);
+
   const [issuesOpen, setIssuesOpen] = useState(false);
   const errors = isTablePage ? (graphQuery.data?.errors ?? {}) : {};
   const warnings = isTablePage ? (graphQuery.data?.warnings ?? {}) : {};
 
   const rebuildGraph = async () => {
     if (!isTablePage || graphRequestParameters.tableName === "") return;
-
     requestGraphRebuild(graphRequestParameters);
     await queryClient.resetQueries({
       queryKey: graphQueryKey(graphRequestParameters),

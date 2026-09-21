@@ -1,12 +1,12 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
-interface MetadataHelpProps {
+interface HelpTermProps {
   label: string;
   children: ReactNode;
 }
 
-const MetadataHelp = ({ label, children }: MetadataHelpProps) => {
+const HelpTerm = ({ label, children }: HelpTermProps) => {
   const id = useId();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
@@ -88,4 +88,5 @@ const MetadataHelp = ({ label, children }: MetadataHelpProps) => {
     </>
   );
 };
-export default MetadataHelp;
+
+export default HelpTerm;

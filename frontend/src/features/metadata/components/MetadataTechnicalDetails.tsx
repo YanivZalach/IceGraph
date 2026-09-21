@@ -2,7 +2,7 @@ import type { TableMetadata } from "../../table/api/metadataSchemas";
 import type { GraphNode } from "../../table/api/graphSchemas";
 import CopyIconButton from "../../../components/CopyIconButton";
 import MetadataProperties from "./MetadataProperties";
-import MetadataHelp from "./MetadataHelp";
+import HelpTerm from "../../../shared/components/HelpTerm";
 import {
   formatCount,
   formatSnapshotTime,
@@ -34,13 +34,31 @@ const MetadataTechnicalDetails = ({
     },
     {
       label: "Current snapshot in this metadata",
-      value: integerText(metadata["current-snapshot-id"]),
-      isCopyable: true,
+      value:
+        integerText(metadata["current-snapshot-id"]) === "-1"
+          ? "None"
+          : integerText(metadata["current-snapshot-id"]),
+      isCopyable: integerText(metadata["current-snapshot-id"]) !== "-1",
     },
     {
       label: "Snapshot committed",
       value: formatSnapshotTime(snapshot?.timestamp),
       isCopyable: false,
+    },
+    {
+      label: "Last sequence number",
+      value: integerText(metadata["last-sequence-number"]),
+      isCopyable: true,
+    },
+    {
+      label: "Last column ID",
+      value: integerText(metadata["last-column-id"]),
+      isCopyable: true,
+    },
+    {
+      label: "Last partition ID",
+      value: integerText(metadata["last-partition-id"]),
+      isCopyable: true,
     },
   ];
   const refs = Object.entries(metadata.refs ?? {});
@@ -80,7 +98,7 @@ const MetadataTechnicalDetails = ({
           <summary className={METADATA_SUMMARY_CLASS}>
             Branches and tags{" "}
             <span className="ml-2 text-xs font-normal text-slate-400">
-              {refs.length} references
+              {refs.length} {refs.length === 1 ? "reference" : "references"}
             </span>
           </summary>
           <div className={`${METADATA_SECTION_BODY_CLASS} px-5 py-2`}>
@@ -95,7 +113,7 @@ const MetadataTechnicalDetails = ({
                 className="flex flex-wrap items-center gap-3 border-t border-edge py-3 text-sm first:border-t-0"
               >
                 <strong className="text-ink">{name}</strong>
-                <span className="rounded bg-edge px-2 py-0.5 text-xs capitalize text-slate-400">
+                <span className="rounded bg-edge px-2 py-0.5 text-xs text-slate-400">
                   {ref.type}
                 </span>
                 <code className="min-w-0 break-all text-xs text-slate-300 md:ml-auto">
@@ -119,10 +137,10 @@ const MetadataTechnicalDetails = ({
           >
             <div className="flex flex-wrap justify-between gap-3">
               <dt>
-                <MetadataHelp label="Position deletes">
+                <HelpTerm label="Position deletes">
                   Delete records identifying rows by data file and row position.
                   These are records, not a count of unique deleted rows.
-                </MetadataHelp>
+                </HelpTerm>
               </dt>
               <dd>
                 {formatCount(
@@ -132,10 +150,10 @@ const MetadataTechnicalDetails = ({
             </div>
             <div className="flex flex-wrap justify-between gap-3">
               <dt>
-                <MetadataHelp label="Equality deletes">
+                <HelpTerm label="Equality deletes">
                   Delete records matching field values. One record may match
                   multiple rows; this is not a live row count.
-                </MetadataHelp>
+                </HelpTerm>
               </dt>
               <dd>
                 {formatCount(

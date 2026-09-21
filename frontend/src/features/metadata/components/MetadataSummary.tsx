@@ -1,7 +1,7 @@
 import type { GraphNode } from "../../table/api/graphSchemas";
 import { formatCount, formatSnapshotTime } from "../metadataPresentation";
-import { formatBytesAsGibibytes } from "../../../shared/lib/formatBytes";
-import MetadataHelp from "./MetadataHelp";
+import { formatBytes } from "../../../shared/lib/formatBytes";
+import HelpTerm from "../../../shared/components/HelpTerm";
 import CopyIconButton from "../../../components/CopyIconButton";
 
 interface MetadataSummaryProps {
@@ -46,11 +46,11 @@ const MetadataSummary = ({ snapshotId, snapshot }: MetadataSummaryProps) => {
         </div>
         <div className="p-5">
           <span className="text-xs text-slate-400">
-            <MetadataHelp label="Delete files">
+            <HelpTerm label="Delete files">
               Files that record deleted rows separately from the data files.
               &quot;Records in data files&quot; does not subtract them, so the
               table can hold fewer live rows than that number suggests.
-            </MetadataHelp>
+            </HelpTerm>
           </span>
           <p className="mt-2 text-2xl font-semibold text-ink">
             {formatCount(deleteFiles)}
@@ -64,7 +64,7 @@ const MetadataSummary = ({ snapshotId, snapshot }: MetadataSummaryProps) => {
             className="mt-2 text-2xl font-semibold text-ink"
             title={bytes === null ? undefined : `${formatCount(bytes)} bytes`}
           >
-            {bytes === null ? "Unavailable" : formatBytesAsGibibytes(bytes)}
+            {bytes === null ? "Unavailable" : formatBytes(bytes)}
           </p>
           {bytes !== null && (
             <details className="mt-2 text-xs text-slate-400">
