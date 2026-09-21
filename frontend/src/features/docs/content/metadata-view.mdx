@@ -7,7 +7,7 @@ The version header shows the metadata update time and metadata file path. All ti
 **At a glance** comes from the current snapshot referenced by the loaded metadata file. Its commit time can precede the metadata update time.
 
 - **Records in data files** is the snapshot's record count before subtracting row deletes, not a live SQL row count. Delete files are shown alongside it.
-- **Total file size (data + deletes)** includes both file types and uses a readable unit based on its size. Hover over the size for exact bytes, or expand **Exact bytes** to view and copy the original byte count.
+- **Total file size (data + deletes)** includes both file types and is shown in GiB. Hover over the size for exact bytes, or expand **Exact bytes** to view and copy the original byte count.
 - Missing statistics are shown as **Unavailable**. The page explains when no current snapshot exists or its statistics are outside the loaded graph.
 
 ### Schema and data organization

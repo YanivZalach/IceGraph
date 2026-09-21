@@ -1,4 +1,11 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
 
 interface HelpTermProps {
@@ -6,9 +13,17 @@ interface HelpTermProps {
   children: ReactNode;
 }
 
+const tooltipTop = (bounds: DOMRect, tooltipHeight: number): number =>
+  tooltipHeight > 0 &&
+  bounds.bottom + 6 + tooltipHeight > window.innerHeight &&
+  bounds.top >= tooltipHeight + 6
+    ? bounds.top - tooltipHeight - 6
+    : bounds.bottom + 6;
+
 const HelpTerm = ({ label, children }: HelpTermProps) => {
   const id = useId();
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const tooltipRef = useRef<HTMLSpanElement>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
   );
@@ -23,9 +38,11 @@ const HelpTerm = ({ label, children }: HelpTermProps) => {
     cancelHide();
     const bounds = buttonRef.current?.getBoundingClientRect();
     if (!bounds) return;
+    const tooltipHeight =
+      tooltipRef.current?.getBoundingClientRect().height ?? 0;
     setPosition({
       left: Math.max(8, Math.min(bounds.left, window.innerWidth - 272)),
-      top: bounds.bottom + 6,
+      top: tooltipTop(bounds, tooltipHeight),
     });
   };
   const hide = (): void => {
@@ -35,6 +52,16 @@ const HelpTerm = ({ label, children }: HelpTermProps) => {
     }, 120);
   };
   const isOpen = position !== null;
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    const buttonBounds = buttonRef.current?.getBoundingClientRect();
+    const tooltipBounds = tooltipRef.current?.getBoundingClientRect();
+    if (!buttonBounds || !tooltipBounds) return;
+    const top = tooltipTop(buttonBounds, tooltipBounds.height);
+    setPosition((current) =>
+      current === null || current.top === top ? current : { ...current, top },
+    );
+  }, [isOpen]);
   useEffect(() => {
     if (!isOpen) return;
     const close = (): void => {
@@ -73,6 +100,7 @@ const HelpTerm = ({ label, children }: HelpTermProps) => {
       </button>
       {createPortal(
         <span
+          ref={tooltipRef}
           id={id}
           role="tooltip"
           hidden={!isOpen}

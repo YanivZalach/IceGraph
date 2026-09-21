@@ -5,7 +5,7 @@ const canHandleScroll = (event: KeyboardEvent): boolean => {
   return (
     target instanceof HTMLElement &&
     !target.isContentEditable &&
-    target.closest("input, textarea, select, button, a, summary") === null
+    target.closest("input, textarea, select") === null
   );
 };
 

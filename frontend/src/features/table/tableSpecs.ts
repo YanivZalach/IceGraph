@@ -21,6 +21,28 @@ export interface SpecSelection {
 
 export type SpecView = "full" | "diff";
 
+export interface SpecSearch {
+  specs?: "open";
+  spec_kind?: SpecSelection["kind"];
+  spec_id?: string;
+}
+
+export const isSpecsOverlayState = (value: unknown): boolean =>
+  typeof value === "object" &&
+  value !== null &&
+  "specsOverlay" in value &&
+  value.specsOverlay === true;
+
+export const parseSpecSelection = (
+  kind: unknown,
+  id: unknown,
+): SpecSelection | null =>
+  (kind === "schema" || kind === "partition" || kind === "order") &&
+  typeof id === "string" &&
+  id !== ""
+    ? { kind, id }
+    : null;
+
 export type SpecDetail =
   | { type: "schema"; id: IcebergInteger; label: string; data: TableSchema }
   | {

@@ -204,9 +204,13 @@ const diffMatchedFields = (
   const isRequiredChanged = before.isRequired !== after.isRequired;
 
   return {
-    status: nestedStatus(isNameChanged || isDocChanged || isRequiredChanged, [
-      type.status,
-    ]),
+    status: nestedStatus(
+      isNameChanged ||
+        isDocChanged ||
+        isRequiredChanged ||
+        type.status === "changed",
+      [type.status],
+    ),
     movement: null,
     before,
     after,

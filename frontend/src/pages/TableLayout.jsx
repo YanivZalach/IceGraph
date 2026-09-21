@@ -232,7 +232,10 @@ export default function TableLayout() {
       if (issuesOpen) setIssuesOpen(false);
       else setDetailsOpen(false);
     },
-    { enabled: detailsOpen || issuesOpen },
+    {
+      conflictBehavior: "allow",
+      enabled: detailsOpen || issuesOpen,
+    },
   );
 
   useEffect(() => {

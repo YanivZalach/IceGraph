@@ -1,6 +1,6 @@
 import type { GraphNode } from "../../table/api/graphSchemas";
 import { formatCount, formatSnapshotTime } from "../metadataPresentation";
-import { formatBytes } from "../../../shared/lib/formatBytes";
+import { formatBytesAsGibibytes } from "../../../shared/lib/formatBytes";
 import HelpTerm from "../../../shared/components/HelpTerm";
 import CopyIconButton from "../../../components/CopyIconButton";
 
@@ -64,7 +64,7 @@ const MetadataSummary = ({ snapshotId, snapshot }: MetadataSummaryProps) => {
             className="mt-2 text-2xl font-semibold text-ink"
             title={bytes === null ? undefined : `${formatCount(bytes)} bytes`}
           >
-            {bytes === null ? "Unavailable" : formatBytes(bytes)}
+            {bytes === null ? "Unavailable" : formatBytesAsGibibytes(bytes)}
           </p>
           {bytes !== null && (
             <details className="mt-2 text-xs text-slate-400">

@@ -39,7 +39,10 @@ const FileTreeViewSettings = ({
 }: FileTreeViewSettingsProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  useHotkey("Escape", setIsOpen.bind(null, false), { enabled: isOpen });
+  useHotkey("Escape", setIsOpen.bind(null, false), {
+    conflictBehavior: "allow",
+    enabled: isOpen,
+  });
 
   useEffect(() => {
     if (!isOpen) return;

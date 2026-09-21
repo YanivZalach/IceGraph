@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import type { TableSchema } from "../../table/api/metadataSchemas";
 import type { SpecSelection } from "../../table/tableSpecs";
 import SchemaFieldList from "../../schema/components/SchemaFieldList";
@@ -20,6 +20,7 @@ const MetadataSchema = ({
 }: MetadataSchemaProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const panelId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
   if (!schema)
     return (
       <section className="rounded-xl border border-edge bg-surface p-5">
@@ -63,7 +64,9 @@ const MetadataSchema = ({
           <button
             type="button"
             onClick={() => {
-              setIsExpanded(!isExpanded);
+              const willExpand = !isExpanded;
+              setIsExpanded(willExpand);
+              if (willExpand) panelRef.current?.focus({ preventScroll: true });
             }}
             aria-expanded={isExpanded}
             aria-controls={panelId}
@@ -90,6 +93,7 @@ const MetadataSchema = ({
         )}
       </div>
       <div
+        ref={panelRef}
         id={panelId}
         data-metadata-scroll
         tabIndex={0}

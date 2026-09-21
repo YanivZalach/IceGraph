@@ -9,8 +9,11 @@ import {
 import {
   TableSpecsContext,
   hasPreviousSpec,
+  isSpecsOverlayState,
+  parseSpecSelection,
   resolveSpecSelection,
   type SpecSelection,
+  type SpecSearch,
   type SpecView,
 } from "./tableSpecs";
 import {
@@ -19,18 +22,6 @@ import {
   graphQueryOptions,
   requestGraphRebuild,
 } from "./api/graphQueries";
-
-interface SpecSearch {
-  specs?: "open";
-  spec_kind?: SpecSelection["kind"];
-  spec_id?: string;
-}
-
-const isSpecsOverlayState = (value: unknown): boolean =>
-  typeof value === "object" &&
-  value !== null &&
-  "specsOverlay" in value &&
-  value.specsOverlay === true;
 
 export const TableSpecsProvider = ({ children }: { children: ReactNode }) => {
   const search = useSearch({ strict: false });
@@ -63,13 +54,9 @@ export const TableSpecsProvider = ({ children }: { children: ReactNode }) => {
   });
   const specKind = search.spec_kind;
   const specId = search.spec_id;
-  const selection: SpecSelection | null =
-    (specKind === "schema" ||
-      specKind === "partition" ||
-      specKind === "order") &&
-    typeof specId === "string"
-      ? { kind: specKind, id: specId }
-      : null;
+  const selection = parseSpecSelection(specKind, specId);
+  const hasIncompleteSpecSelection =
+    (specKind !== undefined || specId !== undefined) && selection === null;
   const detailsOpen = search.specs === "open" || selection !== null;
   const specView: SpecView = search.spec_view === "diff" ? "diff" : "full";
   const selectionDetail = resolveSpecSelection(
@@ -160,17 +147,21 @@ export const TableSpecsProvider = ({ children }: { children: ReactNode }) => {
     selectionDetail !== null &&
     !hasPreviousSpec(graphQuery.data?.metadata, selection);
   useEffect(() => {
-    if (!shouldClearDiff) return;
+    if (!shouldClearDiff && !hasIncompleteSpecSelection) return;
     void navigate({
       to: ".",
       search: (previous: Record<string, unknown>) => {
         const next = { ...previous };
-        delete next.spec_view;
+        if (shouldClearDiff) delete next.spec_view;
+        if (hasIncompleteSpecSelection) {
+          delete next.spec_kind;
+          delete next.spec_id;
+        }
         return next;
       },
       replace: true,
     });
-  }, [navigate, shouldClearDiff]);
+  }, [hasIncompleteSpecSelection, navigate, shouldClearDiff]);
 
   const [issuesOpen, setIssuesOpen] = useState(false);
   const errors = isTablePage ? (graphQuery.data?.errors ?? {}) : {};
