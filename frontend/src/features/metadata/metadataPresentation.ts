@@ -29,8 +29,6 @@ export const formatSnapshotTime = (
   return date === null ? value : formatLocaleDateTime(date);
 };
 
-// This is a display-name lookup only. IDs, transforms, and collection semantics
-// remain those supplied by the backend.
 export const schemaColumnNames = (
   schema: IcebergSchema,
 ): ReadonlyMap<string, string> => {

@@ -381,9 +381,6 @@ export default function TableLayout() {
   }
 
   const metadata = graphData.metadata;
-  // Source IDs are resolved against the current schema. The ID stays visible in
-  // every row, so an older spec pointing at a since-renamed column still shows
-  // the value Iceberg recorded.
   const specColumnNames = schemaColumnNames(
     parseIcebergSchema(
       metadata?.schemas?.find(

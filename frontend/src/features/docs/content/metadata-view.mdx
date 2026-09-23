@@ -6,7 +6,7 @@ The version header shows the metadata update time and metadata file path. All ti
 
 **At a glance** comes from the current snapshot referenced by the loaded metadata file. Its commit time can precede the metadata update time.
 
-- **Records in data files** is the snapshot's record count before subtracting row deletes, not a live SQL row count. Delete files are shown alongside it.
+- **Records in data files** is the snapshot's record count before subtracting row deletes. Delete files are shown alongside it.
 - **Total file size (data + deletes)** includes both file types and is shown in GiB. Hover over the size for exact bytes, or expand **Exact bytes** to view and copy the original byte count.
 - Missing statistics are shown as **Unavailable**. The page explains when no current snapshot exists or its statistics are outside the loaded graph.
 
@@ -16,7 +16,7 @@ The schema panel scrolls independently. Use **Expand schema** to display its ful
 
 Click the **Schema**, **Spec**, or **Order** link to open that definition in the Specs panel. Use **Full / Diff** there to inspect changes. The schema section also reports earlier schemas available in this metadata file.
 
-Each partition and sort row resolves the source column name against the current schema and shows its source ID. Values render exactly as Iceberg records them, so a transform reads `hour`, a direction reads `asc`, and a null order reads `nulls-first`. Sort fields are numbered in priority order. The sort order is a write preference, and it does not guarantee file or query result order.
+Each partition and sort row resolves the source column name against the current schema and shows its source ID. Sort fields are numbered in priority order. The sort order is a write preference, and it does not guarantee file or query result order.
 
 Help on Iceberg-specific terms opens on hover, focus, or click. Press Escape to dismiss it.
 

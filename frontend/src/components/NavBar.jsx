@@ -11,6 +11,7 @@ import logo from "../assets/icegraph.png";
 import CatalogTableList from "./CatalogTableList";
 import { useTableSpecs } from "../features/table/tableSpecs";
 import { catalogQueryOptions } from "../features/catalog/api/catalogQueries";
+import { isKeyboardInputTarget } from "../shared/lib/keyboard";
 import {
   BASE_PATH,
   IS_MOCK,
@@ -134,11 +135,7 @@ export default function NavBar() {
     if (!isTablePage) return;
     const handleKey = (e) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
-      if (
-        ["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName) ||
-        e.target.isContentEditable
-      )
-        return;
+      if (isKeyboardInputTarget(e.target)) return;
       const tabs = ["timeline", "metadata", "filetree", "graph"];
       const idx = parseInt(e.key) - 1;
       if (idx >= 0 && idx < tabs.length) {

@@ -25,6 +25,7 @@ import ResizableSidePanel from "../components/ResizableSidePanel";
 import { FileType } from "../graphConstants";
 import { parseUtcDate, formatUtcOffset } from "../utils/dateUtils";
 import { bindMouseScrollHandoff } from "../utils/smoothScroll";
+import { isKeyboardInputTarget } from "../shared/lib/keyboard";
 
 const COLOR_A = "#1964B9";
 const COLOR_B = "#6437D2";
@@ -514,11 +515,7 @@ export default function TimelinePage() {
 
     const handleKey = (e) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
-      if (
-        ["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName) ||
-        e.target.isContentEditable
-      )
-        return;
+      if (isKeyboardInputTarget(e.target)) return;
       if (e.key === "Escape") {
         setSelected(null);
         return;

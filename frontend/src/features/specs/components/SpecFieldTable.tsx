@@ -57,9 +57,6 @@ export const SpecDiffMarker = ({
   </span>
 );
 
-// Values render exactly as Iceberg records them. Changed values show the
-// previous value struck through beside the current one rather than being
-// merged or relabelled.
 export const SpecValue = ({
   value,
   previous,

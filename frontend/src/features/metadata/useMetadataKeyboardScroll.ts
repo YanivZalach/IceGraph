@@ -1,12 +1,9 @@
 import { useHotkey } from "@tanstack/react-hotkeys";
+import { isKeyboardInputTarget } from "../../shared/lib/keyboard";
 
 const canHandleScroll = (event: KeyboardEvent): boolean => {
   const target = event.target;
-  return (
-    target instanceof HTMLElement &&
-    !target.isContentEditable &&
-    target.closest("input, textarea, select") === null
-  );
+  return target instanceof HTMLElement && !isKeyboardInputTarget(target);
 };
 
 const scrollFocusedRegion = (event: KeyboardEvent, delta: number): void => {
