@@ -1,11 +1,11 @@
 import type {
   IcebergInteger,
   TableMetadata,
-} from "../features/table/api/metadataSchemas";
-import type { SpecDetail, SpecSelection } from "../features/table/tableSpecs";
-import { UI_STRUCTURED_SECTION_TITLE_CLASS } from "../uiTypography";
+} from "../../table/api/metadataSchemas";
+import type { SpecDetail, SpecSelection } from "../tableSpecs";
+import { UI_STRUCTURED_SECTION_TITLE_CLASS } from "../../../uiTypography";
 
-interface MetadataStructuredProps {
+interface SpecHistoryProps {
   metadata: TableMetadata;
   onSelect: (kind: SpecSelection["kind"], id: IcebergInteger) => void;
   selection: SpecDetail | null;
@@ -20,7 +20,7 @@ interface HistoryBoxesProps {
   activeId: IcebergInteger | null | undefined;
   items: HistoryItem[] | undefined;
   label: string;
-  onSelect: MetadataStructuredProps["onSelect"];
+  onSelect: SpecHistoryProps["onSelect"];
   selection: SpecDetail | null;
   type: SpecSelection["kind"];
 }
@@ -87,11 +87,7 @@ const HistoryBoxes = ({
   );
 };
 
-const MetadataStructured = ({
-  metadata,
-  onSelect,
-  selection,
-}: MetadataStructuredProps) => (
+const SpecHistory = ({ metadata, onSelect, selection }: SpecHistoryProps) => (
   <div className="py-2">
     <HistoryBoxes
       items={metadata.schemas?.map((item) => ({
@@ -129,4 +125,4 @@ const MetadataStructured = ({
   </div>
 );
 
-export default MetadataStructured;
+export default SpecHistory;

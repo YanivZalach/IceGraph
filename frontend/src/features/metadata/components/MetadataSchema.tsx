@@ -1,6 +1,6 @@
 import { useId, useRef, useState } from "react";
 import type { TableSchema } from "../../table/api/metadataSchemas";
-import type { SpecSelection } from "../../table/tableSpecs";
+import type { SpecSelection } from "../../specs/tableSpecs";
 import SchemaFieldList from "../../schema/components/SchemaFieldList";
 import { parseIcebergSchema } from "../../schema/schemaModel";
 import { cn } from "../../../shared/lib/cn";

@@ -5,14 +5,14 @@ import {
   type SetStateAction,
 } from "react";
 import type { UseQueryResult } from "@tanstack/react-query";
-import type { GraphData } from "./api/graphSchemas";
+import type { GraphData } from "../table/api/graphSchemas";
 import type {
   IcebergInteger,
   TableMetadata,
   TableSchema,
   PartitionSpec,
   SortOrder,
-} from "./api/metadataSchemas";
+} from "../table/api/metadataSchemas";
 
 export interface SpecSelection {
   kind: "schema" | "partition" | "order";

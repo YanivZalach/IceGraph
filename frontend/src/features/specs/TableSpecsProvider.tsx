@@ -21,7 +21,7 @@ import {
   graphQueryKey,
   graphQueryOptions,
   requestGraphRebuild,
-} from "./api/graphQueries";
+} from "../table/api/graphQueries";
 
 export const TableSpecsProvider = ({ children }: { children: ReactNode }) => {
   const search = useSearch({ strict: false });

@@ -13,7 +13,7 @@ import {
   UI_MONO_MUTED_CLASS,
 } from "../uiTypography";
 
-import MetadataStructured from "../components/MetadataStructured";
+import SpecHistory from "../features/specs/components/SpecHistory";
 import PartitionFieldTable from "../features/specs/components/PartitionFieldTable";
 import SortFieldTable from "../features/specs/components/SortFieldTable";
 import { diffSpecRows, plainSpecRows } from "../features/specs/specFieldRows";
@@ -28,7 +28,7 @@ import {
   specSelectionLabel,
   findPreviousSpec,
   useTableSpecs,
-} from "../features/table/tableSpecs";
+} from "../features/specs/tableSpecs";
 import {
   BRANCH_CONNECTION_COLOR,
   DELETED_DATA_FILE_CONNECTION_COLOR,
@@ -436,7 +436,7 @@ export default function TableLayout() {
             </div>
 
             <div className="overflow-y-auto px-6 py-5 flex flex-col gap-4">
-              <MetadataStructured
+              <SpecHistory
                 metadata={metadata}
                 onSelect={(kind, id) => openSpec({ kind, id })}
                 selection={selectionDetail}

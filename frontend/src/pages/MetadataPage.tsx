@@ -1,31 +1,34 @@
 import { useSearch } from "@tanstack/react-router";
-import { useTableSpecs } from "../table/tableSpecs";
-import { parseIcebergSchema } from "../schema/schemaModel";
-import { integerText, schemaColumnNames } from "./metadataPresentation";
-import { useMetadataKeyboardScroll } from "./useMetadataKeyboardScroll";
-import MetadataVersion from "./components/MetadataVersion";
-import MetadataSummary from "./components/MetadataSummary";
-import MetadataSchema from "./components/MetadataSchema";
-import MetadataPartitioning from "./components/MetadataPartitioning";
-import MetadataSortOrder from "./components/MetadataSortOrder";
-import MetadataTechnicalDetails from "./components/MetadataTechnicalDetails";
-import MetadataJson from "./components/MetadataJson";
+import { useTableSpecs } from "../features/specs/tableSpecs";
+import { parseIcebergSchema } from "../features/schema/schemaModel";
+import {
+  integerText,
+  schemaColumnNames,
+} from "../features/metadata/metadataPresentation";
+import { useMetadataKeyboardScroll } from "../features/metadata/useMetadataKeyboardScroll";
+import MetadataVersion from "../features/metadata/components/MetadataVersion";
+import MetadataSummary from "../features/metadata/components/MetadataSummary";
+import MetadataSchema from "../features/metadata/components/MetadataSchema";
+import MetadataPartitioning from "../features/metadata/components/MetadataPartitioning";
+import MetadataSortOrder from "../features/metadata/components/MetadataSortOrder";
+import MetadataTechnicalDetails from "../features/metadata/components/MetadataTechnicalDetails";
+import MetadataJson from "../features/metadata/components/MetadataJson";
 import {
   METADATA_SECTION_BODY_CLASS,
   METADATA_SUMMARY_CLASS,
-} from "./metadataStyles";
-import { FileType } from "../../graphConstants";
+} from "../features/metadata/metadataStyles";
+import { FileType } from "../graphConstants";
 
 const MetadataPage = () => {
   const search = useSearch({ from: "/table/metadata" });
   const { graphQuery, openSpec, detailsOpen, issuesOpen } = useTableSpecs();
   const data = graphQuery.data;
-  const path = data?.nodes.find(
-    (node) => node.type === FileType.MAIN_METADATA,
-  )?.file_path;
   useMetadataKeyboardScroll(detailsOpen || issuesOpen);
   if (!data) return null;
   const { metadata, nodes } = data;
+  const path = nodes.find(
+    (node) => node.type === FileType.MAIN_METADATA,
+  )?.file_path;
   const snapshotId = integerText(metadata["current-snapshot-id"]);
   const snapshot = nodes.find(
     (node) =>

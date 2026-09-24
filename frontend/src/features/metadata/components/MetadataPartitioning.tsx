@@ -1,5 +1,5 @@
 import type { PartitionSpec } from "../../table/api/metadataSchemas";
-import type { SpecSelection } from "../../table/tableSpecs";
+import type { SpecSelection } from "../../specs/tableSpecs";
 import PartitionFieldTable from "../../specs/components/PartitionFieldTable";
 import { plainSpecRows } from "../../specs/specFieldRows";
 

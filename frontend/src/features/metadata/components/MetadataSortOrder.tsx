@@ -1,5 +1,5 @@
 import type { SortOrder } from "../../table/api/metadataSchemas";
-import type { SpecSelection } from "../../table/tableSpecs";
+import type { SpecSelection } from "../../specs/tableSpecs";
 import SortFieldTable from "../../specs/components/SortFieldTable";
 import { plainSpecRows } from "../../specs/specFieldRows";
 

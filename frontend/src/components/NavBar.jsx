@@ -9,7 +9,7 @@ import {
 } from "@tanstack/react-router";
 import logo from "../assets/icegraph.png";
 import CatalogTableList from "./CatalogTableList";
-import { useTableSpecs } from "../features/table/tableSpecs";
+import { useTableSpecs } from "../features/specs/tableSpecs";
 import { catalogQueryOptions } from "../features/catalog/api/catalogQueries";
 import { isKeyboardInputTarget } from "../shared/lib/keyboard";
 import {

@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { Outlet, createRootRoute } from "@tanstack/react-router";
-import { TableSpecsProvider } from "../features/table/TableSpecsProvider";
+import { TableSpecsProvider } from "../features/specs/TableSpecsProvider";
 import NavBar from "../components/NavBar";
 import PageLoader from "../components/PageLoader";
 
