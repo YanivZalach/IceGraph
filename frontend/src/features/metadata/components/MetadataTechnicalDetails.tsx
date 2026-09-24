@@ -9,9 +9,9 @@ import {
   integerText,
 } from "../metadataPresentation";
 import {
-  METADATA_SECTION_BODY_CLASS,
-  METADATA_SUMMARY_CLASS,
-} from "../metadataStyles";
+  UI_EXPANDABLE_BODY_CLASS,
+  UI_EXPANDABLE_SUMMARY_CLASS,
+} from "../../../uiTypography";
 
 interface MetadataTechnicalDetailsProps {
   metadata: TableMetadata;
@@ -22,8 +22,6 @@ const MetadataTechnicalDetails = ({
   metadata,
   snapshot,
 }: MetadataTechnicalDetailsProps) => {
-  // The committed time is a rendered string, so it is shown without a copy
-  // action rather than offering a value that is not the stored timestamp.
   const facts = [
     { label: "Table UUID", value: metadata["table-uuid"], isCopyable: true },
     { label: "Table location", value: metadata.location, isCopyable: true },
@@ -72,10 +70,10 @@ const MetadataTechnicalDetails = ({
       </h2>
       <div className="overflow-hidden rounded-xl border border-edge bg-surface">
         <details>
-          <summary className={METADATA_SUMMARY_CLASS}>
+          <summary className={UI_EXPANDABLE_SUMMARY_CLASS}>
             Storage and identifiers
           </summary>
-          <dl className={`${METADATA_SECTION_BODY_CLASS} px-5 py-2`}>
+          <dl className={`${UI_EXPANDABLE_BODY_CLASS} px-5 py-2`}>
             {facts.map(({ label, value, isCopyable }) => (
               <div
                 key={label}
@@ -95,13 +93,13 @@ const MetadataTechnicalDetails = ({
           </dl>
         </details>
         <details className="border-t border-edge">
-          <summary className={METADATA_SUMMARY_CLASS}>
+          <summary className={UI_EXPANDABLE_SUMMARY_CLASS}>
             Branches and tags{" "}
             <span className="ml-2 text-xs font-normal text-slate-400">
               {refs.length} {refs.length === 1 ? "reference" : "references"}
             </span>
           </summary>
-          <div className={`${METADATA_SECTION_BODY_CLASS} px-5 py-2`}>
+          <div className={`${UI_EXPANDABLE_BODY_CLASS} px-5 py-2`}>
             {refs.length === 0 && (
               <p className="text-sm text-slate-400">
                 No named references recorded.
@@ -129,11 +127,11 @@ const MetadataTechnicalDetails = ({
         </details>
         <MetadataProperties properties={metadata.properties} />
         <details className="border-t border-edge">
-          <summary className={METADATA_SUMMARY_CLASS}>
+          <summary className={UI_EXPANDABLE_SUMMARY_CLASS}>
             Delete statistics
           </summary>
           <dl
-            className={`${METADATA_SECTION_BODY_CLASS} space-y-3 px-5 py-4 text-sm text-slate-400`}
+            className={`${UI_EXPANDABLE_BODY_CLASS} space-y-3 px-5 py-4 text-sm text-slate-400`}
           >
             <div className="flex flex-wrap justify-between gap-3">
               <dt>

@@ -2,6 +2,7 @@ import type { IcebergType } from "../schemaModel";
 import { formatRequiredness, formatUnknownType } from "../schemaModel";
 import SchemaCollectionMember from "./SchemaCollectionMember";
 import SchemaTypeBadge from "./SchemaTypeBadge";
+import SchemaFieldDoc from "./SchemaFieldDoc";
 
 interface SchemaTypeViewProps {
   type: IcebergType;
@@ -32,14 +33,12 @@ const SchemaTypeView = ({ type }: SchemaTypeViewProps) => {
                     {formatRequiredness(field.isRequired)}
                   </span>
                 </div>
-                {field.doc && (
-                  <p className="ml-9 font-sans text-xs text-slate-400">
-                    {field.doc}
-                  </p>
-                )}
                 <div className="ml-9">
                   <SchemaTypeView type={field.type} />
                 </div>
+                {field.doc && (
+                  <SchemaFieldDoc className="ml-9">{field.doc}</SchemaFieldDoc>
+                )}
               </div>
             ))}
           </div>

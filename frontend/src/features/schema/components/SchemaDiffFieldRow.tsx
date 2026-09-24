@@ -7,6 +7,7 @@ import {
   getSchemaFieldDiffMarker,
 } from "../schemaDiffPresentation";
 import SchemaDiffValue from "./SchemaDiffValue";
+import SchemaFieldDoc from "./SchemaFieldDoc";
 import SchemaDiffTypeView from "./SchemaDiffTypeView";
 import {
   SPEC_CELL_CLASS,
@@ -72,19 +73,17 @@ const SchemaDiffFieldRow = ({
     </code>
   );
   const doc = fieldDiff.isDocChanged ? (
-    <p className="mt-1 flex flex-wrap gap-2 font-sans text-xs">
-      <span className="text-red-400 line-through">
-        {fieldDiff.before?.doc ?? "No comment"}
+    <SchemaFieldDoc className="mt-1">
+      <span className="flex flex-wrap gap-2">
+        <span className="text-red-400 line-through">
+          {fieldDiff.before?.doc ?? "none"}
+        </span>
+        <span className="text-slate-500">→</span>
+        <span className="text-green-400">{fieldDiff.after?.doc ?? "none"}</span>
       </span>
-      <span className="text-slate-500">→</span>
-      <span className="text-green-400">
-        {fieldDiff.after?.doc ?? "No comment"}
-      </span>
-    </p>
+    </SchemaFieldDoc>
   ) : field.doc ? (
-    <p className="mt-1 max-w-xs font-sans text-xs text-slate-400">
-      {field.doc}
-    </p>
+    <SchemaFieldDoc className="mt-1">{field.doc}</SchemaFieldDoc>
   ) : null;
   const column = (
     <div>

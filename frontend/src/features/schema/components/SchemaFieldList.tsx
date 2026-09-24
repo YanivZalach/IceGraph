@@ -1,5 +1,6 @@
 import SchemaTypeView from "./SchemaTypeView";
 import SchemaFieldHeader from "./SchemaFieldHeader";
+import SchemaFieldDoc from "./SchemaFieldDoc";
 import { formatRequiredness, parseIcebergSchema } from "../schemaModel";
 import {
   SPEC_CELL_CLASS,
@@ -39,9 +40,7 @@ const SchemaFieldList = ({ schema }: SchemaFieldListProps) => {
               <td className={SPEC_CELL_CLASS}>
                 <code className="text-xs text-ink">{field.name}</code>
                 {field.doc && (
-                  <p className="mt-1 max-w-xs font-sans text-xs text-slate-400">
-                    {field.doc}
-                  </p>
+                  <SchemaFieldDoc className="mt-1">{field.doc}</SchemaFieldDoc>
                 )}
               </td>
               <td className={SPEC_CELL_CLASS}>

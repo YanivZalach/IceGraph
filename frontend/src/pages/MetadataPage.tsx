@@ -14,9 +14,9 @@ import MetadataSortOrder from "../features/metadata/components/MetadataSortOrder
 import MetadataTechnicalDetails from "../features/metadata/components/MetadataTechnicalDetails";
 import MetadataJson from "../features/metadata/components/MetadataJson";
 import {
-  METADATA_SECTION_BODY_CLASS,
-  METADATA_SUMMARY_CLASS,
-} from "../features/metadata/metadataStyles";
+  UI_EXPANDABLE_BODY_CLASS,
+  UI_EXPANDABLE_SUMMARY_CLASS,
+} from "../uiTypography";
 import { FileType } from "../graphConstants";
 
 const MetadataPage = () => {
@@ -92,10 +92,10 @@ const MetadataPage = () => {
         </section>
         <MetadataTechnicalDetails metadata={metadata} snapshot={snapshot} />
         <details className="overflow-hidden rounded-xl border border-edge bg-surface">
-          <summary className={METADATA_SUMMARY_CLASS}>
+          <summary className={UI_EXPANDABLE_SUMMARY_CLASS}>
             Advanced: metadata JSON
           </summary>
-          <div className={`${METADATA_SECTION_BODY_CLASS} space-y-3 px-5 py-4`}>
+          <div className={`${UI_EXPANDABLE_BODY_CLASS} space-y-3 px-5 py-4`}>
             <p className="text-xs leading-relaxed text-slate-400">
               Reduced metadata: the backend omits <code>metadata-log</code>,{" "}
               <code>snapshot-log</code>, <code>snapshots</code>, and{" "}

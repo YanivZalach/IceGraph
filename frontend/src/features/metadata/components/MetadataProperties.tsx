@@ -2,9 +2,9 @@ import JSONbig from "json-bigint";
 import MetadataJson from "./MetadataJson";
 import CopyIconButton from "../../../components/CopyIconButton";
 import {
-  METADATA_SECTION_BODY_CLASS,
-  METADATA_SUMMARY_CLASS,
-} from "../metadataStyles";
+  UI_EXPANDABLE_BODY_CLASS,
+  UI_EXPANDABLE_SUMMARY_CLASS,
+} from "../../../uiTypography";
 
 interface MetadataPropertiesProps {
   properties: Record<string, unknown> | undefined;
@@ -72,13 +72,13 @@ const MetadataProperties = ({ properties }: MetadataPropertiesProps) => {
   const entries = Object.entries(properties ?? {});
   return (
     <details className="border-t border-edge">
-      <summary className={METADATA_SUMMARY_CLASS}>
+      <summary className={UI_EXPANDABLE_SUMMARY_CLASS}>
         Table properties{" "}
         <span className="ml-2 text-xs font-normal text-slate-400">
           {entries.length} {entries.length === 1 ? "property" : "properties"}
         </span>
       </summary>
-      <div className={`${METADATA_SECTION_BODY_CLASS} px-5 py-2`}>
+      <div className={`${UI_EXPANDABLE_BODY_CLASS} px-5 py-2`}>
         {entries.length === 0 && (
           <p className="text-sm text-slate-400">
             No table properties recorded.

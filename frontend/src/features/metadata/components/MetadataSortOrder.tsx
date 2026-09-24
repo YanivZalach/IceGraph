@@ -19,7 +19,7 @@ const MetadataSortOrder = ({
     ? "Sort fields are unavailable."
     : sortFields.length === 0
       ? "No sort order configured. Row order is not guaranteed."
-      : "This is the table's preferred write order. Writers may leave files unsorted, and query results are not guaranteed to follow it.";
+      : "Writers sort new files by these columns when they can. Queries do not return rows in this order.";
   return (
     <div className="overflow-hidden rounded-xl border border-edge bg-surface">
       <div className="p-5">
