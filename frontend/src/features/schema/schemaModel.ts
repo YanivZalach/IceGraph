@@ -1,10 +1,12 @@
 export interface IcebergSchema {
   fields: IcebergSchemaField[];
+  identifierFieldIds: string[];
 }
 
 export interface IcebergSchemaField {
   id: string | null;
   name: string;
+  doc?: string;
   isRequired: boolean | null;
   type: IcebergType;
 }
@@ -43,6 +45,9 @@ export interface UnknownType {
 export type IcebergType =
   PrimitiveType | StructType | ListType | MapType | UnknownType;
 
+export const formatRequiredness = (isRequired: boolean | null): string =>
+  isRequired === null ? "unknown" : isRequired ? "required" : "optional";
+
 const isUnknownRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
@@ -50,7 +55,7 @@ const readProperty = (value: unknown, property: string): unknown =>
   isUnknownRecord(value) ? value[property] : undefined;
 
 const parseId = (value: unknown): string | null => {
-  if (typeof value === "number" && Number.isFinite(value)) {
+  if (typeof value === "number" && Number.isSafeInteger(value)) {
     return String(value);
   }
 
@@ -60,6 +65,14 @@ const parseId = (value: unknown): string | null => {
 
   return null;
 };
+
+const parseIds = (value: unknown): string[] =>
+  Array.isArray(value)
+    ? value.flatMap((id) => {
+        const parsedId = parseId(id);
+        return parsedId === null ? [] : [parsedId];
+      })
+    : [];
 
 const parseRequired = (value: unknown): boolean | null =>
   typeof value === "boolean" ? value : null;
@@ -75,9 +88,11 @@ const parseFields = (value: unknown): IcebergSchemaField[] => {
   return value.map((field) => {
     const id = parseFieldId(field);
     const name = readProperty(field, "name");
+    const doc = readProperty(field, "doc");
 
     return {
       id,
+      ...(typeof doc === "string" ? { doc } : {}),
       name: typeof name === "string" ? name : "Unnamed field",
       isRequired: parseRequired(readProperty(field, "required")),
       type: parseType(readProperty(field, "type")),
@@ -124,6 +139,7 @@ const parseType = (value: unknown): IcebergType => {
 
 export const parseIcebergSchema = (value: unknown): IcebergSchema => ({
   fields: parseFields(readProperty(value, "fields")),
+  identifierFieldIds: parseIds(readProperty(value, "identifier-field-ids")),
 });
 
 export const formatUnknownType = (value: unknown): string => {

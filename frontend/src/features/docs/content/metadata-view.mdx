@@ -1,5 +1,25 @@
-Shows the structured metadata of your table - schema, partition spec, and sort order. Use this to verify column types, understand partition strategies, and inspect how the schema has evolved.
+The Metadata view describes the newest metadata file **within the selected snapshot range**. An older range can show an older table structure and settings.
 
-- Column IDs are stable even when columns are renamed - useful for tracing schema evolution
+The version header shows the metadata update time and metadata file path. All times on this page are shown in your local timezone.
 
-- **Overview** fields include a clipboard icon to copy individual values
+### Snapshot statistics
+
+**At a glance** comes from the current snapshot referenced by the loaded metadata file. Its commit time can precede the metadata update time.
+
+- **Records in data files** is the snapshot's record count before subtracting row deletes. Delete files are shown alongside it.
+- **Total file size (data + deletes)** includes both file types and is shown in GiB. Hover over the size for exact bytes, or expand **Exact bytes** to view and copy the original byte count.
+- Missing statistics are shown as **Unavailable**. The page explains when no current snapshot exists or its statistics are outside the loaded graph.
+
+### Schema and data organization
+
+The schema panel scrolls independently. Use **Expand schema** to display its full height. Nested structs, list elements, and map keys and values retain their field IDs and show whether they are required, optional, or unknown. Field comments and identifier fields appear when recorded. Identifier fields do not imply enforced uniqueness or automatic upsert behavior.
+
+Click the **Schema**, **Spec**, or **Order** link to open that definition in the Specs panel. Use **Full / Diff** there to inspect changes. The schema section also reports earlier schemas available in this metadata file.
+
+Help on Iceberg-specific terms opens on hover, focus, or click. Press Escape to dismiss it.
+
+### Technical details and JSON
+
+Expand the technical sections for storage paths and identifiers, branches and tags, properties, and delete statistics. JSON-valued properties are formatted and long values can be expanded.
+
+**Advanced: metadata JSON** shows the returned metadata in a scrollable, highlighted block. **Copy metadata JSON** copies exactly the displayed JSON. The backend omits `metadata-log`, `snapshot-log`, `snapshots`, and `statistics` due to size; this export is not the full original metadata file.

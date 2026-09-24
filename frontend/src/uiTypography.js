@@ -99,3 +99,8 @@ export const UI_FILE_COUNT_BADGE_CLASS =
 
 export const UI_COPYABLE_VALUE_CLASS =
   "block text-sm text-ink break-all pl-3 pr-9 py-2";
+
+export const UI_EXPANDABLE_SUMMARY_CLASS =
+  "cursor-pointer px-5 py-4 text-sm font-medium text-ink hover:bg-surface-hover";
+
+export const UI_EXPANDABLE_BODY_CLASS = "border-t border-edge bg-canvas";

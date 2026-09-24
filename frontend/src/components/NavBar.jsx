@@ -9,8 +9,9 @@ import {
 } from "@tanstack/react-router";
 import logo from "../assets/icegraph.png";
 import CatalogTableList from "./CatalogTableList";
-import { useTableSpecs } from "../context/TableSpecsContext";
+import { useTableSpecs } from "../features/specs/tableSpecs";
 import { catalogQueryOptions } from "../features/catalog/api/catalogQueries";
+import { isKeyboardInputTarget } from "../shared/lib/keyboard";
 import {
   BASE_PATH,
   IS_MOCK,
@@ -134,11 +135,7 @@ export default function NavBar() {
     if (!isTablePage) return;
     const handleKey = (e) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
-      if (
-        ["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName) ||
-        e.target.isContentEditable
-      )
-        return;
+      if (isKeyboardInputTarget(e.target)) return;
       const tabs = ["timeline", "metadata", "filetree", "graph"];
       const idx = parseInt(e.key) - 1;
       if (idx >= 0 && idx < tabs.length) {
@@ -351,7 +348,7 @@ export default function NavBar() {
                   ? "bg-accent border-accent text-white"
                   : "border-slate-600 text-slate-400 hover:border-slate-400 hover:text-white"
               }`}
-              onClick={() => setDetailsOpen((p) => !p)}
+              onClick={() => setDetailsOpen(!detailsOpen)}
             >
               Specs
             </button>
@@ -483,7 +480,7 @@ export default function NavBar() {
                 : "border-slate-600 text-slate-400 hover:border-slate-400 hover:text-white"
             }`}
             onClick={() => {
-              setDetailsOpen((p) => !p);
+              setDetailsOpen(!detailsOpen);
               setMenuOpen(false);
             }}
           >

@@ -1,9 +1,11 @@
 import { createContext, useContext } from "react";
 
+import type { TableMetadata } from "./api/metadataSchemas";
+
 export interface TableGraphData {
   nodes: unknown[];
   edges: unknown[];
-  metadata: unknown;
+  metadata: TableMetadata;
   errors: Record<string, unknown>;
 }
 

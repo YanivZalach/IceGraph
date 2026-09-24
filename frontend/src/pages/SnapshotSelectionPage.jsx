@@ -10,6 +10,7 @@ import {
 } from "../uiTypography";
 import { parseUtcDate, formatLocaleDateTime } from "../utils/dateUtils";
 import LoadingIndicator from "../components/LoadingIndicator";
+import { isKeyboardInputTarget } from "../shared/lib/keyboard";
 
 function splitTsPrecision(ts) {
   const dotIdx = ts.indexOf(".");
@@ -111,10 +112,7 @@ export default function SnapshotSelectionPage() {
 
   useEffect(() => {
     const handleKey = (e) => {
-      if (
-        e.key === "Enter" &&
-        !["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName)
-      )
+      if (e.key === "Enter" && !isKeyboardInputTarget(e.target))
         submitBtnRef.current?.click();
     };
     window.addEventListener("keydown", handleKey);

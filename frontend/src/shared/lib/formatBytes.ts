@@ -10,7 +10,7 @@ export const isByteFieldName = (fieldName: string): boolean =>
 export const stripByteUnitFromFieldName = (fieldName: string): string =>
   fieldName.replace(BYTE_FIELD_SUFFIX_PATTERN, "") || fieldName;
 
-const formatBytes = (
+const formatBytesInUnit = (
   byteCount: string | number,
   bytesPerUnit: number,
   unitLabel: string,
@@ -24,7 +24,7 @@ const formatBytes = (
 };
 
 export const formatBytesAsMebibytes = (byteCount: string | number): string =>
-  formatBytes(byteCount, BYTES_IN_MEBIBYTE, "MiB");
+  formatBytesInUnit(byteCount, BYTES_IN_MEBIBYTE, "MiB");
 
 export const formatBytesAsGibibytes = (byteCount: string | number): string =>
-  formatBytes(byteCount, BYTES_IN_GIBIBYTE, "GiB");
+  formatBytesInUnit(byteCount, BYTES_IN_GIBIBYTE, "GiB");

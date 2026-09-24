@@ -15,16 +15,19 @@ const SchemaDiffFieldList = ({
     <SchemaDiffFieldList fields={nestedFields} isNested />
   );
 
-  return (
-    <div className={isNested ? "ml-3 border-l-2 border-edge pl-4" : ""}>
-      {fields.map((field, fieldIndex) => (
-        <SchemaDiffFieldRow
-          key={`${field.after?.id ?? field.before?.id ?? "missing-id"}.${String(fieldIndex)}`}
-          fieldDiff={field}
-          renderNestedFields={renderNestedFields}
-        />
-      ))}
-    </div>
+  const rows = fields.map((field, fieldIndex) => (
+    <SchemaDiffFieldRow
+      key={`${field.after?.id ?? field.before?.id ?? "missing-id"}.${String(fieldIndex)}`}
+      fieldDiff={field}
+      isNested={isNested}
+      renderNestedFields={renderNestedFields}
+    />
+  ));
+
+  return isNested ? (
+    <div className="ml-3 border-l-2 border-edge pl-4">{rows}</div>
+  ) : (
+    <>{rows}</>
   );
 };
 

@@ -11,6 +11,7 @@ import PanelIssueNotice from "../components/PanelIssueNotice";
 import DataFileReadableMetricsTable from "../components/DataFileReadableMetricsTable";
 import ReadableMetricsSummary from "../components/ReadableMetricsSummary";
 import { isEmptyValue } from "../shared/lib/isEmptyValue";
+import { isKeyboardInputTarget } from "../shared/lib/keyboard";
 import {
   UI_DIALOG_SECTION_TITLE_CLASS,
   UI_POPUP_HINT_CLASS,
@@ -372,11 +373,7 @@ export default function GraphPage() {
 
     const handleKey = (e) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
-      if (
-        ["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName) ||
-        e.target.isContentEditable
-      )
-        return;
+      if (isKeyboardInputTarget(e.target)) return;
       if (e.key === "i") {
         setIsInspectMode((p) => !p);
         return;

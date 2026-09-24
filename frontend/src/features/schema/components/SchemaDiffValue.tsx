@@ -2,25 +2,16 @@ import { cn } from "../../../shared/lib/cn";
 import type { SchemaDiffStatus } from "../schemaDiff";
 
 interface SchemaDiffValueProps {
-  label: string;
   before: string;
   after: string;
   status: SchemaDiffStatus;
 }
 
-const SchemaDiffValue = ({
-  label,
-  before,
-  after,
-  status,
-}: SchemaDiffValueProps) => {
+const SchemaDiffValue = ({ before, after, status }: SchemaDiffValueProps) => {
   const hasChanged = before !== after;
 
   return (
-    <div className="flex flex-wrap items-center gap-2 text-xs">
-      {label.length > 0 && (
-        <span className="font-bold uppercase text-slate-500">{label}</span>
-      )}
+    <span className="inline-flex flex-wrap items-center gap-2 font-mono text-xs">
       {status === "added" ? (
         <span className="font-mono text-green-400">{after}</span>
       ) : status === "removed" ? (
@@ -41,7 +32,7 @@ const SchemaDiffValue = ({
           {after}
         </span>
       )}
-    </div>
+    </span>
   );
 };
 

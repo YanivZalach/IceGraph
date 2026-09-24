@@ -1,6 +1,11 @@
-import SchemaFieldHeader from "./SchemaFieldHeader";
 import SchemaTypeView from "./SchemaTypeView";
-import { parseIcebergSchema } from "../schemaModel";
+import SchemaFieldHeader from "./SchemaFieldHeader";
+import SchemaFieldDoc from "./SchemaFieldDoc";
+import { formatRequiredness, parseIcebergSchema } from "../schemaModel";
+import {
+  SPEC_CELL_CLASS,
+  SPEC_TABLE_CLASS,
+} from "../../specs/components/SpecFieldTable";
 
 interface SchemaFieldListProps {
   schema: unknown;
@@ -10,38 +15,44 @@ const SchemaFieldList = ({ schema }: SchemaFieldListProps) => {
   const parsedSchema = parseIcebergSchema(schema);
 
   if (parsedSchema.fields.length === 0) {
-    return <p className="text-sm italic text-slate-400">No fields defined.</p>;
+    return (
+      <p className="px-5 py-4 text-sm italic text-slate-400">
+        No fields defined.
+      </p>
+    );
   }
 
   return (
-    <div>
-      <SchemaFieldHeader />
-      {parsedSchema.fields.map((field, fieldIndex) => (
-        <div
-          key={`${field.id ?? "missing-id"}.${String(fieldIndex)}`}
-          className="border-b border-edge py-4 last:border-0"
-        >
-          <div className="grid grid-cols-[1rem_2.5rem_minmax(0,1fr)_auto] items-center gap-x-3">
-            <span />
-            <span className="text-right font-mono text-base tabular-nums text-slate-500">
-              {field.id ?? "?"}
-            </span>
-            <span className="min-w-0 text-sm font-bold text-ink-bright">
-              {field.name}
-            </span>
-            {field.isRequired === false ? (
-              <span className="shrink-0 text-xs font-bold uppercase text-slate-400">
-                optional
-              </span>
-            ) : (
-              <span />
-            )}
-          </div>
-          <div className="ml-16 mt-3">
-            <SchemaTypeView type={field.type} />
-          </div>
-        </div>
-      ))}
+    <div className="overflow-x-auto">
+      <table className={SPEC_TABLE_CLASS}>
+        <SchemaFieldHeader />
+        <tbody className="font-mono">
+          {parsedSchema.fields.map((field, fieldIndex) => (
+            <tr
+              key={`${field.id ?? "missing-id"}.${String(fieldIndex)}`}
+              className="border-b border-edge last:border-0"
+            >
+              <td
+                className={`${SPEC_CELL_CLASS} font-mono text-xs text-slate-400`}
+              >
+                {field.id ?? "?"}
+              </td>
+              <td className={SPEC_CELL_CLASS}>
+                <code className="text-xs text-ink">{field.name}</code>
+                {field.doc && (
+                  <SchemaFieldDoc className="mt-1">{field.doc}</SchemaFieldDoc>
+                )}
+              </td>
+              <td className={SPEC_CELL_CLASS}>
+                <SchemaTypeView type={field.type} />
+              </td>
+              <td className={`${SPEC_CELL_CLASS} font-mono text-xs text-ink`}>
+                {formatRequiredness(field.isRequired)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 };

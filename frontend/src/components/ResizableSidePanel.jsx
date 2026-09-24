@@ -7,6 +7,7 @@ import {
   remToPx,
 } from "../layoutConstants";
 import SidePanelFrame, { SidePanelResizeHandle } from "./SidePanelFrame";
+import { isKeyboardInputTarget } from "../shared/lib/keyboard";
 
 export { PANEL_WIDTH_RELAXED_REM as PANEL_WIDTH_RELAXED } from "../layoutConstants";
 
@@ -109,9 +110,7 @@ const ResizableSidePanel = forwardRef(function ResizableSidePanel(
   useEffect(() => {
     const onKey = (e) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
-      const tag = e.target.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || e.target.isContentEditable)
-        return;
+      if (isKeyboardInputTarget(e.target)) return;
       if (e.key === "f" || e.key === "F") {
         e.preventDefault();
         setIsFullscreen((p) => !p);
