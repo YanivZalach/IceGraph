@@ -21,7 +21,7 @@ const MetadataPartitioning = ({
   const partitionSummary = !partitionFields
     ? "Partition fields are unavailable."
     : activeFields?.length === 0
-      ? "No active partition fields. New data is not grouped by column values."
+      ? "No active partition fields. Newer data is not grouped by column values."
       : "New data is split into files by these columns. Queries that filter on them can skip files that cannot match.";
   return (
     <div className="overflow-hidden rounded-xl border border-edge bg-surface">

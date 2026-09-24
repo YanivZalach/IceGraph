@@ -18,7 +18,7 @@ const MetadataSortOrder = ({
   const sortSummary = !sortFields
     ? "Sort fields are unavailable."
     : sortFields.length === 0
-      ? "No sort order configured. Row order is not guaranteed."
+      ? "No sort order configured."
       : "Writers sort new files by these columns when they can. Queries do not return rows in this order.";
   return (
     <div className="overflow-hidden rounded-xl border border-edge bg-surface">

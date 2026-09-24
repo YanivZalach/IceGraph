@@ -27,9 +27,6 @@ export const stringifySearch = (search: Record<string, unknown>): string => {
 // z.looseObject is load-bearing: a plain z.object strips unknown params from
 // carry-forward navigations (search: (prev) => prev), silently dropping them
 // from the URL. SKILL.md contracts that params round-trip untouched.
-// The Specs overlay is reachable from every table tab, so its parameters live
-// on the shared table schema. spec_id stays a string to match the no-precision
-// -loss rule applied to every other ID carried in a URL.
 export const tableSearchSchema = z.looseObject({
   table: z.string().optional(),
   start_snapshot_id: z.string().optional(),

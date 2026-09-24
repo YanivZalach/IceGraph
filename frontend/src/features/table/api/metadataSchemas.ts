@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-// The API decoder converts unsafe JSON integers to strings before validation.
 export const icebergIntegerSchema = z.union([
   z.number().int().refine(Number.isSafeInteger, "Unsafe Iceberg integer"),
   z.string().regex(/^-?\d+$/),
