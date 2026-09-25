@@ -11,7 +11,7 @@ import {
 import { env } from "../../../shared/lib/env";
 import { graphDataSchema, type GraphData } from "./graphSchemas";
 
-const GRAPH_CACHE_SCHEMA_VERSION = 1;
+const GRAPH_CACHE_SCHEMA_VERSION = 2;
 const GRAPH_CACHE_PREFIX = `graph:v${String(GRAPH_CACHE_SCHEMA_VERSION)}:${env.appVersion}:`;
 const GRAPH_CACHE_INDEX_PREFIX = "graph-cache-index:";
 const GRAPH_CACHE_CLEANUP_KEY = "graph-cache:last-cleanup";

@@ -66,6 +66,7 @@ have.
 ```
 icegraph [--base-url URL] [--token TOKEN] [--cookie COOKIE] [--no-verify-ssl] tables
 icegraph [...] snapshots <table>
+icegraph [...] metadata <table>
 icegraph [...] graph <table> [-s/--start-snapshot-id ID] [-e/--end-snapshot-id ID]
 ```
 
@@ -79,6 +80,7 @@ etc.) go to stderr, so stdout is always safe to parse directly.
 - `tables` → a JSON array of table name strings.
 - `snapshots <table>` → a JSON array of `{timestamp, snapshot_id, operation}` objects (timestamp is
   ISO 8601, converted to local time).
+- `metadata <table>` → the latest table metadata dictionary, including `metadata_file_path`.
 - `graph <table>` → `{nodes: [...], metadata: {...}, issues: {errors: {...}, warnings: {...}}}`.
   Each entry in `nodes` is one file's fields as a flat dict, with no wrapper object around them, so
   a field is read directly as `node["summary"]`. Every node carries `file_path`, `type`, and
@@ -89,9 +91,17 @@ etc.) go to stderr, so stdout is always safe to parse directly.
   When summarizing a `graph` result to the user, lead with `issues.errors`, then `issues.warnings`,
   before general structure/counts — errors are what the Issues panel in the UI leads with too.
 
-**For "what's my table's schema/properties/partition spec" questions, use the top-level `metadata`
-key, not a node's own fields.** `metadata` is close to a raw dump of the table's current
-`metadata.json` (original Iceberg field names, hyphenated) — `schemas` (full column definitions),
+For a question about a table that the latest metadata can answer, try `metadata <table>` first.
+This is faster than building a graph. Examples include columns and schemas, partition specs,
+sort orders, table properties, branches and tags, table location, and format version. Use
+`snapshots` for snapshot history or recent operations, and `graph` for files, lineage, issues,
+or a requested snapshot range. The `metadata` command returns the metadata dictionary directly;
+`graph` places it under the top-level `metadata` key. Both include `metadata_file_path`, which
+identifies the file used for that result.
+
+**For "what's my table's schema/properties/partition spec" questions, use the metadata result or
+the graph's top-level `metadata` key, not a node's own fields.** This dictionary is close to a raw
+dump of the table's current `metadata.json` (original Iceberg field names, hyphenated) — `schemas` (full column definitions),
 `partition-specs`, `sort-orders`, `properties`, `refs`, `format-version`, `location`, `table-uuid`,
 `current-schema-id`, `default-spec-id`, etc. A metadata-file *node*, by contrast,
 only carries IDs (`current_schema_id`, `partition_spec_id`, `sort_order_id`) plus `properties`/
@@ -279,14 +289,15 @@ usually isn't.
    `https://ice.example.com/table/graph?table=sales.orders&start_snapshot_id=snap-789&end_snapshot_id=snap-789&select_node_id=<file path of the erroring node>`
    so the user can look at the offending node directly, without needing to ask for it.
 4. "What's the schema/properties/partition spec of `sales.orders`?"
-   → `icegraph --base-url https://ice.example.com graph sales.orders` (no range needed — the current
-   metadata is what matters here, and an unset range already defaults to the latest snapshot, say
-   `snap-789`). Read the answer from the top-level `metadata` key, **not** any node's own fields:
-   `metadata.schemas` for columns, `metadata.properties` for table properties,
-   `metadata["partition-specs"]`/`metadata["default-spec-id"]` for the active partition spec,
-   `metadata["format-version"]` for the table format version. Summarize the relevant fields rather
-   than dumping the whole object back at the user, and proactively include a link to that same
-   resolved snapshot (`select_node_id` doesn't apply on `/table/metadata`, so omit it):
+   → For the latest metadata, use `icegraph --base-url https://ice.example.com metadata sales.orders`
+   without building a graph. If the user asks about a snapshot range, use
+   `icegraph --base-url https://ice.example.com graph sales.orders` with that range and read its
+   top-level `metadata` key, **not** any node's own fields. In either metadata dictionary, use
+   `schemas` for columns, `properties` for table properties,
+   `partition-specs`/`default-spec-id` for the active partition spec, and
+   `format-version` for the table format version. Summarize the relevant fields rather
+   than dumping the whole object back at the user. If you used a graph with a resolved snapshot,
+   include a link to that snapshot (`select_node_id` doesn't apply on `/table/metadata`, so omit it):
    `https://ice.example.com/table/metadata?table=sales.orders&start_snapshot_id=snap-789&end_snapshot_id=snap-789`
 5. "Which job wrote this snapshot's data?"
    → find the `snapshot`-type node for it in a `graph` result. If `action_link` is populated, give

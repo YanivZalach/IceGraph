@@ -15,6 +15,7 @@ pip install icegraph-client==<version>
 ```bash
 icegraph --base-url http://<icegraph-server-host> tables
 icegraph --base-url http://<icegraph-server-host> snapshots <database.table>
+icegraph --base-url http://<icegraph-server-host> metadata <database.table>
 icegraph --base-url http://<icegraph-server-host> graph <database.table> [--start-snapshot-id ID] [--end-snapshot-id ID]
 ```
 
@@ -30,6 +31,7 @@ from icegraph_client import IceGraphClient
 client = IceGraphClient("http://<icegraph-server-host>")
 client.list_tables()
 client.get_snapshot_map("database.table")
+client.get_table_metadata("database.table")
 client.get_graph("database.table", start_snapshot_id, end_snapshot_id)
 ```
 

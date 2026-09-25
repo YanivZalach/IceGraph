@@ -19,6 +19,7 @@ from snapshot_analyzer.snapshot_analyzer import SnapshotAnalyzer
 from snapshot_map.snapshot_mapping import collect_snapshot_map
 from spark_connect import close_spark_connect_session
 from table_inventory.table_inventory import TableInventory
+from collectors.collect_table_metadata import TableMetadataCollector
 from table_list_catalog.table_list_catalog import TableListCatalog
 
 app = Flask(__name__, static_url_path="/static")
@@ -135,6 +136,25 @@ def graph_metadata_file(table_name):
 
     except ValueError as e:
         logger.error(f"Invalid graph metadata request: {e}\n{traceback.format_exc()}")
+        return jsonify({"error": str(e)}), 400
+
+    except AnalysisException as e:
+        logger.error(f"Spark Error: {e}\n{traceback.format_exc()}")
+        return jsonify({"error": str(e)}), 400
+
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}\n{traceback.format_exc()}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/v1/table-metadata/<path:table_name>", methods=["GET"])
+def table_metadata(table_name):
+    try:
+        verify_iceberg_table(table_name)
+        return jsonify(TableMetadataCollector(table_name).collect_latest())
+
+    except ValueError as e:
+        logger.error(f"Invalid table metadata request: {e}\n{traceback.format_exc()}")
         return jsonify({"error": str(e)}), 400
 
     except AnalysisException as e:

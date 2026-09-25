@@ -13,3 +13,9 @@ class TablesClient:
         raise_for_status(response)
 
         return response.json()["tables"]
+
+    def get_table_metadata(self, table: str) -> dict:
+        response = requests.get(f"{self.base_url}/api/v1/table-metadata/{table}", **self.requests_kwargs)
+        raise_for_status(response)
+
+        return response.json()

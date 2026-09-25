@@ -21,7 +21,7 @@ from env import Env
 from icegraph_logger import logger
 from iceberg_ports.readable_metrics import ReadableMetricsConverter
 from search_cutoff.find_search_cutoff import SearchCutoff, find_search_cutoff
-from table_inventory.utils import format_schemas_to_full_dict, get_json_metadata_from_path, parse_json_string_fields
+from collectors.collect_table_metadata import TableMetadataCollector
 
 
 @dataclass
@@ -262,11 +262,7 @@ class TableInventory(SparkTableAction):
         try:
             current_main_metadata_file = next(metadata_file for metadata_file in self._metadata_files if metadata_file.type == FileType.MAIN_METADATA)
 
-            current_table_specs = get_json_metadata_from_path(current_main_metadata_file.file_path)
-            current_table_specs["schemas"] = format_schemas_to_full_dict(current_table_specs.get("schemas", []))
-            current_table_specs = parse_json_string_fields(current_table_specs, ["refs", "properties"])
-
-            self._current_table_specs.update(current_table_specs)
+            self._current_table_specs = TableMetadataCollector(self._table_name).collect(current_main_metadata_file.file_path)
 
         except Exception as e:
             logger.error(

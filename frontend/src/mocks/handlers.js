@@ -1506,6 +1506,7 @@ const mockResponse = {
   ],
   metadata: {
     "table-name": "default.events",
+    metadata_file_path: "/warehouse/default/events/metadata/v10.metadata.json",
     "current-schema-id": 2,
     "current-snapshot-id": "3004708926140182071",
     "default-sort-order-id": 0,
@@ -1615,6 +1616,10 @@ export const handlers = [
     return HttpResponse.json({
       metadata_file: "/warehouse/default/events/metadata/v10.metadata.json",
     });
+  }),
+
+  http.get("/api/v1/table-metadata/:tableName", () => {
+    return HttpResponse.json(mockResponse.metadata);
   }),
 
   http.post("/api/v1/graph-data", () => {

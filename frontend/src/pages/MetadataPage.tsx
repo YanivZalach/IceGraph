@@ -26,9 +26,7 @@ const MetadataPage = () => {
   useMetadataKeyboardScroll(detailsOpen || issuesOpen);
   if (!data) return null;
   const { metadata, nodes } = data;
-  const path = nodes.find(
-    (node) => node.type === FileType.MAIN_METADATA,
-  )?.file_path;
+  const path = metadata.metadata_file_path;
   const snapshotId = integerText(metadata["current-snapshot-id"]);
   const snapshot = nodes.find(
     (node) =>

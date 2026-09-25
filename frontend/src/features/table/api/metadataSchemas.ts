@@ -37,6 +37,7 @@ export const sortOrderSchema = z.looseObject({
 
 export const tableMetadataSchema = z.looseObject({
   "table-name": z.string().optional(),
+  metadata_file_path: z.string().optional(),
   "table-uuid": z.string().optional(),
   location: z.string().optional(),
   "format-version": icebergIntegerSchema.optional(),
