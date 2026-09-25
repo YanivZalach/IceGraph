@@ -64,6 +64,10 @@ Snapshot Selection:
 - The snapshot list loads newest first, between a Latest row and a Full history row.
 - Clicking one snapshot marks it as both Start and End. Clicking a second snapshot finishes the
   range with the older one as Start. A third click starts a new range.
+- The snapshot list and the latest metadata load independently. A slow or failed request only
+  affects its own section. Specs stays disabled until the metadata loads.
+- A table with no snapshots shows a note instead of the list, and Generate Graph still reaches
+  Timeline.
 - The latest metadata renders below the list without a graph job. At a glance shows the current
   snapshot's record, file, and size statistics, and its commit time.
 - The Schema, Spec, and Order links and the navbar Specs button open the Specs panel. Escape closes

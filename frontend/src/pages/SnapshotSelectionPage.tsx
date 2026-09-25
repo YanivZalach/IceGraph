@@ -17,7 +17,6 @@ import LatestMetadataSection from "../features/metadata/components/LatestMetadat
 import SpecDetailsOverlay from "../features/specs/components/SpecDetailsOverlay";
 import LoadingIndicator from "../components/LoadingIndicator";
 import { isKeyboardInputTarget } from "../shared/lib/keyboard";
-import { UI_BODY_MUTED_CLASS } from "../uiTypography";
 
 interface TableRangeSelection {
   tableName: string;
@@ -65,36 +64,25 @@ const SnapshotSelectionPage = () => {
     { enabled: canGenerate && !detailsOpen, preventDefault: false },
   );
 
-  if (tableName === "" || snapshotQuery.isError)
+  const goHomeButton = (
+    <button
+      type="button"
+      onClick={() => {
+        void navigate({ to: "/" });
+      }}
+      className="cursor-pointer text-sm text-slate-400 hover:text-white"
+    >
+      Go Back
+    </button>
+  );
+
+  if (tableName === "")
     return (
       <div className="flex-1 flex items-center justify-center p-8 text-red-400">
         <div className="bg-red-950/50 border border-red-800 p-8 rounded-xl text-center">
-          <h2 className="font-bold mb-2">Failed to Load Snapshots</h2>
-          <p className="text-sm mb-4">
-            {snapshotQuery.error?.message ?? "Missing table name"}
-          </p>
-          <button
-            type="button"
-            onClick={() => {
-              void navigate({ to: "/" });
-            }}
-            className="text-slate-400 hover:text-white text-sm"
-          >
-            Go Back
-          </button>
+          <h2 className="font-bold mb-2">Missing table name</h2>
+          {goHomeButton}
         </div>
-      </div>
-    );
-
-  if (snapshotQuery.isPending)
-    return (
-      <div
-        className={`flex-1 flex flex-col items-center justify-center ${UI_BODY_MUTED_CLASS}`}
-      >
-        <LoadingIndicator
-          title="Loading snapshots"
-          description={`Reading snapshot history for ${tableName}. This may take a moment for large tables.`}
-        />
       </div>
     );
 
@@ -109,6 +97,19 @@ const SnapshotSelectionPage = () => {
                 setGraphParameters(null);
               }}
             />
+          ) : snapshotQuery.isPending ? (
+            <div className="flex justify-center py-10">
+              <LoadingIndicator
+                title="Loading snapshots"
+                description={`Reading snapshot history for ${tableName}. This may take a moment for large tables.`}
+              />
+            </div>
+          ) : snapshotQuery.isError ? (
+            <div className="rounded-xl border border-red-800 bg-red-950/50 p-5 text-red-400">
+              <h2 className="font-bold">Failed to Load Snapshots</h2>
+              <p className="mt-2 mb-4 text-sm">{snapshotQuery.error.message}</p>
+              {goHomeButton}
+            </div>
           ) : (
             <SnapshotRangeSelector
               tableName={tableName}

@@ -34,6 +34,7 @@ const NavBar = () => {
   const {
     detailsOpen,
     setDetailsOpen,
+    specsMetadata,
     graphQuery,
     rebuildGraph,
     errors,
@@ -47,6 +48,7 @@ const NavBar = () => {
   const errorCount = Object.keys(errors).length;
   const issueCount = errorCount + Object.keys(warnings).length;
   const isRecompileDisabled = graphQuery.isFetching || tableName === "";
+  const isSpecsDisabled = specsMetadata === undefined && !detailsOpen;
 
   return (
     <nav className="sticky top-0 z-[1200] h-16 shrink-0 bg-surface text-white shadow-lg">
@@ -113,10 +115,19 @@ const NavBar = () => {
             {tableName !== "" && (
               <button
                 type="button"
-                className={actionClass(detailsOpen)}
+                className={cn(
+                  actionClass(detailsOpen),
+                  isSpecsDisabled && "cursor-not-allowed opacity-50",
+                )}
+                title={
+                  isSpecsDisabled
+                    ? "Available once the table metadata loads"
+                    : undefined
+                }
                 onClick={() => {
                   setDetailsOpen(!detailsOpen);
                 }}
+                disabled={isSpecsDisabled}
               >
                 Specs
               </button>

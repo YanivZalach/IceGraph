@@ -22,18 +22,27 @@ const SnapshotRangeSelector = ({
 }: SnapshotRangeSelectorProps) => (
   <>
     <h2 className={`${UI_PAGE_TITLE_CLASS} mb-2`}>Select Snapshots</h2>
-    <p className={`${UI_BODY_MUTED_CLASS} mb-4`}>
-      Choose an inclusive snapshot range for{" "}
-      <strong className="break-all text-ink">{tableName}</strong>.{" "}
-      {range.anchorSnapshotId === null
-        ? "Click a snapshot to start a new range, then click another to finish it."
-        : "Click another snapshot, Latest, or Full history to finish the range."}
-    </p>
-    <SnapshotRangePicker
-      entries={entries}
-      range={range}
-      onRangeChange={onRangeChange}
-    />
+    {entries.length === 0 ? (
+      <p className={UI_BODY_MUTED_CLASS}>
+        <strong className="break-all text-ink">{tableName}</strong> has no
+        snapshots yet. You can still generate the graph.
+      </p>
+    ) : (
+      <>
+        <p className={`${UI_BODY_MUTED_CLASS} mb-4`}>
+          Choose an inclusive snapshot range for{" "}
+          <strong className="break-all text-ink">{tableName}</strong>.{" "}
+          {range.anchorSnapshotId === null
+            ? "Click a snapshot to start a new range, then click another to finish it."
+            : "Click another snapshot, Latest, or Full history to finish the range."}
+        </p>
+        <SnapshotRangePicker
+          entries={entries}
+          range={range}
+          onRangeChange={onRangeChange}
+        />
+      </>
+    )}
     <button
       type="button"
       onClick={onGenerate}
