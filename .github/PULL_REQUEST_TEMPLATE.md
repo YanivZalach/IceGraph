@@ -9,15 +9,9 @@
 ## Contributor License Agreement
 
 Every pull request author and commit author must accept the
-[IceGraph Individual Contributor License Agreement](https://github.com/YanivZalach/IceGraph/blob/master/CLA.md).
+[IceGraph Individual Contributor License Agreement](https://gist.github.com/YanivZalach/dde6f1bf88b42628f64609e5b2d4f860).
 
-After opening this pull request, copy the following exact statement and post it
-as a separate comment on the pull request:
-
-```text
-I have read and agree to the IceGraph Individual Contributor License Agreement, Harmony HA-CLA-I-ANY version 1.0, and I confirm that I have authority to submit my contribution.
-```
-
-Do not place the statement only in this pull request description. The automated
-`CLA` check accepts it only as a separate comment from each pull request author
-and commit author's own authenticated GitHub account.
+After opening this pull request, follow the link posted by CLA Assistant, sign
+in with the GitHub account associated with your contribution, review the
+agreement, and click **I agree**. The pull request can be merged after the CLA
+Assistant check passes.
