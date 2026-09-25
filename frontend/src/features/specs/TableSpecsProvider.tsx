@@ -17,20 +17,23 @@ import {
   type SpecView,
 } from "./tableSpecs";
 import {
-  graphProgressQueryKey,
+  graphProgressQueryOptions,
   graphQueryKey,
   graphQueryOptions,
   requestGraphRebuild,
 } from "../table/api/graphQueries";
+import { tableMetadataQueryOptions } from "../table/api/tableMetadataQueries";
 
 export const TableSpecsProvider = ({ children }: { children: ReactNode }) => {
   const search = useSearch({ strict: false });
   const navigate = useNavigate();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const isTablePage = useRouterState({
-    select: (state) => state.location.pathname.startsWith("/table/"),
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
   });
+  const isTablePage = pathname.startsWith("/table/");
+  const isSnapshotSelectionPage = pathname === "/snapshots-selection";
   const isSpecsHistoryEntry = useRouterState({
     select: (state) => isSpecsOverlayState(state.location.state),
   });
@@ -47,11 +50,18 @@ export const TableSpecsProvider = ({ children }: { children: ReactNode }) => {
     ...graphQueryOptions(graphRequestParameters, queryClient),
     enabled: isTablePage && graphRequestParameters.tableName !== "",
   });
-  const graphProgressQuery = useQuery({
-    queryKey: graphProgressQueryKey(graphRequestParameters),
-    queryFn: (): Record<string, string> | null => null,
-    enabled: false,
+  const tableMetadataQuery = useQuery({
+    ...tableMetadataQueryOptions(graphRequestParameters.tableName),
+    enabled: isSnapshotSelectionPage && graphRequestParameters.tableName !== "",
   });
+  const specsMetadata = isTablePage
+    ? graphQuery.data?.metadata
+    : isSnapshotSelectionPage
+      ? tableMetadataQuery.data
+      : undefined;
+  const graphProgressQuery = useQuery(
+    graphProgressQueryOptions(graphRequestParameters),
+  );
   const specKind = search.spec_kind;
   const specId = search.spec_id;
   const selection = parseSpecSelection(specKind, specId);
@@ -59,16 +69,9 @@ export const TableSpecsProvider = ({ children }: { children: ReactNode }) => {
     (specKind !== undefined || specId !== undefined) && selection === null;
   const detailsOpen = search.specs === "open" || selection !== null;
   const specView: SpecView = search.spec_view === "diff" ? "diff" : "full";
-  const selectionDetail = resolveSpecSelection(
-    graphQuery.data?.metadata,
-    selection,
-  );
+  const selectionDetail = resolveSpecSelection(specsMetadata, selection);
   const unresolvedSelection =
-    selection !== null &&
-    graphQuery.data !== undefined &&
-    selectionDetail === null
-      ? selection
-      : null;
+    specsMetadata !== undefined && selectionDetail === null ? selection : null;
 
   const navigateSpecs = (
     next: SpecSearch,
@@ -117,7 +120,7 @@ export const TableSpecsProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const openSpec = (next: SpecSelection): void => {
-    const canShowDiff = hasPreviousSpec(graphQuery.data?.metadata, next);
+    const canShowDiff = hasPreviousSpec(specsMetadata, next);
     navigateSpecs(
       { spec_kind: next.kind, spec_id: String(next.id) },
       {
@@ -145,7 +148,7 @@ export const TableSpecsProvider = ({ children }: { children: ReactNode }) => {
     specView === "diff" &&
     selection !== null &&
     selectionDetail !== null &&
-    !hasPreviousSpec(graphQuery.data?.metadata, selection);
+    !hasPreviousSpec(specsMetadata, selection);
   useEffect(() => {
     if (!shouldClearDiff && !hasIncompleteSpecSelection) return;
     void navigate({
@@ -187,12 +190,13 @@ export const TableSpecsProvider = ({ children }: { children: ReactNode }) => {
         openSpec,
         specView,
         setSpecView,
+        specsMetadata,
         graphQuery,
         collectionStages: graphProgressQuery.data,
         rebuildGraph,
         errors,
         warnings,
-        issuesOpen,
+        issuesOpen: isTablePage && issuesOpen,
         setIssuesOpen,
       }}
     >

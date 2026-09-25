@@ -5,7 +5,7 @@ import {
   type SetStateAction,
 } from "react";
 import type { UseQueryResult } from "@tanstack/react-query";
-import type { GraphData } from "../table/api/graphSchemas";
+import type { GraphData, GraphStages } from "../table/api/graphSchemas";
 import type {
   IcebergInteger,
   TableMetadata,
@@ -144,8 +144,9 @@ export interface TableSpecsState {
   openSpec: (selection: SpecSelection) => void;
   specView: SpecView;
   setSpecView: (view: SpecView) => void;
+  specsMetadata: TableMetadata | undefined;
   graphQuery: UseQueryResult<GraphData>;
-  collectionStages: Record<string, string> | null | undefined;
+  collectionStages: GraphStages | null | undefined;
   rebuildGraph: () => Promise<void>;
   errors: Record<string, unknown>;
   warnings: Record<string, unknown>;

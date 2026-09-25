@@ -26,8 +26,8 @@ them.
 
 | Check | Full | MSW |
 | --- | --- | --- |
-| Home and catalog | Required | N/A, redirects to Timeline |
-| Snapshot Selection | Required | N/A, redirects to Timeline |
+| Home and catalog | Required | N/A, redirects to Snapshot Selection |
+| Snapshot Selection | Required | Required with mock snapshots and metadata |
 | Full-range graph | Required | Required with fixed mock graph |
 | Bounded-range rendered data | Required | N/A, mock serves one fixed graph |
 | Table views and keyboard controls | Required | Required |
@@ -61,10 +61,19 @@ Home:
 
 Snapshot Selection:
 
-- Start and End lists load.
-- Latest Metadata Only opens Metadata with `start_snapshot_id` and `end_snapshot_id` both equal to
-  the latest snapshot ID. Current Snapshot matches that exact ID.
-- Full range: select Full History and Latest, then Generate Graph. Neither snapshot parameter remains
+- The snapshot list loads newest first, between a Latest row and a Full history row.
+- Clicking one snapshot marks it as both Start and End. Clicking a second snapshot finishes the
+  range with the older one as Start. A third click starts a new range.
+- The latest metadata renders below the list without a graph job. At a glance shows the current
+  snapshot's record, file, and size statistics, and its commit time.
+- The Schema, Spec, and Order links and the navbar Specs button open the Specs panel. Escape closes
+  it and `spec_kind`/`spec_id` round-trip through the URL.
+- The navbar shows the logo, the table name, Specs, and Docs, with no Analyze tabs. Docs and the
+  logo (which leads Home) open a new tab, and the table picker opens the chosen table in a new
+  tab. The selected range is unchanged afterward.
+- Generate Graph replaces the snapshot list with the preparation checklist while the metadata stays
+  visible below it, then lands on Timeline. Timeline shows no second loader.
+- Full range: select Full history and Latest, then Generate Graph. Neither snapshot parameter remains
   in the URL and Timeline renders the loaded history.
 - Bounded range: select non-default Start and End values forming a strict subset, then Generate
   Graph. Both URL values match the selected IDs digit-for-digit, including IDs above `2^53`.
@@ -81,9 +90,11 @@ Use browser Back and Forward once and confirm the restored route and range match
 
 ### MSW profile
 
-- Open the configured URL and confirm it redirects to Timeline for `default.events`.
-- Confirm the fixed mock graph loads.
-- Mark Home, catalog, Snapshot Selection, and bounded-range rendered-data checks `N/A`.
+- Open the configured URL and confirm it redirects to Snapshot Selection for `default.events`.
+- Run the Snapshot Selection list, metadata, and Specs checks above.
+- Generate Graph and confirm the fixed mock graph loads. It ignores the selected range, so the
+  Timeline shows every mock snapshot even when the URL carries snapshot IDs.
+- Mark Home, catalog, and bounded-range rendered-data checks `N/A`.
 
 ## Phase 2: Table views
 

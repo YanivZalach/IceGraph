@@ -53,6 +53,13 @@ export const tableMetadataSchema = z.looseObject({
   "partition-specs": z.array(partitionSpecSchema).optional(),
   "sort-orders": z.array(sortOrderSchema).optional(),
   properties: z.record(z.string(), z.unknown()).optional(),
+  "current-snapshot": z
+    .looseObject({
+      "snapshot-id": icebergIntegerSchema,
+      "timestamp-ms": icebergIntegerSchema.optional(),
+      summary: z.record(z.string(), z.string()).optional(),
+    })
+    .nullish(),
   refs: z
     .record(
       z.string(),

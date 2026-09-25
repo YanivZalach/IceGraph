@@ -1,34 +1,16 @@
 import JSONbig from "json-bigint";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect } from "react";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { Outlet, useNavigate, useSearch } from "@tanstack/react-router";
 import { TableGraphDataContext } from "../features/table/tableGraphData";
 import PageLoader from "../components/PageLoader";
 import GraphCollectionChecklist from "../components/GraphCollectionChecklist";
 import { formatLocaleDateTime, parseUtcDate } from "../utils/dateUtils";
-import { IS_MOCK, MOCK_TABLE_SEARCH } from "../appConstants";
-import {
-  UI_BODY_MUTED_CLASS,
-  UI_DIALOG_TITLE_CLASS,
-  UI_MONO_MUTED_CLASS,
-} from "../uiTypography";
+import { IS_MOCK, MOCK_SELECTION_SEARCH } from "../appConstants";
+import { UI_BODY_MUTED_CLASS } from "../uiTypography";
 
-import SpecHistory from "../features/specs/components/SpecHistory";
-import PartitionFieldTable from "../features/specs/components/PartitionFieldTable";
-import SortFieldTable from "../features/specs/components/SortFieldTable";
-import { diffSpecRows, plainSpecRows } from "../features/specs/specFieldRows";
-import SchemaDiffView from "../features/schema/components/SchemaDiffView";
-import SchemaFieldList from "../features/schema/components/SchemaFieldList";
-import { parseIcebergSchema } from "../features/schema/schemaModel";
-import {
-  integerText,
-  schemaColumnNames,
-} from "../features/metadata/metadataPresentation";
-import {
-  specSelectionLabel,
-  findPreviousSpec,
-  useTableSpecs,
-} from "../features/specs/tableSpecs";
+import SpecDetailsOverlay from "../features/specs/components/SpecDetailsOverlay";
+import { useTableSpecs } from "../features/specs/tableSpecs";
 import {
   BRANCH_CONNECTION_COLOR,
   DELETED_DATA_FILE_CONNECTION_COLOR,
@@ -37,24 +19,6 @@ import {
   MAIN_BRANCH_NAME,
   NODE_STYLE_MAP,
 } from "../graphConstants";
-
-const DETAIL_TYPE_CONFIG = {
-  schema: {
-    listKey: "schemas",
-    noPrevLabel: "No previous schema",
-  },
-  partition: {
-    listKey: "partition-specs",
-    fieldIdentity: (field) => field["field-id"],
-    noPrevLabel: "No previous partition spec",
-  },
-  order: {
-    listKey: "sort-orders",
-    fieldIdentity: (field) =>
-      `${String(field["source-id"])}\u0000${field.transform ?? ""}`,
-    noPrevLabel: "No previous sort order",
-  },
-};
 
 const localizeNodeTimestamps = (details) => {
   if (!details) return {};
@@ -173,14 +137,6 @@ export default function TableLayout() {
   const search = useSearch({ strict: false });
   const navigate = useNavigate();
   const {
-    detailsOpen,
-    setDetailsOpen,
-    selectionDetail,
-    unresolvedSelection,
-    clearSpecSelection,
-    openSpec,
-    specView,
-    setSpecView,
     graphQuery,
     collectionStages,
     issuesOpen,
@@ -188,39 +144,6 @@ export default function TableLayout() {
     errors,
     warnings,
   } = useTableSpecs();
-  const detailPanelRef = useRef(null);
-  const specsDialogRef = useRef(null);
-
-  useEffect(() => {
-    if (!detailsOpen) return;
-    const previousFocus = document.activeElement;
-    const dialog = specsDialogRef.current;
-    const focusable = () => [
-      ...(dialog?.querySelectorAll(
-        'button:not([disabled]), [href], [tabindex="0"]',
-      ) ?? []),
-    ];
-    focusable()[0]?.focus();
-    const trapFocus = (event) => {
-      if (event.key !== "Tab") return;
-      const elements = focusable();
-      const first = elements[0];
-      const last = elements[elements.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last?.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first?.focus();
-      }
-    };
-    dialog?.addEventListener("keydown", trapFocus);
-    return () => {
-      dialog?.removeEventListener("keydown", trapFocus);
-      if (previousFocus instanceof HTMLElement && previousFocus.isConnected)
-        previousFocus.focus({ preventScroll: true });
-    };
-  }, [detailsOpen]);
 
   useEffect(() => {
     sessionStorage.removeItem("last_graph_selection");
@@ -229,12 +152,11 @@ export default function TableLayout() {
   useHotkey(
     "Escape",
     () => {
-      if (issuesOpen) setIssuesOpen(false);
-      else setDetailsOpen(false);
+      setIssuesOpen(false);
     },
     {
       conflictBehavior: "allow",
-      enabled: detailsOpen || issuesOpen,
+      enabled: issuesOpen,
     },
   );
 
@@ -247,19 +169,6 @@ export default function TableLayout() {
   }, [errors, warnings, setIssuesOpen]);
 
   const tableName = search.table || "";
-  const [specJsonCopied, setSpecJsonCopied] = useState(false);
-
-  const selectedType = selectionDetail?.type;
-  const selectedId = selectionDetail?.id;
-  useEffect(() => {
-    if (selectedType && detailPanelRef.current) {
-      detailPanelRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-      });
-    }
-  }, [selectedType, selectedId]);
-
   const buildGraphData = (data) => {
     const nodeDetails = data.nodes || [];
     const colorShiftByFilePath = buildMetadataColorShifts(nodeDetails);
@@ -367,8 +276,8 @@ export default function TableLayout() {
             onClick={() =>
               IS_MOCK
                 ? navigate({
-                    to: "/table/timeline",
-                    search: MOCK_TABLE_SEARCH,
+                    to: "/snapshots-selection",
+                    search: MOCK_SELECTION_SEARCH,
                   })
                 : navigate({ to: "/" })
             }
@@ -379,17 +288,6 @@ export default function TableLayout() {
       </div>
     );
   }
-
-  const metadata = graphData.metadata;
-  const specColumnNames = schemaColumnNames(
-    parseIcebergSchema(
-      metadata?.schemas?.find(
-        (schema) =>
-          integerText(schema["schema-id"]) ===
-          integerText(metadata["current-schema-id"]),
-      ),
-    ),
-  );
 
   return (
     <div className="flex-1 flex overflow-hidden relative">
@@ -402,183 +300,7 @@ export default function TableLayout() {
         </Suspense>
       </TableGraphDataContext.Provider>
 
-      {detailsOpen && metadata && (
-        <div
-          className="fixed inset-0 z-[9999] bg-black/50 flex items-center justify-center font-sans"
-          onClick={() => {
-            setDetailsOpen(false);
-          }}
-        >
-          <div
-            ref={specsDialogRef}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Table Specification"
-            className="w-[90vw] max-w-6xl bg-surface rounded-xl shadow-2xl border border-edge max-h-[80dvh] flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-edge shrink-0">
-              <div>
-                <div className={UI_DIALOG_TITLE_CLASS}>Table Specification</div>
-                <div className={`${UI_MONO_MUTED_CLASS} mt-0.5`}>
-                  {metadata?.["table-name"]}
-                </div>
-              </div>
-              <button
-                aria-label="Close Specs"
-                className="w-7 h-7 rounded-full bg-edge text-slate-400 flex items-center justify-center text-base cursor-pointer hover:bg-edge-hover hover:text-slate-200 transition"
-                onClick={() => {
-                  setDetailsOpen(false);
-                }}
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="overflow-y-auto px-6 py-5 flex flex-col gap-4">
-              <SpecHistory
-                metadata={metadata}
-                onSelect={(kind, id) => openSpec({ kind, id })}
-                selection={selectionDetail}
-              />
-
-              {unresolvedSelection && (
-                <div className="rounded-xl border border-amber-500/40 bg-amber-900/20 px-4 py-3">
-                  <p className="text-sm text-amber-300">
-                    {specSelectionLabel(unresolvedSelection)} is not in this
-                    table&apos;s loaded metadata. It may belong to another table
-                    or fall outside the selected snapshot range.
-                  </p>
-                  <button
-                    type="button"
-                    className="mt-2 text-xs text-accent-text hover:underline cursor-pointer"
-                    onClick={() => clearSpecSelection()}
-                  >
-                    Clear selection
-                  </button>
-                </div>
-              )}
-
-              {selectionDetail &&
-                (() => {
-                  const config = DETAIL_TYPE_CONFIG[selectionDetail.type];
-                  const list = metadata?.[config.listKey] ?? [];
-                  const prevItem = findPreviousSpec(list, selectionDetail.data);
-                  const hasPrev = prevItem !== null;
-                  const showDiff = specView === "diff" && hasPrev;
-
-                  const diffRows =
-                    showDiff && hasPrev && selectionDetail.type !== "schema"
-                      ? diffSpecRows(
-                          prevItem.fields,
-                          selectionDetail.data.fields,
-                          config.fieldIdentity,
-                          selectionDetail.type === "order",
-                        )
-                      : null;
-
-                  return (
-                    <div
-                      ref={detailPanelRef}
-                      className="rounded-lg border-2 border-accent"
-                    >
-                      <div className="flex items-center justify-between px-4 py-2 bg-accent">
-                        <span className="text-sm font-bold text-white">
-                          {selectionDetail.label}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center gap-0">
-                            <button
-                              type="button"
-                              aria-pressed={!showDiff}
-                              className={`text-xs font-bold px-2 py-0.5 rounded-l-full border border-white/30 transition ${!showDiff ? "bg-white text-accent" : "bg-transparent text-white/70 hover:text-white"}`}
-                              onClick={() => setSpecView("full")}
-                            >
-                              Full
-                            </button>
-                            <button
-                              type="button"
-                              aria-pressed={showDiff}
-                              disabled={!hasPrev}
-                              title={
-                                !hasPrev
-                                  ? config.noPrevLabel
-                                  : "Show diff to previous version"
-                              }
-                              className={`text-xs font-bold px-2 py-0.5 rounded-r-full border border-white/30 transition ${showDiff ? "bg-white text-accent" : !hasPrev ? "bg-transparent text-white/30 cursor-not-allowed" : "bg-transparent text-white/70 hover:text-white cursor-pointer"}`}
-                              onClick={() => hasPrev && setSpecView("diff")}
-                            >
-                              Diff
-                            </button>
-                          </div>
-                          <button
-                            className="text-xs font-bold px-2 py-0.5 rounded-full border border-white/30 bg-transparent text-white/70 hover:text-white transition cursor-pointer"
-                            onClick={() => {
-                              navigator.clipboard.writeText(
-                                JSON.stringify(selectionDetail.data, null, 2),
-                              );
-                              setSpecJsonCopied(true);
-                              setTimeout(() => setSpecJsonCopied(false), 2000);
-                            }}
-                          >
-                            {specJsonCopied ? "✓ Copied" : "Copy JSON"}
-                          </button>
-                          <button
-                            className="text-white/70 hover:text-white text-xl leading-none cursor-pointer transition"
-                            onClick={() => clearSpecSelection()}
-                          >
-                            ×
-                          </button>
-                        </div>
-                      </div>
-                      <div className="max-h-[300px] overflow-y-auto">
-                        {!showDiff && selectionDetail.type === "schema" && (
-                          <SchemaFieldList schema={selectionDetail.data} />
-                        )}
-                        {!showDiff && selectionDetail.type === "partition" && (
-                          <PartitionFieldTable
-                            rows={plainSpecRows(selectionDetail.data.fields)}
-                            columnNames={specColumnNames}
-                          />
-                        )}
-                        {!showDiff && selectionDetail.type === "order" && (
-                          <SortFieldTable
-                            rows={plainSpecRows(selectionDetail.data.fields)}
-                            columnNames={specColumnNames}
-                          />
-                        )}
-                        {showDiff &&
-                          hasPrev &&
-                          selectionDetail.type === "schema" && (
-                            <SchemaDiffView
-                              previousSchema={prevItem}
-                              currentSchema={selectionDetail.data}
-                            />
-                          )}
-                        {showDiff &&
-                          diffRows &&
-                          selectionDetail.type === "partition" && (
-                            <PartitionFieldTable
-                              rows={diffRows}
-                              columnNames={specColumnNames}
-                            />
-                          )}
-                        {showDiff &&
-                          diffRows &&
-                          selectionDetail.type === "order" && (
-                            <SortFieldTable
-                              rows={diffRows}
-                              columnNames={specColumnNames}
-                            />
-                          )}
-                      </div>
-                    </div>
-                  );
-                })()}
-            </div>
-          </div>
-        </div>
-      )}
+      <SpecDetailsOverlay />
       {issuesOpen && (errors || warnings) && (
         <div
           className="fixed inset-0 z-[9999] bg-black/60 flex items-center justify-center font-sans"

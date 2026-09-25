@@ -1,20 +1,23 @@
-import type { GraphNode } from "../../table/api/graphSchemas";
-import { formatCount, formatSnapshotTime } from "../metadataPresentation";
+import type { TableMetadata } from "../../table/api/metadataSchemas";
+import {
+  formatCount,
+  formatMetadataTime,
+  integerText,
+} from "../metadataPresentation";
 import { formatBytesAsGibibytes } from "../../../shared/lib/formatBytes";
 import HelpTerm from "../../../shared/components/HelpTerm";
 import CopyIconButton from "../../../components/CopyIconButton";
 
 interface MetadataSummaryProps {
-  snapshotId: string | null;
-  snapshot: GraphNode | undefined;
+  metadata: TableMetadata;
 }
 
-const MetadataSummary = ({ snapshotId, snapshot }: MetadataSummaryProps) => {
-  const summary = snapshot?.summary;
-  const stat = (key: string): string | null =>
-    summary?.[key] == null ? null : String(summary[key]);
+const MetadataSummary = ({ metadata }: MetadataSummaryProps) => {
+  const snapshotId = integerText(metadata["current-snapshot-id"]);
+  const snapshot = metadata["current-snapshot"];
+  const stat = (key: string): string | null => snapshot?.summary?.[key] ?? null;
   const deleteFiles = stat("total-delete-files");
-  const bytes = stat("total-files-size-bytes");
+  const bytes = stat("total-files-size");
   const hasSnapshot = snapshotId !== null && snapshotId !== "-1";
   return (
     <section aria-labelledby="metadata-summary-title">
@@ -27,7 +30,7 @@ const MetadataSummary = ({ snapshotId, snapshot }: MetadataSummaryProps) => {
         </h2>
         <span className="text-xs text-slate-400">
           {snapshot
-            ? `Snapshot committed ${formatSnapshotTime(snapshot.timestamp)}`
+            ? `Snapshot committed ${formatMetadataTime(snapshot["timestamp-ms"])}`
             : "Snapshot statistics"}
         </span>
       </div>
@@ -85,8 +88,8 @@ const MetadataSummary = ({ snapshotId, snapshot }: MetadataSummaryProps) => {
       )}
       {hasSnapshot && !snapshot && (
         <p className="mt-2 text-sm text-slate-400">
-          Current snapshot {snapshotId} is not in the loaded graph. Its
-          statistics are unavailable.
+          Current snapshot {snapshotId} is not recorded in this metadata file.
+          Its statistics are unavailable.
         </p>
       )}
     </section>

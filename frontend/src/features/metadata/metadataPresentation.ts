@@ -1,6 +1,6 @@
 import type { IcebergInteger } from "../table/api/metadataSchemas";
 import type { IcebergSchema, IcebergType } from "../schema/schemaModel";
-import { formatLocaleDateTime, parseUtcDate } from "../../utils/dateUtils";
+import { formatLocaleDateTime } from "../../utils/dateUtils";
 
 export const integerText = (
   value: IcebergInteger | null | undefined,
@@ -19,14 +19,6 @@ export const formatMetadataTime = (
   return Number.isNaN(date.getTime())
     ? "Unavailable"
     : formatLocaleDateTime(date);
-};
-
-export const formatSnapshotTime = (
-  value: string | null | undefined,
-): string => {
-  if (!value) return "Unavailable";
-  const date = parseUtcDate(value);
-  return date === null ? value : formatLocaleDateTime(date);
 };
 
 export const schemaColumnNames = (

@@ -80,7 +80,9 @@ etc.) go to stderr, so stdout is always safe to parse directly.
 - `tables` → a JSON array of table name strings.
 - `snapshots <table>` → a JSON array of `{timestamp, snapshot_id, operation}` objects (timestamp is
   ISO 8601, converted to local time).
-- `metadata <table>` → the latest table metadata dictionary, including `metadata_file_path`.
+- `metadata <table>` → the latest table metadata dictionary, including `metadata_file_path` and
+  `current-snapshot` (the current snapshot's entry from the metadata file, with its `summary`
+  counts such as `total-records`, `total-data-files`, and `total-files-size`).
 - `graph <table>` → `{nodes: [...], metadata: {...}, issues: {errors: {...}, warnings: {...}}}`.
   Each entry in `nodes` is one file's fields as a flat dict, with no wrapper object around them, so
   a field is read directly as `node["summary"]`. Every node carries `file_path`, `type`, and
@@ -103,7 +105,8 @@ identifies the file used for that result.
 the graph's top-level `metadata` key, not a node's own fields.** This dictionary is close to a raw
 dump of the table's current `metadata.json` (original Iceberg field names, hyphenated) — `schemas` (full column definitions),
 `partition-specs`, `sort-orders`, `properties`, `refs`, `format-version`, `location`, `table-uuid`,
-`current-schema-id`, `default-spec-id`, etc. A metadata-file *node*, by contrast,
+`current-schema-id`, `default-spec-id`, `current-snapshot` (row and file counts in its `summary`),
+etc. A metadata-file *node*, by contrast,
 only carries IDs (`current_schema_id`, `partition_spec_id`, `sort_order_id`) plus `properties`/
 `refs` — it does **not** contain the actual schema or partition-spec definitions, so it's the wrong
 place to look for those.
@@ -216,8 +219,8 @@ browser tab isn't a substitute for giving the user something they can re-open, c
 
 ### Specs panel links
 
-The Specs panel is available on every `/table/*` page, and its state is in the URL, so you can
-link straight to one schema, partition spec, or sort order:
+The Specs panel is available on every `/table/*` page and on `/snapshots-selection`, and its
+state is in the URL, so you can link straight to one schema, partition spec, or sort order:
 
 - `specs=open` opens the panel with no definition selected.
 - `spec_kind=schema|partition|order` with `spec_id=<id>` opens that definition directly. Both
@@ -234,8 +237,9 @@ link straight to one schema, partition spec, or sort order:
 - The ID must exist in the metadata the link's snapshot range loads, so keep the same range you
   used to read it. If it doesn't resolve, the panel opens and says so rather than failing
   silently.
-- These parameters work on any `/table/*` page. Invalid values are ignored. Changing table or
-  snapshot range clears them.
+- These parameters work on any `/table/*` page and on `/snapshots-selection`, where the panel reads
+  the table's latest metadata (take `spec_id` from a `metadata` command there). Invalid values are
+  ignored. Changing table or snapshot range clears them.
 
 ## 5. Tracing a snapshot back to the Spark job that wrote it
 

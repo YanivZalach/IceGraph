@@ -1509,6 +1509,32 @@ const mockResponse = {
     metadata_file_path: "/warehouse/default/events/metadata/v10.metadata.json",
     "current-schema-id": 2,
     "current-snapshot-id": "3004708926140182071",
+    "current-snapshot": {
+      "manifest-list":
+        "/warehouse/default/events/metadata/snap-3004708926140182071-1-b67343c2-fa63-4819-a10e-56c39993e302.avro",
+      "parent-snapshot-id": "3978455952979011601",
+      "schema-id": 2,
+      "sequence-number": 6,
+      "snapshot-id": "3004708926140182071",
+      summary: {
+        operation: "overwrite",
+        "spark.app.id": "local-1781260348782",
+        "replace-partitions": "true",
+        my_custom_key:
+          "If you have found me, you are searching through IceGraph and doing a great job!",
+        "added-data-files": "3",
+        "added-records": "12",
+        "added-files-size": "0",
+        "changed-partition-count": "3",
+        "total-records": "19",
+        "total-files-size": "10737",
+        "total-data-files": "10",
+        "total-delete-files": "0",
+        "total-position-deletes": "0",
+        "total-equality-deletes": "0",
+      },
+      "timestamp-ms": 1781260348782,
+    },
     "default-sort-order-id": 0,
     "default-spec-id": 0,
     "format-version": 2,
@@ -1616,6 +1642,19 @@ export const handlers = [
     return HttpResponse.json({
       metadata_file: "/warehouse/default/events/metadata/v10.metadata.json",
     });
+  }),
+
+  http.get("/api/v1/snapshot-map/:tableName", () => {
+    return HttpResponse.json(
+      Object.fromEntries(
+        mockResponse.nodes
+          .filter((node) => node.type === "snapshot")
+          .map((node) => [
+            node.timestamp,
+            { snapshot_id: node.snapshot_id, operation: node.operation },
+          ]),
+      ),
+    );
   }),
 
   http.get("/api/v1/table-metadata/:tableName", () => {

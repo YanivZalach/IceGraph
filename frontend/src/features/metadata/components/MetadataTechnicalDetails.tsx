@@ -1,11 +1,10 @@
 import type { TableMetadata } from "../../table/api/metadataSchemas";
-import type { GraphNode } from "../../table/api/graphSchemas";
 import CopyIconButton from "../../../components/CopyIconButton";
 import MetadataProperties from "./MetadataProperties";
 import HelpTerm from "../../../shared/components/HelpTerm";
 import {
   formatCount,
-  formatSnapshotTime,
+  formatMetadataTime,
   integerText,
 } from "../metadataPresentation";
 import {
@@ -15,13 +14,12 @@ import {
 
 interface MetadataTechnicalDetailsProps {
   metadata: TableMetadata;
-  snapshot: GraphNode | undefined;
 }
 
 const MetadataTechnicalDetails = ({
   metadata,
-  snapshot,
 }: MetadataTechnicalDetailsProps) => {
+  const snapshot = metadata["current-snapshot"];
   const facts = [
     { label: "Table UUID", value: metadata["table-uuid"], isCopyable: true },
     { label: "Table location", value: metadata.location, isCopyable: true },
@@ -40,7 +38,7 @@ const MetadataTechnicalDetails = ({
     },
     {
       label: "Snapshot committed",
-      value: formatSnapshotTime(snapshot?.timestamp),
+      value: formatMetadataTime(snapshot?.["timestamp-ms"]),
       isCopyable: false,
     },
     {
