@@ -26,10 +26,10 @@ them.
 
 | Check | Full | MSW |
 | --- | --- | --- |
-| Home and catalog | Required | N/A, redirects to Snapshot Selection |
+| Home and catalog | Required | Required; any table name opens `default.events` |
 | Snapshot Selection | Required | Required with mock snapshots and metadata |
-| Full-range graph | Required | Required with fixed mock graph |
-| Bounded-range rendered data | Required | N/A, mock serves one fixed graph |
+| Full-range graph | Required | Required with the full mock graph |
+| Bounded-range rendered data | Required | Required; the mock filters its fixture by range |
 | Table views and keyboard controls | Required | Required |
 | Cache restoration and Recompile | Required | N/A |
 | Docs | Required | Required |
@@ -84,7 +84,8 @@ Snapshot Selection:
   Graph. Both URL values match the selected IDs digit-for-digit, including IDs above `2^53`.
 - The bounded Timeline visibly contains fewer snapshot nodes than the full range and begins at the
   selected Start snapshot.
-- Metadata Current Snapshot equals the selected End snapshot.
+- Metadata Current Snapshot matches the selected metadata file. For a branch End snapshot, this can
+  differ from the selected End snapshot.
 - FileTree treats the selected End snapshot as the latest available snapshot in the bounded range.
 
 A branch-write event may appear after the End timestamp when its diff explains another branch ref
@@ -95,15 +96,17 @@ Use browser Back and Forward once and confirm the restored route and range match
 
 ### MSW profile
 
-- Open the configured URL and confirm it redirects to Snapshot Selection for `default.events`.
+- Open the configured URL and confirm Home loads. Browse catalog lists `default.events`, and any
+  submitted table name opens Snapshot Selection for `default.events`.
 - Run the Snapshot Selection list, metadata, and Specs checks above.
-- Generate Graph and confirm the fixed mock graph loads. It ignores the selected range, so the
-  Timeline shows every mock snapshot even when the URL carries snapshot IDs.
-- Mark Home, catalog, and bounded-range rendered-data checks `N/A`.
+- Generate Graph for a bounded range and confirm Timeline and Graph show only the snapshots in that
+  range, plus the manifests and data files they still reference. The Metadata view uses the selected
+  metadata node's path, current snapshot, schema, refs, and properties. Other metadata fields come
+  from the fixture's latest metadata document.
 
 ## Phase 2: Table views
 
-Keep the bounded range loaded in full mode and the fixed graph loaded in MSW mode.
+Keep the bounded range loaded in both modes.
 
 ### Timeline
 

@@ -147,8 +147,9 @@ const MetadataTechnicalDetails = ({
             <div className="flex flex-wrap justify-between gap-3">
               <dt>
                 <HelpTerm label="Equality deletes">
-                  Delete records matching field values. One record may match
-                  multiple rows; this is not a live row count.
+                  Delete records that remove every row matching given column
+                  values. One record can remove many rows or none, so this
+                  counts records, not deleted rows.
                 </HelpTerm>
               </dt>
               <dd>

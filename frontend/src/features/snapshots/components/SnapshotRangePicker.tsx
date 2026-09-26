@@ -67,7 +67,7 @@ const SnapshotRangePicker = ({
     ))}
     <SnapshotRangeRow
       label="Full history"
-      detail="Starts from the table's first snapshot"
+      detail="Starts from the table's first snapshot. Not recommended: slow and cluttered on large tables"
       isStart={range.startSnapshotId === ""}
       isEnd={false}
       isInRange={range.startSnapshotId === ""}

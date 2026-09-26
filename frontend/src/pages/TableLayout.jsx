@@ -6,7 +6,6 @@ import { TableGraphDataContext } from "../features/table/tableGraphData";
 import PageLoader from "../components/PageLoader";
 import GraphCollectionChecklist from "../components/GraphCollectionChecklist";
 import { formatLocaleDateTime, parseUtcDate } from "../utils/dateUtils";
-import { IS_MOCK, MOCK_SELECTION_SEARCH } from "../appConstants";
 import { UI_BODY_MUTED_CLASS } from "../uiTypography";
 
 import SpecDetailsOverlay from "../features/specs/components/SpecDetailsOverlay";
@@ -273,14 +272,7 @@ export default function TableLayout() {
           {errorDisplay}
           <button
             className="mt-6 px-5 py-2.5 rounded-lg border-2 border-accent bg-accent text-white font-bold text-sm cursor-pointer hover:bg-accent-dark transition"
-            onClick={() =>
-              IS_MOCK
-                ? navigate({
-                    to: "/snapshots-selection",
-                    search: MOCK_SELECTION_SEARCH,
-                  })
-                : navigate({ to: "/" })
-            }
+            onClick={() => navigate({ to: "/" })}
           >
             ← Back to Home
           </button>

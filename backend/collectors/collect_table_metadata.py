@@ -4,7 +4,7 @@ from typing import Any
 
 from pyspark.sql import Column, DataFrame
 from pyspark.sql import functions as F
-from pyspark.sql.types import ArrayType, StructType
+from pyspark.sql.types import ArrayType, MapType, StringType, StructType
 
 from base_classes.utils import collect_graph_metadata_file, format_snapshot_summary
 from spark_connect import open_spark_connect_session
@@ -46,7 +46,9 @@ class TableMetadataCollector:
 
         current_snapshots = F.filter("snapshots", lambda snapshot: snapshot["snapshot-id"] == F.col("current-snapshot-id"))
         current_snapshot = F.get(current_snapshots, 0)
-        summary_without_absent_keys = F.from_json(F.to_json(current_snapshot["summary"]), "map<string,string>")
+        summary_json = F.to_json(current_snapshot["summary"], {"ignoreNullFields": "true"})
+        summary_without_absent_keys = F.from_json(summary_json, MapType(StringType(), StringType()))
+
         return current_snapshot.withField("summary", summary_without_absent_keys)
 
     @staticmethod
