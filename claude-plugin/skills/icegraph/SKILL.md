@@ -82,7 +82,7 @@ etc.) go to stderr, so stdout is always safe to parse directly.
   ISO 8601, converted to local time).
 - `metadata <table>` → the latest table metadata dictionary, including `metadata_file_path` and
   `current-snapshot` (the current snapshot's entry from the metadata file, with its `summary`
-  counts such as `total-records`, `total-data-files`, and `total-files-size`).
+  counts such as `total-records`, `total-data-files`, and `total-files-size-bytes`).
 - `graph <table>` → `{nodes: [...], metadata: {...}, issues: {errors: {...}, warnings: {...}}}`.
   Each entry in `nodes` is one file's fields as a flat dict, with no wrapper object around them, so
   a field is read directly as `node["summary"]`. Every node carries `file_path`, `type`, and

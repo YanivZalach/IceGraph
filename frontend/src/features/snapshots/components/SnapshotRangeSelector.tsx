@@ -4,6 +4,7 @@ import {
   UI_PAGE_TITLE_CLASS,
 } from "../../../uiTypography";
 import SnapshotRangePicker from "./SnapshotRangePicker";
+import HelpTerm from "../../../shared/components/HelpTerm";
 
 interface SnapshotRangeSelectorProps {
   tableName: string;
@@ -30,10 +31,19 @@ const SnapshotRangeSelector = ({
     ) : (
       <>
         <p className={`${UI_BODY_MUTED_CLASS} mb-4`}>
-          Choose an inclusive snapshot range for{" "}
-          <strong className="break-all text-ink">{tableName}</strong>.{" "}
+          Each{" "}
+          <HelpTerm label="snapshot">
+            An Iceberg snapshot is the state of the table&apos;s data files
+            after one committed write. Appends, overwrites, deletes, and
+            rewrites such as compaction each create one. Schema and property
+            changes do not.
+          </HelpTerm>{" "}
+          below is one committed write to{" "}
+          <strong className="break-all text-ink">{tableName}</strong>. Pick a
+          range to generate an in-depth graph of the table&apos;s metadata,
+          manifests, and data files across those writes.{" "}
           {range.anchorSnapshotId === null
-            ? "Click a snapshot to start a new range, then click another to finish it."
+            ? "Click a snapshot to start the range, then another to finish it. Both ends are included."
             : "Click another snapshot, Latest, or Full history to finish the range."}
         </p>
         <SnapshotRangePicker

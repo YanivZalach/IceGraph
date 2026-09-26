@@ -76,6 +76,42 @@ const SnapshotSelectionPage = () => {
     </button>
   );
 
+  const snapshotSelection = (
+    <section className="rounded-2xl border border-edge bg-surface p-6 shadow-xl">
+      {isPreparingGraph ? (
+        <GraphPreparation
+          parameters={graphParameters}
+          onBack={() => {
+            setGraphParameters(null);
+          }}
+        />
+      ) : snapshotQuery.isPending ? (
+        <div className="flex justify-center py-10">
+          <LoadingIndicator
+            title="Loading snapshots"
+            description={`Reading snapshot history for ${tableName}. This may take a moment for large tables.`}
+          />
+        </div>
+      ) : snapshotQuery.isError ? (
+        <div className="rounded-xl border border-red-800 bg-red-950/50 p-5 text-red-400">
+          <h2 className="font-bold">Failed to Load Snapshots</h2>
+          <p className="mt-2 mb-4 text-sm">{snapshotQuery.error.message}</p>
+          {goHomeButton}
+        </div>
+      ) : (
+        <SnapshotRangeSelector
+          tableName={tableName}
+          entries={entries}
+          range={range}
+          onRangeChange={(nextRange) => {
+            setSelection({ tableName, range: nextRange });
+          }}
+          onGenerate={handleGenerate}
+        />
+      )}
+    </section>
+  );
+
   if (tableName === "")
     return (
       <div className="flex-1 flex items-center justify-center p-8 text-red-400">
@@ -89,40 +125,10 @@ const SnapshotSelectionPage = () => {
   return (
     <div className="min-w-0 flex-1 bg-canvas">
       <main className="mx-auto flex max-w-5xl flex-col gap-7 px-5 py-8 md:px-8">
-        <section className="rounded-2xl border border-edge bg-surface p-6 shadow-xl">
-          {isPreparingGraph ? (
-            <GraphPreparation
-              parameters={graphParameters}
-              onBack={() => {
-                setGraphParameters(null);
-              }}
-            />
-          ) : snapshotQuery.isPending ? (
-            <div className="flex justify-center py-10">
-              <LoadingIndicator
-                title="Loading snapshots"
-                description={`Reading snapshot history for ${tableName}. This may take a moment for large tables.`}
-              />
-            </div>
-          ) : snapshotQuery.isError ? (
-            <div className="rounded-xl border border-red-800 bg-red-950/50 p-5 text-red-400">
-              <h2 className="font-bold">Failed to Load Snapshots</h2>
-              <p className="mt-2 mb-4 text-sm">{snapshotQuery.error.message}</p>
-              {goHomeButton}
-            </div>
-          ) : (
-            <SnapshotRangeSelector
-              tableName={tableName}
-              entries={entries}
-              range={range}
-              onRangeChange={(nextRange) => {
-                setSelection({ tableName, range: nextRange });
-              }}
-              onGenerate={handleGenerate}
-            />
-          )}
-        </section>
-        <LatestMetadataSection tableName={tableName} />
+        <LatestMetadataSection
+          tableName={tableName}
+          afterSummary={snapshotSelection}
+        />
       </main>
       <SpecDetailsOverlay />
     </div>

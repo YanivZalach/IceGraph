@@ -6,8 +6,6 @@ export interface SnapshotEntry {
   operation: string;
 }
 
-// An empty start means full history and an empty end means latest, matching
-// the omitted start_snapshot_id and end_snapshot_id URL parameters.
 export interface SnapshotRange {
   startSnapshotId: string;
   endSnapshotId: string;

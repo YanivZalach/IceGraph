@@ -6,7 +6,7 @@ from pyspark.sql import Column, DataFrame
 from pyspark.sql import functions as F
 from pyspark.sql.types import ArrayType, StructType
 
-from graph_cache.metadata_file import collect_graph_metadata_file
+from base_classes.utils import collect_graph_metadata_file, format_snapshot_summary
 from spark_connect import open_spark_connect_session
 
 
@@ -34,7 +34,7 @@ class TableMetadataCollector:
         metadata = row.asDict(recursive=True)
         metadata["schemas"] = metadata.get("schemas", [])
         self._parse_schema_field_types(metadata["schemas"])
-        self._drop_absent_summary_keys(metadata["current-snapshot"])
+        self._format_current_snapshot_summary(metadata["current-snapshot"])
 
         return {"table-name": self._table_name, "metadata_file_path": metadata_path, **metadata}
 
@@ -45,7 +45,9 @@ class TableMetadataCollector:
             return F.lit(None)
 
         current_snapshots = F.filter("snapshots", lambda snapshot: snapshot["snapshot-id"] == F.col("current-snapshot-id"))
-        return F.get(current_snapshots, 0)
+        current_snapshot = F.get(current_snapshots, 0)
+        summary_without_absent_keys = F.from_json(F.to_json(current_snapshot["summary"]), "map<string,string>")
+        return current_snapshot.withField("summary", summary_without_absent_keys)
 
     @staticmethod
     def _parse_schema_field_types(schemas: list[dict[str, Any]]) -> None:
@@ -55,6 +57,6 @@ class TableMetadataCollector:
                     field["type"] = json.loads(field["type"])
 
     @staticmethod
-    def _drop_absent_summary_keys(current_snapshot: dict[str, Any] | None) -> None:
-        if current_snapshot and current_snapshot.get("summary"):
-            current_snapshot["summary"] = {key: value for key, value in current_snapshot["summary"].items() if value is not None}
+    def _format_current_snapshot_summary(current_snapshot: dict[str, Any] | None) -> None:
+        if current_snapshot:
+            current_snapshot["summary"] = format_snapshot_summary(current_snapshot["summary"] or {})

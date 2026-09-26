@@ -6,7 +6,7 @@ from arrow import Arrow
 from pyspark.sql import functions as F
 
 from base_classes.base_file import BaseFile
-from base_classes.utils import column_to_string_utc, timed
+from base_classes.utils import column_to_string_utc, format_snapshot_summary, timed
 from collectors.collector import Collector, FilesCollection
 from constants import FileType
 from env import Env
@@ -64,17 +64,6 @@ class CollectSnapshots(Collector):
         if snapshots_df.count() > Env.MAX_SNAPSHOTS_TO_COMPUTE:
             raise ValueError(f"Too many snapshots to compute. Maximum is {Env.MAX_SNAPSHOTS_TO_COMPUTE}.")
 
-    @staticmethod
-    def _format_summary(summary: Dict[str, str]) -> Dict[str, str]:
-        formatted = {}
-        for key, value in summary.items():
-            if key.endswith("files-size"):
-                formatted[f"{key}-bytes"] = str(value)
-            else:
-                formatted[key] = value
-
-        return formatted
-
     def _parse_snapshot_row(self, snapshot) -> SnapshotRecord:
         return SnapshotRecord(
             type=FileType.SNAPSHOT,
@@ -85,6 +74,6 @@ class CollectSnapshots(Collector):
             operation=snapshot.operation,
             operation_description=snapshot.operation,
             action_link=None,
-            summary=self._format_summary(snapshot.summary or {}),
+            summary=format_snapshot_summary(snapshot.summary or {}),
             child_files=[],
         )

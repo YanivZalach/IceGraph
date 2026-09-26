@@ -17,7 +17,7 @@ const MetadataSummary = ({ metadata }: MetadataSummaryProps) => {
   const snapshot = metadata["current-snapshot"];
   const stat = (key: string): string | null => snapshot?.summary?.[key] ?? null;
   const deleteFiles = stat("total-delete-files");
-  const bytes = stat("total-files-size");
+  const bytes = stat("total-files-size-bytes");
   const hasSnapshot = snapshotId !== null && snapshotId !== "-1";
   return (
     <section aria-labelledby="metadata-summary-title">

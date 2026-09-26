@@ -9,10 +9,9 @@ from pathlib import Path
 from flask import Flask, jsonify, request, send_from_directory
 from pyspark.errors import AnalysisException
 
-from base_classes.utils import verify_iceberg_table
+from base_classes.utils import collect_graph_metadata_file, verify_iceberg_table
 from constants import APPLICATION_PORT, COLLECTION_STAGES, JOB_TOKEN_FIELD, STAGE_BUILD_GRAPH
 from env import Env
-from graph_cache.metadata_file import collect_graph_metadata_file
 from graph_normalizer.graph_normalizer import GraphNormalizer
 from icegraph_logger import logger
 from snapshot_analyzer.snapshot_analyzer import SnapshotAnalyzer

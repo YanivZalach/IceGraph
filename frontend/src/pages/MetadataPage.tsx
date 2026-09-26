@@ -2,6 +2,7 @@ import { useSearch } from "@tanstack/react-router";
 import { useTableSpecs } from "../features/specs/tableSpecs";
 import { useMetadataKeyboardScroll } from "../features/metadata/useMetadataKeyboardScroll";
 import MetadataOverview from "../features/metadata/components/MetadataOverview";
+import MetadataDetails from "../features/metadata/components/MetadataDetails";
 
 const MetadataPage = () => {
   const search = useSearch({ from: "/table/metadata" });
@@ -15,6 +16,9 @@ const MetadataPage = () => {
           metadata={graphQuery.data.metadata}
           tableName={search.table}
           versionTitle="Latest metadata in the selected range"
+        />
+        <MetadataDetails
+          metadata={graphQuery.data.metadata}
           onOpenSpec={openSpec}
         />
       </main>

@@ -68,15 +68,16 @@ Snapshot Selection:
   affects its own section. Specs stays disabled until the metadata loads.
 - A table with no snapshots shows a note instead of the list, and Generate Graph still reaches
   Timeline.
-- The latest metadata renders below the list without a graph job. At a glance shows the current
-  snapshot's record, file, and size statistics, and its commit time.
+- The latest metadata renders without a graph job: the version and At a glance above the list, the
+  rest below it. At a glance shows the current snapshot's record, file, and size statistics, and
+  its commit time.
 - The Schema, Spec, and Order links and the navbar Specs button open the Specs panel. Escape closes
   it and `spec_kind`/`spec_id` round-trip through the URL.
 - The navbar shows the logo, the table name, Specs, and Docs, with no Analyze tabs. Docs and the
   logo (which leads Home) open a new tab, and the table picker opens the chosen table in a new
   tab. The selected range is unchanged afterward.
 - Generate Graph replaces the snapshot list with the preparation checklist while the metadata stays
-  visible below it, then lands on Timeline. Timeline shows no second loader.
+  visible around it, then lands on Timeline. Timeline shows no second loader.
 - Full range: select Full history and Latest, then Generate Graph. Neither snapshot parameter remains
   in the URL and Timeline renders the loaded history.
 - Bounded range: select non-default Start and End values forming a strict subset, then Generate
