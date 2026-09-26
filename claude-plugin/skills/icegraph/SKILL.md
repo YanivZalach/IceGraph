@@ -165,6 +165,8 @@ particular table in focus.
 - Reuse the exact same `base_url` you already resolved for the CLI. There is no extra path prefix
   to guess — the `/IceGraph` prefix only exists on the public GitHub Pages *demo* build (a static,
   mocked deployment); a real server has none.
+- To link to a table before graph generation, use
+  `<base_url>/snapshots-selection?table=<uri-encoded database.table>`.
 - URI-encode `table` and `select_node_id`.
 - `select_node_id` is a node's Iceberg file path — get it from a `graph` command's `nodes` output
   (or a filename the user already gave you). It stays valid as long as that file is still part of

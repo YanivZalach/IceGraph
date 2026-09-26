@@ -89,11 +89,7 @@ const NavBar = () => {
         {isTableContext && (
           <div className="flex min-w-0 flex-1 items-center gap-3 xl:gap-4">
             {tableName !== "" && (
-              <TablePicker
-                key={pathname}
-                tableName={tableName}
-                pathname={pathname}
-              />
+              <TablePicker key={pathname} tableName={tableName} />
             )}
             {isTablePage && (
               <>

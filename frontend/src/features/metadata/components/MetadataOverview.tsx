@@ -27,16 +27,19 @@ const MetadataOverview = ({
         </h1>
         <section className="mt-4" aria-label="Table description">
           <h2 className="text-sm font-semibold text-ink">
-            Table description{" ("}
-            <HelpTerm label="How to add it">
-              Set the table property with Spark SQL:
-              <code className="mt-2 block whitespace-pre-wrap break-words font-mono">
-                {
-                  "ALTER TABLE my.table\nSET TBLPROPERTIES (\n  'icegraph.description' = 'Customer events'\n);"
-                }
-              </code>
-            </HelpTerm>
-            {")"}
+            Table description{" "}
+            <span className="font-normal text-slate-500">
+              (
+              <HelpTerm label="How to add it">
+                Set the table property with Spark SQL:
+                <code className="mt-2 block whitespace-pre-wrap break-words font-mono">
+                  {
+                    "ALTER TABLE my.table\nSET TBLPROPERTIES (\n  'icegraph.description' = 'Customer events'\n);"
+                  }
+                </code>
+              </HelpTerm>
+              )
+            </span>
           </h2>
           <p className="mt-1 whitespace-pre-wrap break-words text-sm text-slate-400">
             {typeof description === "string" && description.trim()
