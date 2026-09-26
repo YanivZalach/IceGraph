@@ -3,13 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { catalogQueryOptions } from "../catalog/api/catalogQueries";
 import CatalogTableList from "../../components/CatalogTableList";
-import {
-  BASE_PATH,
-  IS_MOCK,
-  MOCK_SELECTION_SEARCH,
-  MOCK_TABLE,
-  MOCK_TABLE_SEARCH,
-} from "../../appConstants";
+import { BASE_PATH, IS_MOCK, MOCK_TABLE } from "../../appConstants";
 import {
   UI_ERROR_TEXT_SPACED_CLASS,
   UI_FORM_LABEL_CLASS,
@@ -22,7 +16,6 @@ import { cn } from "../../shared/lib/cn";
 
 interface TablePickerProps {
   tableName: string;
-  pathname: string;
 }
 
 const TABLE_HISTORY_KEY = "tableHistory";
@@ -43,16 +36,10 @@ const rememberTable = (tableName: string): void => {
   );
 };
 
-const tableUrl = (tableName: string, pathname: string): string => {
-  if (!IS_MOCK)
-    return `${BASE_PATH}/snapshots-selection?${new URLSearchParams({ table: tableName }).toString()}`;
-  const mockSearch = pathname.startsWith("/table/")
-    ? MOCK_TABLE_SEARCH
-    : MOCK_SELECTION_SEARCH;
-  return `${BASE_PATH}${pathname}?${new URLSearchParams(mockSearch).toString()}`;
-};
+const tableUrl = (tableName: string): string =>
+  `${BASE_PATH}/snapshots-selection?${new URLSearchParams({ table: tableName }).toString()}`;
 
-const TablePicker = ({ tableName, pathname }: TablePickerProps) => {
+const TablePicker = ({ tableName }: TablePickerProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [draftTableName, setDraftTableName] = useState("");
   const [isCatalogListOpen, setIsCatalogListOpen] = useState(false);
@@ -99,11 +86,7 @@ const TablePicker = ({ tableName, pathname }: TablePickerProps) => {
     const nextTableName = IS_MOCK ? MOCK_TABLE : draftTableName.trim();
     if (nextTableName === "") return;
     rememberTable(nextTableName);
-    window.open(
-      tableUrl(nextTableName, pathname),
-      "_blank",
-      "noopener,noreferrer",
-    );
+    window.open(tableUrl(nextTableName), "_blank", "noopener,noreferrer");
     setIsOpen(false);
   };
 
