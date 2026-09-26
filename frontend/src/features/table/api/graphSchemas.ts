@@ -34,7 +34,10 @@ export const graphJobSubmissionSchema = z.object({
 export const graphProgressSchema = z.object({
   key: z.string(),
   status: z.literal("processing"),
-  stages: z.record(z.string(), z.string()).nullable().optional(),
+  stages: z
+    .record(z.string(), z.enum(["pending", "in_progress", "done"]))
+    .nullable()
+    .optional(),
 });
 
 export const graphJobPollResponseSchema = z.union([
@@ -48,5 +51,6 @@ export const graphMetadataFileSchema = z.object({
 
 export type GraphData = z.infer<typeof graphDataSchema>;
 export type GraphProgress = z.infer<typeof graphProgressSchema>;
+export type GraphStages = NonNullable<GraphProgress["stages"]>;
 
 export type GraphNode = GraphData["nodes"][number];

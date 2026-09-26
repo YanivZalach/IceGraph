@@ -1506,8 +1506,35 @@ const mockResponse = {
   ],
   metadata: {
     "table-name": "default.events",
+    metadata_file_path: "/warehouse/default/events/metadata/v10.metadata.json",
     "current-schema-id": 2,
     "current-snapshot-id": "3004708926140182071",
+    "current-snapshot": {
+      "manifest-list":
+        "/warehouse/default/events/metadata/snap-3004708926140182071-1-b67343c2-fa63-4819-a10e-56c39993e302.avro",
+      "parent-snapshot-id": "3978455952979011601",
+      "schema-id": 2,
+      "sequence-number": 6,
+      "snapshot-id": "3004708926140182071",
+      summary: {
+        operation: "overwrite",
+        "spark.app.id": "local-1781260348782",
+        "replace-partitions": "true",
+        my_custom_key:
+          "If you have found me, you are searching through IceGraph and doing a great job!",
+        "added-data-files": "3",
+        "added-records": "12",
+        "added-files-size-bytes": "0",
+        "changed-partition-count": "3",
+        "total-records": "19",
+        "total-files-size-bytes": "10737",
+        "total-data-files": "10",
+        "total-delete-files": "0",
+        "total-position-deletes": "0",
+        "total-equality-deletes": "0",
+      },
+      "timestamp-ms": 1781260348782,
+    },
     "default-sort-order-id": 0,
     "default-spec-id": 0,
     "format-version": 2,
@@ -1601,7 +1628,110 @@ const MOCK_GRAPH_PROGRESS_RESPONSES = [
   },
 ];
 
-let graphProgressResponseIndex = 0;
+const METADATA_NODE_TYPES = new Set(["main_metadata", "metadata"]);
+const REACHABLE_NODE_TYPES = new Set(["snapshot", "manifest"]);
+const graphJobs = new Map();
+
+const snapshotTimestamp = (snapshotId) =>
+  mockResponse.nodes.find(
+    (node) => node.type === "snapshot" && node.snapshot_id === snapshotId,
+  )?.timestamp;
+
+const metadataForNode = (node) => {
+  if (node.file_path === mockResponse.metadata.metadata_file_path) {
+    return mockResponse.metadata;
+  }
+
+  const snapshot = mockResponse.nodes.find(
+    (candidate) =>
+      candidate.type === "snapshot" &&
+      candidate.snapshot_id === node.snapshot_id,
+  );
+  const schemas = mockResponse.metadata.schemas.filter(
+    (schema) => schema["schema-id"] <= node.current_schema_id,
+  );
+  return {
+    ...mockResponse.metadata,
+    metadata_file_path: node.file_path,
+    "current-schema-id": node.current_schema_id,
+    "current-snapshot-id": node.snapshot_id,
+    "current-snapshot": snapshot
+      ? {
+          "manifest-list": snapshot.file_path,
+          "parent-snapshot-id": snapshot.parent_id,
+          "schema-id": node.current_schema_id,
+          "snapshot-id": snapshot.snapshot_id,
+          summary: { operation: snapshot.operation, ...snapshot.summary },
+          "timestamp-ms": Date.parse(
+            `${snapshot.timestamp.replace(" ", "T")}Z`,
+          ),
+        }
+      : null,
+    "last-sequence-number": node.last_sequence_number,
+    "last-column-id": Math.max(
+      ...schemas.flatMap((schema) => schema.fields.map((field) => field.id)),
+    ),
+    "last-updated-ms": Date.parse(`${node.timestamp.replace(" ", "T")}Z`),
+    properties: node.properties,
+    refs: node.refs,
+    schemas,
+  };
+};
+
+const metadataNodeAtSnapshot = (snapshotId) => {
+  const endTime = snapshotId ? snapshotTimestamp(snapshotId) : "\uffff";
+  return mockResponse.nodes
+    .filter(
+      (node) => METADATA_NODE_TYPES.has(node.type) && node.timestamp <= endTime,
+    )
+    .sort((first, second) =>
+      second.timestamp.localeCompare(first.timestamp),
+    )[0];
+};
+
+const buildRangeGraph = ({ startSnapshotId, endSnapshotId }) => {
+  const startTime = startSnapshotId ? snapshotTimestamp(startSnapshotId) : "";
+  const endTime = endSnapshotId ? snapshotTimestamp(endSnapshotId) : "\uffff";
+  const nodesByPath = new Map(
+    mockResponse.nodes.map((node) => [node.file_path, node]),
+  );
+  const keptNodes = new Map();
+  const keep = (node) => {
+    if (!node || keptNodes.has(node.file_path)) return;
+    keptNodes.set(node.file_path, node);
+    if (!REACHABLE_NODE_TYPES.has(node.type)) return;
+    node.child_files.forEach((path) => keep(nodesByPath.get(path)));
+  };
+  mockResponse.nodes
+    .filter(
+      (node) =>
+        (node.type === "snapshot" || METADATA_NODE_TYPES.has(node.type)) &&
+        node.timestamp >= startTime &&
+        node.timestamp <= endTime,
+    )
+    .forEach(keep);
+
+  const nodes = [...keptNodes.values()];
+  const newestMetadata = nodes
+    .filter((node) => METADATA_NODE_TYPES.has(node.type))
+    .sort((first, second) =>
+      second.timestamp.localeCompare(first.timestamp),
+    )[0];
+  return {
+    ...mockResponse,
+    metadata: newestMetadata
+      ? metadataForNode(newestMetadata)
+      : mockResponse.metadata,
+    nodes: nodes.map((node) =>
+      METADATA_NODE_TYPES.has(node.type)
+        ? {
+            ...node,
+            type: node === newestMetadata ? "main_metadata" : "metadata",
+          }
+        : node,
+    ),
+  };
+};
 
 export const handlers = [
   http.get("/api/v1/tables", () => {
@@ -1611,38 +1741,60 @@ export const handlers = [
     });
   }),
 
-  http.get("/api/v1/graph-metadata-file/:tableName", () => {
+  http.get("/api/v1/graph-metadata-file/:tableName", ({ request }) => {
+    const endSnapshotId = new URL(request.url).searchParams.get(
+      "end_snapshot_id",
+    );
     return HttpResponse.json({
-      metadata_file: "/warehouse/default/events/metadata/v10.metadata.json",
+      metadata_file: metadataNodeAtSnapshot(endSnapshotId)?.file_path,
     });
   }),
 
-  http.post("/api/v1/graph-data", () => {
-    graphProgressResponseIndex = 0;
+  http.get("/api/v1/snapshot-map/:tableName", () => {
     return HttpResponse.json(
-      {
-        key: "default_events_None_None",
-        status: "processing",
-        "X-IceGraph-Job-Token": "mock-token",
-      },
+      Object.fromEntries(
+        mockResponse.nodes
+          .filter((node) => node.type === "snapshot")
+          .map((node) => [
+            node.timestamp,
+            { snapshot_id: node.snapshot_id, operation: node.operation },
+          ]),
+      ),
+    );
+  }),
+
+  http.get("/api/v1/table-metadata/:tableName", () => {
+    return HttpResponse.json(mockResponse.metadata);
+  }),
+
+  http.post("/api/v1/graph-data", async ({ request }) => {
+    const form = new URLSearchParams(await request.text());
+    const range = {
+      startSnapshotId: form.get("start_snapshot_id") ?? "",
+      endSnapshotId: form.get("end_snapshot_id") ?? "",
+    };
+    const key = `default_events_${range.startSnapshotId || "None"}_${range.endSnapshotId || "None"}`;
+    graphJobs.set(key, { range, progressIndex: 0 });
+    return HttpResponse.json(
+      { key, status: "processing", "X-IceGraph-Job-Token": "mock-token" },
       { status: 202 },
     );
   }),
 
-  http.get("/api/v1/graph-data/default_events_None_None", () => {
-    const stages = MOCK_GRAPH_PROGRESS_RESPONSES[graphProgressResponseIndex];
+  http.get("/api/v1/graph-data/:key", ({ params }) => {
+    const job = graphJobs.get(params.key);
+    if (!job) {
+      return HttpResponse.json({ error: "Unknown graph job" }, { status: 404 });
+    }
+    const stages = MOCK_GRAPH_PROGRESS_RESPONSES[job.progressIndex];
     if (stages) {
-      graphProgressResponseIndex += 1;
+      job.progressIndex += 1;
       return HttpResponse.json(
-        {
-          key: "default_events_None_None",
-          status: "processing",
-          stages,
-        },
+        { key: params.key, status: "processing", stages },
         { status: 202 },
       );
     }
 
-    return HttpResponse.json(mockResponse);
+    return HttpResponse.json(buildRangeGraph(job.range));
   }),
 ];

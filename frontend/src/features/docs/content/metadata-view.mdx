@@ -4,11 +4,11 @@ The version header shows the metadata update time and metadata file path. All ti
 
 ### Snapshot statistics
 
-**At a glance** comes from the current snapshot referenced by the loaded metadata file. Its commit time can precede the metadata update time.
+**At a glance** comes from the summary of the current snapshot recorded in the loaded metadata file. Its commit time can precede the metadata update time.
 
 - **Records in data files** is the snapshot's record count before subtracting row deletes. Delete files are shown alongside it.
 - **Total file size (data + deletes)** includes both file types and is shown in GiB. Hover over the size for exact bytes, or expand **Exact bytes** to view and copy the original byte count.
-- Missing statistics are shown as **Unavailable**. The page explains when no current snapshot exists or its statistics are outside the loaded graph.
+- Missing statistics are shown as **Unavailable**. The page explains when no current snapshot exists or the metadata file does not record it.
 
 ### Schema and data organization
 

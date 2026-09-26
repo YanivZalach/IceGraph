@@ -5,6 +5,7 @@ import { catalogQueryOptions } from "../features/catalog/api/catalogQueries";
 import logo from "../assets/icegraph.png";
 import CatalogTableList from "../components/CatalogTableList";
 import JSONbig from "json-bigint";
+import { IS_MOCK, MOCK_TABLE } from "../appConstants";
 import {
   UI_BODY_MUTED_CLASS,
   UI_ERROR_TEXT_SPACED_CLASS,
@@ -39,12 +40,19 @@ export default function HomePage() {
 
   function handleSubmit(e) {
     e.preventDefault();
+    const selectedTableName = IS_MOCK ? MOCK_TABLE : tableName;
 
-    const updatedHistory = [...new Set([tableName, ...history])].slice(0, 5);
+    const updatedHistory = [...new Set([selectedTableName, ...history])].slice(
+      0,
+      5,
+    );
     setHistory(updatedHistory);
     localStorage.setItem("tableHistory", JSON.stringify(updatedHistory));
 
-    navigate({ to: "/snapshots-selection", search: { table: tableName } });
+    navigate({
+      to: "/snapshots-selection",
+      search: { table: selectedTableName },
+    });
   }
 
   function fetchCatalogTables() {

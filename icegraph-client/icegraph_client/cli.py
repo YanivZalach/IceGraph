@@ -24,6 +24,11 @@ def _snapshots(client: IceGraphClient, args: argparse.Namespace):
     return client.get_snapshot_map(args.table)
 
 
+def _metadata(client: IceGraphClient, args: argparse.Namespace):
+    print(f"Fetching metadata for '{args.table}'...", file=sys.stderr)
+    return client.get_table_metadata(args.table)
+
+
 def _graph(client: IceGraphClient, args: argparse.Namespace):
     print(f"Building graph for '{args.table}'...", file=sys.stderr)
     return client.get_graph(args.table, args.start_snapshot_id, args.end_snapshot_id)
@@ -56,6 +61,10 @@ def build_parser() -> argparse.ArgumentParser:
     snapshots_parser = subparsers.add_parser("snapshots", help="Get the snapshot map for a table")
     snapshots_parser.add_argument("table", help="Full table name")
     snapshots_parser.set_defaults(handler=_snapshots)
+
+    metadata_parser = subparsers.add_parser("metadata", help="Get the latest metadata for a table")
+    metadata_parser.add_argument("table", help="Full table name")
+    metadata_parser.set_defaults(handler=_metadata)
 
     graph_parser = subparsers.add_parser("graph", help="Build the metadata graph for a table")
     graph_parser.add_argument("table", help="Full table name")

@@ -1,11 +1,10 @@
 import type { TableMetadata } from "../../table/api/metadataSchemas";
-import type { GraphNode } from "../../table/api/graphSchemas";
 import CopyIconButton from "../../../components/CopyIconButton";
 import MetadataProperties from "./MetadataProperties";
 import HelpTerm from "../../../shared/components/HelpTerm";
 import {
   formatCount,
-  formatSnapshotTime,
+  formatMetadataTime,
   integerText,
 } from "../metadataPresentation";
 import {
@@ -15,13 +14,12 @@ import {
 
 interface MetadataTechnicalDetailsProps {
   metadata: TableMetadata;
-  snapshot: GraphNode | undefined;
 }
 
 const MetadataTechnicalDetails = ({
   metadata,
-  snapshot,
 }: MetadataTechnicalDetailsProps) => {
+  const snapshot = metadata["current-snapshot"];
   const facts = [
     { label: "Table UUID", value: metadata["table-uuid"], isCopyable: true },
     { label: "Table location", value: metadata.location, isCopyable: true },
@@ -40,7 +38,7 @@ const MetadataTechnicalDetails = ({
     },
     {
       label: "Snapshot committed",
-      value: formatSnapshotTime(snapshot?.timestamp),
+      value: formatMetadataTime(snapshot?.["timestamp-ms"]),
       isCopyable: false,
     },
     {
@@ -149,8 +147,9 @@ const MetadataTechnicalDetails = ({
             <div className="flex flex-wrap justify-between gap-3">
               <dt>
                 <HelpTerm label="Equality deletes">
-                  Delete records matching field values. One record may match
-                  multiple rows; this is not a live row count.
+                  Delete records that remove every row matching given column
+                  values. One record can remove many rows or none, so this
+                  counts records, not deleted rows.
                 </HelpTerm>
               </dt>
               <dd>

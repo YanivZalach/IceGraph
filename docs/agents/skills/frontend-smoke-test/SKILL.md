@@ -26,10 +26,10 @@ them.
 
 | Check | Full | MSW |
 | --- | --- | --- |
-| Home and catalog | Required | N/A, redirects to Timeline |
-| Snapshot Selection | Required | N/A, redirects to Timeline |
-| Full-range graph | Required | Required with fixed mock graph |
-| Bounded-range rendered data | Required | N/A, mock serves one fixed graph |
+| Home and catalog | Required | Required; any table name opens `default.events` |
+| Snapshot Selection | Required | Required with mock snapshots and metadata |
+| Full-range graph | Required | Required with the full mock graph |
+| Bounded-range rendered data | Required | Required; the mock filters its fixture by range |
 | Table views and keyboard controls | Required | Required |
 | Cache restoration and Recompile | Required | N/A |
 | Docs | Required | Required |
@@ -61,16 +61,31 @@ Home:
 
 Snapshot Selection:
 
-- Start and End lists load.
-- Latest Metadata Only opens Metadata with `start_snapshot_id` and `end_snapshot_id` both equal to
-  the latest snapshot ID. Current Snapshot matches that exact ID.
-- Full range: select Full History and Latest, then Generate Graph. Neither snapshot parameter remains
+- The snapshot list loads newest first, between a Latest row and a Full history row.
+- Clicking one snapshot marks it as both Start and End. Clicking a second snapshot finishes the
+  range with the older one as Start. A third click starts a new range.
+- The snapshot list and the latest metadata load independently. A slow or failed request only
+  affects its own section. Specs stays disabled until the metadata loads.
+- A table with no snapshots shows a note instead of the list, and Generate Graph still reaches
+  Timeline.
+- The latest metadata renders without a graph job: the version and At a glance above the list, the
+  rest below it. At a glance shows the current snapshot's record, file, and size statistics, and
+  its commit time.
+- The Schema, Spec, and Order links and the navbar Specs button open the Specs panel. Escape closes
+  it and `spec_kind`/`spec_id` round-trip through the URL.
+- The navbar shows the logo, the table name, Specs, and Docs, with no Analyze tabs. Docs and the
+  logo (which leads Home) open a new tab, and the table picker opens the chosen table in a new
+  tab. The selected range is unchanged afterward.
+- Generate Graph replaces the snapshot list with the preparation checklist while the metadata stays
+  visible around it, then lands on Timeline. Timeline shows no second loader.
+- Full range: select Full history and Latest, then Generate Graph. Neither snapshot parameter remains
   in the URL and Timeline renders the loaded history.
 - Bounded range: select non-default Start and End values forming a strict subset, then Generate
   Graph. Both URL values match the selected IDs digit-for-digit, including IDs above `2^53`.
 - The bounded Timeline visibly contains fewer snapshot nodes than the full range and begins at the
   selected Start snapshot.
-- Metadata Current Snapshot equals the selected End snapshot.
+- Metadata Current Snapshot matches the selected metadata file. For a branch End snapshot, this can
+  differ from the selected End snapshot.
 - FileTree treats the selected End snapshot as the latest available snapshot in the bounded range.
 
 A branch-write event may appear after the End timestamp when its diff explains another branch ref
@@ -81,13 +96,17 @@ Use browser Back and Forward once and confirm the restored route and range match
 
 ### MSW profile
 
-- Open the configured URL and confirm it redirects to Timeline for `default.events`.
-- Confirm the fixed mock graph loads.
-- Mark Home, catalog, Snapshot Selection, and bounded-range rendered-data checks `N/A`.
+- Open the configured URL and confirm Home loads. Browse catalog lists `default.events`, and any
+  submitted table name opens Snapshot Selection for `default.events`.
+- Run the Snapshot Selection list, metadata, and Specs checks above.
+- Generate Graph for a bounded range and confirm Timeline and Graph show only the snapshots in that
+  range, plus the manifests and data files they still reference. The Metadata view uses the selected
+  metadata node's path, current snapshot, schema, refs, and properties. Other metadata fields come
+  from the fixture's latest metadata document.
 
 ## Phase 2: Table views
 
-Keep the bounded range loaded in full mode and the fixed graph loaded in MSW mode.
+Keep the bounded range loaded in both modes.
 
 ### Timeline
 

@@ -21,6 +21,9 @@ class IceGraphClient:
     def list_tables(self):
         return self._tables_client.list_tables()
 
+    def get_table_metadata(self, table: str) -> dict:
+        return self._tables_client.get_table_metadata(table)
+
     def get_snapshot_map(self, table: str):
         return self._snapshots_client.get_snapshot_map(table)
 

@@ -27,10 +27,7 @@ export const stringifySearch = (search: Record<string, unknown>): string => {
 // z.looseObject is load-bearing: a plain z.object strips unknown params from
 // carry-forward navigations (search: (prev) => prev), silently dropping them
 // from the URL. SKILL.md contracts that params round-trip untouched.
-export const tableSearchSchema = z.looseObject({
-  table: z.string().optional(),
-  start_snapshot_id: z.string().optional(),
-  end_snapshot_id: z.string().optional(),
+const specSearchShape = {
   specs: z.literal("open").optional().catch(undefined),
   spec_kind: z
     .enum(["schema", "partition", "order"])
@@ -38,6 +35,13 @@ export const tableSearchSchema = z.looseObject({
     .catch(undefined),
   spec_id: z.string().optional(),
   spec_view: z.literal("diff").optional().catch(undefined),
+};
+
+export const tableSearchSchema = z.looseObject({
+  table: z.string().optional(),
+  start_snapshot_id: z.string().optional(),
+  end_snapshot_id: z.string().optional(),
+  ...specSearchShape,
 });
 
 export const graphSearchSchema = tableSearchSchema.extend({
@@ -54,6 +58,7 @@ export const fileTreeSearchSchema = tableSearchSchema.extend({
 
 export const snapshotSelectionSearchSchema = z.looseObject({
   table: z.string().optional(),
+  ...specSearchShape,
 });
 
 export const docsSearchSchema = z.looseObject({

@@ -11,6 +11,7 @@ import {
   graphJobSubmissionSchema,
   graphMetadataFileSchema,
   type GraphData,
+  type GraphStages,
 } from "./graphSchemas";
 
 const GRAPH_POLL_INTERVAL_MS = 700;
@@ -27,6 +28,13 @@ export const graphQueryKey = (parameters: GraphRequestParameters) =>
 
 export const graphProgressQueryKey = (parameters: GraphRequestParameters) =>
   [...graphQueryKey(parameters), "progress"] as const;
+
+export const graphProgressQueryOptions = (parameters: GraphRequestParameters) =>
+  queryOptions({
+    queryKey: graphProgressQueryKey(parameters),
+    queryFn: (): GraphStages | null => null,
+    enabled: false,
+  });
 
 const getGraphRequestKey = (parameters: GraphRequestParameters): string =>
   JSON.stringify(graphQueryKey(parameters));
