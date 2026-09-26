@@ -2,6 +2,8 @@ The Metadata view describes the newest metadata file **within the selected snaps
 
 The version header shows the metadata update time and metadata file path. All times on this page are shown in your local timezone.
 
+Below the table name, **Table description (How to add it)** shows the string stored in the `icegraph.description` table property. If the property is absent or empty, the page says no description is recorded. Hover, focus, or click **How to add it** for a Spark SQL example: `ALTER TABLE my.table SET TBLPROPERTIES ('icegraph.description' = 'Customer events')`.
+
 ### Snapshot statistics
 
 **At a glance** comes from the summary of the current snapshot recorded in the loaded metadata file. Its commit time can precede the metadata update time.
@@ -13,6 +15,8 @@ The version header shows the metadata update time and metadata file path. All ti
 ### Schema and data organization
 
 The schema panel scrolls independently. Use **Expand schema** to display its full height. Nested structs, list elements, and map keys and values retain their field IDs and show whether they are required, optional, or unknown. Field comments and identifier fields appear when recorded. Identifier fields do not imply enforced uniqueness or automatic upsert behavior.
+
+The schema panel explains that column documentation appears below column names. Hover, focus, or click **How to add column docs** for a Spark SQL example: `ALTER TABLE my.table ALTER COLUMN event_type COMMENT 'Signup, purchase, or cancellation'`.
 
 Click the **Schema**, **Spec**, or **Order** link to open that definition in the Specs panel. Use **Full / Diff** there to inspect changes. The schema section also reports earlier schemas available in this metadata file.
 

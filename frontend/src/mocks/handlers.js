@@ -1564,6 +1564,7 @@ const mockResponse = {
     ],
     properties: {
       owner: "root",
+      "icegraph.description": "Event records from application activity.",
       "write.delete.mode": "merge-on-read",
       "write.merge.mode": "merge-on-read",
       "write.parquet.compression-codec": "zstd",

@@ -76,6 +76,17 @@ const MetadataSchema = ({
           </button>
         </div>
         <p className="mt-3 text-sm text-slate-400">{summary}</p>
+        <p className="mt-2 text-sm text-slate-400">
+          Column documentation appears below column names when available.{" "}
+          <HelpTerm label="How to add column docs">
+            Add a column comment with Spark SQL:
+            <code className="mt-2 block whitespace-pre-wrap break-words font-mono">
+              {
+                "ALTER TABLE my.table\nALTER COLUMN event_type\nCOMMENT 'Signup, purchase, or cancellation';"
+              }
+            </code>
+          </HelpTerm>
+        </p>
         {identifiers.length > 0 && (
           <p className="mt-3 text-sm text-slate-300">
             <HelpTerm label="Identifier fields">

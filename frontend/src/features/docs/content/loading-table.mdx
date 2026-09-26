@@ -8,6 +8,8 @@ IceGraph shows the table's snapshot history as a single list, newest first. Clic
 
 The page also shows the table's latest metadata without building a graph. The metadata file and current snapshot statistics appear above the list, and the schema, partitioning, sort order, technical details, and metadata JSON appear below it. The Schema, Spec, and Order links and the navbar **Specs** button open the Specs panel here as well.
 
+When the table has an `icegraph.description` property, its text appears below the table name. The Schema section shows column documentation when recorded and provides a Spark SQL example for adding it.
+
 ### 3. Wait for the graph
 
 IceGraph prepares the graph in place of the snapshot list, so the table's latest metadata stays visible around it. The loading panel shows which preparation steps are active and how many have completed, including the final graph build. Large ranges with many data files may take a moment. Once ready, you land on the Timeline view. If preparation fails, the panel shows the error and a button to return to the snapshot list with your range kept.
