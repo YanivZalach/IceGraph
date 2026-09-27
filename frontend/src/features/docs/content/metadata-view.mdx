@@ -2,7 +2,7 @@ The Metadata view describes the newest metadata file **within the selected snaps
 
 The version header shows the metadata update time and metadata file path. All times on this page are shown in your local timezone.
 
-Below the table name, **Table description** shows the string stored in the `icegraph.table.description` table property. You can set it by running in spark SQL: `ALTER TABLE my.table SET TBLPROPERTIES ('icegraph.table.description' = 'Customer events')`. If the property is absent or empty, the page says no description is recorded.
+Below the table name, **Table description** shows the string stored in the standard `comment` table property, which Spark, Trino, and Hive use for table comments. You can set it by running in Spark SQL: `COMMENT ON TABLE my.table IS 'Customer events'`. If the property is absent or empty, the page says no description is recorded.
 
 ### Snapshot statistics
 
