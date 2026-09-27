@@ -14,7 +14,7 @@ const MetadataOverview = ({
   tableName,
   versionTitle,
 }: MetadataOverviewProps) => {
-  const description = metadata.properties?.["icegraph.description"];
+  const description = metadata.properties?.["icegraph.table.description"];
 
   return (
     <>
@@ -34,7 +34,7 @@ const MetadataOverview = ({
                 Set the table property with Spark SQL:
                 <code className="mt-2 block whitespace-pre-wrap break-words font-mono">
                   {
-                    "ALTER TABLE my.table\nSET TBLPROPERTIES (\n  'icegraph.description' = 'Customer events'\n);"
+                    "ALTER TABLE my.table\nSET TBLPROPERTIES (\n  'icegraph.table.description' = 'Customer events'\n);"
                   }
                 </code>
               </HelpTerm>
