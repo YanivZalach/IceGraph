@@ -28,6 +28,10 @@ export const getSchemaFieldDiffMarker = (
     return "→";
   }
 
+  if (fieldDiff.movement === "reordered") {
+    return "↔";
+  }
+
   return statusMarker(fieldDiff.status);
 };
 
@@ -38,6 +42,12 @@ export const getSchemaFieldDiffLabel = (fieldDiff: SchemaFieldDiff): string => {
 
   if (fieldDiff.movement === "to") {
     return "Moved to this location";
+  }
+
+  if (fieldDiff.movement === "reordered") {
+    return fieldDiff.status === "changed"
+      ? "Changed and moved to a new position"
+      : "Moved to a new position";
   }
 
   switch (fieldDiff.status) {

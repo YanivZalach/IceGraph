@@ -66,7 +66,7 @@ export type SchemaTypeDiff =
 
 export interface SchemaFieldDiff {
   status: SchemaDiffStatus;
-  movement: "from" | "to" | null;
+  movement: "from" | "to" | "reordered" | null;
   before: IcebergSchemaField | null;
   after: IcebergSchemaField | null;
   isNameChanged: boolean;
