@@ -232,20 +232,52 @@ const createMovedFieldDiff = (
   movement,
 });
 
+const markReordered = (fieldDiff: SchemaFieldDiff): SchemaFieldDiff => ({
+  ...fieldDiff,
+  status: fieldDiff.status === "changed" ? "changed" : "moved",
+  movement: "reordered",
+});
+
+const findInOrderAfterIndexes = (beforeIndexes: number[]): Set<number> => {
+  const matched = beforeIndexes.flatMap((beforeIndex, afterIndex) =>
+    beforeIndex < 0 ? [] : [{ beforeIndex, afterIndex }],
+  );
+  const chains: number[][] = [];
+  const longestChain = (candidates: number[][]): number[] =>
+    candidates.reduce<number[]>(
+      (longest, chain) => (chain.length >= longest.length ? chain : longest),
+      [],
+    );
+
+  matched.forEach(({ beforeIndex, afterIndex }, position) => {
+    const precedingChains = chains
+      .slice(0, position)
+      .filter(
+        (_chain, chainPosition) =>
+          (matched[chainPosition]?.beforeIndex ?? beforeIndex) < beforeIndex,
+      );
+    chains.push([...longestChain(precedingChains), afterIndex]);
+  });
+
+  return new Set(longestChain(chains));
+};
+
 export const diffSchemaFields = (
   beforeFields: IcebergSchemaField[],
   afterFields: IcebergSchemaField[],
   context: SchemaDiffContext,
 ): SchemaFieldDiff[] => {
   const matchedBeforeIndexes = new Set<number>();
-  const fieldDiffs = afterFields.map((afterField) => {
-    const canMatch =
-      afterField.id !== null && context.matchableFieldIds.has(afterField.id);
-    const beforeIndex = canMatch
+  const beforeIndexes = afterFields.map((afterField) =>
+    afterField.id !== null && context.matchableFieldIds.has(afterField.id)
       ? beforeFields.findIndex(
           (beforeField) => beforeField.id === afterField.id,
         )
-      : -1;
+      : -1,
+  );
+  const inOrderAfterIndexes = findInOrderAfterIndexes(beforeIndexes);
+  const fieldDiffs = afterFields.map((afterField, afterIndex) => {
+    const beforeIndex = beforeIndexes[afterIndex] ?? -1;
 
     if (beforeIndex < 0) {
       const beforeField =
@@ -267,9 +299,14 @@ export const diffSchemaFields = (
     const beforeField = beforeFields[beforeIndex];
     matchedBeforeIndexes.add(beforeIndex);
 
-    return beforeField === undefined
-      ? createPresentFieldDiff(afterField, "added")
-      : diffMatchedFields(beforeField, afterField, context);
+    if (beforeField === undefined) {
+      return createPresentFieldDiff(afterField, "added");
+    }
+
+    const fieldDiff = diffMatchedFields(beforeField, afterField, context);
+    return inOrderAfterIndexes.has(afterIndex)
+      ? fieldDiff
+      : markReordered(fieldDiff);
   });
 
   const allFieldDiffs = [
