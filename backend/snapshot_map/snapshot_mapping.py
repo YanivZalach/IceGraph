@@ -7,7 +7,7 @@ from spark_connect import open_spark_connect_session
 
 
 @timed
-def collect_snapshot_map(full_table_name: str, max_snapshots_to_show: int) -> Dict[str, Dict[str, str]]:
+def collect_snapshot_map(table_name: str, max_snapshots_to_show: int) -> Dict[str, Dict[str, str]]:
     spark = open_spark_connect_session()
 
     df = spark.sql(f"""
@@ -15,7 +15,7 @@ def collect_snapshot_map(full_table_name: str, max_snapshots_to_show: int) -> Di
             committed_at AS snapshot_timestamp,
             snapshot_id,
             operation
-        FROM {full_table_name}.snapshots
+        FROM {table_name}.snapshots
         ORDER BY committed_at DESC
     """)
 
