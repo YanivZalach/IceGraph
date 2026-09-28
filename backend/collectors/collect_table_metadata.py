@@ -6,7 +6,7 @@ from pyspark.sql import Column, DataFrame
 from pyspark.sql import functions as F
 from pyspark.sql.types import ArrayType, MapType, StringType, StructType
 
-from base_classes.utils import collect_graph_metadata_file, format_snapshot_summary
+from base_classes.utils import collect_graph_metadata_file, format_snapshot_summary, timed
 from spark_connect import open_spark_connect_session
 
 
@@ -14,6 +14,7 @@ class TableMetadataCollector:
     def __init__(self, table_name: str):
         self._table_name = table_name
 
+    @timed
     def collect_latest(self) -> dict[str, Any]:
         metadata_path = collect_graph_metadata_file(self._table_name, None)
 
