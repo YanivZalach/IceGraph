@@ -51,8 +51,8 @@ Every data file you see is referenced by at least one snapshot that is newer tha
 DATA_FILES_CUTOFF_UNKNOWN_WARNING = inspect.cleandoc("""
 Showing partial data! the number of data files exceeds the limit of {max_data_files_to_collect}!
 
-The cutoff falls among snapshots that are outside the selected snapshot range or have expired, so their order is unknown.
-All such snapshots are cut off — only data files in manifests added by the listed snapshots are shown.
+The snapshots shown also carry data files inherited from older snapshots that were removed from the table history (expired).
+Those inherited data files are hidden due to the limit, all data files added by the snapshots shown are included.
 """)
 
 DATA_FILES_CUTOFF_MANIFEST_WARNING = inspect.cleandoc("""
