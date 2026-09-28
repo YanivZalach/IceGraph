@@ -4,7 +4,8 @@ from typing import Dict, List, Optional
 from base_classes.base_file import BaseFile, HiddenFile
 from collectors.collect_manifests import ManifestRecord
 from collectors.collector import Collector, FilesCollection
-from constants import FileType
+from constants import DATA_FILES_CUTOFF_UNKNOWN_TIMESTAMP, DATA_FILES_CUTOFF_WARNING, FileType
+from env import Env
 from extractors.data_files_extractor import DataFilesExtractor
 from collectors.utils import format_partition
 from base_classes.utils import timed
@@ -48,9 +49,19 @@ class CollectDataFiles(Collector):
     def collect(self) -> FilesCollection:
         data_files_rows = DataFilesExtractor(self._table_name, self._manifests).extract_dataframe().collect()
 
-        self._data_files = [self._process_data_file_row(data_file_row) for data_file_row in data_files_rows]
+        self._data_files = [self._process_data_file_row(data_file_row) for data_file_row in data_files_rows if data_file_row.included]
 
-        return FilesCollection(files=self._data_files)
+        cutoff_row = data_files_rows[0] if data_files_rows and data_files_rows[0].data_files_cutoff_reached else None
+        if cutoff_row is None:
+            return FilesCollection(files=self._data_files)
+
+        timestamp = cutoff_row.cutoff_snapshot_timestamp
+        warning = DATA_FILES_CUTOFF_WARNING.format(
+            max_data_files_to_collect=Env.MAX_DATA_FILES_TO_COLLECT,
+            added_snapshot_id=cutoff_row.cutoff_snapshot_id,
+            added_snapshot_timestamp=f"{timestamp} UTC" if timestamp is not None else DATA_FILES_CUTOFF_UNKNOWN_TIMESTAMP,
+        )
+        return FilesCollection(files=self._data_files, warnings={"data_files_cutoff": warning}, data_files_cutoff_reached=True)
 
     def _process_data_file_row(self, data_file_row) -> DataFileRecord:
         data_file_dict = data_file_row.asDict(recursive=True)
