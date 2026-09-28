@@ -169,7 +169,6 @@ class DataFilesExtractor(Extractor):
 
     @staticmethod
     def _mark_included_data_files(grouped_files_limited_df, cutoff_snapshot_df):
-        # Rows are marked, not filtered, so the cutoff columns survive even when every file is cut off
         return (
             grouped_files_limited_df.join(F.broadcast(cutoff_snapshot_df), how="cross")
             .withColumn(
