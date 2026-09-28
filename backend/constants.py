@@ -39,19 +39,21 @@ class FileType(Enum):
 DATA_FILES_CUTOFF_WARNING = inspect.cleandoc("""
 Showing partial data! the number of data files exceeds the limit of {max_data_files_to_collect}!
 
-Latest snapshot that got cut off (Meaning snapshots above it are included):
+Cut-off point (this snapshot and all snapshots committed at the same time or earlier are cut off):
 ID: {added_snapshot_id}
-Timestamp: {added_snapshot_timestamp}
+Timestamp: {added_snapshot_timestamp} UTC
 
 The cutoff is applied at the snapshot boundary — all data files belonging to cut-off snapshots are excluded,
 unless a newer visible snapshot also references them, in which case they are included.
 Every data file you see is referenced by at least one snapshot that is newer than the cut-off snapshot.
 """)
 
-DATA_FILES_CUTOFF_UNKNOWN_TIMESTAMP = (
-    "Unknown (the snapshot is outside the selected snapshot range or has expired); "
-    "only data files in manifests added by the listed snapshots are shown"
-)
+DATA_FILES_CUTOFF_UNKNOWN_WARNING = inspect.cleandoc("""
+Showing partial data! the number of data files exceeds the limit of {max_data_files_to_collect}!
+
+The cutoff falls among snapshots that are outside the selected snapshot range or have expired, so their order is unknown.
+All such snapshots are cut off — only data files in manifests added by the listed snapshots are shown.
+""")
 
 DATA_FILES_CUTOFF_MANIFEST_WARNING = inspect.cleandoc("""
 The data files of the manifest were not loaded/attached because the limit of {max_data_files_to_collect} data files was reached.
