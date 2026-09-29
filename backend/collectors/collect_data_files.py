@@ -4,7 +4,8 @@ from typing import Dict, List, Optional
 from base_classes.base_file import BaseFile, HiddenFile
 from collectors.collect_manifests import ManifestRecord
 from collectors.collector import Collector, FilesCollection
-from constants import FileType
+from constants import DATA_FILES_CUTOFF_UNKNOWN_WARNING, DATA_FILES_CUTOFF_WARNING, FileType
+from env import Env
 from extractors.data_files_extractor import DataFilesExtractor
 from collectors.utils import format_partition
 from base_classes.utils import timed
@@ -33,6 +34,12 @@ class DataFileRecord(BaseFile):
     hidden_data_file_metadata: HiddenDataFileMetadata
 
 
+@dataclass
+class DataFilesCutoff:
+    snapshot_id: int
+    snapshot_timestamp: Optional[str]
+
+
 class CollectDataFiles(Collector):
     def __init__(
         self,
@@ -48,9 +55,14 @@ class CollectDataFiles(Collector):
     def collect(self) -> FilesCollection:
         data_files_rows = DataFilesExtractor(self._table_name, self._manifests).extract_dataframe().collect()
 
-        self._data_files = [self._process_data_file_row(data_file_row) for data_file_row in data_files_rows]
+        self._data_files = [self._process_data_file_row(data_file_row) for data_file_row in data_files_rows if data_file_row.included]
 
-        return FilesCollection(files=self._data_files)
+        cutoff = self._find_cutoff(data_files_rows)
+        if cutoff is None:
+            return FilesCollection(files=self._data_files)
+
+        warnings = {"data_files_cutoff": self._build_cutoff_warning(cutoff)}
+        return FilesCollection(files=self._data_files, warnings=warnings, data_files_cutoff_reached=True)
 
     def _process_data_file_row(self, data_file_row) -> DataFileRecord:
         data_file_dict = data_file_row.asDict(recursive=True)
@@ -92,3 +104,25 @@ class CollectDataFiles(Collector):
             return FileType.POSITION_DELETE
 
         return FileType.EQUALITY_DELETE
+
+    @staticmethod
+    def _find_cutoff(data_files_rows) -> Optional[DataFilesCutoff]:
+        if not data_files_rows:
+            return None
+
+        first_row = data_files_rows[0]
+        if not first_row.data_files_cutoff_reached:
+            return None
+
+        return DataFilesCutoff(first_row.cutoff_snapshot_id, first_row.cutoff_snapshot_timestamp)
+
+    @staticmethod
+    def _build_cutoff_warning(cutoff: DataFilesCutoff) -> str:
+        if cutoff.snapshot_timestamp is None:
+            return DATA_FILES_CUTOFF_UNKNOWN_WARNING.format(max_data_files_to_collect=Env.MAX_DATA_FILES_TO_COLLECT)
+
+        return DATA_FILES_CUTOFF_WARNING.format(
+            max_data_files_to_collect=Env.MAX_DATA_FILES_TO_COLLECT,
+            added_snapshot_id=cutoff.snapshot_id,
+            added_snapshot_timestamp=cutoff.snapshot_timestamp,
+        )

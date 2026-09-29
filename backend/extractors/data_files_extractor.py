@@ -57,9 +57,9 @@ class DataFilesExtractor(Extractor):
         data_files_with_manifest_entries_df = self._join_data_file_with_manifest_entries(data_files_with_latest_ts_df, data_files_by_manifests_df)
         data_files_limited_df = self._limit_and_rank_files_by_snapshot_timestamp(data_files_with_manifest_entries_df)
 
-        snapshot_timestamp_cutoff_df = self._find_cutoff_snapshot_timestamp(data_files_limited_df)
+        cutoff_snapshot_df = self._find_cutoff_snapshot(data_files_limited_df)
 
-        return self._find_included_data_files(data_files_limited_df, snapshot_timestamp_cutoff_df)
+        return self._mark_included_data_files(data_files_limited_df, cutoff_snapshot_df)
 
     def _collect_data_files_from_manifests(self, manifest_rows):
         avro_df = None
@@ -98,8 +98,8 @@ class DataFilesExtractor(Extractor):
 
         avro_df = (
             avro_df.withColumn("row_num", F.row_number().over(window_desc))
-            .withColumn("earliest_snapshot_timestamp", F.first("added_snapshot_timestamp", ignorenulls=True).over(window_asc))
-            .withColumn("earliest_snapshot_id", F.first("added_snapshot_id", ignorenulls=True).over(window_asc))
+            .withColumn("earliest_snapshot_timestamp", F.first("added_snapshot_timestamp").over(window_asc))
+            .withColumn("earliest_snapshot_id", F.first("added_snapshot_id").over(window_asc))
         )
 
         latest_df = avro_df.filter(F.col("row_num") == 1).select(
@@ -160,17 +160,22 @@ class DataFilesExtractor(Extractor):
         return df
 
     @staticmethod
-    def _find_cutoff_snapshot_timestamp(df):
-        return (
-            df.filter(F.col("row_num") == Env.MAX_DATA_FILES_TO_COLLECT + 1)
-            .agg(F.coalesce(F.first("latest_snapshot_timestamp"), F.lit(0).cast("timestamp")).alias("snapshot_timestamp_cutoff"))
-            .select("snapshot_timestamp_cutoff")
+    def _find_cutoff_snapshot(df):
+        return df.filter(F.col("row_num") == Env.MAX_DATA_FILES_TO_COLLECT + 1).agg(
+            (F.count("*") > 0).alias("data_files_cutoff_reached"),
+            F.first("latest_snapshot_id").alias("cutoff_snapshot_id"),
+            F.first("latest_snapshot_timestamp").alias("cutoff_snapshot_timestamp"),
         )
 
     @staticmethod
-    def _find_included_data_files(grouped_files_limited_df, snapshot_timestamp_cutoff_df):
+    def _mark_included_data_files(grouped_files_limited_df, cutoff_snapshot_df):
         return (
-            grouped_files_limited_df.join(F.broadcast(snapshot_timestamp_cutoff_df), how="cross")
-            .filter(F.col("latest_snapshot_timestamp") > F.col("snapshot_timestamp_cutoff"))
-            .drop("row_num", "snapshot_timestamp_cutoff", "latest_snapshot_timestamp", "latest_snapshot_id")
+            grouped_files_limited_df.join(F.broadcast(cutoff_snapshot_df), how="cross")
+            .withColumn(
+                "included",
+                ~F.col("data_files_cutoff_reached")
+                | (F.col("latest_snapshot_timestamp") > F.coalesce(F.col("cutoff_snapshot_timestamp"), F.lit(0).cast("timestamp"))),
+            )
+            .filter(F.col("included") | (F.col("row_num") == Env.MAX_DATA_FILES_TO_COLLECT + 1))
+            .drop("row_num", "latest_snapshot_timestamp", "latest_snapshot_id")
         )

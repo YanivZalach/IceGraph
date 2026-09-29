@@ -10,7 +10,6 @@ from collectors.collect_metadata import CollectMetadata, MetadataFileRecord
 from collectors.collect_snapshots import CollectSnapshots, SnapshotRecord
 from constants import (
     DATA_FILES_CUTOFF_MANIFEST_WARNING,
-    DATA_FILES_CUTOFF_WARNING,
     STAGE_COLLECT_DATA_FILES,
     STAGE_COLLECT_MANIFESTS,
     STAGE_COLLECT_METADATA_FILES,
@@ -53,6 +52,7 @@ class TableInventory(SparkTableAction):
         self._warnings: Dict[str, str] = {}
 
         self._search_cutoff: SearchCutoff = None
+        self._data_files_cutoff_reached = False
 
         self._metadata_files: List[MetadataFileRecord] = []
         self._snapshots: List[SnapshotRecord] = []
@@ -132,9 +132,11 @@ class TableInventory(SparkTableAction):
 
                 self._errors.update(manifests_collection.errors)
                 self._errors.update(data_files_collection.errors)
+                self._warnings.update(data_files_collection.warnings)
 
                 self._manifests = manifests_collection.files
                 self._data_files = data_files_collection.files
+                self._data_files_cutoff_reached = data_files_collection.data_files_cutoff_reached
 
             except Exception as e:
                 logger.error(
@@ -228,28 +230,12 @@ class TableInventory(SparkTableAction):
                         manifest.existing_child_files.append(data_file.file_path)
 
     def _warn_if_data_cutoff_happened(self):
-        if not self._manifests:
+        if not self._data_files_cutoff_reached:
             return
 
-        max_manifest_added_snapshot_timestamp = None
-        max_manifest_added_snapshot_id = None
-
         for manifest in self._manifests:
-            if manifest.child_files or manifest.error or manifest.added_snapshot_timestamp is None:
-                continue
-
-            manifest.warning = DATA_FILES_CUTOFF_MANIFEST_WARNING.format(max_data_files_to_collect=Env.MAX_DATA_FILES_TO_COLLECT)
-
-            if max_manifest_added_snapshot_timestamp is None or max_manifest_added_snapshot_timestamp < manifest.added_snapshot_timestamp:
-                max_manifest_added_snapshot_timestamp = manifest.added_snapshot_timestamp
-                max_manifest_added_snapshot_id = manifest.added_snapshot_id
-
-        if max_manifest_added_snapshot_timestamp is not None:
-            self._warnings["data_files_cutoff"] = DATA_FILES_CUTOFF_WARNING.format(
-                max_data_files_to_collect=Env.MAX_DATA_FILES_TO_COLLECT,
-                added_snapshot_id=max_manifest_added_snapshot_id,
-                added_snapshot_timestamp=max_manifest_added_snapshot_timestamp,
-            )
+            if not manifest.child_files and not manifest.error:
+                manifest.warning = DATA_FILES_CUTOFF_MANIFEST_WARNING.format(max_data_files_to_collect=Env.MAX_DATA_FILES_TO_COLLECT)
 
     def _collect_file_errors(self):
         file_groups = (self._metadata_files, self._snapshots, self._manifests, self._data_files)
