@@ -176,5 +176,6 @@ class DataFilesExtractor(Extractor):
                 ~F.col("data_files_cutoff_reached")
                 | (F.col("latest_snapshot_timestamp") > F.coalesce(F.col("cutoff_snapshot_timestamp"), F.lit(0).cast("timestamp"))),
             )
+            .filter(F.col("included") | (F.col("row_num") == Env.MAX_DATA_FILES_TO_COLLECT + 1))
             .drop("row_num", "latest_snapshot_timestamp", "latest_snapshot_id")
         )
