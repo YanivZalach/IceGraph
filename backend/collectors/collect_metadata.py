@@ -121,7 +121,7 @@ class CollectMetadata(Collector):
                         type=FileType.METADATA,
                         file_path=file,
                         child_files=[],
-                        error=str(e),
+                        errors=[str(e)],
                         timestamp=timestamp,
                         snapshot_id=None,
                         previous_file=self._get_previous_metadata_file(file),

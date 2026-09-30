@@ -177,8 +177,9 @@ export default function TableLayout() {
         rgb: [100, 100, 100],
         level: 0,
       };
-      const [r, g, b] = details.error ? ERROR_NODE_RGB : style.rgb;
-      const colorShift = details.error
+      const hasFileErrors = details.errors?.length > 0;
+      const [r, g, b] = hasFileErrors ? ERROR_NODE_RGB : style.rgb;
+      const colorShift = hasFileErrors
         ? 1
         : (colorShiftByFilePath.get(details.file_path) ?? 1);
 

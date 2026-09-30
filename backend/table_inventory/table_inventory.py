@@ -234,13 +234,13 @@ class TableInventory(SparkTableAction):
             return
 
         for manifest in self._manifests:
-            if not manifest.child_files and not manifest.error:
-                manifest.warning = DATA_FILES_CUTOFF_MANIFEST_WARNING.format(max_data_files_to_collect=Env.MAX_DATA_FILES_TO_COLLECT)
+            if not manifest.child_files and not manifest.errors:
+                manifest.warnings.append(DATA_FILES_CUTOFF_MANIFEST_WARNING.format(max_data_files_to_collect=Env.MAX_DATA_FILES_TO_COLLECT))
 
     def _collect_file_errors(self):
         file_groups = (self._metadata_files, self._snapshots, self._manifests, self._data_files)
         for files in file_groups:
-            self._errors.update({file.file_path: file.error for file in files if file.error})
+            self._errors.update({file.file_path: "\n\n".join(file.errors) for file in files if file.errors})
 
     def _set_current_table_specs(self):
         self._current_table_specs = {"table-name": self._table_name}
@@ -271,7 +271,7 @@ class TableInventory(SparkTableAction):
                 except Exception as e:
                     msg = f"Failed to build readable metrics: {type(e).__name__}: {e}"
                     logger.error(f"[{self._table_name}] {msg} for {data_file.file_path}", exc_info=True)
-                    data_file.warning = msg
+                    data_file.warnings.append(msg)
 
         except Exception as e:
             logger.error(f"[{self._table_name}] Failed to build readable data file metrics", exc_info=True)

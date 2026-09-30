@@ -17,6 +17,8 @@ This view solves a common source of confusion: if you look at the **raw storage 
 
 - If the selected snapshot or one of its included files could not be read, an error notice identifies the file and explains why
 
+- If an inspected file has warnings, each one appears as its own notice at the top of the inspector
+
 - If graph data references a missing node, a warning explains that some files may be absent instead of silently showing an incomplete result
 
 - If a readable snapshot has unreadable snapshots in its loaded history, a warning identifies them. Added in commit compares with the nearest readable parent and may therefore span multiple commits

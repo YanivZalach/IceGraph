@@ -51,9 +51,9 @@ const traverseSnapshotGraph = (
     const currentNode = graphIndex.nodesById[currentNodeId];
     if (currentNode === undefined) continue;
 
-    if (currentNode.details.error) {
+    for (const error of currentNode.details.errors ?? []) {
       errors.push(
-        `${fileTypeLabel(currentNode.type)} (${currentNode.label ?? currentNode.id}): ${currentNode.details.error}`,
+        `${fileTypeLabel(currentNode.type)} (${currentNode.label ?? currentNode.id}): ${error}`,
       );
     }
 
