@@ -17,6 +17,7 @@ export default function PanelIssueNotice({ type, children }) {
   const styles = ISSUE_STYLES[type];
   if (!styles || children == null || children === "") return null;
   const messages = Array.isArray(children) ? children : [children];
+  if (messages.length === 0) return null;
 
   return (
     <div
@@ -26,7 +27,7 @@ export default function PanelIssueNotice({ type, children }) {
       <div
         className={`mb-1 text-xs font-bold uppercase tracking-wide ${styles.label}`}
       >
-        {type}
+        {messages.length > 1 ? `${type}s` : type}
       </div>
       <div
         className={`divide-y whitespace-pre-wrap break-words font-mono text-xs leading-relaxed ${styles.divider} ${styles.message}`}

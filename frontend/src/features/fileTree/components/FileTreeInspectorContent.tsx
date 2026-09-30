@@ -87,11 +87,9 @@ const FileTreeInspectorContent = ({
 
   return (
     <>
-      {(file?.details.warnings ?? []).map((warning, index) => (
-        <PanelIssueNotice key={`warning-${String(index)}`} type="warning">
-          {warning}
-        </PanelIssueNotice>
-      ))}
+      <PanelIssueNotice type="warning">
+        {file?.details.warnings}
+      </PanelIssueNotice>
       {file !== null ? (
         <section>
           <PanelSectionTitle className="mb-3">File summary</PanelSectionTitle>

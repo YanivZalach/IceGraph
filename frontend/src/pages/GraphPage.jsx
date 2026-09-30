@@ -901,16 +901,12 @@ export default function GraphPage() {
           {isInspectMode && (
             <span className={PANEL_STATUS_BADGE_CLASS}>🔒 Locked View</span>
           )}
-          {(stickyNode.details.errors ?? []).map((error, i) => (
-            <PanelIssueNotice key={`error-${i}`} type="error">
-              {error}
-            </PanelIssueNotice>
-          ))}
-          {(stickyNode.details.warnings ?? []).map((warning, i) => (
-            <PanelIssueNotice key={`warning-${i}`} type="warning">
-              {warning}
-            </PanelIssueNotice>
-          ))}
+          <PanelIssueNotice type="error">
+            {stickyNode.details.errors}
+          </PanelIssueNotice>
+          <PanelIssueNotice type="warning">
+            {stickyNode.details.warnings}
+          </PanelIssueNotice>
           {sticky.rows
             .filter((r) => !isEmptyValue(r.value))
             .map((r, i) => (

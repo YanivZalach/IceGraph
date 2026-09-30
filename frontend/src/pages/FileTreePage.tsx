@@ -7,13 +7,13 @@ const FileTreePage = () => {
   const rawGraphData: unknown = useTableGraphData();
   const graphDataResult = fileTreeContextSchema.safeParse(rawGraphData);
   if (!graphDataResult.success) {
-    const validationErrors = graphDataResult.error.issues
-      .map(({ message, path }) => `${path.join(".") || "data"}: ${message}`)
-      .join("\n");
+    const validationErrors = graphDataResult.error.issues.map(
+      ({ message, path }) => `${path.join(".") || "data"}: ${message}`,
+    );
     return (
       <div className="h-graph bg-canvas p-6">
         <PanelIssueNotice type="error">
-          {`File tree data is invalid.\n${validationErrors}`}
+          {["File tree data is invalid.", ...validationErrors]}
         </PanelIssueNotice>
       </div>
     );

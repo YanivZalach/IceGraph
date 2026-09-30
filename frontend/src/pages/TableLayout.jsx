@@ -343,7 +343,7 @@ export default function TableLayout() {
                         <span className="text-base font-bold text-red-500/70 uppercase tracking-tighter block mb-1">
                           Message
                         </span>
-                        <div className="divide-y divide-red-900/30 text-xs text-red-300 font-semibold whitespace-pre-wrap leading-relaxed overflow-y-auto tracking-wide">
+                        <div className="divide-y divide-red-500/30 text-xs text-red-300 font-semibold whitespace-pre-wrap leading-relaxed overflow-y-auto tracking-wide">
                           {messages.map((message, j) => (
                             <div key={j} className="py-2 first:pt-0 last:pb-0">
                               {message}
@@ -381,7 +381,7 @@ export default function TableLayout() {
                         <span className="text-base font-bold text-amber-500/70 uppercase tracking-tighter block mb-1">
                           Notice
                         </span>
-                        <div className="divide-y divide-amber-900/30 text-xs text-amber-300 font-semibold whitespace-pre-wrap leading-relaxed overflow-y-auto tracking-wide">
+                        <div className="divide-y divide-amber-500/30 text-xs text-amber-300 font-semibold whitespace-pre-wrap leading-relaxed overflow-y-auto tracking-wide">
                           {messages.map((message, j) => (
                             <div key={j} className="py-2 first:pt-0 last:pb-0">
                               {message}
