@@ -30,7 +30,7 @@ export default defineConfig(({ mode }) => {
           []),
       ],
       proxy: {
-        "/api": "http://localhost:5050",
+        "/api": `http://localhost:${env.VITE_DEV_BACKEND_PORT ?? "5050"}`,
       },
     },
     build: {

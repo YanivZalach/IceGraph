@@ -12,6 +12,10 @@ interface SnapshotRangeSelectorProps {
   range: SnapshotRange;
   onRangeChange: (range: SnapshotRange) => void;
   onGenerate: () => void;
+  hasOlderSnapshots: boolean;
+  isLoadingOlderSnapshots: boolean;
+  olderSnapshotsError: string | null;
+  onLoadOlderSnapshots: () => void;
 }
 
 const SnapshotRangeSelector = ({
@@ -20,6 +24,10 @@ const SnapshotRangeSelector = ({
   range,
   onRangeChange,
   onGenerate,
+  hasOlderSnapshots,
+  isLoadingOlderSnapshots,
+  olderSnapshotsError,
+  onLoadOlderSnapshots,
 }: SnapshotRangeSelectorProps) => (
   <>
     <h2 className={`${UI_PAGE_TITLE_CLASS} mb-2`}>Select Snapshots</h2>
@@ -50,6 +58,10 @@ const SnapshotRangeSelector = ({
           entries={entries}
           range={range}
           onRangeChange={onRangeChange}
+          hasOlderSnapshots={hasOlderSnapshots}
+          isLoadingOlderSnapshots={isLoadingOlderSnapshots}
+          olderSnapshotsError={olderSnapshotsError}
+          onLoadOlderSnapshots={onLoadOlderSnapshots}
         />
       </>
     )}

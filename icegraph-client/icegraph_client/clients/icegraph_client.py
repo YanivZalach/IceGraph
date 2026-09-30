@@ -24,12 +24,12 @@ class IceGraphClient:
     def get_table_metadata(self, table: str) -> dict:
         return self._tables_client.get_table_metadata(table)
 
-    def get_snapshot_map(self, table: str):
-        return self._snapshots_client.get_snapshot_map(table)
+    def get_snapshot_map(self, table: str, before_snapshot_id: str = None):
+        return self._snapshots_client.get_snapshot_map(table, before_snapshot_id)
 
     def get_graph(self, table: str, start_snapshot_id: str = None, end_snapshot_id: str = None, poll_interval_seconds: float = 1.0):
         if start_snapshot_id is None and end_snapshot_id is None:
-            snapshots = self.get_snapshot_map(table)
+            snapshots = self.get_snapshot_map(table).snapshots
 
             if snapshots:
                 latest_snapshot = max(snapshots, key=lambda snapshot: snapshot.timestamp)

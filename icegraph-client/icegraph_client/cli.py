@@ -21,7 +21,7 @@ def _tables(client: IceGraphClient, _: argparse.Namespace):
 
 def _snapshots(client: IceGraphClient, args: argparse.Namespace):
     print(f"Fetching snapshots for '{args.table}'...", file=sys.stderr)
-    return client.get_snapshot_map(args.table)
+    return client.get_snapshot_map(args.table, args.before_snapshot_id)
 
 
 def _metadata(client: IceGraphClient, args: argparse.Namespace):
@@ -58,8 +58,9 @@ def build_parser() -> argparse.ArgumentParser:
     tables_parser = subparsers.add_parser("tables", help="List all available tables")
     tables_parser.set_defaults(handler=_tables)
 
-    snapshots_parser = subparsers.add_parser("snapshots", help="Get the snapshot map for a table")
+    snapshots_parser = subparsers.add_parser("snapshots", help="Get a page of the snapshot map for a table, starting from its newest snapshots")
     snapshots_parser.add_argument("table", help="Full table name")
+    snapshots_parser.add_argument("-b", "--before-snapshot-id", default=None, help="Return the page of snapshots older than this snapshot id")
     snapshots_parser.set_defaults(handler=_snapshots)
 
     metadata_parser = subparsers.add_parser("metadata", help="Get the latest metadata for a table")

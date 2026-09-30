@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { snapshotMapQueryOptions } from "../features/snapshots/api/snapshotQueries";
@@ -32,8 +32,16 @@ const SnapshotSelectionPage = () => {
   const navigate = useNavigate();
   const tableName = search.table ?? "";
   const { detailsOpen } = useTableSpecs();
-  const snapshotQuery = useQuery(snapshotMapQueryOptions(tableName));
-  const entries = sortSnapshotEntries(snapshotQuery.data ?? {});
+  const snapshotQuery = useInfiniteQuery(snapshotMapQueryOptions(tableName));
+  const entries = (snapshotQuery.data?.pages ?? []).flatMap((page) =>
+    sortSnapshotEntries(page.snapshots),
+  );
+  // A failed "load older" leaves the query in an error state that outlives the
+  // next refetch's start, so the loaded list stays usable through both.
+  const isSnapshotListReady =
+    snapshotQuery.isSuccess ||
+    snapshotQuery.isFetchNextPageError ||
+    (snapshotQuery.isError && snapshotQuery.isFetching);
   const [selection, setSelection] = useState<TableRangeSelection | null>(null);
   const range =
     selection?.tableName === tableName
@@ -43,7 +51,7 @@ const SnapshotSelectionPage = () => {
     useState<GraphRequestParameters | null>(null);
   const isPreparingGraph = graphParameters?.tableName === tableName;
   const canGenerate =
-    tableName !== "" && snapshotQuery.isSuccess && !isPreparingGraph;
+    tableName !== "" && isSnapshotListReady && !isPreparingGraph;
   useMetadataKeyboardScroll(detailsOpen);
 
   const handleGenerate = (): void => {
@@ -92,7 +100,7 @@ const SnapshotSelectionPage = () => {
             description={`Reading snapshot history for ${tableName}. This may take a moment for large tables.`}
           />
         </div>
-      ) : snapshotQuery.isError ? (
+      ) : !isSnapshotListReady ? (
         <div className="rounded-xl border border-red-800 bg-red-950/50 p-5 text-red-400">
           <h2 className="font-bold">Failed to Load Snapshots</h2>
           <p className="mt-2 mb-4 text-sm">{snapshotQuery.error.message}</p>
@@ -107,6 +115,17 @@ const SnapshotSelectionPage = () => {
             setSelection({ tableName, range: nextRange });
           }}
           onGenerate={handleGenerate}
+          hasOlderSnapshots={snapshotQuery.hasNextPage}
+          isLoadingOlderSnapshots={snapshotQuery.isFetchingNextPage}
+          olderSnapshotsError={
+            snapshotQuery.isFetchNextPageError &&
+            !snapshotQuery.isFetchingNextPage
+              ? snapshotQuery.error.message
+              : null
+          }
+          onLoadOlderSnapshots={() => {
+            void snapshotQuery.fetchNextPage();
+          }}
         />
       )}
     </section>

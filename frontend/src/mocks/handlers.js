@@ -1752,8 +1752,8 @@ export const handlers = [
   }),
 
   http.get("/api/v1/snapshot-map/:tableName", () => {
-    return HttpResponse.json(
-      Object.fromEntries(
+    return HttpResponse.json({
+      snapshots: Object.fromEntries(
         mockResponse.nodes
           .filter((node) => node.type === "snapshot")
           .map((node) => [
@@ -1761,7 +1761,8 @@ export const handlers = [
             { snapshot_id: node.snapshot_id, operation: node.operation },
           ]),
       ),
-    );
+      next_before_snapshot_id: null,
+    });
   }),
 
   http.get("/api/v1/table-metadata/:tableName", () => {
