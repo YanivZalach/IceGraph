@@ -76,11 +76,7 @@ def _get_start_cutoffs(
     )
 
     if not row:
-        return StartCutoffs(
-            snapshot_cutoff=arrow.Arrow.min,
-            metadata_cutoff=arrow.Arrow.min,
-            manifests_to_ignore_df=_create_empty_manifests_to_ignore_df(spark),
-        )
+        raise ValueError(f"Start snapshot {start_snapshot_id} does not exist in table {table_name}")
 
     snapshot_cutoff = to_arrow_utc(row.committed_at)
 
@@ -121,10 +117,7 @@ def _get_end_cutoffs(
     )
 
     if not row:
-        return EndCutoffs(
-            snapshot_cutoff=arrow.Arrow.max,
-            metadata_cutoff=arrow.Arrow.max,
-        )
+        raise ValueError(f"End snapshot {end_snapshot_id} does not exist in table {table_name}")
 
     snapshot_cutoff = to_arrow_utc(row.committed_at)
 
