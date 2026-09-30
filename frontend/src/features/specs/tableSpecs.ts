@@ -148,8 +148,8 @@ export interface TableSpecsState {
   graphQuery: UseQueryResult<GraphData>;
   collectionStages: GraphStages | null | undefined;
   rebuildGraph: () => Promise<void>;
-  errors: Record<string, unknown>;
-  warnings: Record<string, unknown>;
+  errors: Record<string, string[]>;
+  warnings: Record<string, string[]>;
   issuesOpen: boolean;
   setIssuesOpen: Dispatch<SetStateAction<boolean>>;
 }

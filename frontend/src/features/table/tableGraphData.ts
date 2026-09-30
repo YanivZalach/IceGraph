@@ -6,7 +6,7 @@ export interface TableGraphData {
   nodes: unknown[];
   edges: unknown[];
   metadata: TableMetadata;
-  errors: Record<string, unknown>;
+  errors: Record<string, string[]>;
 }
 
 export const TableGraphDataContext = createContext<TableGraphData | null>(null);

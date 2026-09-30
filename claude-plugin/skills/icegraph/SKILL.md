@@ -84,6 +84,7 @@ etc.) go to stderr, so stdout is always safe to parse directly.
   `current-snapshot` (the current snapshot's entry from the metadata file, with its `summary`
   counts such as `total-records`, `total-data-files`, and `total-files-size-bytes`).
 - `graph <table>` → `{nodes: [...], metadata: {...}, issues: {errors: {...}, warnings: {...}}}`.
+  `errors` and `warnings` each map a source, such as a file path, to a list of messages.
   Each entry in `nodes` is one file's fields as a flat dict, with no wrapper object around them, so
   a field is read directly as `node["summary"]`. Every node carries `file_path`, `type`, and
   `child_files`, plus fields specific to its type. A node's identity for

@@ -14,4 +14,6 @@ A collection limit was reached, so the graph represents a partial view of the ta
 
 The manifest limit behaves differently: if your snapshot range contains more manifests than the backend allows, the request fails instead of returning a partial graph, and nothing is rendered. Select a smaller snapshot range.
 
+Each card names one source. When a source reports several messages, such as a file that failed in more than one way, they are listed in the same card with a divider line between them.
+
 The panel opens automatically when the backend reports any issue. Even so, always check it when the graph looks incomplete or the data file count seems lower than expected.

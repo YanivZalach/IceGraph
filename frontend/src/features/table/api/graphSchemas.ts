@@ -21,8 +21,8 @@ export const graphDataSchema = z.object({
     }),
   ),
   metadata: tableMetadataSchema,
-  errors: z.record(z.string(), z.unknown()),
-  warnings: z.record(z.string(), z.unknown()),
+  errors: z.record(z.string(), z.array(z.string())),
+  warnings: z.record(z.string(), z.array(z.string())),
 });
 
 export const graphJobSubmissionSchema = z.object({

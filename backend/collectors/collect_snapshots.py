@@ -37,7 +37,7 @@ class CollectSnapshots(Collector):
         self._end_snapshot_cutoff = end_snapshot_cutoff
 
         self._snapshots: List[SnapshotRecord] = []
-        self._errors: Dict[str, str] = {}
+        self._errors: Dict[str, List[str]] = {}
 
     @timed
     def collect(self) -> FilesCollection:
@@ -47,7 +47,7 @@ class CollectSnapshots(Collector):
             self._snapshots = [self._parse_snapshot_row(row) for row in snapshots_df.collect()]
         except Exception as e:
             logger.error(f"[{self._table_name}] snapshots collection failed", exc_info=True)
-            self._errors["snapshot_collection"] = str(e)
+            self._errors["snapshot_collection"] = [str(e)]
 
         return FilesCollection(files=self._snapshots, errors=self._errors)
 
