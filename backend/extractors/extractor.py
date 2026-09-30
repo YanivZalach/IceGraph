@@ -22,6 +22,6 @@ class Extractor(SparkTableAction, ABC):
 
         except Exception as e:
             logger.error(f"[{self._table_name}] Failed to read file {source_file.file_path}", exc_info=True)
-            source_file.error = str(e)
+            source_file.errors.append(str(e))
 
             return None

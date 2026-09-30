@@ -626,7 +626,10 @@ export default function TimelinePage() {
       const snapshotId = type === "C" ? branchSnapId : details.snapshot_id;
       const referencedSnapshot = snapMap[snapshotId];
 
-      if (details.error || referencedSnapshot?.error) {
+      if (
+        details.errors?.length > 0 ||
+        referencedSnapshot?.errors?.length > 0
+      ) {
         type = "error";
       }
 

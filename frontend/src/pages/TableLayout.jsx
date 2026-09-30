@@ -177,8 +177,9 @@ export default function TableLayout() {
         rgb: [100, 100, 100],
         level: 0,
       };
-      const [r, g, b] = details.error ? ERROR_NODE_RGB : style.rgb;
-      const colorShift = details.error
+      const hasFileErrors = details.errors?.length > 0;
+      const [r, g, b] = hasFileErrors ? ERROR_NODE_RGB : style.rgb;
+      const colorShift = hasFileErrors
         ? 1
         : (colorShiftByFilePath.get(details.file_path) ?? 1);
 
@@ -325,7 +326,7 @@ export default function TableLayout() {
                       Critical Errors
                     </h3>
                   </div>
-                  {Object.entries(errors).map(([op, err], i) => (
+                  {Object.entries(errors).map(([op, messages], i) => (
                     <div
                       key={`err-${i}`}
                       className="bg-red-950/10 rounded-xl border border-red-900/30 overflow-hidden flex flex-col"
@@ -342,8 +343,12 @@ export default function TableLayout() {
                         <span className="text-base font-bold text-red-500/70 uppercase tracking-tighter block mb-1">
                           Message
                         </span>
-                        <div className="text-xs text-red-300 font-semibold whitespace-pre-wrap leading-relaxed overflow-y-auto tracking-wide">
-                          {err}
+                        <div className="divide-y divide-red-500/30 text-xs text-red-300 font-semibold whitespace-pre-wrap leading-relaxed overflow-y-auto tracking-wide">
+                          {messages.map((message, j) => (
+                            <div key={j} className="py-2 first:pt-0 last:pb-0">
+                              {message}
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </div>
@@ -359,7 +364,7 @@ export default function TableLayout() {
                       Processing Warnings
                     </h3>
                   </div>
-                  {Object.entries(warnings).map(([op, msg], i) => (
+                  {Object.entries(warnings).map(([op, messages], i) => (
                     <div
                       key={`warn-${i}`}
                       className="bg-amber-950/10 rounded-xl border border-amber-900/30 overflow-hidden flex flex-col"
@@ -376,8 +381,12 @@ export default function TableLayout() {
                         <span className="text-base font-bold text-amber-500/70 uppercase tracking-tighter block mb-1">
                           Notice
                         </span>
-                        <div className="text-xs text-amber-300 font-semibold whitespace-pre-wrap leading-relaxed overflow-y-auto tracking-wide">
-                          {msg}
+                        <div className="divide-y divide-amber-500/30 text-xs text-amber-300 font-semibold whitespace-pre-wrap leading-relaxed overflow-y-auto tracking-wide">
+                          {messages.map((message, j) => (
+                            <div key={j} className="py-2 first:pt-0 last:pb-0">
+                              {message}
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </div>

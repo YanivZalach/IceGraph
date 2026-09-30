@@ -129,14 +129,14 @@ const FileTreeView = ({ graphData }: FileTreeViewProps) => {
           {snapshotFileResult.errors.length > 0 && (
             <div className="mb-3">
               <PanelIssueNotice type="error">
-                {snapshotFileResult.errors.join("\n")}
+                {snapshotFileResult.errors}
               </PanelIssueNotice>
             </div>
           )}
           {snapshotWarnings.length > 0 && (
             <div className="mb-3">
               <PanelIssueNotice type="warning">
-                {snapshotWarnings.join("\n")}
+                {snapshotWarnings}
               </PanelIssueNotice>
             </div>
           )}

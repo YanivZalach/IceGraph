@@ -25,8 +25,8 @@ from collectors.collect_table_metadata import TableMetadataCollector
 
 @dataclass
 class TableInventoryResult:
-    errors: Dict[str, str]
-    warnings: Dict[str, str]
+    errors: Dict[str, List[str]]
+    warnings: Dict[str, List[str]]
     snapshots: List[SnapshotRecord]
     manifests: List[ManifestRecord]
     data_files: List[DataFileRecord]
@@ -48,8 +48,8 @@ class TableInventory(SparkTableAction):
         self._end_snapshot_id = end_snapshot_id
         self._on_stage = on_stage
 
-        self._errors: Dict[str, str] = {}
-        self._warnings: Dict[str, str] = {}
+        self._errors: Dict[str, List[str]] = {}
+        self._warnings: Dict[str, List[str]] = {}
 
         self._search_cutoff: SearchCutoff = None
         self._data_files_cutoff_reached = False
@@ -125,7 +125,7 @@ class TableInventory(SparkTableAction):
 
             except Exception as e:
                 logger.error(f"[{self._table_name}] Failed to collect metadata", exc_info=True)
-                self._errors["collect_metadata_files"] = str(e)
+                self._errors["collect_metadata_files"] = [str(e)]
 
             try:
                 manifests_collection, data_files_collection = manifests_and_data_files_future.result()
@@ -143,7 +143,7 @@ class TableInventory(SparkTableAction):
                     f"[{self._table_name}] Failed to collect manifests or data files",
                     exc_info=True,
                 )
-                self._errors["collect_manifests_and_data_files"] = str(e)
+                self._errors["collect_manifests_and_data_files"] = [str(e)]
 
     def _threaded_collect_metadata_files(self):
         self._on_stage_start(STAGE_COLLECT_METADATA_FILES)
@@ -197,7 +197,7 @@ class TableInventory(SparkTableAction):
             for snapshot_id in manifest.hidden_manifest_data.pointing_snapshots:
                 snapshot = snapshot_id_to_snapshot_file_map.get(snapshot_id)
                 if not snapshot:
-                    self._errors[f"Linking {snapshot_id} -> {manifest.file_path}"] = "Snapshot not found"
+                    self._errors[f"Linking {snapshot_id} -> {manifest.file_path}"] = ["Snapshot not found"]
 
                 else:
                     snapshot.child_files.append(manifest.file_path)
@@ -217,7 +217,7 @@ class TableInventory(SparkTableAction):
 
                 manifest = manifest_file_path_to_manifest_map.get(manifest_file_path)
                 if not manifest:
-                    self._errors[f"Linking {manifest_file_path} -> {data_file.file_path}"] = "Manifest not found"
+                    self._errors[f"Linking {manifest_file_path} -> {data_file.file_path}"] = ["Manifest not found"]
 
                 else:
                     manifest.partitions.add(data_file.partition)
@@ -234,13 +234,13 @@ class TableInventory(SparkTableAction):
             return
 
         for manifest in self._manifests:
-            if not manifest.child_files and not manifest.error:
-                manifest.warning = DATA_FILES_CUTOFF_MANIFEST_WARNING.format(max_data_files_to_collect=Env.MAX_DATA_FILES_TO_COLLECT)
+            if not manifest.child_files and not manifest.errors:
+                manifest.warnings.append(DATA_FILES_CUTOFF_MANIFEST_WARNING.format(max_data_files_to_collect=Env.MAX_DATA_FILES_TO_COLLECT))
 
     def _collect_file_errors(self):
         file_groups = (self._metadata_files, self._snapshots, self._manifests, self._data_files)
         for files in file_groups:
-            self._errors.update({file.file_path: file.error for file in files if file.error})
+            self._errors.update({file.file_path: file.errors for file in files if file.errors})
 
     def _set_current_table_specs(self):
         self._current_table_specs = {"table-name": self._table_name}
@@ -255,7 +255,7 @@ class TableInventory(SparkTableAction):
                 f"[{self._table_name}] Metadata specs error for main metadata file path reading",
                 exc_info=True,
             )
-            self._errors["collect_current_table_specs"] = f"Metadata specs error: {e}"
+            self._errors["collect_current_table_specs"] = [f"Metadata specs error: {e}"]
 
     def _set_data_file_readable_metrics(self):
         if not self._data_files:
@@ -271,8 +271,8 @@ class TableInventory(SparkTableAction):
                 except Exception as e:
                     msg = f"Failed to build readable metrics: {type(e).__name__}: {e}"
                     logger.error(f"[{self._table_name}] {msg} for {data_file.file_path}", exc_info=True)
-                    data_file.warning = msg
+                    data_file.warnings.append(msg)
 
         except Exception as e:
             logger.error(f"[{self._table_name}] Failed to build readable data file metrics", exc_info=True)
-            self._errors["build_readable_metrics"] = str(e)
+            self._errors["build_readable_metrics"] = [str(e)]

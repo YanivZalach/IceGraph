@@ -1,5 +1,6 @@
 import type { MouseEvent } from "react";
 import DataFileReadableMetricsTable from "../../../components/DataFileReadableMetricsTable";
+import PanelIssueNotice from "../../../components/PanelIssueNotice";
 import {
   PanelDetailRow,
   PanelSectionTitle,
@@ -21,12 +22,14 @@ interface FileTreeInspectorContentProps {
 }
 
 const FILE_SUMMARY_KEYS = new Set([
+  "errors",
   "file_path",
   "file_size_in_bytes",
   "format",
   "readable_metrics",
   "row_count",
   "type",
+  "warnings",
 ]);
 
 const humanizeKey = (key: string): string =>
@@ -84,6 +87,9 @@ const FileTreeInspectorContent = ({
 
   return (
     <>
+      <PanelIssueNotice type="warning">
+        {file?.details.warnings}
+      </PanelIssueNotice>
       {file !== null ? (
         <section>
           <PanelSectionTitle className="mb-3">File summary</PanelSectionTitle>

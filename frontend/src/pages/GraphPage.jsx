@@ -738,7 +738,7 @@ export default function GraphPage() {
         rows: Object.entries(stickyNode.details)
           .filter(
             ([label]) =>
-              !["type", "error", "warning", "readable_metrics"].includes(
+              !["type", "errors", "warnings", "readable_metrics"].includes(
                 label.toLowerCase(),
               ),
           )
@@ -902,10 +902,10 @@ export default function GraphPage() {
             <span className={PANEL_STATUS_BADGE_CLASS}>🔒 Locked View</span>
           )}
           <PanelIssueNotice type="error">
-            {stickyNode.details.error}
+            {stickyNode.details.errors}
           </PanelIssueNotice>
           <PanelIssueNotice type="warning">
-            {stickyNode.details.warning}
+            {stickyNode.details.warnings}
           </PanelIssueNotice>
           {sticky.rows
             .filter((r) => !isEmptyValue(r.value))

@@ -61,7 +61,7 @@ class CollectDataFiles(Collector):
         if cutoff is None:
             return FilesCollection(files=self._data_files)
 
-        warnings = {"data_files_cutoff": self._build_cutoff_warning(cutoff)}
+        warnings = {"data_files_cutoff": [self._build_cutoff_warning(cutoff)]}
         return FilesCollection(files=self._data_files, warnings=warnings, data_files_cutoff_reached=True)
 
     def _process_data_file_row(self, data_file_row) -> DataFileRecord:

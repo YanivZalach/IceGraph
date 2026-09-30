@@ -51,8 +51,8 @@ class CollectMetadata(Collector):
 
         self._metadata_files: List[MetadataFileRecord] = []
         self._bad_metadata_files: List[MetadataFileRecord] = []
-        self._errors: Dict[str, str] = {}
-        self._warnings: Dict[str, str] = {}
+        self._errors: Dict[str, List[str]] = {}
+        self._warnings: Dict[str, List[str]] = {}
 
     @timed
     def collect(self) -> FilesCollection:
@@ -73,7 +73,7 @@ class CollectMetadata(Collector):
 
         except Exception as e:
             logger.error(f"[{self._table_name}] metadata collection failed", exc_info=True)
-            self._errors["metadata_collection"] = str(e)
+            self._errors["metadata_collection"] = [str(e)]
 
         return FilesCollection(files=self._metadata_files, errors=self._errors, warnings=self._warnings)
 
@@ -100,9 +100,9 @@ class CollectMetadata(Collector):
 
         self._ordered_metadata_to_timestamp = dict(list(self._ordered_metadata_to_timestamp.items())[: Env.MAX_METADATA_FILES_TO_COLLECT])
 
-        self._warnings["metadata_files_cutoff"] = METADATA_FILES_CUTOFF_WARNING.format(
-            max_metadata_files_to_collect=Env.MAX_METADATA_FILES_TO_COLLECT
-        )
+        self._warnings["metadata_files_cutoff"] = [
+            METADATA_FILES_CUTOFF_WARNING.format(max_metadata_files_to_collect=Env.MAX_METADATA_FILES_TO_COLLECT)
+        ]
 
     def _build_metadata_files_df(self) -> Optional[pyspark.sql.DataFrame]:
         metadata_files_df = None
@@ -121,7 +121,7 @@ class CollectMetadata(Collector):
                         type=FileType.METADATA,
                         file_path=file,
                         child_files=[],
-                        error=str(e),
+                        errors=[str(e)],
                         timestamp=timestamp,
                         snapshot_id=None,
                         previous_file=self._get_previous_metadata_file(file),

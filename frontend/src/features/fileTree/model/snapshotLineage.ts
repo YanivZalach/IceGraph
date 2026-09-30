@@ -51,9 +51,9 @@ const traverseSnapshotGraph = (
     const currentNode = graphIndex.nodesById[currentNodeId];
     if (currentNode === undefined) continue;
 
-    if (currentNode.details.error) {
+    for (const error of currentNode.details.errors ?? []) {
       errors.push(
-        `${fileTypeLabel(currentNode.type)} (${currentNode.label ?? currentNode.id}): ${currentNode.details.error}`,
+        `${fileTypeLabel(currentNode.type)} (${currentNode.label ?? currentNode.id}): ${error}`,
       );
     }
 
@@ -119,9 +119,11 @@ const inspectSnapshotLineage = (
       ...parentTraversal.warnings,
     ];
     if (parentIssues.length > 0) {
-      issueDescriptions.push(
-        `Snapshot ${getSnapshotIdentifier(parentSnapshot)}: ${parentIssues.join(" ")}`,
-      );
+      for (const issue of parentIssues) {
+        issueDescriptions.push(
+          `Snapshot ${getSnapshotIdentifier(parentSnapshot)}: ${issue}`,
+        );
+      }
       if (nearestReadableParent === undefined) {
         skippedSnapshotIds.push(getSnapshotIdentifier(parentSnapshot));
       }
@@ -151,10 +153,10 @@ const getLineageWarnings = (
 ): string[] => {
   if (lineage.issueDescriptions.length === 0) return [];
 
-  const details = lineage.issueDescriptions.join("\n");
   if (scope === "snapshot") {
     return [
-      `Snapshot ${getSnapshotIdentifier(snapshot)} has unreadable snapshots in its loaded history. The aggregated file tree may be incomplete.\n${details}`,
+      `Snapshot ${getSnapshotIdentifier(snapshot)} has unreadable snapshots in its loaded history. The aggregated file tree may be incomplete.`,
+      ...lineage.issueDescriptions,
     ];
   }
 
@@ -165,12 +167,14 @@ const getLineageWarnings = (
     return [
       `Added in commit compares snapshot ${getSnapshotIdentifier(snapshot)} with nearest readable snapshot ${lineage.nearestReadableParentId} because snapshot ${lineage.skippedSnapshotIds.join(
         ", ",
-      )} could not be read. The result may include changes from multiple commits.\n${details}`,
+      )} could not be read. The result may include changes from multiple commits.`,
+      ...lineage.issueDescriptions,
     ];
   }
 
   return [
-    `Snapshot ${getSnapshotIdentifier(snapshot)} has unreadable snapshots in its loaded history. Added in commit is based on the nearest readable parent, but the earlier history could not be fully verified.\n${details}`,
+    `Snapshot ${getSnapshotIdentifier(snapshot)} has unreadable snapshots in its loaded history. Added in commit is based on the nearest readable parent, but the earlier history could not be fully verified.`,
+    ...lineage.issueDescriptions,
   ];
 };
 
