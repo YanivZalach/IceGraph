@@ -11,6 +11,10 @@ Instructions for coding agents working in IceGraph.
   behavior.
 - If a repository rule conflicts with a clearer or more correct solution, explain the conflict and
   ask before departing from the rule.
+- After the approved change is implemented and its checks pass, run the
+  [review cycle](#review-cycle) before presenting the work.
+- When working in a Git worktree, the plan must ask how to run the application; see
+  [Running from a worktree](#running-from-a-worktree).
 
 ## Boundaries
 
@@ -83,6 +87,82 @@ handoff and never commit it to IceGraph. Verify removal with `git status` and `g
 Use focused behavioral checks that directly prove the change. Do not start a dev server or browser
 session unless the user requests it or approves it. Report any required check that was not run and
 why.
+
+### Review cycle
+
+1. Spawn a separate review agent. Instruct it to only read: no file edits, no Git writes, no dev
+   servers or browser sessions.
+2. Give it the goal of the change, the decisions the user already approved and which must not be
+   re-litigated, this file and any related guidance to read, and the risks to examine. Ask it to
+   verify each suspicion against the code, and to report numbered findings, most severe first,
+   each marked MUST FIX or OPTIONAL with file, line, triggering scenario, and recommended fix,
+   followed by what it checked and found correct.
+3. Fix every MUST FIX finding. Apply an OPTIONAL finding only when it is small and within the
+   approved scope; otherwise record why it was skipped.
+4. Rerun the applicable checks, then send the same agent the updated diff with what changed and
+   what was deliberately left unchanged.
+5. Repeat until the agent reports that nothing must be fixed. Then present the work with the
+   findings fixed, the findings skipped and why, and any check that was not run.
+
+The review agent's report is not user approval. A fix that goes beyond the approved plan or changes
+agreed behavior still requires the user's approval first.
+
+## Development ports
+
+The backend listens on `APPLICATION_PORT` (default `5050`), defined in `backend/env.py`. The Vite
+dev server proxies `/api` to `VITE_DEV_BACKEND_PORT` (default `5050`), read in
+`frontend/vite.config.ts`. The two are independent: to run the backend on another port, such as a
+second copy beside one already running, set both to the same value.
+
+```bash
+cd backend
+APPLICATION_PORT=5051 uv run python main.py
+```
+
+```bash
+cd frontend
+VITE_DEV_BACKEND_PORT=5051 pnpm run dev
+```
+
+The Vite dev server itself uses port `3000` and moves to the next free port when it is taken.
+
+### Running from a worktree
+
+A worktree usually runs beside the main checkout, whose servers already hold the default ports. The
+checkout is a worktree when `git rev-parse --git-dir` and `git rev-parse --git-common-dir` differ.
+
+When presenting the plan from a worktree, ask the user whether to run the application in a new tmux
+session or a new [herdr](https://herdr.dev/docs/) session. tmux is the default: a plain approval of
+the plan means tmux. Either answer is the approval that [Verification](#verification) requires for a
+dev server; a browser session still needs its own approval. If the chosen tool is not installed, say
+so and ask; do not install it.
+
+Prepare the worktree first. Git-ignored files are missing from a new worktree: copy `backend/.env`
+from the main checkout, and run `pnpm install` in `frontend`. `uv run` creates the backend
+environment itself.
+
+Choose a backend port that is not in use, for example with `ss -ltn`, and pass it as both
+`APPLICATION_PORT` and `VITE_DEV_BACKEND_PORT`. Never stop or reconfigure servers that belong to the
+main checkout or to another session.
+
+Either way, create a new session named `icegraph-<worktree directory name>` with the backend in a
+left pane and the frontend in a right pane, so the user can attach and watch both servers and their
+logs. Start each server inside its pane's shell rather than as a detached process.
+
+For tmux, use one window split into two panes:
+
+```bash
+tmux new-session -d -s icegraph-<name> -c <worktree>/backend
+tmux split-window -h -t icegraph-<name> -c <worktree>/frontend
+tmux send-keys -t icegraph-<name>.{left} 'env APPLICATION_PORT=<port> uv run python main.py' Enter
+tmux send-keys -t icegraph-<name>.{right} 'env VITE_DEV_BACKEND_PORT=<port> pnpm run dev' Enter
+```
+
+For herdr, build the same layout with its CLI.
+
+Confirm both servers are listening, and read the frontend URL from its pane, since Vite may have
+moved to another port. Then report the backend port, the frontend URL, and the command to attach to
+the session. Leave the servers running at handoff and say how to stop the session.
 
 ## Repository guidance
 

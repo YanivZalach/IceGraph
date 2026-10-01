@@ -11,7 +11,7 @@ class Env:
     # Maximum number of graphs to compute in parallel.
     MAX_NUMBER_OF_GRAPHS_TO_COMPUTE: int = int(os.getenv("MAX_NUMBER_OF_GRAPHS_TO_COMPUTE", "15"))
 
-    # Maximum number of snapshots shown on the snapshot selection page.
+    # Maximum number of snapshots loaded per page on the snapshot selection page.
     MAX_SNAPSHOTS_TO_SHOW: int = int(os.getenv("MAX_SNAPSHOTS_TO_SHOW", "20"))
 
     # Maximum number of snapshots processed per graph.
@@ -40,6 +40,9 @@ class Env:
 
     # Maximum time allowed for graceful application shutdown.
     MAX_GRACEFUL_SHUTDOWN_TIME_SECONDS: int = int(os.getenv("MAX_GRACEFUL_SHUTDOWN_TIME_SECONDS", "10"))
+
+    # Port the application listens on.
+    APPLICATION_PORT: int = int(os.getenv("APPLICATION_PORT", "5050"))
 
     # Whether to serve the application with Waitress.
     PRODUCTION_MODE: bool = os.getenv("PRODUCTION_MODE", "false").lower() == "true"

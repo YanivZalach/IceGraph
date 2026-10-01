@@ -10,7 +10,7 @@ from flask import Flask, jsonify, request, send_from_directory
 from pyspark.errors import AnalysisException
 
 from base_classes.utils import collect_graph_metadata_file, verify_iceberg_table
-from constants import APPLICATION_PORT, COLLECTION_STAGES, JOB_TOKEN_FIELD, STAGE_BUILD_GRAPH
+from constants import COLLECTION_STAGES, JOB_TOKEN_FIELD, STAGE_BUILD_GRAPH
 from env import Env
 from graph_normalizer.graph_normalizer import GraphNormalizer
 from icegraph_logger import logger
@@ -167,12 +167,19 @@ def table_metadata(table_name):
 
 @app.route("/api/v1/snapshot-map/<path:table_name>", methods=["GET"])
 def snapshot_map(table_name):
+    before_snapshot_id = request.args.get("before_snapshot_id")
+
     try:
         verify_iceberg_table(table_name)
+        parsed_before_snapshot_id = int(before_snapshot_id) if before_snapshot_id else None
 
-        result = collect_snapshot_map(table_name, Env.MAX_SNAPSHOTS_TO_SHOW)
+        result = collect_snapshot_map(table_name, Env.MAX_SNAPSHOTS_TO_SHOW, parsed_before_snapshot_id)
 
         return jsonify(result)
+
+    except ValueError as e:
+        logger.error(f"Invalid snapshot map request: {e}\n{traceback.format_exc()}")
+        return jsonify({"error": str(e)}), 400
 
     except AnalysisException as e:
         logger.error(f"Spark Error: {e}\n{traceback.format_exc()}")
@@ -277,9 +284,9 @@ if __name__ == "__main__":
         if Env.PRODUCTION_MODE:
             from waitress import serve
 
-            serve(app, host="0.0.0.0", port=APPLICATION_PORT, threads=Env.WSGI_THREADS)
+            serve(app, host="0.0.0.0", port=Env.APPLICATION_PORT, threads=Env.WSGI_THREADS)
         else:
-            app.run(host="0.0.0.0", port=APPLICATION_PORT, debug=True)
+            app.run(host="0.0.0.0", port=Env.APPLICATION_PORT, debug=True)
 
     finally:
         watchdog = threading.Timer(Env.MAX_GRACEFUL_SHUTDOWN_TIME_SECONDS, _force_exit)

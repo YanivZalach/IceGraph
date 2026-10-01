@@ -7,12 +7,17 @@ import {
   type SnapshotRange,
 } from "../snapshotRange";
 import { formatLocaleDateTime, parseUtcDate } from "../../../utils/dateUtils";
+import { cn } from "../../../shared/lib/cn";
 import SnapshotRangeRow from "./SnapshotRangeRow";
 
 interface SnapshotRangePickerProps {
   entries: readonly SnapshotEntry[];
   range: SnapshotRange;
   onRangeChange: (range: SnapshotRange) => void;
+  hasOlderSnapshots: boolean;
+  isLoadingOlderSnapshots: boolean;
+  olderSnapshotsError: string | null;
+  onLoadOlderSnapshots: () => void;
 }
 
 const SnapshotTime = ({ timestamp }: { timestamp: string }) => {
@@ -34,6 +39,10 @@ const SnapshotRangePicker = ({
   entries,
   range,
   onRangeChange,
+  hasOlderSnapshots,
+  isLoadingOlderSnapshots,
+  olderSnapshotsError,
+  onLoadOlderSnapshots,
 }: SnapshotRangePickerProps) => (
   <ol
     aria-label="Snapshots, newest first"
@@ -65,6 +74,38 @@ const SnapshotRangePicker = ({
         }}
       />
     ))}
+    {hasOlderSnapshots && (
+      <li className="relative flex gap-3">
+        <div
+          aria-hidden="true"
+          className="relative flex w-4 shrink-0 justify-center"
+        >
+          <div
+            className={cn(
+              "absolute inset-y-0 w-0.5",
+              range.startSnapshotId === "" ? "bg-accent" : "bg-edge",
+            )}
+          />
+        </div>
+        <div className="my-1 min-w-0 flex-1">
+          <button
+            type="button"
+            disabled={isLoadingOlderSnapshots}
+            onClick={onLoadOlderSnapshots}
+            className="w-full cursor-pointer rounded-lg border border-dashed border-edge px-3 py-2 text-sm font-semibold text-slate-300 transition hover:border-edge-hover disabled:cursor-wait disabled:opacity-60"
+          >
+            {isLoadingOlderSnapshots
+              ? "Loading older snapshots..."
+              : "Load older snapshots"}
+          </button>
+          {olderSnapshotsError !== null && (
+            <p role="alert" className="mt-1 text-xs text-red-400">
+              Failed to load older snapshots: {olderSnapshotsError}
+            </p>
+          )}
+        </div>
+      </li>
+    )}
     <SnapshotRangeRow
       label="Full history"
       detail="Starts from the table's first snapshot. Not recommended: slow and cluttered on large tables"

@@ -1,8 +1,6 @@
 import inspect
 from enum import Enum
 
-APPLICATION_PORT = 5_050
-
 MAIN_BRANCH_ICEBERG_TABLE_NAME = "main"
 
 JOB_TOKEN_FIELD = "X-IceGraph-Job-Token"
