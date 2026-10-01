@@ -34,12 +34,13 @@ def collect_snapshot_map(table_name: str, max_snapshots_to_show: int, before_sna
     rows = df.collect()
     page_rows = rows[:max_snapshots_to_show]
     has_older_snapshots = len(rows) > max_snapshots_to_show
+    next_before_snapshot_id = str(page_rows[-1].snapshot_id) if has_older_snapshots and page_rows else None
 
     return {
         "snapshots": {
             to_arrow_utc(row.snapshot_timestamp).isoformat(): {"snapshot_id": str(row.snapshot_id), "operation": row.operation} for row in page_rows
         },
-        "next_before_snapshot_id": str(page_rows[-1].snapshot_id) if has_older_snapshots and page_rows else None,
+        "next_before_snapshot_id": next_before_snapshot_id,
     }
 
 

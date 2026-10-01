@@ -36,8 +36,6 @@ const SnapshotSelectionPage = () => {
   const entries = (snapshotQuery.data?.pages ?? []).flatMap((page) =>
     sortSnapshotEntries(page.snapshots),
   );
-  // A failed "load older" leaves the query in an error state that outlives the
-  // next refetch's start, so the loaded list stays usable through both.
   const isSnapshotListReady =
     snapshotQuery.isSuccess ||
     snapshotQuery.isFetchNextPageError ||
