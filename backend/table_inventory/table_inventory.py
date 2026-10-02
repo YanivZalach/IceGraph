@@ -176,14 +176,15 @@ class TableInventory(SparkTableAction):
         finally:
             self._on_stage_end(STAGE_COLLECT_METADATA_FILES)
 
-        table_statistics_collection = self._collect_statistics_files(
-            CollectTableStatistics, STAGE_COLLECT_TABLE_STATISTICS, metadata_collection.files
-        )
-        partition_statistics_collection = self._collect_statistics_files(
-            CollectPartitionStatistics, STAGE_COLLECT_PARTITION_STATISTICS, metadata_collection.files
-        )
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            table_statistics_future = executor.submit(
+                self._collect_statistics_files, CollectTableStatistics, STAGE_COLLECT_TABLE_STATISTICS, metadata_collection.files
+            )
+            partition_statistics_future = executor.submit(
+                self._collect_statistics_files, CollectPartitionStatistics, STAGE_COLLECT_PARTITION_STATISTICS, metadata_collection.files
+            )
 
-        return metadata_collection, table_statistics_collection, partition_statistics_collection
+        return metadata_collection, table_statistics_future.result(), partition_statistics_future.result()
 
     def _collect_statistics_files(
         self,
