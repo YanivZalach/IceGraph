@@ -9,7 +9,7 @@ from base_classes.base_file import BaseFile, HiddenFile
 from base_classes.utils import timed
 from collectors.collect_metadata import MetadataFileRecord
 from collectors.collector import Collector, FilesCollection
-from constants import TABLE_STATISTICS_BEFORE_RANGE_WARNING, TABLE_STATISTICS_COLLECTION_WARNING, FileType
+from constants import TABLE_STATISTICS_ATTRIBUTION_WARNING, TABLE_STATISTICS_BEFORE_RANGE_WARNING, TABLE_STATISTICS_COLLECTION_WARNING, FileType
 from icegraph_logger import logger
 
 TABLE_STATISTICS_SCHEMA = ArrayType(
@@ -73,9 +73,12 @@ class CollectTableStatistics(Collector):
         if not any(metadata_file.pointed_statistics_files for metadata_file in self._metadata_files):
             return FilesCollection()
 
+        if any(metadata_file.errors for metadata_file in self._metadata_files):
+            self._warnings["table_statistics_attribution"] = [TABLE_STATISTICS_ATTRIBUTION_WARNING]
+
         added_paths_by_metadata_file = self._find_added_statistics_paths(self._find_statistics_paths_before_range())
         if not added_paths_by_metadata_file:
-            return FilesCollection()
+            return FilesCollection(warnings=self._warnings)
 
         try:
             rows = self._read_table_statistics(list(added_paths_by_metadata_file)).collect()

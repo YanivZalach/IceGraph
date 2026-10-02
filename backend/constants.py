@@ -78,3 +78,8 @@ Table statistics files that existed before the range may be shown as added by th
 """)
 
 TABLE_STATISTICS_COLLECTION_WARNING = "Failed to read the table statistics entries, so table statistics files are not shown: {error}"
+
+TABLE_STATISTICS_ATTRIBUTION_WARNING = inspect.cleandoc("""
+Some metadata files could not be read. Table statistics files are still shown, but IceGraph may not reliably identify which metadata file first added them.
+Statistics files first observed after an unreadable metadata file may be linked to a later metadata version.
+""")
