@@ -1,12 +1,8 @@
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import List
 
 import pyspark.sql
 from pyspark.sql import SparkSession, functions as F
 from pyspark.sql.types import ArrayType, IntegerType, LongType, MapType, StringType, StructField, StructType
-
-from base_classes.base_file import BaseFile
-from constants import FileType
 
 TABLE_STATISTICS_SCHEMA = ArrayType(
     StructType(
@@ -37,15 +33,6 @@ TABLE_STATISTICS_SCHEMA = ArrayType(
 METADATA_FILE_STATISTICS_SCHEMA = StructType([StructField("statistics", TABLE_STATISTICS_SCHEMA)])
 
 
-@dataclass
-class TableStatisticsFileRecord(BaseFile):
-    snapshot_id: int
-    file_size_in_bytes: str
-    file_footer_size_in_bytes: str
-    key_metadata: Optional[str]
-    blobs: List[Dict[str, Any]]
-
-
 def with_pointed_table_statistics(metadata_files_df: pyspark.sql.DataFrame) -> pyspark.sql.DataFrame:
     if "statistics" not in metadata_files_df.columns:
         metadata_files_df = metadata_files_df.withColumn("statistics", F.lit(None).cast(StringType()))
@@ -73,25 +60,3 @@ def read_table_statistics(spark: SparkSession, metadata_files: List[str]) -> pys
         statistics_df = df if statistics_df is None else statistics_df.unionByName(df)
 
     return statistics_df
-
-
-def parse_table_statistics_entry(entry: dict) -> TableStatisticsFileRecord:
-    return TableStatisticsFileRecord(
-        type=FileType.TABLE_STATISTICS,
-        file_path=entry["statistics-path"],
-        child_files=[],
-        snapshot_id=entry["snapshot-id"],
-        file_size_in_bytes=str(entry["file-size-in-bytes"]),
-        file_footer_size_in_bytes=str(entry["file-footer-size-in-bytes"]),
-        key_metadata=entry["key-metadata"],
-        blobs=[
-            {
-                "type": blob["type"],
-                "fields": blob["fields"],
-                "snapshot_id": blob["snapshot-id"],
-                "sequence_number": blob["sequence-number"],
-                "properties": blob["properties"] or {},
-            }
-            for blob in entry["blob-metadata"]
-        ],
-    )

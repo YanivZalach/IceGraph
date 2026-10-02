@@ -68,6 +68,8 @@ function buildCatalogNodeAndEdge(nodes, metadata) {
         type: FileType.CATALOG,
         "table-name": metadata?.["table-name"],
         "table-uuid": metadata?.["table-uuid"],
+        location: metadata?.location,
+        "format-version": metadata?.["format-version"],
       },
       color: `rgb(${style.rgb.join(",")})`,
       level: style.level,

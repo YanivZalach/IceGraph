@@ -14,19 +14,13 @@ from collectors.collector import Collector, FilesCollection
 from constants import (
     METADATA_FILES_CUTOFF_WARNING,
     TABLE_STATISTICS_BEFORE_RANGE_WARNING,
-    TABLE_STATISTICS_COLLECTION_WARNING,
     FileType,
     MAIN_BRANCH_ICEBERG_TABLE_NAME,
 )
 from env import Env
 from icegraph_logger import logger
 from collectors.utils import get_metadata_row_slim_df_from_path
-from collectors.statistics_utils import (
-    TableStatisticsFileRecord,
-    parse_table_statistics_entry,
-    read_table_statistics,
-    with_pointed_table_statistics,
-)
+from collectors.statistics_utils import with_pointed_table_statistics
 from base_classes.utils import timed
 
 
@@ -54,10 +48,10 @@ class MetadataFileRecord(BaseFile):
 
 @dataclass(frozen=True)
 class MetadataFilesCollection(FilesCollection):
-    table_statistics_files: List[TableStatisticsFileRecord] = field(default_factory=list)
+    statistics_paths_before_range: Set[str] = field(default_factory=set)
 
 
-class CollectMetadataAndTableStatistics(Collector):
+class CollectMetadata(Collector):
     def __init__(
         self,
         full_table_name: str,
@@ -76,9 +70,6 @@ class CollectMetadataAndTableStatistics(Collector):
 
         self._metadata_files: List[MetadataFileRecord] = []
         self._bad_metadata_files: List[MetadataFileRecord] = []
-        self._table_statistics_files: List[TableStatisticsFileRecord] = []
-
-        self._pointed_statistics_by_metadata_file: Dict[str, List[dict]] = {}
         self._statistics_paths_before_range: Set[str] = set()
 
         self._errors: Dict[str, List[str]] = {}
@@ -102,7 +93,6 @@ class CollectMetadataAndTableStatistics(Collector):
 
             self._metadata_files.extend(self._bad_metadata_files)
             self._apply_metadata_order()
-            self._collect_added_table_statistics()
 
         except Exception as e:
             logger.error(f"[{self._table_name}] metadata collection failed", exc_info=True)
@@ -110,7 +100,7 @@ class CollectMetadataAndTableStatistics(Collector):
 
         return MetadataFilesCollection(
             files=self._metadata_files,
-            table_statistics_files=self._table_statistics_files,
+            statistics_paths_before_range=self._statistics_paths_before_range,
             errors=self._errors,
             warnings=self._warnings,
         )
@@ -233,58 +223,7 @@ class CollectMetadataAndTableStatistics(Collector):
             self._statistics_paths_before_range = {entry["statistics_path"] for entry in pointed_statistics}
             return
 
-        self._pointed_statistics_by_metadata_file[row["file"]] = pointed_statistics
         self._metadata_files.append(self._parse_metadata_row(row, snap_id_to_path, pointed_statistics))
-
-    def _find_added_statistics_paths(self) -> Dict[str, Set[str]]:
-        seen_paths = set(self._statistics_paths_before_range)
-        added_paths_by_metadata_file: Dict[str, Set[str]] = {}
-
-        for metadata_file in reversed(self._metadata_files):
-            for entry in self._pointed_statistics_by_metadata_file.get(metadata_file.file_path, []):
-                if entry["statistics_path"] in seen_paths:
-                    continue
-
-                seen_paths.add(entry["statistics_path"])
-                added_paths_by_metadata_file.setdefault(metadata_file.file_path, set()).add(entry["statistics_path"])
-
-        return added_paths_by_metadata_file
-
-    def _collect_added_table_statistics(self) -> None:
-        added_paths_by_metadata_file = self._find_added_statistics_paths()
-        if not added_paths_by_metadata_file:
-            return
-
-        try:
-            rows = read_table_statistics(self._spark, list(added_paths_by_metadata_file)).collect()
-        except Exception as e:
-            logger.error(f"[{self._table_name}] Table statistics read error", exc_info=True)
-            self._warnings["table_statistics_collection"] = [TABLE_STATISTICS_COLLECTION_WARNING.format(error=e)]
-            return
-
-        statistics_by_metadata_file = {row.file: row.asDict(recursive=True)["statistics"] or [] for row in rows}
-        metadata_file_by_path = {metadata_file.file_path: metadata_file for metadata_file in self._metadata_files}
-
-        for metadata_file_path, added_paths in added_paths_by_metadata_file.items():
-            entry_by_path = {}
-            for entry in statistics_by_metadata_file.get(metadata_file_path, []):
-                if entry["statistics-path"] in added_paths:
-                    entry_by_path.setdefault(entry["statistics-path"], entry)
-
-            for entry in sorted(entry_by_path.values(), key=lambda entry: entry["statistics-path"]):
-                self._add_table_statistics_file(metadata_file_by_path[metadata_file_path], entry)
-
-    def _add_table_statistics_file(self, metadata_file: MetadataFileRecord, entry: dict) -> None:
-        try:
-            table_statistics_file = parse_table_statistics_entry(entry)
-        except Exception as e:
-            msg = f"Failed to read table statistics entry {entry['statistics-path']}: {type(e).__name__}: {e}"
-            logger.error(f"[{self._table_name}] {msg} in {metadata_file.file_path}", exc_info=True)
-            metadata_file.warnings.append(msg)
-            return
-
-        metadata_file.child_files.append(table_statistics_file.file_path)
-        self._table_statistics_files.append(table_statistics_file)
 
     def _apply_metadata_order(self) -> None:
         if not self._metadata_files:
@@ -294,11 +233,6 @@ class CollectMetadataAndTableStatistics(Collector):
 
         self._metadata_files = [metadata_file_by_path[file_path] for file_path in self._ordered_metadata_paths]
         self._metadata_files[0].type = FileType.MAIN_METADATA
-
-        metadata_order_by_child_path = {
-            child_path: index for index, metadata_file in enumerate(self._metadata_files) for child_path in metadata_file.child_files
-        }
-        self._table_statistics_files.sort(key=lambda file: metadata_order_by_child_path[file.file_path])
 
     def _get_snap_id_to_path(self) -> Dict[int, str]:
         return {s.snapshot_id: s.file_path for s in (self._snapshots or [])}

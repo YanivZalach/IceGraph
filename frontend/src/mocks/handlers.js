@@ -1649,6 +1649,7 @@ const MOCK_GRAPH_PROGRESS_RESPONSES = [
   {
     "Collecting snapshots": "in_progress",
     "Collecting metadata files": "pending",
+    "Collecting table statistics files": "pending",
     "Collecting manifests": "pending",
     "Collecting data files": "pending",
     "Building graph": "pending",
@@ -1656,6 +1657,7 @@ const MOCK_GRAPH_PROGRESS_RESPONSES = [
   {
     "Collecting snapshots": "done",
     "Collecting metadata files": "done",
+    "Collecting table statistics files": "done",
     "Collecting manifests": "done",
     "Collecting data files": "done",
     "Building graph": "in_progress",

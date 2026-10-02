@@ -12,7 +12,7 @@ The Graph view shows all Iceberg metadata objects in your selected range as a di
 
 - **Table statistics** - Puffin file with column statistics, such as distinct value counts, computed for one snapshot. It is drawn to the left of the metadata files and linked from the metadata file that added it, with a curved amber link. Its details come from the metadata file's description of it; IceGraph does not open the Puffin file
 
-- **Catalog** - not a file. It is drawn larger and highlighted, labelled with the table name, and sits at the top of the metadata column, with a downward arrow to the current main metadata file. Its details show the table name and UUID
+- **Catalog** - not a file. It is the entry point to the table: the catalog is what points to the current main metadata file, and every read of the table starts there. It is drawn larger and highlighted, labelled with the table name, and sits at the top of the metadata column, with a downward arrow to the main metadata file. Its details show the table properties that do not change between updates: name, UUID, location and format version
 
 - **Unreadable file** - a file whose metadata could not be obtained is drawn in red and shows the reason in its details panel. The rest of the graph still loads
 
