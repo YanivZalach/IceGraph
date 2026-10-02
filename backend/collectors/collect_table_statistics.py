@@ -78,21 +78,21 @@ class CollectTableStatistics(Collector):
             self._warnings["table_statistics_attribution"] = [TABLE_STATISTICS_ATTRIBUTION_WARNING]
 
         statistics_paths_before_range = self._find_statistics_paths_before_range()
-        added_paths_by_metadata_file = self._find_added_statistics_paths(statistics_paths_before_range)
-        if not added_paths_by_metadata_file:
+        metadata_file_to_added_paths = self._find_added_statistics_paths(statistics_paths_before_range)
+        if not metadata_file_to_added_paths:
             return FilesCollection(errors=self._errors, warnings=self._warnings)
 
-        statistics_by_metadata_file = self._collect_statistics_entries(added_paths_by_metadata_file)
-        if statistics_by_metadata_file is None:
+        metadata_file_to_statistics_entries = self._collect_statistics_entries(metadata_file_to_added_paths)
+        if metadata_file_to_statistics_entries is None:
             return FilesCollection(errors=self._errors, warnings=self._warnings)
 
-        self._collect_statistics_files(statistics_by_metadata_file)
+        self._collect_statistics_files(metadata_file_to_statistics_entries)
 
         return FilesCollection(files=self._table_statistics_files, errors=self._errors, warnings=self._warnings)
 
-    def _collect_statistics_entries(self, added_paths_by_metadata_file: Dict[str, Set[str]]) -> Optional[Dict[str, List[dict]]]:
+    def _collect_statistics_entries(self, metadata_file_to_added_paths: Dict[str, Set[str]]) -> Optional[Dict[str, List[dict]]]:
         try:
-            rows = self._read_table_statistics(list(added_paths_by_metadata_file.keys()), added_paths_by_metadata_file).collect()
+            rows = self._read_table_statistics(list(metadata_file_to_added_paths.keys()), metadata_file_to_added_paths).collect()
         except Exception as e:
             logger.error(f"[{self._table_name}] Table statistics read error", exc_info=True)
             self._errors["table_statistics_collection"] = [TABLE_STATISTICS_COLLECTION_ERROR.format(error=e)]
@@ -100,9 +100,9 @@ class CollectTableStatistics(Collector):
 
         return {row.file: row.asDict(recursive=True)["statistics"] or [] for row in rows}
 
-    def _collect_statistics_files(self, statistics_by_metadata_file: Dict[str, List[dict]]) -> None:
+    def _collect_statistics_files(self, metadata_file_to_statistics_entries: Dict[str, List[dict]]) -> None:
         for metadata_file in self._metadata_files:
-            entries = statistics_by_metadata_file.get(metadata_file.file_path, [])
+            entries = metadata_file_to_statistics_entries.get(metadata_file.file_path, [])
             for entry in sorted(entries, key=lambda entry: entry["statistics-path"]):
                 self._add_table_statistics_file(metadata_file, entry)
 
@@ -138,7 +138,7 @@ class CollectTableStatistics(Collector):
     def _read_table_statistics(
         self,
         metadata_files: List[str],
-        added_paths_by_metadata_file: Optional[Dict[str, Set[str]]] = None,
+        metadata_file_to_added_paths: Optional[Dict[str, Set[str]]] = None,
     ) -> pyspark.sql.DataFrame:
         statistics_df = None
         for metadata_file in metadata_files:
@@ -148,8 +148,8 @@ class CollectTableStatistics(Collector):
                 .json(metadata_file)
                 .select(F.lit(metadata_file).alias("file"), "statistics")
             )
-            if added_paths_by_metadata_file is not None:
-                added_paths = sorted(added_paths_by_metadata_file[metadata_file])
+            if metadata_file_to_added_paths is not None:
+                added_paths = sorted(metadata_file_to_added_paths[metadata_file])
                 df = df.withColumn("statistics", F.filter("statistics", lambda entry: entry["statistics-path"].isin(added_paths)))
 
             statistics_df = df if statistics_df is None else statistics_df.unionByName(df)
@@ -158,7 +158,7 @@ class CollectTableStatistics(Collector):
 
     def _find_added_statistics_paths(self, statistics_paths_to_ignore: Set[str]) -> Dict[str, Set[str]]:
         seen_paths = set(statistics_paths_to_ignore)
-        added_paths_by_metadata_file: Dict[str, Set[str]] = {}
+        metadata_file_to_added_paths: Dict[str, Set[str]] = {}
 
         for metadata_file in reversed(self._metadata_files):
             for statistics_path in (metadata_file.pointed_statistics_files or {}).values():
@@ -166,9 +166,9 @@ class CollectTableStatistics(Collector):
                     continue
 
                 seen_paths.add(statistics_path)
-                added_paths_by_metadata_file.setdefault(metadata_file.file_path, set()).add(statistics_path)
+                metadata_file_to_added_paths.setdefault(metadata_file.file_path, set()).add(statistics_path)
 
-        return added_paths_by_metadata_file
+        return metadata_file_to_added_paths
 
     def _add_table_statistics_file(self, metadata_file: MetadataFileRecord, entry: dict) -> None:
         try:
