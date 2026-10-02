@@ -2,7 +2,7 @@ from base_classes.utils import column_to_string_utc
 import json
 from dataclasses import dataclass, field
 from functools import cached_property
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 import pyspark.sql
 from arrow import Arrow
@@ -11,11 +11,22 @@ from pyspark.sql import functions as F
 from base_classes.base_file import BaseFile
 from collectors.collect_snapshots import SnapshotRecord
 from collectors.collector import Collector, FilesCollection
-from constants import METADATA_FILES_CUTOFF_WARNING, TABLE_STATISTICS_BEFORE_RANGE_WARNING, FileType, MAIN_BRANCH_ICEBERG_TABLE_NAME
+from constants import (
+    METADATA_FILES_CUTOFF_WARNING,
+    TABLE_STATISTICS_BEFORE_RANGE_WARNING,
+    TABLE_STATISTICS_COLLECTION_WARNING,
+    FileType,
+    MAIN_BRANCH_ICEBERG_TABLE_NAME,
+)
 from env import Env
 from icegraph_logger import logger
 from collectors.utils import get_metadata_row_slim_df_from_path
-from collectors.statistics_utils import TableStatisticsFileRecord, attach_added_table_statistics, parse_table_statistics_entry
+from collectors.statistics_utils import (
+    TableStatisticsFileRecord,
+    parse_table_statistics_entry,
+    read_table_statistics,
+    with_pointed_table_statistics,
+)
 from base_classes.utils import timed
 
 
@@ -67,6 +78,9 @@ class CollectMetadataAndTableStatistics(Collector):
         self._bad_metadata_files: List[MetadataFileRecord] = []
         self._table_statistics_files: List[TableStatisticsFileRecord] = []
 
+        self._pointed_statistics_by_metadata_file: Dict[str, List[dict]] = {}
+        self._statistics_paths_before_range: Set[str] = set()
+
         self._errors: Dict[str, List[str]] = {}
         self._warnings: Dict[str, List[str]] = {}
 
@@ -83,11 +97,12 @@ class CollectMetadataAndTableStatistics(Collector):
             if metadata_files_df is not None:
                 snap_id_to_path = self._get_snap_id_to_path()
 
-                for row in attach_added_table_statistics(metadata_files_df).collect():
+                for row in with_pointed_table_statistics(metadata_files_df).collect():
                     self._process_metadata_row(row.asDict(recursive=True), snap_id_to_path)
 
             self._metadata_files.extend(self._bad_metadata_files)
             self._apply_metadata_order()
+            self._collect_added_table_statistics()
 
         except Exception as e:
             logger.error(f"[{self._table_name}] metadata collection failed", exc_info=True)
@@ -212,21 +227,64 @@ class CollectMetadataAndTableStatistics(Collector):
             return None
 
     def _process_metadata_row(self, row: dict, snap_id_to_path: dict) -> None:
-        metadata_file = self._parse_metadata_row(row, snap_id_to_path)
+        pointed_statistics = [entry for entry in row["pointed_statistics"] or [] if entry["statistics_path"] is not None]
 
-        for entry in sorted(row["added_statistics"], key=lambda entry: entry["statistics-path"]):
-            try:
-                table_statistics_file = parse_table_statistics_entry(entry)
-            except Exception as e:
-                msg = f"Failed to read table statistics entry {entry['statistics-path']}: {type(e).__name__}: {e}"
-                logger.error(f"[{self._table_name}] {msg} in {metadata_file.file_path}", exc_info=True)
-                metadata_file.warnings.append(msg)
-                continue
+        if row["is_before_range"]:
+            self._statistics_paths_before_range = {entry["statistics_path"] for entry in pointed_statistics}
+            return
 
-            metadata_file.child_files.append(table_statistics_file.file_path)
-            self._table_statistics_files.append(table_statistics_file)
+        self._pointed_statistics_by_metadata_file[row["file"]] = pointed_statistics
+        self._metadata_files.append(self._parse_metadata_row(row, snap_id_to_path, pointed_statistics))
 
-        self._metadata_files.append(metadata_file)
+    def _find_added_statistics_paths(self) -> Dict[str, Set[str]]:
+        seen_paths = set(self._statistics_paths_before_range)
+        added_paths_by_metadata_file: Dict[str, Set[str]] = {}
+
+        for metadata_file in reversed(self._metadata_files):
+            for entry in self._pointed_statistics_by_metadata_file.get(metadata_file.file_path, []):
+                if entry["statistics_path"] in seen_paths:
+                    continue
+
+                seen_paths.add(entry["statistics_path"])
+                added_paths_by_metadata_file.setdefault(metadata_file.file_path, set()).add(entry["statistics_path"])
+
+        return added_paths_by_metadata_file
+
+    def _collect_added_table_statistics(self) -> None:
+        added_paths_by_metadata_file = self._find_added_statistics_paths()
+        if not added_paths_by_metadata_file:
+            return
+
+        try:
+            rows = read_table_statistics(self._spark, list(added_paths_by_metadata_file)).collect()
+        except Exception as e:
+            logger.error(f"[{self._table_name}] Table statistics read error", exc_info=True)
+            self._warnings["table_statistics_collection"] = [TABLE_STATISTICS_COLLECTION_WARNING.format(error=e)]
+            return
+
+        statistics_by_metadata_file = {row.file: row.asDict(recursive=True)["statistics"] or [] for row in rows}
+        metadata_file_by_path = {metadata_file.file_path: metadata_file for metadata_file in self._metadata_files}
+
+        for metadata_file_path, added_paths in added_paths_by_metadata_file.items():
+            entry_by_path = {}
+            for entry in statistics_by_metadata_file.get(metadata_file_path, []):
+                if entry["statistics-path"] in added_paths:
+                    entry_by_path.setdefault(entry["statistics-path"], entry)
+
+            for entry in sorted(entry_by_path.values(), key=lambda entry: entry["statistics-path"]):
+                self._add_table_statistics_file(metadata_file_by_path[metadata_file_path], entry)
+
+    def _add_table_statistics_file(self, metadata_file: MetadataFileRecord, entry: dict) -> None:
+        try:
+            table_statistics_file = parse_table_statistics_entry(entry)
+        except Exception as e:
+            msg = f"Failed to read table statistics entry {entry['statistics-path']}: {type(e).__name__}: {e}"
+            logger.error(f"[{self._table_name}] {msg} in {metadata_file.file_path}", exc_info=True)
+            metadata_file.warnings.append(msg)
+            return
+
+        metadata_file.child_files.append(table_statistics_file.file_path)
+        self._table_statistics_files.append(table_statistics_file)
 
     def _apply_metadata_order(self) -> None:
         if not self._metadata_files:
@@ -267,7 +325,7 @@ class CollectMetadataAndTableStatistics(Collector):
 
         return branches_child_files
 
-    def _parse_metadata_row(self, row: dict, snap_id_to_path: dict) -> MetadataFileRecord:
+    def _parse_metadata_row(self, row: dict, snap_id_to_path: dict, pointed_statistics: List[dict]) -> MetadataFileRecord:
         refs = self._parse_refs(row)
         branches_child_files = self._build_branches_child_files(refs, snap_id_to_path)
 
@@ -288,8 +346,7 @@ class CollectMetadataAndTableStatistics(Collector):
             properties=json.loads(row["properties"]),
             pointed_snapshots_files=json.loads(row["pointed_snapshots_files"]) if row.get("pointed_snapshots_files") else None,
             pointed_statistics_files={
-                entry["snapshot_id"]: entry["statistics_path"]
-                for entry in sorted(row["pointed_statistics"], key=lambda entry: entry["statistics_path"])
+                entry["snapshot_id"]: entry["statistics_path"] for entry in sorted(pointed_statistics, key=lambda entry: entry["statistics_path"])
             },
             pointed_metadata_log_count=row["pointed_metadata_log_count"],
             child_files=child_files,

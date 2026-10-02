@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 import pyspark.sql
-from pyspark.sql import Window, functions as F
+from pyspark.sql import SparkSession, functions as F
 from pyspark.sql.types import ArrayType, IntegerType, LongType, MapType, StringType, StructField, StructType
 
 from base_classes.base_file import BaseFile
@@ -34,6 +34,8 @@ TABLE_STATISTICS_SCHEMA = ArrayType(
     )
 )
 
+METADATA_FILE_STATISTICS_SCHEMA = StructType([StructField("statistics", TABLE_STATISTICS_SCHEMA)])
+
 
 @dataclass
 class TableStatisticsFileRecord(BaseFile):
@@ -44,41 +46,33 @@ class TableStatisticsFileRecord(BaseFile):
     blobs: List[Dict[str, Any]]
 
 
-def attach_added_table_statistics(metadata_files_df: pyspark.sql.DataFrame) -> pyspark.sql.DataFrame:
+def with_pointed_table_statistics(metadata_files_df: pyspark.sql.DataFrame) -> pyspark.sql.DataFrame:
     if "statistics" not in metadata_files_df.columns:
         metadata_files_df = metadata_files_df.withColumn("statistics", F.lit(None).cast(StringType()))
 
-    metadata_columns = [column for column in metadata_files_df.columns if column != "statistics"]
-    listings_df = metadata_files_df.select(
-        "file",
-        "metadata_timestamp",
-        "is_before_range",
-        F.struct(*metadata_columns).alias("metadata_row"),
-        F.explode_outer(F.from_json("statistics", TABLE_STATISTICS_SCHEMA)).alias("statistics_entry"),
-    ).withColumn("statistics_path", F.col("statistics_entry").getField("statistics-path"))
-
-    first_listing = Window.partitionBy("statistics_path").orderBy(F.desc("is_before_range"), "metadata_timestamp")
-    is_added = (F.row_number().over(first_listing) == 1) & ~F.col("is_before_range") & F.col("statistics_path").isNotNull()
-
-    return (
-        listings_df.withColumn("is_added", is_added)
-        .filter(~F.col("is_before_range"))
-        .groupBy("file")
-        .agg(
-            F.first("metadata_row").alias("metadata_row"),
-            F.collect_list(F.when(F.col("is_added"), F.col("statistics_entry"))).alias("added_statistics"),
-            F.collect_list(
-                F.when(
-                    F.col("statistics_path").isNotNull(),
-                    F.struct(
-                        F.col("statistics_entry").getField("snapshot-id").alias("snapshot_id"),
-                        F.col("statistics_path"),
-                    ),
-                )
-            ).alias("pointed_statistics"),
-        )
-        .select("metadata_row.*", "added_statistics", "pointed_statistics")
+    pointed_statistics = F.transform(
+        F.from_json("statistics", TABLE_STATISTICS_SCHEMA),
+        lambda entry: F.struct(
+            entry.getField("snapshot-id").alias("snapshot_id"),
+            entry.getField("statistics-path").alias("statistics_path"),
+        ),
     )
+
+    return metadata_files_df.withColumn("pointed_statistics", pointed_statistics).drop("statistics")
+
+
+def read_table_statistics(spark: SparkSession, metadata_files: List[str]) -> pyspark.sql.DataFrame:
+    statistics_df = None
+    for metadata_file in metadata_files:
+        df = (
+            spark.read.schema(METADATA_FILE_STATISTICS_SCHEMA)
+            .option("multiLine", True)
+            .json(metadata_file)
+            .select(F.lit(metadata_file).alias("file"), "statistics")
+        )
+        statistics_df = df if statistics_df is None else statistics_df.unionByName(df)
+
+    return statistics_df
 
 
 def parse_table_statistics_entry(entry: dict) -> TableStatisticsFileRecord:

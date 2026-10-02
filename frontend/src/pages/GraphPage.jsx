@@ -22,6 +22,7 @@ import ResizableSidePanel from "../components/ResizableSidePanel";
 import {
   GRAPH_SETTINGS,
   CATALOG_NODE_ID,
+  CATALOG_NODE_SCALE,
   DELETED_DATA_FILE_CONNECTION_COLOR,
   FileType,
   NODE_STYLE_MAP,
@@ -59,7 +60,9 @@ function buildCatalogNodeAndEdge(nodes, metadata) {
   return {
     node: {
       id: CATALOG_NODE_ID,
-      label: fileTypeLabel(FileType.CATALOG),
+      label: [fileTypeLabel(FileType.CATALOG), metadata?.["table-name"]]
+        .filter(Boolean)
+        .join(" · "),
       type: FileType.CATALOG,
       details: {
         type: FileType.CATALOG,
@@ -95,12 +98,16 @@ function getGraphNodeMetrics() {
 }
 
 const measureNode = (node, ctx, { fontSize, paddingX, paddingY }) => {
-  ctx.font = `500 ${fontSize}px "system-ui"`;
-  if (!node.__pillW || node.__metricsKey !== fontSize) {
+  const isCatalog = node.type === FileType.CATALOG;
+  const scale = isCatalog ? CATALOG_NODE_SCALE : 1;
+  const nodeFontSize = fontSize * scale;
+  ctx.font = `${isCatalog ? 700 : 500} ${nodeFontSize}px "system-ui"`;
+  if (!node.__pillW || node.__metricsKey !== nodeFontSize) {
     node.__pillW =
-      ctx.measureText(node.label || String(node.id)).width + paddingX * 2;
-    node.__pillH = fontSize + paddingY * 2;
-    node.__metricsKey = fontSize;
+      ctx.measureText(node.label || String(node.id)).width +
+      paddingX * 2 * scale;
+    node.__pillH = nodeFontSize + paddingY * 2 * scale;
+    node.__metricsKey = nodeFontSize;
   }
   return { width: node.__pillW, height: node.__pillH };
 };
@@ -658,6 +665,7 @@ export default function GraphPage() {
       const { width: w, height: h } = measureNode(node, ctx, nodeMetrics);
       const x = Math.round(node.x - w / 2);
       const y = Math.round(node.y - h / 2);
+      const isCatalog = node.type === FileType.CATALOG;
 
       ctx.shadowBlur = 0;
 
@@ -677,19 +685,24 @@ export default function GraphPage() {
       ctx.fill();
 
       ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 2;
+      ctx.lineWidth = isCatalog ? 6 : 2;
       ctx.stroke();
 
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
 
-      ctx.strokeStyle = "#000000";
-      ctx.lineWidth = 10.0;
-      ctx.lineJoin = "round";
-      ctx.strokeText(label, node.x, node.y);
+      if (isCatalog) {
+        ctx.fillStyle = "#0f172a";
+        ctx.fillText(label, node.x, node.y);
+      } else {
+        ctx.strokeStyle = "#000000";
+        ctx.lineWidth = 10.0;
+        ctx.lineJoin = "round";
+        ctx.strokeText(label, node.x, node.y);
 
-      ctx.fillStyle = "#ffffff";
-      ctx.fillText(label, node.x, node.y);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText(label, node.x, node.y);
+      }
 
       ctx.lineWidth = 1;
     },

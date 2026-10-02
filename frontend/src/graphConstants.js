@@ -3,6 +3,7 @@ export const BRANCH_CONNECTION_COLOR = "rgba(56, 189, 248, 0.5)";
 export const TABLE_STATISTICS_CONNECTION_COLOR = "rgba(245, 158, 11, 0.8)";
 export const TABLE_STATISTICS_CONNECTION_CURVATURE = 0.3;
 export const CATALOG_NODE_ID = "catalog";
+export const CATALOG_NODE_SCALE = 1.5;
 export const MAIN_BRANCH_NAME = "main";
 
 export const FileType = {
@@ -26,7 +27,7 @@ export const NODE_STYLE_MAP = {
   [FileType.POSITION_DELETE]: { rgb: [230, 145, 30], level: 2 },
   [FileType.EQUALITY_DELETE]: { rgb: [230, 145, 30], level: 2 },
   [FileType.TABLE_STATISTICS]: { rgb: [217, 119, 6], level: -2 },
-  [FileType.CATALOG]: { rgb: [100, 116, 139], level: -1 },
+  [FileType.CATALOG]: { rgb: [226, 232, 240], level: -1 },
 };
 
 export const ERROR_NODE_RGB = [185, 35, 60];

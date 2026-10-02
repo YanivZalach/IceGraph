@@ -74,3 +74,5 @@ TABLE_STATISTICS_BEFORE_RANGE_WARNING = inspect.cleandoc("""
 Failed to read the metadata file before the selected range: {metadata_file}
 Table statistics files that existed before the range may be shown as added by the oldest metadata file in view.
 """)
+
+TABLE_STATISTICS_COLLECTION_WARNING = "Failed to read the table statistics entries, so table statistics files are not shown: {error}"
