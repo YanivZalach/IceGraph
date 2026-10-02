@@ -27,6 +27,7 @@ Instructions for coding agents working in IceGraph.
 - Do not disable lint, type, or formatting rules to make checks pass.
 - Python files must not exceed 400 lines. This is a repository convention, not a formatter check.
 - Define every backend runtime environment setting in `backend/env.py`.
+- Never write docstrings, or comments in Python code, unless the user asks for them.
 
 ## Product invariants
 

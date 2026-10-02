@@ -45,10 +45,6 @@ class TableStatisticsFileRecord(BaseFile):
 
 
 def attach_added_table_statistics(metadata_files_df: pyspark.sql.DataFrame) -> pyspark.sql.DataFrame:
-    """
-    Replaces each metadata file's statistics list with only the statistics files it added.
-    A statistics file is added by the oldest metadata file listing it, unless the metadata file before the range already lists it.
-    """
     if "statistics" not in metadata_files_df.columns:
         metadata_files_df = metadata_files_df.withColumn("statistics", F.lit(None).cast(StringType()))
 
@@ -61,7 +57,6 @@ def attach_added_table_statistics(metadata_files_df: pyspark.sql.DataFrame) -> p
         F.explode_outer(F.from_json("statistics", TABLE_STATISTICS_SCHEMA)).alias("statistics_entry"),
     ).withColumn("statistics_path", F.col("statistics_entry").getField("statistics-path"))
 
-    # The metadata file before the range sorts first, so a path it lists is never marked as added
     first_listing = Window.partitionBy("statistics_path").orderBy(F.desc("is_before_range"), "metadata_timestamp")
     is_added = (F.row_number().over(first_listing) == 1) & ~F.col("is_before_range") & F.col("statistics_path").isNotNull()
 
