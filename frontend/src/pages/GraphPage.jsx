@@ -10,6 +10,7 @@ import {
 import PanelIssueNotice from "../components/PanelIssueNotice";
 import HelpTerm from "../shared/components/HelpTerm";
 import DataFileReadableMetricsTable from "../components/DataFileReadableMetricsTable";
+import PartitionStatisticsTable from "../features/table/components/PartitionStatisticsTable";
 import ReadableMetricsSummary from "../components/ReadableMetricsSummary";
 import { isEmptyValue } from "../shared/lib/isEmptyValue";
 import { isKeyboardInputTarget } from "../shared/lib/keyboard";
@@ -846,6 +847,7 @@ export default function GraphPage() {
                 "warnings",
                 "readable_metrics",
                 "virtual_read",
+                "sampled_partitions",
               ].includes(label.toLowerCase()),
           )
           .map(([label, value]) => ({
@@ -1032,6 +1034,13 @@ export default function GraphPage() {
                 }
               />
             ))}
+          {stickyNode.details.type === FileType.PARTITION_STATISTICS &&
+            Array.isArray(stickyNode.details.sampled_partitions) && (
+              <PartitionStatisticsTable
+                partitionsCount={stickyNode.details.partitions_count ?? null}
+                sampledPartitions={stickyNode.details.sampled_partitions}
+              />
+            )}
           {stickyReadableMetrics && (
             <>
               <ReadableMetricsSummary

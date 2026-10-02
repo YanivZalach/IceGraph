@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { icebergIntegerSchema, tableMetadataSchema } from "./metadataSchemas";
 
+export const partitionStatisticsRowSchema = z.record(z.string(), z.unknown());
+
 export const graphDataSchema = z.object({
   nodes: z.array(
     z.looseObject({
@@ -19,6 +21,8 @@ export const graphDataSchema = z.object({
           ]),
         )
         .nullish(),
+      partitions_count: icebergIntegerSchema.nullish(),
+      sampled_partitions: z.array(partitionStatisticsRowSchema).optional(),
     }),
   ),
   metadata: tableMetadataSchema,

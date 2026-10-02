@@ -12,6 +12,7 @@ REPLACE_OPERATION = "replace"
 STAGE_COLLECT_SNAPSHOTS = "Collecting snapshots"
 STAGE_COLLECT_METADATA_FILES = "Collecting metadata files"
 STAGE_COLLECT_TABLE_STATISTICS = "Collecting table statistics files"
+STAGE_COLLECT_PARTITION_STATISTICS = "Collecting partition statistics files"
 STAGE_COLLECT_MANIFESTS = "Collecting manifests"
 STAGE_COLLECT_DATA_FILES = "Collecting data files"
 STAGE_BUILD_GRAPH = "Building graph"
@@ -20,6 +21,7 @@ COLLECTION_STAGES = [
     STAGE_COLLECT_SNAPSHOTS,
     STAGE_COLLECT_METADATA_FILES,
     STAGE_COLLECT_TABLE_STATISTICS,
+    STAGE_COLLECT_PARTITION_STATISTICS,
     STAGE_COLLECT_MANIFESTS,
     STAGE_COLLECT_DATA_FILES,
     STAGE_BUILD_GRAPH,
@@ -35,6 +37,7 @@ class FileType(Enum):
     POSITION_DELETE = "position_delete"
     EQUALITY_DELETE = "equality_delete"
     TABLE_STATISTICS = "table_statistics"
+    PARTITION_STATISTICS = "partition_statistics"
 
 
 DATA_FILES_CUTOFF_WARNING = inspect.cleandoc("""
@@ -72,14 +75,14 @@ Older metadata files were not collected.
 Only the oldest metadata files are cut off, so every metadata file you see is complete and accurate.
 """)
 
-TABLE_STATISTICS_BEFORE_RANGE_ERROR = inspect.cleandoc("""
+STATISTICS_BEFORE_RANGE_ERROR = inspect.cleandoc("""
 Failed to read the metadata file before the selected range: {metadata_file}
-Table statistics files that existed before the range may be shown as added by the oldest metadata file in view.
+{statistics_name} files that existed before the range may be shown as added by the oldest metadata file in view.
 """)
 
 TABLE_STATISTICS_COLLECTION_ERROR = "Failed to read the table statistics entries, so table statistics files are not shown: {error}"
 
-TABLE_STATISTICS_ATTRIBUTION_WARNING = inspect.cleandoc("""
-Some metadata files could not be read. Table statistics files are still shown, but IceGraph may not reliably identify which metadata file first added them.
+STATISTICS_ATTRIBUTION_WARNING = inspect.cleandoc("""
+Some metadata files could not be read. {statistics_name} files are still shown, but IceGraph may not reliably identify which metadata file first added them.
 Statistics files first observed after an unreadable metadata file may be linked to a later metadata version.
 """)

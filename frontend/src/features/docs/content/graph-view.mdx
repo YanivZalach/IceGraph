@@ -2,7 +2,7 @@ The Graph view shows all Iceberg metadata objects in your selected range as a di
 
 ### Node types
 
-- **Metadata file** - JSON file describing the full state of the table at one point in time: schema, partition spec, properties, and the snapshots it knows of. It links only to the snapshots it points to: its current snapshot and the head of each branch. The other snapshots it lists, kept for time travel until they expire, are not linked; they appear in `pointed_snapshots_files` in its details panel, and its table statistics files in `pointed_statistics_files`
+- **Metadata file** - JSON file describing the full state of the table at one point in time: schema, partition spec, properties, and the snapshots it knows of. It links only to the snapshots it points to: its current snapshot and the head of each branch. The other snapshots it lists, kept for time travel until they expire, are not linked; they appear in `pointed_snapshots_files` in its details panel. The statistics files it lists appear in `pointed_table_statistics_files` and `pointed_partition_statistics_files`
 
 - **Snapshot** - Avro file that represents a point-in-time version of the table produced by a data operation (append, overwrite, etc.)
 
@@ -10,7 +10,9 @@ The Graph view shows all Iceberg metadata objects in your selected range as a di
 
 - **Data file** - the actual Parquet, ORC, or Avro file containing your rows. IceGraph is not reading the data file: all of the data shown comes from the manifest entries that point at it. When available, the details panel also shows human-readable per-column metrics derived from the manifest entry, including the inferred metadata size that is not represented by reported column sizes
 
-- **Table statistics** - Puffin file with column statistics, such as distinct value counts, computed for one snapshot. It is drawn to the left of the metadata files and linked from the metadata file that added it, with a curved amber link. Its details come from the metadata file's description of it; IceGraph does not open the Puffin file
+- **Table statistics** - Puffin file with column statistics, such as distinct value counts, computed for one snapshot. It is drawn in amber to the left of the metadata files and linked from the metadata file that added it, with a curved amber link. IceGraph does not open the file; its details come from the metadata file's description of it
+
+- **Partition statistics** - Parquet file with partition statistics, such as record, file, and delete counts per partition, computed for one snapshot. It is drawn in silver to the left of the metadata files and linked from the metadata file that added it, with a curved silver link. IceGraph opens the file; its details show a sample of its partitions in a sortable table, chosen by most recent update when the file records update times
 
 - **Catalog** - not a file. It is the entry point to the table: the catalog is what points to the current main metadata file, and every read of the table starts there. It is drawn larger and highlighted, labelled with the table name, and sits at the top of the metadata column, with a downward arrow to the main metadata file. Its details show the table properties that do not change between updates: name, UUID, location and format version
 
