@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 import pyspark.sql
 from arrow import Arrow
 from pyspark.sql import functions as F
+from pyspark.sql.types import ArrayType, LongType, StringType, StructField, StructType
 
 from base_classes.base_file import BaseFile
 from collectors.collect_snapshots import SnapshotRecord
@@ -16,6 +17,15 @@ from env import Env
 from icegraph_logger import logger
 from collectors.utils import get_metadata_row_slim_df_from_path
 from base_classes.utils import timed
+
+POINTED_STATISTICS_SCHEMA = ArrayType(
+    StructType(
+        [
+            StructField("snapshot-id", LongType()),
+            StructField("statistics-path", StringType()),
+        ]
+    )
+)
 
 
 @dataclass
@@ -30,6 +40,7 @@ class MetadataFileRecord(BaseFile):
     refs: Dict[str, Any]
     properties: Dict[str, str]
     pointed_snapshots_files: Optional[List[Dict[str, str]]]
+    pointed_statistics_files: Optional[Dict[int, str]]
     pointed_metadata_log_count: Optional[int]
 
 
@@ -65,7 +76,7 @@ class CollectMetadata(Collector):
             if metadata_files_df is not None:
                 snap_id_to_path = self._get_snap_id_to_path()
 
-                for row in metadata_files_df.collect():
+                for row in self._with_pointed_statistics(metadata_files_df).collect():
                     self._metadata_files.append(self._parse_metadata_row(row.asDict(recursive=True), snap_id_to_path))
 
             self._metadata_files.extend(self._bad_metadata_files)
@@ -132,11 +143,19 @@ class CollectMetadata(Collector):
                         refs={},
                         properties={},
                         pointed_snapshots_files=None,
+                        pointed_statistics_files=None,
                         pointed_metadata_log_count=None,
                     )
                 )
 
         return metadata_files_df
+
+    @staticmethod
+    def _with_pointed_statistics(metadata_files_df: pyspark.sql.DataFrame) -> pyspark.sql.DataFrame:
+        if "statistics" not in metadata_files_df.columns:
+            return metadata_files_df.withColumn("pointed_statistics", F.lit(None))
+
+        return metadata_files_df.withColumn("pointed_statistics", F.from_json("statistics", POINTED_STATISTICS_SCHEMA)).drop("statistics")
 
     def _apply_metadata_order(self) -> None:
         if not self._metadata_files:
@@ -177,6 +196,7 @@ class CollectMetadata(Collector):
         branches_child_files = self._build_branches_child_files(refs, snap_id_to_path)
 
         current_snap_path = snap_id_to_path.get(row["current-snapshot-id"])
+        pointed_statistics = [entry for entry in row["pointed_statistics"] or [] if entry["statistics-path"] is not None]
         child_files = ([current_snap_path] if current_snap_path else []) + branches_child_files
 
         return MetadataFileRecord(
@@ -192,6 +212,9 @@ class CollectMetadata(Collector):
             refs=refs,
             properties=json.loads(row["properties"]),
             pointed_snapshots_files=json.loads(row["pointed_snapshots_files"]) if row.get("pointed_snapshots_files") else None,
+            pointed_statistics_files={
+                entry["snapshot-id"]: entry["statistics-path"] for entry in sorted(pointed_statistics, key=lambda entry: entry["statistics-path"])
+            },
             pointed_metadata_log_count=row["pointed_metadata_log_count"],
             child_files=child_files,
         )

@@ -6,6 +6,7 @@ export const graphDataSchema = z.object({
     z.looseObject({
       file_path: z.string(),
       type: z.string(),
+      virtual_read: z.boolean().optional(),
       snapshot_id: icebergIntegerSchema.nullish(),
       timestamp: z.string().nullish(),
       summary: z

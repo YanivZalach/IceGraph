@@ -69,6 +69,7 @@ class CollectDataFiles(Collector):
 
         return DataFileRecord(
             type=self._detect_file_type(data_file_dict["content"]),
+            virtual_read=True,
             file_path=data_file_dict["file_path"],
             format=data_file_dict["file_format"],
             file_size_in_bytes=str(data_file_dict["file_size_in_bytes"]),

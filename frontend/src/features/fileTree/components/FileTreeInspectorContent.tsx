@@ -29,6 +29,7 @@ const FILE_SUMMARY_KEYS = new Set([
   "readable_metrics",
   "row_count",
   "type",
+  "virtual_read",
   "warnings",
 ]);
 

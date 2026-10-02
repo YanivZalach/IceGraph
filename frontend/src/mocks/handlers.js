@@ -4,6 +4,7 @@ const mockResponse = {
   nodes: [
     {
       type: "main_metadata",
+      virtual_read: false,
       file_path: "/warehouse/default/events/metadata/v10.metadata.json",
       timestamp: "2026-06-12 10:32:28.782000",
       snapshot_id: "3004708926140182071",
@@ -58,14 +59,20 @@ const mockResponse = {
             "/warehouse/default/events/metadata/snap-3004708926140182071-1-b67343c2-fa63-4819-a10e-56c39993e302.avro",
         },
       ],
+      pointed_statistics_files: {
+        "3004708926140182071":
+          "/warehouse/default/events/metadata/3004708926140182071-6f1c2a9e-4b7d-4e3a-9c51-2d8e0f7a1b34.stats",
+      },
       pointed_metadata_log_count: 9,
       child_files: [
         "/warehouse/default/events/metadata/snap-3004708926140182071-1-b67343c2-fa63-4819-a10e-56c39993e302.avro",
         "/warehouse/default/events/metadata/snap-7633604781669548673-1-39ba9de2-9487-4364-8143-9ed7ad46feb9.avro",
+        "/warehouse/default/events/metadata/3004708926140182071-6f1c2a9e-4b7d-4e3a-9c51-2d8e0f7a1b34.stats",
       ],
     },
     {
       type: "metadata",
+      virtual_read: false,
       file_path: "/warehouse/default/events/metadata/v9.metadata.json",
       timestamp: "2026-06-12 10:32:17.777000",
       snapshot_id: "3978455952979011601",
@@ -123,6 +130,7 @@ const mockResponse = {
     },
     {
       type: "metadata",
+      virtual_read: false,
       file_path: "/warehouse/default/events/metadata/v8.metadata.json",
       timestamp: "2026-06-12 10:32:15.414000",
       snapshot_id: "3978455952979011601",
@@ -175,6 +183,7 @@ const mockResponse = {
     },
     {
       type: "metadata",
+      virtual_read: false,
       file_path: "/warehouse/default/events/metadata/v7.metadata.json",
       timestamp: "2026-06-12 10:32:12.316000",
       snapshot_id: "3978455952979011601",
@@ -220,6 +229,7 @@ const mockResponse = {
     },
     {
       type: "metadata",
+      virtual_read: false,
       file_path: "/warehouse/default/events/metadata/v6.metadata.json",
       timestamp: "2026-06-12 10:32:09.809000",
       snapshot_id: "3037121856853733940",
@@ -260,6 +270,7 @@ const mockResponse = {
     },
     {
       type: "metadata",
+      virtual_read: false,
       file_path: "/warehouse/default/events/metadata/v5.metadata.json",
       timestamp: "2026-06-12 10:32:09.646000",
       snapshot_id: "2170216877480741855",
@@ -295,6 +306,7 @@ const mockResponse = {
     },
     {
       type: "metadata",
+      virtual_read: false,
       file_path: "/warehouse/default/events/metadata/v4.metadata.json",
       timestamp: "2026-06-12 10:32:05.741000",
       snapshot_id: "3200045318442131660",
@@ -325,6 +337,7 @@ const mockResponse = {
     },
     {
       type: "metadata",
+      virtual_read: false,
       file_path: "/warehouse/default/events/metadata/v3.metadata.json",
       timestamp: "2026-06-12 10:32:05.718000",
       snapshot_id: "3200045318442131660",
@@ -355,6 +368,7 @@ const mockResponse = {
     },
     {
       type: "metadata",
+      virtual_read: false,
       file_path: "/warehouse/default/events/metadata/v2.metadata.json",
       timestamp: "2026-06-12 10:31:57.678000",
       snapshot_id: "3200045318442131660",
@@ -385,6 +399,7 @@ const mockResponse = {
     },
     {
       type: "metadata",
+      virtual_read: false,
       file_path: "/warehouse/default/events/metadata/v1.metadata.json",
       timestamp: "2026-06-12 10:31:41.125000",
       snapshot_id: -1,
@@ -406,7 +421,37 @@ const mockResponse = {
       child_files: [],
     },
     {
+      type: "table_statistics",
+      virtual_read: true,
+      file_path:
+        "/warehouse/default/events/metadata/3004708926140182071-6f1c2a9e-4b7d-4e3a-9c51-2d8e0f7a1b34.stats",
+      errors: [],
+      warnings: [],
+      snapshot_id: "3004708926140182071",
+      file_size_in_bytes: "962",
+      file_footer_size_in_bytes: "703",
+      key_metadata: null,
+      blobs: [
+        {
+          type: "apache-datasketches-theta-v1",
+          fields: [1],
+          snapshot_id: "3004708926140182071",
+          sequence_number: 6,
+          properties: { ndv: "9" },
+        },
+        {
+          type: "apache-datasketches-theta-v1",
+          fields: [2],
+          snapshot_id: "3004708926140182071",
+          sequence_number: 6,
+          properties: { ndv: "4" },
+        },
+      ],
+      child_files: [],
+    },
+    {
       type: "snapshot",
+      virtual_read: false,
       file_path:
         "/warehouse/default/events/metadata/snap-3004708926140182071-1-b67343c2-fa63-4819-a10e-56c39993e302.avro",
       timestamp: "2026-06-12 10:32:28.782000",
@@ -441,6 +486,7 @@ const mockResponse = {
     },
     {
       type: "snapshot",
+      virtual_read: false,
       file_path:
         "/warehouse/default/events/metadata/snap-7633604781669548673-1-39ba9de2-9487-4364-8143-9ed7ad46feb9.avro",
       timestamp: "2026-06-12 10:32:17.777000",
@@ -473,6 +519,7 @@ const mockResponse = {
     },
     {
       type: "snapshot",
+      virtual_read: false,
       file_path:
         "/warehouse/default/events/metadata/snap-3978455952979011601-1-38b43092-153e-45d9-b43d-879203cd1549.avro",
       timestamp: "2026-06-12 10:32:12.316000",
@@ -507,6 +554,7 @@ const mockResponse = {
     },
     {
       type: "snapshot",
+      virtual_read: false,
       file_path:
         "/warehouse/default/events/metadata/snap-3037121856853733940-1-ff9b67d2-2f67-42fe-9e15-de3e66f5d8fa.avro",
       timestamp: "2026-06-12 10:32:09.809000",
@@ -536,6 +584,7 @@ const mockResponse = {
     },
     {
       type: "snapshot",
+      virtual_read: false,
       file_path:
         "/warehouse/default/events/metadata/snap-2170216877480741855-1-ac0556ac-ac96-42b2-97b5-3f976af9f5c6.avro",
       timestamp: "2026-06-12 10:32:09.646000",
@@ -564,6 +613,7 @@ const mockResponse = {
     },
     {
       type: "snapshot",
+      virtual_read: false,
       file_path:
         "/warehouse/default/events/metadata/snap-3200045318442131660-1-8768a6db-e17b-48e0-a758-2b97ea7170ac.avro",
       timestamp: "2026-06-12 10:31:57.678000",
@@ -592,6 +642,7 @@ const mockResponse = {
     },
     {
       type: "manifest",
+      virtual_read: false,
       file_path:
         "/warehouse/default/events/metadata/b67343c2-fa63-4819-a10e-56c39993e302-m0.avro",
       added_snapshot_id: "3004708926140182071",
@@ -616,6 +667,7 @@ const mockResponse = {
     },
     {
       type: "manifest",
+      virtual_read: false,
       file_path:
         "/warehouse/default/events/metadata/39ba9de2-9487-4364-8143-9ed7ad46feb9-m0.avro",
       added_snapshot_id: "7633604781669548673",
@@ -637,6 +689,7 @@ const mockResponse = {
     },
     {
       type: "manifest",
+      virtual_read: false,
       file_path:
         "/warehouse/default/events/metadata/38b43092-153e-45d9-b43d-879203cd1549-m0.avro",
       added_snapshot_id: "3978455952979011601",
@@ -659,6 +712,7 @@ const mockResponse = {
     },
     {
       type: "manifest",
+      virtual_read: false,
       file_path:
         "/warehouse/default/events/metadata/38b43092-153e-45d9-b43d-879203cd1549-m1.avro",
       added_snapshot_id: "3978455952979011601",
@@ -680,6 +734,7 @@ const mockResponse = {
     },
     {
       type: "manifest",
+      virtual_read: false,
       file_path:
         "/warehouse/default/events/metadata/ff9b67d2-2f67-42fe-9e15-de3e66f5d8fa-m0.avro",
       added_snapshot_id: "3037121856853733940",
@@ -701,6 +756,7 @@ const mockResponse = {
     },
     {
       type: "manifest",
+      virtual_read: false,
       file_path:
         "/warehouse/default/events/metadata/ac0556ac-ac96-42b2-97b5-3f976af9f5c6-m0.avro",
       added_snapshot_id: "2170216877480741855",
@@ -722,6 +778,7 @@ const mockResponse = {
     },
     {
       type: "manifest",
+      virtual_read: false,
       file_path:
         "/warehouse/default/events/metadata/8768a6db-e17b-48e0-a758-2b97ea7170ac-m0.avro",
       added_snapshot_id: "3200045318442131660",
@@ -743,6 +800,7 @@ const mockResponse = {
     },
     {
       type: "data",
+      virtual_read: true,
       file_path:
         "/warehouse/default/events/data/event_ts_hour=2025-06-15-12/event_name=experiment/00000-33-a03e3636-d49e-4bfd-b6ea-e4e0aeda67b9-00001.parquet",
       format: "PARQUET",
@@ -802,6 +860,7 @@ const mockResponse = {
     },
     {
       type: "data",
+      virtual_read: true,
       file_path:
         "/warehouse/default/events/data/event_ts_hour=2025-06-15-12/event_name=experiment1/00000-33-a03e3636-d49e-4bfd-b6ea-e4e0aeda67b9-00002.parquet",
       format: "PARQUET",
@@ -861,6 +920,7 @@ const mockResponse = {
     },
     {
       type: "data",
+      virtual_read: true,
       file_path:
         "/warehouse/default/events/data/event_ts_hour=2025-06-15-12/event_name=experiment2/00000-33-a03e3636-d49e-4bfd-b6ea-e4e0aeda67b9-00003.parquet",
       format: "PARQUET",
@@ -920,6 +980,7 @@ const mockResponse = {
     },
     {
       type: "data",
+      virtual_read: true,
       file_path:
         "/warehouse/default/events/data/event_ts_hour=2025-06-15-13/event_name=audit_fix/00000-22-aaa3b40a-e82d-4c85-9345-369325315d3e-00001.parquet",
       format: "PARQUET",
@@ -979,6 +1040,7 @@ const mockResponse = {
     },
     {
       type: "data",
+      virtual_read: true,
       file_path:
         "/warehouse/default/events/data/event_ts_hour=2025-06-15-13/event_name=audit_review/00000-22-aaa3b40a-e82d-4c85-9345-369325315d3e-00002.parquet",
       format: "PARQUET",
@@ -1038,6 +1100,7 @@ const mockResponse = {
     },
     {
       type: "data",
+      virtual_read: true,
       file_path:
         "/warehouse/default/events/data/event_ts_hour=2025-06-15-10/event_name=corrected_login/00000-16-00b99685-7437-4e54-aa12-46ca9ce83e02-00001.parquet",
       format: "PARQUET",
@@ -1097,6 +1160,7 @@ const mockResponse = {
     },
     {
       type: "data",
+      virtual_read: true,
       file_path:
         "/warehouse/default/events/data/event_ts_hour=2025-06-15-10/event_name=corrected_login/00000-3-e1d3c7ba-9be9-416d-9f20-e46f50f81826-00001.parquet",
       format: "PARQUET",
@@ -1156,6 +1220,7 @@ const mockResponse = {
     },
     {
       type: "data",
+      virtual_read: true,
       file_path:
         "/warehouse/default/events/data/event_ts_hour=2025-06-15-10/event_name=corrected_purchase/00000-16-00b99685-7437-4e54-aa12-46ca9ce83e02-00002.parquet",
       format: "PARQUET",
@@ -1215,6 +1280,7 @@ const mockResponse = {
     },
     {
       type: "data",
+      virtual_read: true,
       file_path:
         "/warehouse/default/events/data/event_ts_hour=2025-06-15-11/event_name=click/00000-3-e1d3c7ba-9be9-416d-9f20-e46f50f81826-00002.parquet",
       format: "PARQUET",
@@ -1273,6 +1339,7 @@ const mockResponse = {
     },
     {
       type: "data",
+      virtual_read: true,
       file_path:
         "/warehouse/default/events/data/event_ts_hour=2025-06-15-11/event_name=logout/00000-11-cdc1d689-e3cb-43ed-9389-5746e3973b31-00001.parquet",
       format: "PARQUET",
@@ -1331,6 +1398,7 @@ const mockResponse = {
     },
     {
       type: "data",
+      virtual_read: true,
       file_path:
         "/warehouse/default/events/data/event_ts_hour=2025-06-15-11/event_name=signup/00000-11-cdc1d689-e3cb-43ed-9389-5746e3973b31-00002.parquet",
       format: "PARQUET",
@@ -1389,6 +1457,7 @@ const mockResponse = {
     },
     {
       type: "data",
+      virtual_read: true,
       file_path:
         "/warehouse/default/events/data/event_ts_hour=2025-06-15-11/event_name=logout/00000-8-88fba101-726e-4235-a6a6-18460a99c4a6-00001.parquet",
       format: "PARQUET",
@@ -1447,6 +1516,7 @@ const mockResponse = {
     },
     {
       type: "data",
+      virtual_read: true,
       file_path:
         "/warehouse/default/events/data/event_ts_hour=2025-06-15-11/event_name=signup/00000-8-88fba101-726e-4235-a6a6-18460a99c4a6-00002.parquet",
       format: "PARQUET",
@@ -1616,6 +1686,7 @@ const MOCK_GRAPH_PROGRESS_RESPONSES = [
   {
     "Collecting snapshots": "in_progress",
     "Collecting metadata files": "pending",
+    "Collecting table statistics files": "pending",
     "Collecting manifests": "pending",
     "Collecting data files": "pending",
     "Building graph": "pending",
@@ -1623,6 +1694,7 @@ const MOCK_GRAPH_PROGRESS_RESPONSES = [
   {
     "Collecting snapshots": "done",
     "Collecting metadata files": "done",
+    "Collecting table statistics files": "done",
     "Collecting manifests": "done",
     "Collecting data files": "done",
     "Building graph": "in_progress",

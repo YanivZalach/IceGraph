@@ -56,6 +56,7 @@ export const fileDetailsSchema = z
     deleted_child_files: z.array(identifierSchema).optional(),
     errors: z.array(z.string()).optional(),
     warnings: z.array(z.string()).optional(),
+    virtual_read: z.boolean().optional(),
     timestamp: optionalTimestampSchema,
     snapshot_id: nullableIdentifierSchema,
     parent_id: nullableIdentifierSchema,
