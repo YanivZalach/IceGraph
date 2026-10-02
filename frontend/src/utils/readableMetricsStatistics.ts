@@ -1,4 +1,8 @@
 import type { ReadableMetrics } from "./readableMetrics";
+import {
+  formatValue,
+  parseSignedInteger,
+} from "../shared/components/statisticsTableBase";
 
 export interface MetricRatio {
   denominator: bigint;
@@ -44,17 +48,6 @@ const parseMetricInteger = (value: unknown): bigint | undefined => {
     return BigInt(value);
   }
   if (typeof value === "string" && /^\d+$/.test(value)) {
-    return BigInt(value);
-  }
-  return undefined;
-};
-
-const parseSignedInteger = (value: unknown): bigint | undefined => {
-  if (typeof value === "bigint") return value;
-  if (typeof value === "number" && Number.isSafeInteger(value)) {
-    return BigInt(value);
-  }
-  if (typeof value === "string" && /^-?\d+$/.test(value)) {
     return BigInt(value);
   }
   return undefined;
@@ -206,19 +199,6 @@ const compareDecimals = (
   );
 };
 
-const formatBoundForComparison = (value: unknown): string => {
-  if (typeof value === "string") return value;
-  if (
-    typeof value === "number" ||
-    typeof value === "boolean" ||
-    typeof value === "bigint"
-  ) {
-    return value.toString();
-  }
-  if (value === null || value === undefined) return "";
-  return JSON.stringify(value);
-};
-
 const compareBoundValues = (
   first: unknown,
   second: unknown,
@@ -262,8 +242,8 @@ const compareBoundValues = (
     return first === second ? 0 : first ? 1 : -1;
   }
 
-  const firstText = formatBoundForComparison(first);
-  const secondText = formatBoundForComparison(second);
+  const firstText = formatValue(first);
+  const secondText = formatValue(second);
   return firstText.localeCompare(secondText, undefined, { numeric: true });
 };
 

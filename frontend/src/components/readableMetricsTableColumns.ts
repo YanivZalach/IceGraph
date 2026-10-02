@@ -1,9 +1,5 @@
-import {
-  createColumnHelper,
-  createSortedRowModel,
-  rowSortingFeature,
-  tableFeatures,
-} from "@tanstack/react-table";
+import { createColumnHelper } from "@tanstack/react-table";
+import { STATISTICS_TABLE_FEATURES } from "../shared/components/statisticsTableBase";
 import { formatBytesAsMebibytes } from "../shared/lib/formatBytes";
 import { formatReadableMetricValue } from "../utils/readableMetrics";
 import {
@@ -18,12 +14,8 @@ import {
   type ReadableMetricTableRow,
 } from "../utils/readableMetricsStatistics";
 
-export const METRICS_TABLE_FEATURES = tableFeatures({
-  rowSortingFeature,
-  sortedRowModel: createSortedRowModel(),
-});
 const columnHelper = createColumnHelper<
-  typeof METRICS_TABLE_FEATURES,
+  typeof STATISTICS_TABLE_FEATURES,
   ReadableMetricTableRow
 >();
 
