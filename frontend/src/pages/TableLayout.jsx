@@ -17,6 +17,8 @@ import {
   FileType,
   MAIN_BRANCH_NAME,
   NODE_STYLE_MAP,
+  TABLE_STATISTICS_CONNECTION_COLOR,
+  TABLE_STATISTICS_CONNECTION_CURVATURE,
 } from "../graphConstants";
 
 const localizeNodeTimestamps = (details) => {
@@ -122,7 +124,11 @@ const buildEdgesFromNodes = (nodes) => {
 
       (details.child_files || []).forEach((childPath) => {
         if (tableStatisticsIds.has(childPath)) {
-          edges.push({ from: node.id, to: childPath });
+          edges.push({
+            from: node.id,
+            to: childPath,
+            is_table_statistics: true,
+          });
         }
       });
       return;
@@ -211,6 +217,9 @@ export default function TableLayout() {
         newEdge.dashes = [15, 20, 5, 20];
         newEdge.color = BRANCH_CONNECTION_COLOR;
         newEdge.title = edge.branch_names;
+      } else if (edge.is_table_statistics) {
+        newEdge.color = TABLE_STATISTICS_CONNECTION_COLOR;
+        newEdge.curvature = TABLE_STATISTICS_CONNECTION_CURVATURE;
       }
       return newEdge;
     });

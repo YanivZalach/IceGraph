@@ -237,6 +237,11 @@ class CollectMetadataAndTableStatistics(Collector):
         self._metadata_files = [metadata_file_by_path[file_path] for file_path in self._ordered_metadata_paths]
         self._metadata_files[0].type = FileType.MAIN_METADATA
 
+        metadata_order_by_child_path = {
+            child_path: index for index, metadata_file in enumerate(self._metadata_files) for child_path in metadata_file.child_files
+        }
+        self._table_statistics_files.sort(key=lambda file: metadata_order_by_child_path[file.file_path])
+
     def _get_snap_id_to_path(self) -> Dict[int, str]:
         return {s.snapshot_id: s.file_path for s in (self._snapshots or [])}
 

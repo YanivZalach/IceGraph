@@ -58,10 +58,15 @@ const mockResponse = {
             "/warehouse/default/events/metadata/snap-3004708926140182071-1-b67343c2-fa63-4819-a10e-56c39993e302.avro",
         },
       ],
+      pointed_statistics_files: {
+        "3004708926140182071":
+          "/warehouse/default/events/metadata/3004708926140182071-6f1c2a9e-4b7d-4e3a-9c51-2d8e0f7a1b34.stats",
+      },
       pointed_metadata_log_count: 9,
       child_files: [
         "/warehouse/default/events/metadata/snap-3004708926140182071-1-b67343c2-fa63-4819-a10e-56c39993e302.avro",
         "/warehouse/default/events/metadata/snap-7633604781669548673-1-39ba9de2-9487-4364-8143-9ed7ad46feb9.avro",
+        "/warehouse/default/events/metadata/3004708926140182071-6f1c2a9e-4b7d-4e3a-9c51-2d8e0f7a1b34.stats",
       ],
     },
     {
@@ -403,6 +408,34 @@ const mockResponse = {
       },
       pointed_snapshots_files: null,
       pointed_metadata_log_count: 0,
+      child_files: [],
+    },
+    {
+      type: "table_statistics",
+      file_path:
+        "/warehouse/default/events/metadata/3004708926140182071-6f1c2a9e-4b7d-4e3a-9c51-2d8e0f7a1b34.stats",
+      errors: [],
+      warnings: [],
+      snapshot_id: "3004708926140182071",
+      file_size_in_bytes: "962",
+      file_footer_size_in_bytes: "703",
+      key_metadata: null,
+      blobs: [
+        {
+          type: "apache-datasketches-theta-v1",
+          fields: [1],
+          snapshot_id: "3004708926140182071",
+          sequence_number: 6,
+          properties: { ndv: "9" },
+        },
+        {
+          type: "apache-datasketches-theta-v1",
+          fields: [2],
+          snapshot_id: "3004708926140182071",
+          sequence_number: 6,
+          properties: { ndv: "4" },
+        },
+      ],
       child_files: [],
     },
     {

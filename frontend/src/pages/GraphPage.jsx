@@ -21,8 +21,10 @@ import {
 import ResizableSidePanel from "../components/ResizableSidePanel";
 import {
   GRAPH_SETTINGS,
+  CATALOG_NODE_ID,
   DELETED_DATA_FILE_CONNECTION_COLOR,
   FileType,
+  NODE_STYLE_MAP,
   fileTypeLabel,
 } from "../graphConstants";
 import {
@@ -48,6 +50,29 @@ const DATA_AND_DELETE_FILE_TYPES = new Set([
   FileType.EQUALITY_DELETE,
 ]);
 
+function buildCatalogNodeAndEdge(nodes, metadata) {
+  const mainMetadataNode = nodes.find((n) => n.type === FileType.MAIN_METADATA);
+  if (!mainMetadataNode) return null;
+
+  const style = NODE_STYLE_MAP[FileType.CATALOG];
+
+  return {
+    node: {
+      id: CATALOG_NODE_ID,
+      label: fileTypeLabel(FileType.CATALOG),
+      type: FileType.CATALOG,
+      details: {
+        type: FileType.CATALOG,
+        "table-name": metadata?.["table-name"],
+        "table-uuid": metadata?.["table-uuid"],
+      },
+      color: `rgb(${style.rgb.join(",")})`,
+      level: style.level,
+    },
+    edge: { from: CATALOG_NODE_ID, to: mainMetadataNode.id },
+  };
+}
+
 function getFileSizeBytes(details) {
   const rawFileSize = details?.file_size_in_bytes;
   if (typeof rawFileSize !== "string" && typeof rawFileSize !== "number") {
@@ -68,6 +93,17 @@ function getGraphNodeMetrics() {
     linkFontSize: remToPx(3.75),
   };
 }
+
+const measureNode = (node, ctx, { fontSize, paddingX, paddingY }) => {
+  ctx.font = `500 ${fontSize}px "system-ui"`;
+  if (!node.__pillW || node.__metricsKey !== fontSize) {
+    node.__pillW =
+      ctx.measureText(node.label || String(node.id)).width + paddingX * 2;
+    node.__pillH = fontSize + paddingY * 2;
+    node.__metricsKey = fontSize;
+  }
+  return { width: node.__pillW, height: node.__pillH };
+};
 
 function getLineage(nodeId, links) {
   const relatedNodes = new Set([String(nodeId)]);
@@ -104,7 +140,12 @@ function getLineage(nodeId, links) {
 }
 
 export default function GraphPage() {
-  const { nodes: rawNodes, edges: rawEdges, errors } = useTableGraphData();
+  const {
+    nodes: rawNodes,
+    edges: rawEdges,
+    metadata,
+    errors,
+  } = useTableGraphData();
 
   const search = useSearch({ strict: false });
   const navigate = useNavigate();
@@ -185,8 +226,11 @@ export default function GraphPage() {
   const graphData = useMemo(() => {
     if (!rawNodes) return { nodes: [], links: [] };
 
-    const nodeArray = rawNodes;
-    const edgeArray = rawEdges || [];
+    const catalog = buildCatalogNodeAndEdge(rawNodes, metadata);
+    const nodeArray = catalog ? [catalog.node, ...rawNodes] : rawNodes;
+    const edgeArray = catalog
+      ? [...(rawEdges || []), catalog.edge]
+      : rawEdges || [];
 
     const processedNodes = nodeArray.map((n) => {
       return {
@@ -200,6 +244,7 @@ export default function GraphPage() {
       source: e.from,
       target: e.to,
       color: e.color || "#999",
+      curvature: e.curvature,
       label:
         e.color === DELETED_DATA_FILE_CONNECTION_COLOR
           ? DELETED_CONNECTION_LABLE
@@ -224,7 +269,7 @@ export default function GraphPage() {
     });
 
     return { nodes: processedNodes, links: processedLinks };
-  }, [rawNodes, rawEdges]);
+  }, [rawNodes, rawEdges, metadata]);
   useEffect(() => {
     graphDataRef.current = graphData;
   }, [graphData]);
@@ -232,16 +277,16 @@ export default function GraphPage() {
   const treeMap = useMemo(() => {
     const incoming = {};
     const outgoing = {};
-    (rawEdges || []).forEach((e) => {
-      const src = String(e.from);
-      const tgt = String(e.to);
+    graphData.links.forEach((l) => {
+      const src = String(l.source.id ?? l.source);
+      const tgt = String(l.target.id ?? l.target);
       if (!outgoing[src]) outgoing[src] = [];
       if (!incoming[tgt]) incoming[tgt] = [];
       outgoing[src].push(tgt);
       incoming[tgt].push(src);
     });
     return { incoming, outgoing };
-  }, [rawEdges]);
+  }, [graphData]);
   useEffect(() => {
     treeMapRef.current = treeMap;
   }, [treeMap]);
@@ -610,20 +655,7 @@ export default function GraphPage() {
   const paintNode = useCallback(
     (node, ctx) => {
       const label = node.label || String(node.id);
-      const { fontSize, paddingX, paddingY } = nodeMetrics;
-      const nodeFont = `500 ${fontSize}px "system-ui"`;
-
-      ctx.font = nodeFont;
-      if (!node.__pillW || node.__metricsKey !== fontSize) {
-        const w = ctx.measureText(label).width + paddingX * 2;
-        const h = fontSize + paddingY * 2;
-        node.__pillW = w;
-        node.__pillH = h;
-        node.__metricsKey = fontSize;
-      }
-
-      const w = node.__pillW;
-      const h = node.__pillH;
+      const { width: w, height: h } = measureNode(node, ctx, nodeMetrics);
       const x = Math.round(node.x - w / 2);
       const y = Math.round(node.y - h / 2);
 
@@ -680,37 +712,91 @@ export default function GraphPage() {
     graphData.links.forEach((l) => {
       map.set(
         l,
-        !l.label || l.label === DELETED_CONNECTION_LABLE ? 0 : LINK_CURVATURE,
+        l.curvature ??
+          (!l.label || l.label === DELETED_CONNECTION_LABLE
+            ? 0
+            : LINK_CURVATURE),
       );
     });
     return map;
   }, [graphData.links]);
 
   const paintLink = useCallback(
-    (link, ctx) => {
-      if (!link.label) return;
-
-      const position = link.label === DELETED_CONNECTION_LABLE ? 0.5 : 0.25;
-
+    (link, ctx, globalScale) => {
       const start = link.source;
       const end = link.target;
-      const sx = typeof start === "object" ? start.x : null;
-      const sy = typeof start === "object" ? start.y : null;
-      const ex = typeof end === "object" ? end.x : null;
-      const ey = typeof end === "object" ? end.y : null;
-      if (sx == null || ex == null) return;
+      if (
+        start?.x == null ||
+        start.y == null ||
+        end?.x == null ||
+        end.y == null
+      )
+        return;
+
+      const sourceSize = measureNode(start, ctx, nodeMetrics);
+      const targetSize = measureNode(end, ctx, nodeMetrics);
+      const isVertical =
+        Math.abs(end.x - start.x) < (sourceSize.width + targetSize.width) / 2;
+      const direction = Math.sign(
+        isVertical ? end.y - start.y : end.x - start.x,
+      );
+      const sx =
+        start.x + (isVertical ? 0 : (direction * sourceSize.width) / 2);
+      const sy =
+        start.y + (isVertical ? (direction * sourceSize.height) / 2 : 0);
+      const ex = end.x - (isVertical ? 0 : (direction * targetSize.width) / 2);
+      const ey = end.y - (isVertical ? (direction * targetSize.height) / 2 : 0);
+      if (direction * (isVertical ? ey - sy : ex - sx) <= 0) return;
 
       const curvature = linkCurvatures.get(link) || 0;
-      let qX = sx + (ex - sx) * position;
-      let qY = sy + (ey - sy) * position;
-      if (curvature !== 0) {
-        const dx = ex - sx;
-        const dy = ey - sy;
-        const len = Math.sqrt(dx * dx + dy * dy) || 1;
-        qX += (dy / len) * curvature * len * position;
-        qY += (-dx / len) * curvature * len * position;
-      }
+      const controlX = Math.max(
+        Math.min(sx, ex),
+        Math.min(Math.max(sx, ex), (sx + ex) / 2 + (ey - sy) * curvature),
+      );
+      const controlY = isVertical
+        ? (sy + ey) / 2
+        : (sy + ey) / 2 - (ex - sx) * curvature;
+
       ctx.shadowBlur = 0;
+      ctx.strokeStyle = link.color;
+      ctx.lineWidth = 1 / globalScale;
+      ctx.beginPath();
+      ctx.moveTo(sx, sy);
+      ctx.quadraticCurveTo(controlX, controlY, ex, ey);
+      ctx.stroke();
+
+      const angle = Math.atan2(ey - controlY, ex - controlX);
+      const arrowLength = Math.min(
+        8 / globalScale,
+        Math.hypot(ex - sx, ey - sy) / 3,
+      );
+      const arrowX = ex - Math.cos(angle) * arrowLength;
+      const arrowY = ey - Math.sin(angle) * arrowLength;
+      ctx.beginPath();
+      ctx.moveTo(ex, ey);
+      ctx.lineTo(
+        arrowX + (Math.sin(angle) * arrowLength) / 2,
+        arrowY - (Math.cos(angle) * arrowLength) / 2,
+      );
+      ctx.lineTo(
+        arrowX - (Math.sin(angle) * arrowLength) / 2,
+        arrowY + (Math.cos(angle) * arrowLength) / 2,
+      );
+      ctx.closePath();
+      ctx.fillStyle = link.color;
+      ctx.fill();
+
+      if (!link.label) return;
+      const position = link.label === DELETED_CONNECTION_LABLE ? 0.5 : 0.25;
+      const remaining = 1 - position;
+      const qX =
+        remaining ** 2 * sx +
+        2 * remaining * position * controlX +
+        position ** 2 * ex;
+      const qY =
+        remaining ** 2 * sy +
+        2 * remaining * position * controlY +
+        position ** 2 * ey;
       ctx.font = `500 ${nodeMetrics.linkFontSize}px "system-ui"`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
@@ -778,9 +864,7 @@ export default function GraphPage() {
         linkWidth={1}
         linkColor={(l) => l.color}
         linkCurvature={(l) => linkCurvatures.get(l) || 0}
-        linkDirectionalArrowLength={3}
-        linkDirectionalArrowRelPos={1}
-        linkCanvasObjectMode={() => "after"}
+        linkCanvasObjectMode={() => "replace"}
         linkCanvasObject={paintLink}
 
         onNodeClick={handleNodeClick}

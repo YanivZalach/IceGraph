@@ -1,4 +1,4 @@
-The Graph view shows all Iceberg metadata objects in your selected range as a directed acyclic graph. Each node is a file. Links show parent→child relationships.
+The Graph view shows all Iceberg metadata objects in your selected range as a directed acyclic graph. Each node is a file, except the Catalog node. Links connect node edges, with arrowheads pointing from parent to child.
 
 ### Node types
 
@@ -9,6 +9,10 @@ The Graph view shows all Iceberg metadata objects in your selected range as a di
 - **Manifest** - tracks which data files exist and stores per-file statistics
 
 - **Data file** - the actual Parquet, ORC, or Avro file containing your rows. IceGraph is not reading the data file: all of the data shown comes from the manifest entries that point at it. When available, the details panel also shows human-readable per-column metrics derived from the manifest entry, including the inferred metadata size that is not represented by reported column sizes
+
+- **Table statistics** - Puffin file with column statistics, such as distinct value counts, computed for one snapshot. It is drawn to the left of the metadata files and linked from the metadata file that added it, with a curved amber link. Its details come from the metadata file's description of it; IceGraph does not open the Puffin file
+
+- **Catalog** - not a file. It sits at the top of the metadata column, with a downward arrow to the current main metadata file. Its details show the table name and UUID
 
 - **Unreadable file** - a file whose metadata could not be obtained is drawn in red and shows the reason in its details panel. The rest of the graph still loads
 

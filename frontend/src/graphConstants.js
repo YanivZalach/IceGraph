@@ -1,5 +1,8 @@
 export const DELETED_DATA_FILE_CONNECTION_COLOR = "#FF0000";
 export const BRANCH_CONNECTION_COLOR = "rgba(56, 189, 248, 0.5)";
+export const TABLE_STATISTICS_CONNECTION_COLOR = "rgba(245, 158, 11, 0.8)";
+export const TABLE_STATISTICS_CONNECTION_CURVATURE = 0.3;
+export const CATALOG_NODE_ID = "catalog";
 export const MAIN_BRANCH_NAME = "main";
 
 export const FileType = {
@@ -11,6 +14,7 @@ export const FileType = {
   POSITION_DELETE: "position_delete",
   EQUALITY_DELETE: "equality_delete",
   TABLE_STATISTICS: "table_statistics",
+  CATALOG: "catalog",
 };
 
 export const NODE_STYLE_MAP = {
@@ -21,6 +25,8 @@ export const NODE_STYLE_MAP = {
   [FileType.DATA]: { rgb: [25, 150, 115], level: 2 },
   [FileType.POSITION_DELETE]: { rgb: [230, 145, 30], level: 2 },
   [FileType.EQUALITY_DELETE]: { rgb: [230, 145, 30], level: 2 },
+  [FileType.TABLE_STATISTICS]: { rgb: [217, 119, 6], level: -2 },
+  [FileType.CATALOG]: { rgb: [100, 116, 139], level: -1 },
 };
 
 export const ERROR_NODE_RGB = [185, 35, 60];
@@ -32,6 +38,8 @@ const FILE_TYPE_LABELS = {
   [FileType.DATA]: "Data File",
   [FileType.POSITION_DELETE]: "Position Delete",
   [FileType.EQUALITY_DELETE]: "Equality Delete",
+  [FileType.TABLE_STATISTICS]: "Table Statistics",
+  [FileType.CATALOG]: "Catalog",
 };
 
 export function fileTypeLabel(type) {
@@ -39,6 +47,6 @@ export function fileTypeLabel(type) {
   return FILE_TYPE_LABELS[type] ?? String(type).replace(/_/g, " ");
 }
 export const GRAPH_SETTINGS = {
-  levelSeparation: 3000,
+  levelSeparation: 4200,
   nodeSpacing: 700,
 };
