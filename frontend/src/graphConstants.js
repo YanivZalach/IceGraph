@@ -10,6 +10,7 @@ export const FileType = {
   DATA: "data",
   POSITION_DELETE: "position_delete",
   EQUALITY_DELETE: "equality_delete",
+  TABLE_STATISTICS: "table_statistics",
 };
 
 export const NODE_STYLE_MAP = {

@@ -6,7 +6,7 @@ from base_classes.spark_table_action import SparkTableAction
 from base_classes.utils import timed
 from collectors.collect_data_files import CollectDataFiles, DataFileRecord
 from collectors.collect_manifests import CollectManifests, ManifestRecord
-from collectors.collect_metadata import CollectMetadata, MetadataFileRecord
+from collectors.collect_metadata_and_table_statistics import CollectMetadataAndTableStatistics, MetadataFileRecord, TableStatisticsFileRecord
 from collectors.collect_snapshots import CollectSnapshots, SnapshotRecord
 from constants import (
     DATA_FILES_CUTOFF_MANIFEST_WARNING,
@@ -31,6 +31,7 @@ class TableInventoryResult:
     manifests: List[ManifestRecord]
     data_files: List[DataFileRecord]
     metadata_files: List[MetadataFileRecord]
+    table_statistics_files: List[TableStatisticsFileRecord]
     current_table_specs: Dict[str, Any]
 
 
@@ -55,6 +56,7 @@ class TableInventory(SparkTableAction):
         self._data_files_cutoff_reached = False
 
         self._metadata_files: List[MetadataFileRecord] = []
+        self._table_statistics_files: List[TableStatisticsFileRecord] = []
         self._snapshots: List[SnapshotRecord] = []
         self._manifests: List[ManifestRecord] = []
         self._data_files: List[DataFileRecord] = []
@@ -88,6 +90,7 @@ class TableInventory(SparkTableAction):
             manifests=self._manifests,
             data_files=self._data_files,
             metadata_files=self._metadata_files,
+            table_statistics_files=self._table_statistics_files,
             current_table_specs=self._current_table_specs,
         )
 
@@ -122,6 +125,7 @@ class TableInventory(SparkTableAction):
                 self._warnings.update(metadata_collection.warnings)
 
                 self._metadata_files = metadata_collection.files
+                self._table_statistics_files = metadata_collection.table_statistics_files
 
             except Exception as e:
                 logger.error(f"[{self._table_name}] Failed to collect metadata", exc_info=True)
@@ -148,7 +152,7 @@ class TableInventory(SparkTableAction):
     def _threaded_collect_metadata_files(self):
         self._on_stage_start(STAGE_COLLECT_METADATA_FILES)
         try:
-            result = CollectMetadata(
+            result = CollectMetadataAndTableStatistics(
                 self._table_name,
                 self._search_cutoff.start_metadata_cutoff,
                 self._search_cutoff.end_metadata_cutoff,
@@ -238,7 +242,7 @@ class TableInventory(SparkTableAction):
                 manifest.warnings.append(DATA_FILES_CUTOFF_MANIFEST_WARNING.format(max_data_files_to_collect=Env.MAX_DATA_FILES_TO_COLLECT))
 
     def _collect_file_errors(self):
-        file_groups = (self._metadata_files, self._snapshots, self._manifests, self._data_files)
+        file_groups = (self._metadata_files, self._table_statistics_files, self._snapshots, self._manifests, self._data_files)
         for files in file_groups:
             self._errors.update({file.file_path: file.errors for file in files if file.errors})
 

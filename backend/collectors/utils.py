@@ -59,7 +59,7 @@ def get_metadata_row_slim_df_from_path(metadata_path: str):
         "table-uuid",
         "pointed_metadata_log_count",
     ]
-    json_cols = ["properties", "refs", "pointed_snapshots_files"]
+    json_cols = ["properties", "refs", "pointed_snapshots_files", "statistics"]
 
     return df.select(
         *[F.col(column) for column in scalar_cols if column in existing],

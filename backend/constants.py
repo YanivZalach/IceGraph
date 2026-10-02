@@ -32,6 +32,7 @@ class FileType(Enum):
     DATA = "data"
     POSITION_DELETE = "position_delete"
     EQUALITY_DELETE = "equality_delete"
+    TABLE_STATISTICS = "table_statistics"
 
 
 DATA_FILES_CUTOFF_WARNING = inspect.cleandoc("""
@@ -67,4 +68,9 @@ Showing partial metadata! the number of metadata files exceeds the limit of {max
 
 Older metadata files were not collected.
 Only the oldest metadata files are cut off, so every metadata file you see is complete and accurate.
+""")
+
+TABLE_STATISTICS_BEFORE_RANGE_WARNING = inspect.cleandoc("""
+Failed to read the metadata file before the selected range: {metadata_file}
+Table statistics files that existed before the range may be shown as added by the oldest metadata file in view.
 """)

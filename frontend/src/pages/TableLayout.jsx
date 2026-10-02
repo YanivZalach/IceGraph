@@ -81,6 +81,9 @@ const buildEdgesFromNodes = (nodes) => {
       snapshotPathById[String(n.details.snapshot_id)] = n.id;
     }
   });
+  const tableStatisticsIds = new Set(
+    nodes.filter((n) => n.type === FileType.TABLE_STATISTICS).map((n) => n.id),
+  );
 
   const edges = [];
   nodes.forEach((node) => {
@@ -114,6 +117,12 @@ const buildEdgesFromNodes = (nodes) => {
             to: branchPath,
             branch_names: names.join(", "),
           });
+        }
+      });
+
+      (details.child_files || []).forEach((childPath) => {
+        if (tableStatisticsIds.has(childPath)) {
+          edges.push({ from: node.id, to: childPath });
         }
       });
       return;
