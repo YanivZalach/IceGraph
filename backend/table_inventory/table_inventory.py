@@ -6,7 +6,8 @@ from base_classes.spark_table_action import SparkTableAction
 from base_classes.utils import timed
 from collectors.collect_data_files import CollectDataFiles, DataFileRecord
 from collectors.collect_manifests import CollectManifests, ManifestRecord
-from collectors.collect_metadata_and_table_statistics import CollectMetadataAndTableStatistics, MetadataFileRecord, TableStatisticsFileRecord
+from collectors.collect_metadata_and_table_statistics import CollectMetadataAndTableStatistics, MetadataFileRecord
+from collectors.statistics_utils import TableStatisticsFileRecord
 from collectors.collect_snapshots import CollectSnapshots, SnapshotRecord
 from constants import (
     DATA_FILES_CUTOFF_MANIFEST_WARNING,
