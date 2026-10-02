@@ -8,6 +8,7 @@ import {
   PANEL_STATUS_BADGE_CLASS,
 } from "../components/PanelContent";
 import PanelIssueNotice from "../components/PanelIssueNotice";
+import HelpTerm from "../shared/components/HelpTerm";
 import DataFileReadableMetricsTable from "../components/DataFileReadableMetricsTable";
 import ReadableMetricsSummary from "../components/ReadableMetricsSummary";
 import { isEmptyValue } from "../shared/lib/isEmptyValue";
@@ -839,9 +840,13 @@ export default function GraphPage() {
         rows: Object.entries(stickyNode.details)
           .filter(
             ([label]) =>
-              !["type", "errors", "warnings", "readable_metrics"].includes(
-                label.toLowerCase(),
-              ),
+              ![
+                "type",
+                "errors",
+                "warnings",
+                "readable_metrics",
+                "virtual_read",
+              ].includes(label.toLowerCase()),
           )
           .map(([label, value]) => ({
             label,
@@ -999,6 +1004,14 @@ export default function GraphPage() {
         >
           {isInspectMode && (
             <span className={PANEL_STATUS_BADGE_CLASS}>🔒 Locked View</span>
+          )}
+          {stickyNode.details.virtual_read === true && (
+            <span className={PANEL_STATUS_BADGE_CLASS}>
+              <HelpTerm label="Virtual read">
+                Details come from Iceberg metadata. IceGraph does not read this
+                file or verify that it exists.
+              </HelpTerm>
+            </span>
           )}
           <PanelIssueNotice type="error">
             {stickyNode.details.errors}

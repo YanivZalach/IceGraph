@@ -14,6 +14,7 @@ class BaseFile:
     type: FileType
     file_path: str
     child_files: List[str]
+    virtual_read: bool = field(default=False, kw_only=True)
     errors: List[str] = field(default_factory=list, kw_only=True)
     warnings: List[str] = field(default_factory=list, kw_only=True)
 

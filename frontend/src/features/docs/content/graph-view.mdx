@@ -27,6 +27,8 @@ The Graph view shows all Iceberg metadata objects in your selected range as a di
 
 The panel on the right lists every metadata field for the selected node. The header shows the file type, path, and timestamp; fields below use the same layout as Timeline and other views.
 
+- **Virtual read** - data files, position and equality delete files, and table statistics files show this badge at the top of the panel when the backend marks them as virtually read. Hover, focus, or click the label for its explanation: details come from Iceberg metadata. IceGraph does not read this file or verify that it exists.
+
 - **Resize** - drag the grip handle on the left edge of the panel to widen it. Wider panels give text fields more room and show more lines before you need to expand a field.
 
 - **Fullscreen** - click the expand button in the panel header to fill the graph area. Click the compress button or press **Esc** to exit.

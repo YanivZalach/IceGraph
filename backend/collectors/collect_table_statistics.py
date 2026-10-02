@@ -76,33 +76,51 @@ class CollectTableStatistics(Collector):
         if any(metadata_file.errors for metadata_file in self._metadata_files):
             self._warnings["table_statistics_attribution"] = [TABLE_STATISTICS_ATTRIBUTION_WARNING]
 
-        added_paths_by_metadata_file = self._find_added_statistics_paths(self._find_statistics_paths_before_range())
+        statistics_paths_before_range = self._find_statistics_paths_before_range()
+        added_paths_by_metadata_file = self._find_added_statistics_paths(statistics_paths_before_range)
         if not added_paths_by_metadata_file:
             return FilesCollection(warnings=self._warnings)
 
+        statistics_by_metadata_file = self._collect_statistics_entries(list(added_paths_by_metadata_file))
+        if statistics_by_metadata_file is None:
+            return FilesCollection(warnings=self._warnings)
+
+        self._collect_statistics_files(added_paths_by_metadata_file, statistics_by_metadata_file)
+
+        return FilesCollection(files=self._table_statistics_files, warnings=self._warnings)
+
+    def _collect_statistics_entries(self, metadata_paths: List[str]) -> Optional[Dict[str, List[dict]]]:
         try:
-            rows = self._read_table_statistics(list(added_paths_by_metadata_file)).collect()
+            rows = self._read_table_statistics(metadata_paths).collect()
         except Exception as e:
             logger.error(f"[{self._table_name}] Table statistics read error", exc_info=True)
             self._warnings["table_statistics_collection"] = [TABLE_STATISTICS_COLLECTION_WARNING.format(error=e)]
-            return FilesCollection(warnings=self._warnings)
+            return None
 
-        statistics_by_metadata_file = {row.file: row.asDict(recursive=True)["statistics"] or [] for row in rows}
+        return {row.file: row.asDict(recursive=True)["statistics"] or [] for row in rows}
 
+    def _collect_statistics_files(
+        self,
+        added_paths_by_metadata_file: Dict[str, Set[str]],
+        statistics_by_metadata_file: Dict[str, List[dict]],
+    ) -> None:
         for metadata_file in self._metadata_files:
             added_paths = added_paths_by_metadata_file.get(metadata_file.file_path)
             if not added_paths:
                 continue
 
-            entry_by_path = {}
-            for entry in statistics_by_metadata_file.get(metadata_file.file_path, []):
-                if entry["statistics-path"] in added_paths:
-                    entry_by_path.setdefault(entry["statistics-path"], entry)
-
-            for entry in sorted(entry_by_path.values(), key=lambda entry: entry["statistics-path"]):
+            entries = statistics_by_metadata_file.get(metadata_file.file_path, [])
+            for entry in self._find_added_statistics_entries(entries, added_paths):
                 self._add_table_statistics_file(metadata_file, entry)
 
-        return FilesCollection(files=self._table_statistics_files, warnings=self._warnings)
+    @staticmethod
+    def _find_added_statistics_entries(entries: List[dict], added_paths: Set[str]) -> List[dict]:
+        entry_by_path = {}
+        for entry in entries:
+            if entry["statistics-path"] in added_paths:
+                entry_by_path.setdefault(entry["statistics-path"], entry)
+
+        return sorted(entry_by_path.values(), key=lambda entry: entry["statistics-path"])
 
     def _find_statistics_paths_before_range(self) -> Set[str]:
         metadata_file_before_range = self._find_metadata_file_before_range()
@@ -113,7 +131,7 @@ class CollectTableStatistics(Collector):
             rows = self._read_table_statistics([metadata_file_before_range]).collect()
         except Exception:
             logger.warning(f"[{self._table_name}] Metadata file before range read error for {metadata_file_before_range}", exc_info=True)
-            self._warnings["table_statistics_before_range"] = [TABLE_STATISTICS_BEFORE_RANGE_WARNING.format(metadata_file=metadata_file_before_range)]
+            self._swarnings["table_statistics_before_range"] = [TABLE_STATISTICS_BEFORE_RANGE_WARNING.format(metadata_file=metadata_file_before_range)]
             return set()
 
         return {entry["statistics-path"] for row in rows for entry in row.statistics or [] if entry["statistics-path"] is not None}
@@ -175,6 +193,7 @@ class CollectTableStatistics(Collector):
     def _parse_table_statistics_entry(entry: dict, added_by_metadata_file: str) -> TableStatisticsFileRecord:
         return TableStatisticsFileRecord(
             type=FileType.TABLE_STATISTICS,
+            virtual_read=True,
             file_path=entry["statistics-path"],
             child_files=[],
             snapshot_id=entry["snapshot-id"],
