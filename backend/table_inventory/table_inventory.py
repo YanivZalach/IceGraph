@@ -119,7 +119,7 @@ class TableInventory(SparkTableAction):
 
     def _collect_metadata_manifests_and_data_files(self):
         with ThreadPoolExecutor(max_workers=2) as executor:
-            metadata_future = executor.submit(self._threaded_collect_metadata_files)
+            metadata_future = executor.submit(self._threaded_collect_metadata_and_table_statistics_files)
             manifests_and_data_files_future = executor.submit(self._threaded_collect_manifests_and_data_files)
 
             try:
@@ -155,7 +155,7 @@ class TableInventory(SparkTableAction):
                 )
                 self._errors["collect_manifests_and_data_files"] = [str(e)]
 
-    def _threaded_collect_metadata_files(self):
+    def _threaded_collect_metadata_and_table_statistics_files(self):
         self._on_stage_start(STAGE_COLLECT_METADATA_FILES)
         try:
             metadata_collection = CollectMetadata(
@@ -172,7 +172,6 @@ class TableInventory(SparkTableAction):
             table_statistics_collection = CollectTableStatistics(
                 self._table_name,
                 metadata_collection.files,
-                metadata_collection.statistics_paths_before_range,
             ).collect()
         except Exception as e:
             logger.error(f"[{self._table_name}] Failed to collect table statistics", exc_info=True)

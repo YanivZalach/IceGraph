@@ -2,7 +2,7 @@ The Graph view shows all Iceberg metadata objects in your selected range as a di
 
 ### Node types
 
-- **Metadata file** - JSON file describing the current full state of the table, combining schema, partition spec, snapshot history, and data file references
+- **Metadata file** - JSON file describing the full state of the table at one point in time: schema, partition spec, properties, and the snapshots it knows of. It links only to the snapshots it points to: its current snapshot and the head of each branch. The other snapshots it lists, kept for time travel until they expire, are not linked; they appear in `pointed_snapshots_files` in its details panel, and its table statistics files in `pointed_statistics_files`
 
 - **Snapshot** - Avro file that represents a point-in-time version of the table produced by a data operation (append, overwrite, etc.)
 
