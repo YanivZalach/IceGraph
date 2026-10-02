@@ -72,12 +72,12 @@ Older metadata files were not collected.
 Only the oldest metadata files are cut off, so every metadata file you see is complete and accurate.
 """)
 
-TABLE_STATISTICS_BEFORE_RANGE_WARNING = inspect.cleandoc("""
+TABLE_STATISTICS_BEFORE_RANGE_ERROR = inspect.cleandoc("""
 Failed to read the metadata file before the selected range: {metadata_file}
 Table statistics files that existed before the range may be shown as added by the oldest metadata file in view.
 """)
 
-TABLE_STATISTICS_COLLECTION_WARNING = "Failed to read the table statistics entries, so table statistics files are not shown: {error}"
+TABLE_STATISTICS_COLLECTION_ERROR = "Failed to read the table statistics entries, so table statistics files are not shown: {error}"
 
 TABLE_STATISTICS_ATTRIBUTION_WARNING = inspect.cleandoc("""
 Some metadata files could not be read. Table statistics files are still shown, but IceGraph may not reliably identify which metadata file first added them.
