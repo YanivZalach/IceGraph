@@ -253,7 +253,6 @@ class CollectMetadataAndTableStatistics(Collector):
         if "statistics" not in metadata_files_df.columns:
             metadata_files_df = metadata_files_df.withColumn("statistics", F.lit(None).cast(StringType()))
 
-        # The metadata row is carried through as a struct, so the metadata files are scanned only once
         metadata_columns = [column for column in metadata_files_df.columns if column != "statistics"]
         listings_df = metadata_files_df.select(
             "file",
