@@ -37,6 +37,7 @@ class MetadataFileRecord(BaseFile):
     refs: Dict[str, Any]
     properties: Dict[str, str]
     pointed_snapshots_files: Optional[List[Dict[str, str]]]
+    pointed_statistics_files: Optional[Dict[int, str]]
     pointed_metadata_log_count: Optional[int]
 
 
@@ -183,6 +184,7 @@ class CollectMetadataAndTableStatistics(Collector):
                         refs={},
                         properties={},
                         pointed_snapshots_files=None,
+                        pointed_statistics_files=None,
                         pointed_metadata_log_count=None,
                     )
                 )
@@ -280,6 +282,10 @@ class CollectMetadataAndTableStatistics(Collector):
             refs=refs,
             properties=json.loads(row["properties"]),
             pointed_snapshots_files=json.loads(row["pointed_snapshots_files"]) if row.get("pointed_snapshots_files") else None,
+            pointed_statistics_files={
+                entry["snapshot_id"]: entry["statistics_path"]
+                for entry in sorted(row["pointed_statistics"], key=lambda entry: entry["statistics_path"])
+            },
             pointed_metadata_log_count=row["pointed_metadata_log_count"],
             child_files=child_files,
         )

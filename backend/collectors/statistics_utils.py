@@ -67,8 +67,17 @@ def attach_added_table_statistics(metadata_files_df: pyspark.sql.DataFrame) -> p
         .agg(
             F.first("metadata_row").alias("metadata_row"),
             F.collect_list(F.when(F.col("is_added"), F.col("statistics_entry"))).alias("added_statistics"),
+            F.collect_list(
+                F.when(
+                    F.col("statistics_path").isNotNull(),
+                    F.struct(
+                        F.col("statistics_entry").getField("snapshot-id").alias("snapshot_id"),
+                        F.col("statistics_path"),
+                    ),
+                )
+            ).alias("pointed_statistics"),
         )
-        .select("metadata_row.*", "added_statistics")
+        .select("metadata_row.*", "added_statistics", "pointed_statistics")
     )
 
 
