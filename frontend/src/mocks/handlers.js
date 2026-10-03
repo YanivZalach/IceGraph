@@ -1,90 +1,119 @@
 import { http, HttpResponse } from "msw";
 
+const dataWriteMetadata = {
+  type: "metadata",
+  virtual_read: false,
+  file_path: "/warehouse/default/events/metadata/v10.metadata.json",
+  timestamp: "2026-06-12 10:32:28.782000",
+  snapshot_id: "3004708926140182071",
+  previous_file: "/warehouse/default/events/metadata/v9.metadata.json",
+  last_sequence_number: 6,
+  partition_spec_id: 0,
+  current_schema_id: 2,
+  sort_order_id: 0,
+  refs: {
+    main: { "snapshot-id": "3004708926140182071", type: "branch" },
+    my_test_branch: {
+      "snapshot-id": "7633604781669548673",
+      type: "branch",
+    },
+  },
+  properties: {
+    owner: "root",
+    "write.delete.mode": "merge-on-read",
+    "write.merge.mode": "merge-on-read",
+    "write.parquet.compression-codec": "zstd",
+    "write.update.mode": "merge-on-read",
+  },
+  pointed_snapshots_files: [
+    {
+      "snapshot-id": "3200045318442131660",
+      "manifest-list":
+        "/warehouse/default/events/metadata/snap-3200045318442131660-1-8768a6db-e17b-48e0-a758-2b97ea7170ac.avro",
+    },
+    {
+      "snapshot-id": "2170216877480741855",
+      "manifest-list":
+        "/warehouse/default/events/metadata/snap-2170216877480741855-1-ac0556ac-ac96-42b2-97b5-3f976af9f5c6.avro",
+    },
+    {
+      "snapshot-id": "3037121856853733940",
+      "manifest-list":
+        "/warehouse/default/events/metadata/snap-3037121856853733940-1-ff9b67d2-2f67-42fe-9e15-de3e66f5d8fa.avro",
+    },
+    {
+      "snapshot-id": "3978455952979011601",
+      "manifest-list":
+        "/warehouse/default/events/metadata/snap-3978455952979011601-1-38b43092-153e-45d9-b43d-879203cd1549.avro",
+    },
+    {
+      "snapshot-id": "7633604781669548673",
+      "manifest-list":
+        "/warehouse/default/events/metadata/snap-7633604781669548673-1-39ba9de2-9487-4364-8143-9ed7ad46feb9.avro",
+    },
+    {
+      "snapshot-id": "3004708926140182071",
+      "manifest-list":
+        "/warehouse/default/events/metadata/snap-3004708926140182071-1-b67343c2-fa63-4819-a10e-56c39993e302.avro",
+    },
+  ],
+  pointed_table_statistics_files: [],
+  pointed_partition_statistics_files: [],
+  pointed_metadata_log_count: 9,
+  child_files: [
+    "/warehouse/default/events/metadata/snap-3004708926140182071-1-b67343c2-fa63-4819-a10e-56c39993e302.avro",
+    "/warehouse/default/events/metadata/snap-7633604781669548673-1-39ba9de2-9487-4364-8143-9ed7ad46feb9.avro",
+  ],
+};
+
+const tableStatisticsMetadata = {
+  ...dataWriteMetadata,
+  file_path: "/warehouse/default/events/metadata/v11.metadata.json",
+  timestamp: "2026-06-12 10:32:29.782000",
+  previous_file: dataWriteMetadata.file_path,
+  pointed_table_statistics_files: [
+    {
+      "snapshot-id": "3004708926140182071",
+      "statistics-path":
+        "/warehouse/default/events/metadata/3004708926140182071-6f1c2a9e-4b7d-4e3a-9c51-2d8e0f7a1b34.stats",
+      "file-size-in-bytes": 962,
+      "file-footer-size-in-bytes": 703,
+      "key-metadata": null,
+    },
+  ],
+  pointed_metadata_log_count: 10,
+  child_files: [
+    ...dataWriteMetadata.child_files,
+    "/warehouse/default/events/metadata/3004708926140182071-6f1c2a9e-4b7d-4e3a-9c51-2d8e0f7a1b34.stats",
+  ],
+};
+
+const partitionStatisticsMetadata = {
+  ...tableStatisticsMetadata,
+  type: "main_metadata",
+  file_path: "/warehouse/default/events/metadata/v12.metadata.json",
+  timestamp: "2026-06-12 10:32:30.782000",
+  previous_file: tableStatisticsMetadata.file_path,
+  pointed_partition_statistics_files: [
+    {
+      "snapshot-id": "3004708926140182071",
+      "statistics-path":
+        "/warehouse/default/events/metadata/partition-stats-3004708926140182071-9b2e7c41-5d3a-4f8e-a6b1-0c7d2e9f4a58.parquet",
+      "file-size-in-bytes": 4290,
+    },
+  ],
+  pointed_metadata_log_count: 11,
+  child_files: [
+    ...dataWriteMetadata.child_files,
+    "/warehouse/default/events/metadata/partition-stats-3004708926140182071-9b2e7c41-5d3a-4f8e-a6b1-0c7d2e9f4a58.parquet",
+  ],
+};
+
 const mockResponse = {
   nodes: [
-    {
-      type: "main_metadata",
-      virtual_read: false,
-      file_path: "/warehouse/default/events/metadata/v10.metadata.json",
-      timestamp: "2026-06-12 10:32:28.782000",
-      snapshot_id: "3004708926140182071",
-      previous_file: "/warehouse/default/events/metadata/v9.metadata.json",
-      last_sequence_number: 6,
-      partition_spec_id: 0,
-      current_schema_id: 2,
-      sort_order_id: 0,
-      refs: {
-        main: { "snapshot-id": "3004708926140182071", type: "branch" },
-        my_test_branch: {
-          "snapshot-id": "7633604781669548673",
-          type: "branch",
-        },
-      },
-      properties: {
-        owner: "root",
-        "write.delete.mode": "merge-on-read",
-        "write.merge.mode": "merge-on-read",
-        "write.parquet.compression-codec": "zstd",
-        "write.update.mode": "merge-on-read",
-      },
-      pointed_snapshots_files: [
-        {
-          "snapshot-id": "3200045318442131660",
-          "manifest-list":
-            "/warehouse/default/events/metadata/snap-3200045318442131660-1-8768a6db-e17b-48e0-a758-2b97ea7170ac.avro",
-        },
-        {
-          "snapshot-id": "2170216877480741855",
-          "manifest-list":
-            "/warehouse/default/events/metadata/snap-2170216877480741855-1-ac0556ac-ac96-42b2-97b5-3f976af9f5c6.avro",
-        },
-        {
-          "snapshot-id": "3037121856853733940",
-          "manifest-list":
-            "/warehouse/default/events/metadata/snap-3037121856853733940-1-ff9b67d2-2f67-42fe-9e15-de3e66f5d8fa.avro",
-        },
-        {
-          "snapshot-id": "3978455952979011601",
-          "manifest-list":
-            "/warehouse/default/events/metadata/snap-3978455952979011601-1-38b43092-153e-45d9-b43d-879203cd1549.avro",
-        },
-        {
-          "snapshot-id": "7633604781669548673",
-          "manifest-list":
-            "/warehouse/default/events/metadata/snap-7633604781669548673-1-39ba9de2-9487-4364-8143-9ed7ad46feb9.avro",
-        },
-        {
-          "snapshot-id": "3004708926140182071",
-          "manifest-list":
-            "/warehouse/default/events/metadata/snap-3004708926140182071-1-b67343c2-fa63-4819-a10e-56c39993e302.avro",
-        },
-      ],
-      pointed_table_statistics_files: [
-        {
-          "snapshot-id": "3004708926140182071",
-          "statistics-path":
-            "/warehouse/default/events/metadata/3004708926140182071-6f1c2a9e-4b7d-4e3a-9c51-2d8e0f7a1b34.stats",
-          "file-size-in-bytes": 962,
-          "file-footer-size-in-bytes": 703,
-          "key-metadata": null,
-        },
-      ],
-      pointed_partition_statistics_files: [
-        {
-          "snapshot-id": "3004708926140182071",
-          "statistics-path":
-            "/warehouse/default/events/metadata/partition-stats-3004708926140182071-9b2e7c41-5d3a-4f8e-a6b1-0c7d2e9f4a58.parquet",
-          "file-size-in-bytes": 4290,
-        },
-      ],
-      pointed_metadata_log_count: 9,
-      child_files: [
-        "/warehouse/default/events/metadata/snap-3004708926140182071-1-b67343c2-fa63-4819-a10e-56c39993e302.avro",
-        "/warehouse/default/events/metadata/snap-7633604781669548673-1-39ba9de2-9487-4364-8143-9ed7ad46feb9.avro",
-        "/warehouse/default/events/metadata/3004708926140182071-6f1c2a9e-4b7d-4e3a-9c51-2d8e0f7a1b34.stats",
-        "/warehouse/default/events/metadata/partition-stats-3004708926140182071-9b2e7c41-5d3a-4f8e-a6b1-0c7d2e9f4a58.parquet",
-      ],
-    },
+    partitionStatisticsMetadata,
+    tableStatisticsMetadata,
+    dataWriteMetadata,
     {
       type: "metadata",
       virtual_read: false,
@@ -460,6 +489,20 @@ const mockResponse = {
           snapshot_id: "3004708926140182071",
           sequence_number: 6,
           properties: { ndv: "4" },
+        },
+        {
+          type: "apache-datasketches-theta-v1",
+          fields: [3],
+          snapshot_id: "3004708926140182071",
+          sequence_number: 6,
+          properties: { ndv: "9" },
+        },
+        {
+          type: "apache-datasketches-theta-v1",
+          fields: [4],
+          snapshot_id: "3004708926140182071",
+          sequence_number: 6,
+          properties: { ndv: "3" },
         },
       ],
       child_files: [],
@@ -1665,7 +1708,7 @@ const mockResponse = {
   ],
   metadata: {
     "table-name": "default.events",
-    metadata_file_path: "/warehouse/default/events/metadata/v10.metadata.json",
+    metadata_file_path: "/warehouse/default/events/metadata/v12.metadata.json",
     "current-schema-id": 2,
     "current-snapshot-id": "3004708926140182071",
     "current-snapshot": {
@@ -1700,7 +1743,7 @@ const mockResponse = {
     "last-column-id": 4,
     "last-partition-id": 1001,
     "last-sequence-number": 6,
-    "last-updated-ms": 1781260348782,
+    "last-updated-ms": 1781260350782,
     location: "/warehouse/default/events",
     "partition-specs": [
       {
@@ -1821,10 +1864,17 @@ mockResponse.metadata.statistics = tableStatisticsForMetadata(
   mockResponse.metadata.metadata_file_path,
 );
 
-const partitionStatisticsForSnapshot = (snapshotId) => {
+const partitionStatisticsForMetadata = (metadataPath) => {
+  const metadataNode = mockResponse.nodes.find(
+    (node) => node.file_path === metadataPath,
+  );
+  const entry = metadataNode?.pointed_partition_statistics_files?.find(
+    (entry) => entry["snapshot-id"] === metadataNode.snapshot_id,
+  );
   const statistics = mockResponse.nodes.find(
     (node) =>
-      node.type === "partition_statistics" && node.snapshot_id === snapshotId,
+      node.type === "partition_statistics" &&
+      node.file_path === entry?.["statistics-path"],
   );
   if (!statistics) return undefined;
   return {
@@ -1839,8 +1889,10 @@ const partitionStatisticsForSnapshot = (snapshotId) => {
   };
 };
 
+mockResponse.metadata["partition-statistics"] =
+  partitionStatisticsMetadata.pointed_partition_statistics_files;
 mockResponse.metadata["current-partition-statistics"] =
-  partitionStatisticsForSnapshot(mockResponse.metadata["current-snapshot-id"]);
+  partitionStatisticsForMetadata(mockResponse.metadata.metadata_file_path);
 
 const snapshotTimestamp = (snapshotId) =>
   mockResponse.nodes.find(
@@ -1864,10 +1916,11 @@ const metadataForNode = (node) => {
     ...mockResponse.metadata,
     metadata_file_path: node.file_path,
     statistics: tableStatisticsForMetadata(node.file_path),
+    "partition-statistics": node.pointed_partition_statistics_files ?? [],
     "current-schema-id": node.current_schema_id,
     "current-snapshot-id": node.snapshot_id,
-    "current-partition-statistics": partitionStatisticsForSnapshot(
-      node.snapshot_id,
+    "current-partition-statistics": partitionStatisticsForMetadata(
+      node.file_path,
     ),
     "current-snapshot": snapshot
       ? {
@@ -1893,7 +1946,10 @@ const metadataForNode = (node) => {
 };
 
 const metadataNodeAtSnapshot = (snapshotId) => {
-  const endTime = snapshotId ? snapshotTimestamp(snapshotId) : "\uffff";
+  const isLatestSnapshot =
+    snapshotId === mockResponse.metadata["current-snapshot-id"];
+  const endTime =
+    snapshotId && !isLatestSnapshot ? snapshotTimestamp(snapshotId) : "\uffff";
   return mockResponse.nodes
     .filter(
       (node) => METADATA_NODE_TYPES.has(node.type) && node.timestamp <= endTime,
@@ -1906,6 +1962,8 @@ const metadataNodeAtSnapshot = (snapshotId) => {
 const buildRangeGraph = ({ startSnapshotId, endSnapshotId }) => {
   const startTime = startSnapshotId ? snapshotTimestamp(startSnapshotId) : "";
   const endTime = endSnapshotId ? snapshotTimestamp(endSnapshotId) : "\uffff";
+  const endMetadataTime =
+    metadataNodeAtSnapshot(endSnapshotId)?.timestamp ?? endTime;
   const nodesByPath = new Map(
     mockResponse.nodes.map((node) => [node.file_path, node]),
   );
@@ -1913,6 +1971,18 @@ const buildRangeGraph = ({ startSnapshotId, endSnapshotId }) => {
   const keep = (node) => {
     if (!node || keptNodes.has(node.file_path)) return;
     keptNodes.set(node.file_path, node);
+    if (METADATA_NODE_TYPES.has(node.type)) {
+      node.child_files.forEach((path) => {
+        const child = nodesByPath.get(path);
+        if (
+          child?.type === "table_statistics" ||
+          child?.type === "partition_statistics"
+        ) {
+          keep(child);
+        }
+      });
+      return;
+    }
     if (!REACHABLE_NODE_TYPES.has(node.type)) return;
     node.child_files.forEach((path) => keep(nodesByPath.get(path)));
   };
@@ -1921,7 +1991,8 @@ const buildRangeGraph = ({ startSnapshotId, endSnapshotId }) => {
       (node) =>
         (node.type === "snapshot" || METADATA_NODE_TYPES.has(node.type)) &&
         node.timestamp >= startTime &&
-        node.timestamp <= endTime,
+        node.timestamp <=
+          (METADATA_NODE_TYPES.has(node.type) ? endMetadataTime : endTime),
     )
     .forEach(keep);
 
