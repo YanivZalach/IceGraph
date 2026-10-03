@@ -72,26 +72,19 @@ const buildRows = (
   partitionDistribution: PartitionDistribution,
 ): DistributionRow[] =>
   Object.entries(partitionDistribution).flatMap(([statistic, value]) =>
-    typeof value === "object" && value !== null && value.min !== null
-      ? [{ statistic, ...value }]
-      : [],
+    value !== undefined && value.min !== null ? [{ statistic, ...value }] : [],
   );
 
 const PartitionDistributionTable = ({
   partitionDistribution,
   partitionsCount,
 }: PartitionDistributionTableProps) => {
-  const partitionsWithDeletes = partitionDistribution.partitions_with_deletes;
-
   return (
     <StatisticsTable
       columns={columns}
       description={
         <p className={`${UI_HELPER_TEXT_CLASS} mb-2`}>
           Per partition across {formatValue(partitionsCount)} partitions
-          {partitionsWithDeletes === undefined || partitionsWithDeletes === null
-            ? ""
-            : `, ${formatValue(partitionsWithDeletes)} of them have deletes`}
         </p>
       }
       getRowId={(row) => row.statistic}

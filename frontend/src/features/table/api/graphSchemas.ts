@@ -15,7 +15,6 @@ export const partitionDistributionSchema = z.object({
   total_data_file_size_in_bytes: minAvgMaxSchema.optional(),
   data_file_count: minAvgMaxSchema.optional(),
   average_data_file_size_in_bytes: minAvgMaxSchema.optional(),
-  partitions_with_deletes: statisticValueSchema.optional(),
 });
 
 export const graphDataSchema = z.object({
@@ -37,6 +36,7 @@ export const graphDataSchema = z.object({
         )
         .nullish(),
       partitions_count: icebergIntegerSchema.nullish(),
+      partitions_with_deletes: icebergIntegerSchema.nullish(),
       partition_distribution: partitionDistributionSchema.optional(),
       sampled_partitions: z.array(partitionStatisticsRowSchema).optional(),
     }),

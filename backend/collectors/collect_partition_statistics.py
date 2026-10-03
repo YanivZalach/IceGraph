@@ -17,6 +17,7 @@ class PartitionStatisticsFileRecord(BaseFile):
     snapshot_id: int
     file_size_in_bytes: str
     partitions_count: Optional[int]
+    partitions_with_deletes: Optional[int]
     partition_distribution: Dict[str, Any]
     sampled_partitions: List[Dict[str, Any]]
     hidden_statistics_data: HiddenStatisticsMetadata
@@ -45,6 +46,7 @@ class CollectPartitionStatistics(StatisticsCollector):
                     snapshot_id=entry["snapshot-id"],
                     file_size_in_bytes=str(entry["file-size-in-bytes"]),
                     partitions_count=None,
+                    partitions_with_deletes=None,
                     partition_distribution={},
                     sampled_partitions=[],
                     hidden_statistics_data=HiddenStatisticsMetadata(added_by_metadata_file=metadata_file.file_path),
@@ -69,6 +71,7 @@ class CollectPartitionStatistics(StatisticsCollector):
             statistics_file = statistics_files[statistics_row["file_path"]]
             try:
                 statistics_file.partitions_count = int(statistics_row["summary"]["partitions_count"])
+                statistics_file.partitions_with_deletes = statistics_row["summary"]["partitions_with_deletes"]
                 statistics_file.partition_distribution = {
                     metric: value for metric, value in (statistics_row["summary"]["partition_distribution"] or {}).items() if value is not None
                 }

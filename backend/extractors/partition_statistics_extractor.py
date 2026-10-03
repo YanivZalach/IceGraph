@@ -1,4 +1,3 @@
-from functools import reduce
 from pathlib import PurePosixPath
 from typing import List
 
@@ -12,7 +11,6 @@ from extractors.extractor import Extractor
 
 PARTITION_STATISTICS_FILE_FORMATS = {"parquet", "orc", "avro"}
 DEFAULT_PARTITION_STATISTICS_FILE_FORMAT = "parquet"
-DELETE_FILE_COUNT_COLUMNS = ["position_delete_file_count", "equality_delete_file_count"]
 
 
 class PartitionStatisticsExtractor(Extractor):
@@ -48,10 +46,23 @@ class PartitionStatisticsExtractor(Extractor):
 
     @staticmethod
     def _summarize_partition_statistics(partition_statistics_df: pyspark.sql.DataFrame, columns: List[str]) -> pyspark.sql.DataFrame:
+        if "position_delete_file_count" not in columns:
+            partition_statistics_df = partition_statistics_df.withColumn("position_delete_file_count", F.lit(0))
+        if "equality_delete_file_count" not in columns:
+            partition_statistics_df = partition_statistics_df.withColumn("equality_delete_file_count", F.lit(0))
+
+        partitions_with_deletes = F.count(
+            F.when(
+                (F.coalesce(F.col("position_delete_file_count"), F.lit(0)) > 0) | (F.coalesce(F.col("equality_delete_file_count"), F.lit(0)) > 0),
+                1,
+            )
+        )
+
         return partition_statistics_df.agg(
             F.struct(
                 F.count("*").alias("partitions_count"),
-                PartitionStatisticsExtractor._partition_distribution(columns).alias("partition_distribution"),
+                partitions_with_deletes.alias("partitions_with_deletes"),
+                PartitionStatisticsExtractor._partition_distribution().alias("partition_distribution"),
             ).alias("summary")
         )
 
@@ -65,7 +76,7 @@ class PartitionStatisticsExtractor(Extractor):
         return sample_df.agg(F.collect_list("partition_row").alias("sampled_partitions"))
 
     @staticmethod
-    def _partition_distribution(columns: List[str]) -> pyspark.sql.Column:
+    def _partition_distribution() -> pyspark.sql.Column:
         distribution = [
             PartitionStatisticsExtractor._min_avg_max(F.col(column)).alias(column)
             for column in ["data_record_count", "total_data_file_size_in_bytes", "data_file_count"]
@@ -73,11 +84,6 @@ class PartitionStatisticsExtractor(Extractor):
 
         average_data_file_size = F.when(F.col("data_file_count") > 0, F.col("total_data_file_size_in_bytes") / F.col("data_file_count"))
         distribution.append(PartitionStatisticsExtractor._min_avg_max(average_data_file_size).alias("average_data_file_size_in_bytes"))
-
-        delete_file_counts = [F.coalesce(F.col(column), F.lit(0)) for column in DELETE_FILE_COUNT_COLUMNS if column in columns]
-        if delete_file_counts:
-            has_deletes = reduce(lambda total, count: total + count, delete_file_counts) > 0
-            distribution.append(F.sum(F.when(has_deletes, 1).otherwise(0)).alias("partitions_with_deletes"))
 
         return F.struct(*distribution)
 

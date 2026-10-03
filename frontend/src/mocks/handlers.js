@@ -474,6 +474,7 @@ const mockResponse = {
       snapshot_id: "3004708926140182071",
       file_size_in_bytes: "4290",
       partitions_count: 3,
+      partitions_with_deletes: 0,
       partition_distribution: {
         data_record_count: { min: 3, avg: 4.666666666666667, max: 7 },
         total_data_file_size_in_bytes: {
@@ -487,7 +488,6 @@ const mockResponse = {
           avg: 2208.3333333333335,
           max: 2655,
         },
-        partitions_with_deletes: 0,
       },
       sampled_partitions: [
         {
