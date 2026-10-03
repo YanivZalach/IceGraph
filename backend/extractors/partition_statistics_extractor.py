@@ -3,7 +3,6 @@ from pathlib import PurePosixPath
 from typing import List
 
 import pyspark.sql
-from pyspark.sql import Window
 from pyspark.sql import functions as F
 from pyspark.sql.types import StructType
 
@@ -38,9 +37,7 @@ class PartitionStatisticsExtractor(Extractor):
         if summaries_df is None:
             return self._spark.createDataFrame([], StructType([]))
 
-        return summaries_df.join(samples_df, on="file_path", how="left").withColumn(
-            "sampled_partitions", F.coalesce(F.col("sampled_partitions"), F.array())
-        )
+        return summaries_df.join(samples_df, on="file_path", how="left")
 
     def _read_partition_statistics_file(self, file_path: str) -> pyspark.sql.DataFrame:
         file_format = PurePosixPath(file_path).suffix.lstrip(".").lower()
@@ -65,40 +62,38 @@ class PartitionStatisticsExtractor(Extractor):
         if has_update_time:
             sample_df = sample_df.orderBy(F.desc_nulls_last("last_updated_at"))
 
-        sample_df = sample_df.limit(Env.MAX_PARTITION_STATISTICS_ROWS).select(
-            F.struct(*[F.col(f"`{column.replace('`', '``')}`") for column in columns]).alias("partition_row")
-        )
-        sample_order = F.col("partition_row").getField("last_updated_at").desc_nulls_last() if has_update_time else F.lit(0)
-        sample_df = sample_df.withColumn("sample_rank", F.row_number().over(Window.orderBy(sample_order)))
-
-        return sample_df.agg(
-            F.transform(
-                F.array_sort(
-                    F.collect_list(F.struct("sample_rank", "partition_row")),
-                    lambda left, right: left["sample_rank"] - right["sample_rank"],
+        sample_df = sample_df.limit(Env.MAX_PARTITION_STATISTICS_ROWS).select(F.struct("*").alias("partition_row"))
+        samples = F.collect_list("partition_row")
+        if has_update_time:
+            samples = F.array_sort(
+                samples,
+                lambda left, right: (
+                    F.when(left["last_updated_at"].eqNullSafe(right["last_updated_at"]), 0)
+                    .when(left["last_updated_at"].isNull(), 1)
+                    .when(right["last_updated_at"].isNull(), -1)
+                    .when(left["last_updated_at"] > right["last_updated_at"], -1)
+                    .otherwise(1)
                 ),
-                lambda sample: sample["partition_row"],
-            ).alias("sampled_partitions")
-        )
+            )
+
+        return sample_df.agg(samples.alias("sampled_partitions"))
 
     @staticmethod
     def _partition_distribution(columns: List[str]) -> pyspark.sql.Column:
         distribution = [
             PartitionStatisticsExtractor._min_avg_max(F.col(column)).alias(column)
             for column in ["data_record_count", "total_data_file_size_in_bytes", "data_file_count"]
-            if column in columns
         ]
 
-        if "total_data_file_size_in_bytes" in columns and "data_file_count" in columns:
-            average_data_file_size = F.when(F.col("data_file_count") > 0, F.col("total_data_file_size_in_bytes") / F.col("data_file_count"))
-            distribution.append(PartitionStatisticsExtractor._min_avg_max(average_data_file_size).alias("average_data_file_size_in_bytes"))
+        average_data_file_size = F.when(F.col("data_file_count") > 0, F.col("total_data_file_size_in_bytes") / F.col("data_file_count"))
+        distribution.append(PartitionStatisticsExtractor._min_avg_max(average_data_file_size).alias("average_data_file_size_in_bytes"))
 
         delete_file_counts = [F.coalesce(F.col(column), F.lit(0)) for column in DELETE_FILE_COUNT_COLUMNS if column in columns]
         if delete_file_counts:
             has_deletes = reduce(lambda total, count: total + count, delete_file_counts) > 0
             distribution.append(F.sum(F.when(has_deletes, 1).otherwise(0)).alias("partitions_with_deletes"))
 
-        return F.struct(*distribution) if distribution else F.lit(None)
+        return F.struct(*distribution)
 
     @staticmethod
     def _min_avg_max(value: pyspark.sql.Column) -> pyspark.sql.Column:
