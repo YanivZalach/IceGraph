@@ -12,6 +12,12 @@ Below the table name, **Table description** shows the string stored in the stand
 - **Total file size (data + deletes)** includes both file types and is shown in GiB. Hover over the size for exact bytes, or expand **Exact bytes** to view and copy the original byte count.
 - Missing statistics are shown as **Unavailable**. The page explains when no current snapshot exists or the metadata file does not record it.
 
+### Partition statistics
+
+When the loaded metadata file references partition statistics for its current snapshot, **Partition statistics** appears directly below **At a glance** in both the Metadata view and the latest metadata page. The section is hidden entirely when no matching statistics exist.
+
+It shows the partition count, the number of partitions with deletes, and the same minimum, average, and maximum distribution shown for a partition statistics file in the Graph view. **Per partition across all partitions** means the distribution covers every partition in the statistics file. The distribution covers records, data file counts, total data file size, and average data file size per partition. Metadata requests collect only these summaries, without sampling partition rows. If the statistics file cannot be read, its error is shown and missing counts appear as **Unavailable**.
+
 ### Schema and data organization
 
 The schema panel scrolls independently. Use **Expand schema** to display its full height. Nested structs, list elements, and map keys and values retain their field IDs and show whether they are required, optional, or unknown. Field comments and identifier fields appear when recorded. Identifier fields do not imply enforced uniqueness or automatic upsert behavior.

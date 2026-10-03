@@ -5,6 +5,20 @@ export const icebergIntegerSchema = z.union([
   z.string().regex(/^-?\d+$/),
 ]);
 
+const statisticValueSchema = z.union([z.number(), z.string()]).nullable();
+const minAvgMaxSchema = z.object({
+  min: statisticValueSchema,
+  avg: statisticValueSchema,
+  max: statisticValueSchema,
+});
+
+export const partitionDistributionSchema = z.object({
+  data_record_count: minAvgMaxSchema.optional(),
+  total_data_file_size_in_bytes: minAvgMaxSchema.optional(),
+  data_file_count: minAvgMaxSchema.optional(),
+  average_data_file_size_in_bytes: minAvgMaxSchema.optional(),
+});
+
 export const tableSchemaSchema = z.looseObject({
   "schema-id": icebergIntegerSchema,
   fields: z.array(z.unknown()).optional(),
@@ -46,6 +60,18 @@ export const tableMetadataSchema = z.looseObject({
   "last-partition-id": icebergIntegerSchema.optional(),
   "last-updated-ms": icebergIntegerSchema.nullish(),
   "current-snapshot-id": icebergIntegerSchema.nullish(),
+  "current-partition-statistics": z
+    .object({
+      file_path: z.string(),
+      snapshot_id: icebergIntegerSchema,
+      file_size_in_bytes: icebergIntegerSchema,
+      partitions_count: icebergIntegerSchema.nullable(),
+      partitions_with_deletes: icebergIntegerSchema.nullable(),
+      partition_distribution: partitionDistributionSchema,
+      errors: z.array(z.string()),
+      warnings: z.array(z.string()),
+    })
+    .optional(),
   "current-schema-id": icebergIntegerSchema.nullish(),
   "default-spec-id": icebergIntegerSchema.nullish(),
   "default-sort-order-id": icebergIntegerSchema.nullish(),
