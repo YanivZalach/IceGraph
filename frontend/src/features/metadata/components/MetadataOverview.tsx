@@ -2,6 +2,7 @@ import type { TableMetadata } from "../../table/api/metadataSchemas";
 import HelpTerm from "../../../shared/components/HelpTerm";
 import MetadataVersion from "./MetadataVersion";
 import MetadataSummary from "./MetadataSummary";
+import MetadataPartitionStatistics from "./MetadataPartitionStatistics";
 
 interface MetadataOverviewProps {
   metadata: TableMetadata;
@@ -52,6 +53,7 @@ const MetadataOverview = ({
         updatedAt={metadata["last-updated-ms"]}
       />
       <MetadataSummary metadata={metadata} />
+      <MetadataPartitionStatistics metadata={metadata} />
     </>
   );
 };

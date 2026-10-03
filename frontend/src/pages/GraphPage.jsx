@@ -1042,7 +1042,6 @@ export default function GraphPage() {
                 partitionDistribution={
                   stickyNode.details.partition_distribution
                 }
-                partitionsCount={stickyNode.details.partitions_count ?? null}
               />
             )}
           {stickyNode.details.type === FileType.PARTITION_STATISTICS &&

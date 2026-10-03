@@ -1796,6 +1796,52 @@ const METADATA_NODE_TYPES = new Set(["main_metadata", "metadata"]);
 const REACHABLE_NODE_TYPES = new Set(["snapshot", "manifest"]);
 const graphJobs = new Map();
 
+const tableStatisticsForMetadata = (metadataPath) => {
+  const metadataNode = mockResponse.nodes.find(
+    (node) => node.file_path === metadataPath,
+  );
+  return (metadataNode?.pointed_table_statistics_files ?? []).map((entry) => {
+    const statisticsNode = mockResponse.nodes.find(
+      (node) => node.file_path === entry["statistics-path"],
+    );
+    return {
+      ...entry,
+      "blob-metadata": (statisticsNode?.blobs ?? []).map((blob) => ({
+        type: blob.type,
+        "snapshot-id": blob.snapshot_id,
+        "sequence-number": blob.sequence_number,
+        fields: blob.fields,
+        properties: blob.properties,
+      })),
+    };
+  });
+};
+
+mockResponse.metadata.statistics = tableStatisticsForMetadata(
+  mockResponse.metadata.metadata_file_path,
+);
+
+const partitionStatisticsForSnapshot = (snapshotId) => {
+  const statistics = mockResponse.nodes.find(
+    (node) =>
+      node.type === "partition_statistics" && node.snapshot_id === snapshotId,
+  );
+  if (!statistics) return undefined;
+  return {
+    file_path: statistics.file_path,
+    snapshot_id: statistics.snapshot_id,
+    file_size_in_bytes: statistics.file_size_in_bytes,
+    partitions_count: statistics.partitions_count,
+    partitions_with_deletes: statistics.partitions_with_deletes,
+    partition_distribution: statistics.partition_distribution,
+    errors: statistics.errors,
+    warnings: statistics.warnings,
+  };
+};
+
+mockResponse.metadata["current-partition-statistics"] =
+  partitionStatisticsForSnapshot(mockResponse.metadata["current-snapshot-id"]);
+
 const snapshotTimestamp = (snapshotId) =>
   mockResponse.nodes.find(
     (node) => node.type === "snapshot" && node.snapshot_id === snapshotId,
@@ -1817,8 +1863,12 @@ const metadataForNode = (node) => {
   return {
     ...mockResponse.metadata,
     metadata_file_path: node.file_path,
+    statistics: tableStatisticsForMetadata(node.file_path),
     "current-schema-id": node.current_schema_id,
     "current-snapshot-id": node.snapshot_id,
+    "current-partition-statistics": partitionStatisticsForSnapshot(
+      node.snapshot_id,
+    ),
     "current-snapshot": snapshot
       ? {
           "manifest-list": snapshot.file_path,

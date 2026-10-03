@@ -11,7 +11,7 @@ import {
   formatValue,
   STATISTICS_TABLE_FEATURES,
 } from "../../../shared/components/statisticsTableBase";
-import type { partitionDistributionSchema } from "../api/graphSchemas";
+import type { partitionDistributionSchema } from "../api/metadataSchemas";
 
 type PartitionDistribution = z.infer<typeof partitionDistributionSchema>;
 type MinAvgMax = NonNullable<PartitionDistribution["data_record_count"]>;
@@ -23,7 +23,6 @@ interface DistributionRow extends MinAvgMax {
 
 interface PartitionDistributionTableProps {
   partitionDistribution: PartitionDistribution;
-  partitionsCount: number | string | null;
 }
 
 const STATISTIC_COLUMN = "statistics";
@@ -77,14 +76,13 @@ const buildRows = (
 
 const PartitionDistributionTable = ({
   partitionDistribution,
-  partitionsCount,
 }: PartitionDistributionTableProps) => {
   return (
     <StatisticsTable
       columns={columns}
       description={
         <p className={`${UI_HELPER_TEXT_CLASS} mb-2`}>
-          Per partition across {formatValue(partitionsCount)} partitions
+          Per partition across all partitions
         </p>
       }
       getRowId={(row) => row.statistic}

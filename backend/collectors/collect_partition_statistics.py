@@ -35,30 +35,39 @@ class CollectPartitionStatistics(StatisticsCollector):
         statistics_files = self._build_statistics_files(metadata_file_to_added_entries)
         self._collect_partition_summaries(statistics_files)
 
+    def collect_file(self, metadata_path: str, entry: dict, include_samples: bool = True) -> PartitionStatisticsFileRecord:
+        statistics_file = self._parse_statistics_entry(metadata_path, entry)
+        self._collect_partition_summaries({statistics_file.file_path: statistics_file}, include_samples)
+        return statistics_file
+
     def _build_statistics_files(self, metadata_file_to_added_entries: Dict[str, List[dict]]) -> Dict[str, PartitionStatisticsFileRecord]:
         statistics_files = {}
         for metadata_file in self._metadata_files:
             for entry in metadata_file_to_added_entries.get(metadata_file.file_path, []):
-                statistics_file = PartitionStatisticsFileRecord(
-                    type=FileType.PARTITION_STATISTICS,
-                    file_path=entry["statistics-path"],
-                    child_files=[],
-                    snapshot_id=entry["snapshot-id"],
-                    file_size_in_bytes=str(entry["file-size-in-bytes"]),
-                    partitions_count=None,
-                    partitions_with_deletes=None,
-                    partition_distribution={},
-                    sampled_partitions=[],
-                    hidden_statistics_data=HiddenStatisticsMetadata(added_by_metadata_file=metadata_file.file_path),
-                )
+                statistics_file = self._parse_statistics_entry(metadata_file.file_path, entry)
                 statistics_files[statistics_file.file_path] = statistics_file
                 self._statistics_files.append(statistics_file)
 
         return statistics_files
 
-    def _collect_partition_summaries(self, statistics_files: Dict[str, PartitionStatisticsFileRecord]) -> None:
+    @staticmethod
+    def _parse_statistics_entry(metadata_path: str, entry: dict) -> PartitionStatisticsFileRecord:
+        return PartitionStatisticsFileRecord(
+            type=FileType.PARTITION_STATISTICS,
+            file_path=entry["statistics-path"],
+            child_files=[],
+            snapshot_id=entry["snapshot-id"],
+            file_size_in_bytes=str(entry["file-size-in-bytes"]),
+            partitions_count=None,
+            partitions_with_deletes=None,
+            partition_distribution={},
+            sampled_partitions=[],
+            hidden_statistics_data=HiddenStatisticsMetadata(added_by_metadata_file=metadata_path),
+        )
+
+    def _collect_partition_summaries(self, statistics_files: Dict[str, PartitionStatisticsFileRecord], include_samples: bool = True) -> None:
         try:
-            rows = PartitionStatisticsExtractor(self._table_name, list(statistics_files.values())).extract_dataframe().collect()
+            rows = PartitionStatisticsExtractor(self._table_name, list(statistics_files.values())).extract_dataframe(include_samples).collect()
         except Exception as e:
             logger.error(f"[{self._table_name}] Partition statistics batch read error", exc_info=True)
             for statistics_file in statistics_files.values():
@@ -76,7 +85,7 @@ class CollectPartitionStatistics(StatisticsCollector):
                     metric: value for metric, value in (statistics_row["summary"]["partition_distribution"] or {}).items() if value is not None
                 }
                 sampled_partitions = sorted(
-                    statistics_row["sampled_partitions"],
+                    statistics_row.get("sampled_partitions", []),
                     key=lambda partition: partition["last_updated_at"] if partition.get("last_updated_at") is not None else float("-inf"),
                     reverse=True,
                 )

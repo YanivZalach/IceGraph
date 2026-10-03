@@ -18,7 +18,7 @@ class PartitionStatisticsExtractor(Extractor):
         super().__init__(table_name)
         self._partition_statistics_files = partition_statistics_files
 
-    def extract_dataframe(self) -> pyspark.sql.DataFrame:
+    def extract_dataframe(self, include_samples: bool = True) -> pyspark.sql.DataFrame:
         summaries_df = None
         samples_df = None
         for statistics_file in self._partition_statistics_files:
@@ -28,14 +28,15 @@ class PartitionStatisticsExtractor(Extractor):
 
             columns = source_df.columns
             summary_df = self._summarize_partition_statistics(source_df, columns).withColumn("file_path", F.lit(statistics_file.file_path))
-            sample_df = self._sample_partitions(source_df, columns).withColumn("file_path", F.lit(statistics_file.file_path))
             summaries_df = summary_df if summaries_df is None else summaries_df.unionByName(summary_df, allowMissingColumns=True)
-            samples_df = sample_df if samples_df is None else samples_df.unionByName(sample_df, allowMissingColumns=True)
+            if include_samples:
+                sample_df = self._sample_partitions(source_df, columns).withColumn("file_path", F.lit(statistics_file.file_path))
+                samples_df = sample_df if samples_df is None else samples_df.unionByName(sample_df, allowMissingColumns=True)
 
         if summaries_df is None:
             return self._spark.createDataFrame([], StructType([]))
 
-        return summaries_df.join(samples_df, on="file_path", how="left")
+        return summaries_df.join(samples_df, on="file_path", how="left") if include_samples else summaries_df
 
     def _read_partition_statistics_file(self, file_path: str) -> pyspark.sql.DataFrame:
         file_format = PurePosixPath(file_path).suffix.lstrip(".").lower()

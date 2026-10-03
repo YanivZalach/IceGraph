@@ -304,7 +304,9 @@ class TableInventory(SparkTableAction):
         try:
             current_main_metadata_file = next(metadata_file for metadata_file in self._metadata_files if metadata_file.type == FileType.MAIN_METADATA)
 
-            self._current_table_specs = TableMetadataCollector(self._table_name).collect(current_main_metadata_file.file_path)
+            self._current_table_specs = TableMetadataCollector(self._table_name).collect(
+                current_main_metadata_file.file_path, self._partition_statistics_files
+            )
 
         except Exception as e:
             logger.error(

@@ -70,9 +70,8 @@ const MetadataDetails = ({ metadata, onOpenSpec }: MetadataDetailsProps) => {
         <div className={`${UI_EXPANDABLE_BODY_CLASS} space-y-3 px-5 py-4`}>
           <p className="text-xs leading-relaxed text-slate-400">
             Reduced metadata: the backend omits <code>metadata-log</code>,{" "}
-            <code>snapshot-log</code>, <code>snapshots</code>, and{" "}
-            <code>statistics</code> due to size. This is the returned metadata,
-            not the complete file.
+            <code>snapshot-log</code>, and <code>snapshots</code> due to size.
+            This is the returned metadata, not the complete file.
           </p>
           <MetadataJson
             text={JSON.stringify(metadata, null, 2)}

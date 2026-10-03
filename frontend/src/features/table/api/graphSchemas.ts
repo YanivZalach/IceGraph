@@ -1,21 +1,11 @@
 import { z } from "zod";
-import { icebergIntegerSchema, tableMetadataSchema } from "./metadataSchemas";
+import {
+  icebergIntegerSchema,
+  partitionDistributionSchema,
+  tableMetadataSchema,
+} from "./metadataSchemas";
 
 export const partitionStatisticsRowSchema = z.record(z.string(), z.unknown());
-
-const statisticValueSchema = z.union([z.number(), z.string()]).nullable();
-const minAvgMaxSchema = z.object({
-  min: statisticValueSchema,
-  avg: statisticValueSchema,
-  max: statisticValueSchema,
-});
-
-export const partitionDistributionSchema = z.object({
-  data_record_count: minAvgMaxSchema.optional(),
-  total_data_file_size_in_bytes: minAvgMaxSchema.optional(),
-  data_file_count: minAvgMaxSchema.optional(),
-  average_data_file_size_in_bytes: minAvgMaxSchema.optional(),
-});
 
 export const graphDataSchema = z.object({
   nodes: z.array(
