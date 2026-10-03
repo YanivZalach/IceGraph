@@ -65,15 +65,17 @@ class CollectPartitionStatistics(StatisticsCollector):
             return
 
         for row in rows:
-            for summary in row.asDict(recursive=True).values():
-                statistics_file = statistics_files[summary["file_path"]]
-                try:
-                    statistics_file.partitions_count = int(summary["partitions_count"])
-                    statistics_file.partition_distribution = summary["partition_distribution"] or {}
-                    statistics_file.sampled_partitions = [self._parse_partition_row(partition) for partition in summary["sampled_partitions"]]
-                except Exception as e:
-                    logger.error(f"[{self._table_name}] Partition statistics file parse error for {statistics_file.file_path}", exc_info=True)
-                    statistics_file.errors.append(str(e))
+            statistics_row = row.asDict(recursive=True)
+            statistics_file = statistics_files[statistics_row["file_path"]]
+            try:
+                statistics_file.partitions_count = int(statistics_row["summary"]["partitions_count"])
+                statistics_file.partition_distribution = {
+                    metric: value for metric, value in (statistics_row["summary"]["partition_distribution"] or {}).items() if value is not None
+                }
+                statistics_file.sampled_partitions = [self._parse_partition_row(partition) for partition in statistics_row["sampled_partitions"]]
+            except Exception as e:
+                logger.error(f"[{self._table_name}] Partition statistics file parse error for {statistics_file.file_path}", exc_info=True)
+                statistics_file.errors.append(str(e))
 
     @staticmethod
     def _parse_partition_row(row: dict) -> Dict[str, Any]:

@@ -12,7 +12,7 @@ The Graph view shows all Iceberg metadata objects in your selected range as a di
 
 - **Table statistics** - Puffin file with column statistics, such as distinct value counts, for one snapshot. Drawn in amber left of the metadata files and linked from the metadata file that added it. IceGraph shows what the metadata file says about it, without opening it
 
-- **Partition statistics** - Parquet file with per-partition counts, such as records, files, and deletes, for one snapshot. Drawn in silver left of the metadata files and linked from the metadata file that added it. IceGraph opens it and shows how the data is spread across partitions, plus a sample of the most recently updated partitions
+- **Partition statistics** - Parquet file with per-partition counts, such as records, files, and deletes, for one snapshot. Drawn in silver left of the metadata files and linked from the metadata file that added it. IceGraph opens it and shows how the data is spread across partitions, plus a sample of the most recently updated partitions. Samples use a shared set of fields across the collected statistics files
 
 - **Catalog** - not a file. It is the entry point to the table: the catalog is what points to the current main metadata file, and every read of the table starts there. It is drawn larger and highlighted, labelled with the table name, and sits at the top of the metadata column, with a downward arrow to the main metadata file. Its details show the table properties that do not change between updates: name, UUID, location and format version
 
