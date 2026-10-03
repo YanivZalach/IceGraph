@@ -1,7 +1,6 @@
 export const DELETED_DATA_FILE_CONNECTION_COLOR = "#FF0000";
 export const BRANCH_CONNECTION_COLOR = "rgba(56, 189, 248, 0.5)";
-export const TABLE_STATISTICS_CONNECTION_COLOR = "rgba(245, 158, 11, 0.8)";
-export const TABLE_STATISTICS_CONNECTION_CURVATURE = 0.3;
+export const STATISTICS_CONNECTION_CURVATURE = 0.3;
 export const CATALOG_NODE_ID = "catalog";
 export const CATALOG_NODE_SCALE = 1.5;
 export const MAIN_BRANCH_NAME = "main";
@@ -15,7 +14,13 @@ export const FileType = {
   POSITION_DELETE: "position_delete",
   EQUALITY_DELETE: "equality_delete",
   TABLE_STATISTICS: "table_statistics",
+  PARTITION_STATISTICS: "partition_statistics",
   CATALOG: "catalog",
+};
+
+export const STATISTICS_CONNECTION_COLORS = {
+  [FileType.TABLE_STATISTICS]: "rgba(245, 158, 11, 0.8)",
+  [FileType.PARTITION_STATISTICS]: "rgba(203, 213, 225, 0.8)",
 };
 
 export const NODE_STYLE_MAP = {
@@ -27,6 +32,7 @@ export const NODE_STYLE_MAP = {
   [FileType.POSITION_DELETE]: { rgb: [230, 145, 30], level: 2 },
   [FileType.EQUALITY_DELETE]: { rgb: [230, 145, 30], level: 2 },
   [FileType.TABLE_STATISTICS]: { rgb: [217, 119, 6], level: -2 },
+  [FileType.PARTITION_STATISTICS]: { rgb: [148, 163, 184], level: -2 },
   [FileType.CATALOG]: { rgb: [226, 232, 240], level: -1 },
 };
 
@@ -40,6 +46,7 @@ const FILE_TYPE_LABELS = {
   [FileType.POSITION_DELETE]: "Position Delete",
   [FileType.EQUALITY_DELETE]: "Equality Delete",
   [FileType.TABLE_STATISTICS]: "Table Statistics",
+  [FileType.PARTITION_STATISTICS]: "Partition Statistics",
   [FileType.CATALOG]: "Catalog",
 };
 

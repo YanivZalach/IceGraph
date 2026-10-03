@@ -10,6 +10,8 @@ import {
 import PanelIssueNotice from "../components/PanelIssueNotice";
 import HelpTerm from "../shared/components/HelpTerm";
 import DataFileReadableMetricsTable from "../components/DataFileReadableMetricsTable";
+import PartitionStatisticsTable from "../features/table/components/PartitionStatisticsTable";
+import PartitionDistributionTable from "../features/table/components/PartitionDistributionTable";
 import ReadableMetricsSummary from "../components/ReadableMetricsSummary";
 import { isEmptyValue } from "../shared/lib/isEmptyValue";
 import { isKeyboardInputTarget } from "../shared/lib/keyboard";
@@ -846,6 +848,8 @@ export default function GraphPage() {
                 "warnings",
                 "readable_metrics",
                 "virtual_read",
+                "sampled_partitions",
+                "partition_distribution",
               ].includes(label.toLowerCase()),
           )
           .map(([label, value]) => ({
@@ -1032,6 +1036,22 @@ export default function GraphPage() {
                 }
               />
             ))}
+          {stickyNode.details.type === FileType.PARTITION_STATISTICS &&
+            stickyNode.details.partition_distribution && (
+              <PartitionDistributionTable
+                partitionDistribution={
+                  stickyNode.details.partition_distribution
+                }
+                partitionsCount={stickyNode.details.partitions_count ?? null}
+              />
+            )}
+          {stickyNode.details.type === FileType.PARTITION_STATISTICS &&
+            Array.isArray(stickyNode.details.sampled_partitions) && (
+              <PartitionStatisticsTable
+                partitionsCount={stickyNode.details.partitions_count ?? null}
+                sampledPartitions={stickyNode.details.sampled_partitions}
+              />
+            )}
           {stickyReadableMetrics && (
             <>
               <ReadableMetricsSummary

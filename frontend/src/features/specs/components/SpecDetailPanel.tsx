@@ -8,6 +8,7 @@ import {
 } from "../tableSpecs";
 import { cn } from "../../../shared/lib/cn";
 import SpecDetailBody from "./SpecDetailBody";
+import { copyText } from "../../../shared/lib/clipboard";
 
 interface SpecDetailPanelProps {
   metadata: TableMetadata;
@@ -44,8 +45,9 @@ const SpecDetailPanel = ({
     panelRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [detail.type, detail.id]);
 
-  const handleCopyJson = (): void => {
-    void navigator.clipboard.writeText(JSON.stringify(detail.data, null, 2));
+  const handleCopyJson = async (): Promise<void> => {
+    const isCopied = await copyText(JSON.stringify(detail.data, null, 2));
+    if (!isCopied) return;
     setIsJsonCopied(true);
     setTimeout(() => {
       setIsJsonCopied(false);
@@ -100,7 +102,7 @@ const SpecDetailPanel = ({
           <button
             type="button"
             className="text-xs font-bold px-2 py-0.5 rounded-full border border-white/30 bg-transparent text-white/70 hover:text-white transition cursor-pointer"
-            onClick={handleCopyJson}
+            onClick={() => void handleCopyJson()}
           >
             {isJsonCopied ? "✓ Copied" : "Copy JSON"}
           </button>

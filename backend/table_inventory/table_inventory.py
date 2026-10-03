@@ -1,20 +1,23 @@
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Type
 
 from base_classes.spark_table_action import SparkTableAction
 from base_classes.utils import timed
 from collectors.collect_data_files import CollectDataFiles, DataFileRecord
 from collectors.collect_manifests import CollectManifests, ManifestRecord
 from collectors.collect_metadata import CollectMetadata, MetadataFileRecord
+from collectors.collect_partition_statistics import CollectPartitionStatistics, PartitionStatisticsFileRecord
 from collectors.collect_table_statistics import CollectTableStatistics, TableStatisticsFileRecord
 from collectors.collector import FilesCollection
+from collectors.statistics_collector import StatisticsCollector
 from collectors.collect_snapshots import CollectSnapshots, SnapshotRecord
 from constants import (
     DATA_FILES_CUTOFF_MANIFEST_WARNING,
     STAGE_COLLECT_DATA_FILES,
     STAGE_COLLECT_MANIFESTS,
     STAGE_COLLECT_METADATA_FILES,
+    STAGE_COLLECT_PARTITION_STATISTICS,
     STAGE_COLLECT_SNAPSHOTS,
     STAGE_COLLECT_TABLE_STATISTICS,
     FileType,
@@ -35,6 +38,7 @@ class TableInventoryResult:
     data_files: List[DataFileRecord]
     metadata_files: List[MetadataFileRecord]
     table_statistics_files: List[TableStatisticsFileRecord]
+    partition_statistics_files: List[PartitionStatisticsFileRecord]
     current_table_specs: Dict[str, Any]
 
 
@@ -60,6 +64,7 @@ class TableInventory(SparkTableAction):
 
         self._metadata_files: List[MetadataFileRecord] = []
         self._table_statistics_files: List[TableStatisticsFileRecord] = []
+        self._partition_statistics_files: List[PartitionStatisticsFileRecord] = []
         self._snapshots: List[SnapshotRecord] = []
         self._manifests: List[ManifestRecord] = []
         self._data_files: List[DataFileRecord] = []
@@ -79,7 +84,7 @@ class TableInventory(SparkTableAction):
 
         self._attach_snapshot_files_to_manifest_files()
         self._attach_manifest_files_to_data_files()
-        self._attach_table_statistics_files_to_metadata_files()
+        self._attach_statistics_files_to_metadata_files()
 
         self._warn_if_data_cutoff_happened()
 
@@ -95,6 +100,7 @@ class TableInventory(SparkTableAction):
             data_files=self._data_files,
             metadata_files=self._metadata_files,
             table_statistics_files=self._table_statistics_files,
+            partition_statistics_files=self._partition_statistics_files,
             current_table_specs=self._current_table_specs,
         )
 
@@ -119,19 +125,22 @@ class TableInventory(SparkTableAction):
 
     def _collect_metadata_manifests_and_data_files(self):
         with ThreadPoolExecutor(max_workers=2) as executor:
-            metadata_future = executor.submit(self._threaded_collect_metadata_and_table_statistics_files)
+            metadata_future = executor.submit(self._threaded_collect_metadata_and_statistics_files)
             manifests_and_data_files_future = executor.submit(self._threaded_collect_manifests_and_data_files)
 
             try:
-                metadata_collection, table_statistics_collection = metadata_future.result()
+                metadata_collection, table_statistics_collection, partition_statistics_collection = metadata_future.result()
 
                 self._errors.update(metadata_collection.errors)
                 self._errors.update(table_statistics_collection.errors)
+                self._errors.update(partition_statistics_collection.errors)
                 self._warnings.update(metadata_collection.warnings)
                 self._warnings.update(table_statistics_collection.warnings)
+                self._warnings.update(partition_statistics_collection.warnings)
 
                 self._metadata_files = metadata_collection.files
                 self._table_statistics_files = table_statistics_collection.files
+                self._partition_statistics_files = partition_statistics_collection.files
 
             except Exception as e:
                 logger.error(f"[{self._table_name}] Failed to collect metadata", exc_info=True)
@@ -155,7 +164,7 @@ class TableInventory(SparkTableAction):
                 )
                 self._errors["collect_manifests_and_data_files"] = [str(e)]
 
-    def _threaded_collect_metadata_and_table_statistics_files(self):
+    def _threaded_collect_metadata_and_statistics_files(self):
         self._on_stage_start(STAGE_COLLECT_METADATA_FILES)
         try:
             metadata_collection = CollectMetadata(
@@ -167,19 +176,30 @@ class TableInventory(SparkTableAction):
         finally:
             self._on_stage_end(STAGE_COLLECT_METADATA_FILES)
 
-        self._on_stage_start(STAGE_COLLECT_TABLE_STATISTICS)
-        try:
-            table_statistics_collection = CollectTableStatistics(
-                self._table_name,
-                metadata_collection.files,
-            ).collect()
-        except Exception as e:
-            logger.error(f"[{self._table_name}] Failed to collect table statistics", exc_info=True)
-            table_statistics_collection = FilesCollection(errors={"collect_table_statistics": [str(e)]})
-        finally:
-            self._on_stage_end(STAGE_COLLECT_TABLE_STATISTICS)
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            table_statistics_future = executor.submit(
+                self._collect_statistics_files, CollectTableStatistics, STAGE_COLLECT_TABLE_STATISTICS, metadata_collection.files
+            )
+            partition_statistics_future = executor.submit(
+                self._collect_statistics_files, CollectPartitionStatistics, STAGE_COLLECT_PARTITION_STATISTICS, metadata_collection.files
+            )
 
-        return metadata_collection, table_statistics_collection
+        return metadata_collection, table_statistics_future.result(), partition_statistics_future.result()
+
+    def _collect_statistics_files(
+        self,
+        statistics_collector: Type[StatisticsCollector],
+        stage_name: str,
+        metadata_files: List[MetadataFileRecord],
+    ) -> FilesCollection:
+        self._on_stage_start(stage_name)
+        try:
+            return statistics_collector(self._table_name, metadata_files).collect()
+        except Exception as e:
+            logger.error(f"[{self._table_name}] Failed to collect {statistics_collector.STATISTICS_KEY}", exc_info=True)
+            return FilesCollection(errors={f"collect_{statistics_collector.STATISTICS_KEY}": [str(e)]})
+        finally:
+            self._on_stage_end(stage_name)
 
     def _threaded_collect_manifests_and_data_files(self):
         self._on_stage_start(STAGE_COLLECT_MANIFESTS)
@@ -209,12 +229,12 @@ class TableInventory(SparkTableAction):
     def _on_stage_end(self, stage_name: str) -> None:
         self._on_stage(stage_name, "done")
 
-    def _attach_table_statistics_files_to_metadata_files(self):
+    def _attach_statistics_files_to_metadata_files(self):
         metadata_file_by_path = {metadata_file.file_path: metadata_file for metadata_file in self._metadata_files}
 
-        for table_statistics_file in self._table_statistics_files:
-            metadata_file = metadata_file_by_path[table_statistics_file.hidden_table_statistics_data.added_by_metadata_file]
-            metadata_file.child_files.append(table_statistics_file.file_path)
+        for statistics_file in self._table_statistics_files + self._partition_statistics_files:
+            metadata_file = metadata_file_by_path[statistics_file.hidden_statistics_data.added_by_metadata_file]
+            metadata_file.child_files.append(statistics_file.file_path)
 
     def _attach_snapshot_files_to_manifest_files(self):
         if not self._snapshots or not self._manifests:
@@ -267,7 +287,14 @@ class TableInventory(SparkTableAction):
                 manifest.warnings.append(DATA_FILES_CUTOFF_MANIFEST_WARNING.format(max_data_files_to_collect=Env.MAX_DATA_FILES_TO_COLLECT))
 
     def _collect_file_errors(self):
-        file_groups = (self._metadata_files, self._table_statistics_files, self._snapshots, self._manifests, self._data_files)
+        file_groups = (
+            self._metadata_files,
+            self._table_statistics_files,
+            self._partition_statistics_files,
+            self._snapshots,
+            self._manifests,
+            self._data_files,
+        )
         for files in file_groups:
             self._errors.update({file.file_path: file.errors for file in files if file.errors})
 

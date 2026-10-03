@@ -59,15 +59,30 @@ const mockResponse = {
             "/warehouse/default/events/metadata/snap-3004708926140182071-1-b67343c2-fa63-4819-a10e-56c39993e302.avro",
         },
       ],
-      pointed_statistics_files: {
-        "3004708926140182071":
-          "/warehouse/default/events/metadata/3004708926140182071-6f1c2a9e-4b7d-4e3a-9c51-2d8e0f7a1b34.stats",
-      },
+      pointed_table_statistics_files: [
+        {
+          "snapshot-id": "3004708926140182071",
+          "statistics-path":
+            "/warehouse/default/events/metadata/3004708926140182071-6f1c2a9e-4b7d-4e3a-9c51-2d8e0f7a1b34.stats",
+          "file-size-in-bytes": 962,
+          "file-footer-size-in-bytes": 703,
+          "key-metadata": null,
+        },
+      ],
+      pointed_partition_statistics_files: [
+        {
+          "snapshot-id": "3004708926140182071",
+          "statistics-path":
+            "/warehouse/default/events/metadata/partition-stats-3004708926140182071-9b2e7c41-5d3a-4f8e-a6b1-0c7d2e9f4a58.parquet",
+          "file-size-in-bytes": 4290,
+        },
+      ],
       pointed_metadata_log_count: 9,
       child_files: [
         "/warehouse/default/events/metadata/snap-3004708926140182071-1-b67343c2-fa63-4819-a10e-56c39993e302.avro",
         "/warehouse/default/events/metadata/snap-7633604781669548673-1-39ba9de2-9487-4364-8143-9ed7ad46feb9.avro",
         "/warehouse/default/events/metadata/3004708926140182071-6f1c2a9e-4b7d-4e3a-9c51-2d8e0f7a1b34.stats",
+        "/warehouse/default/events/metadata/partition-stats-3004708926140182071-9b2e7c41-5d3a-4f8e-a6b1-0c7d2e9f4a58.parquet",
       ],
     },
     {
@@ -445,6 +460,80 @@ const mockResponse = {
           snapshot_id: "3004708926140182071",
           sequence_number: 6,
           properties: { ndv: "4" },
+        },
+      ],
+      child_files: [],
+    },
+    {
+      type: "partition_statistics",
+      virtual_read: false,
+      file_path:
+        "/warehouse/default/events/metadata/partition-stats-3004708926140182071-9b2e7c41-5d3a-4f8e-a6b1-0c7d2e9f4a58.parquet",
+      errors: [],
+      warnings: [],
+      snapshot_id: "3004708926140182071",
+      file_size_in_bytes: "4290",
+      partitions_count: 3,
+      partitions_with_deletes: 0,
+      partition_distribution: {
+        data_record_count: { min: 3, avg: 4.666666666666667, max: 7 },
+        total_data_file_size_in_bytes: {
+          min: 2410,
+          avg: 2728.3333333333335,
+          max: 3120,
+        },
+        data_file_count: { min: 1, avg: 1.3333333333333333, max: 2 },
+        average_data_file_size_in_bytes: {
+          min: 1560,
+          avg: 2208.3333333333335,
+          max: 2655,
+        },
+      },
+      sampled_partitions: [
+        {
+          partition:
+            "event_ts_hour = 2025-06-15 11 (486107), event_name = signup",
+          spec_id: 0,
+          data_record_count: 4,
+          data_file_count: 1,
+          total_data_file_size_in_bytes: 2410,
+          position_delete_record_count: 0,
+          position_delete_file_count: 0,
+          equality_delete_record_count: 0,
+          equality_delete_file_count: 0,
+          total_record_count: null,
+          last_updated_at: 1781520748782,
+          last_updated_snapshot_id: "3004708926140182071",
+        },
+        {
+          partition:
+            "event_ts_hour = 2025-06-15 11 (486107), event_name = logout",
+          spec_id: 0,
+          data_record_count: 3,
+          data_file_count: 2,
+          total_data_file_size_in_bytes: 3120,
+          position_delete_record_count: 0,
+          position_delete_file_count: 0,
+          equality_delete_record_count: 0,
+          equality_delete_file_count: 0,
+          total_record_count: null,
+          last_updated_at: 1781520737777,
+          last_updated_snapshot_id: "3004708926140182071",
+        },
+        {
+          partition:
+            "event_ts_hour = 2025-06-15 11 (486107), event_name = click",
+          spec_id: 0,
+          data_record_count: 7,
+          data_file_count: 1,
+          total_data_file_size_in_bytes: 2655,
+          position_delete_record_count: 0,
+          position_delete_file_count: 0,
+          equality_delete_record_count: 0,
+          equality_delete_file_count: 0,
+          total_record_count: null,
+          last_updated_at: 1781520720102,
+          last_updated_snapshot_id: "3004708926140182071",
         },
       ],
       child_files: [],
@@ -1687,6 +1776,7 @@ const MOCK_GRAPH_PROGRESS_RESPONSES = [
     "Collecting snapshots": "in_progress",
     "Collecting metadata files": "pending",
     "Collecting table statistics files": "pending",
+    "Collecting partition statistics files": "pending",
     "Collecting manifests": "pending",
     "Collecting data files": "pending",
     "Building graph": "pending",
@@ -1695,6 +1785,7 @@ const MOCK_GRAPH_PROGRESS_RESPONSES = [
     "Collecting snapshots": "done",
     "Collecting metadata files": "done",
     "Collecting table statistics files": "done",
+    "Collecting partition statistics files": "done",
     "Collecting manifests": "done",
     "Collecting data files": "done",
     "Building graph": "in_progress",
