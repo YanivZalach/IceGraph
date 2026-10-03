@@ -1796,6 +1796,31 @@ const METADATA_NODE_TYPES = new Set(["main_metadata", "metadata"]);
 const REACHABLE_NODE_TYPES = new Set(["snapshot", "manifest"]);
 const graphJobs = new Map();
 
+const tableStatisticsForMetadata = (metadataPath) => {
+  const metadataNode = mockResponse.nodes.find(
+    (node) => node.file_path === metadataPath,
+  );
+  return (metadataNode?.pointed_table_statistics_files ?? []).map((entry) => {
+    const statisticsNode = mockResponse.nodes.find(
+      (node) => node.file_path === entry["statistics-path"],
+    );
+    return {
+      ...entry,
+      "blob-metadata": (statisticsNode?.blobs ?? []).map((blob) => ({
+        type: blob.type,
+        "snapshot-id": blob.snapshot_id,
+        "sequence-number": blob.sequence_number,
+        fields: blob.fields,
+        properties: blob.properties,
+      })),
+    };
+  });
+};
+
+mockResponse.metadata.statistics = tableStatisticsForMetadata(
+  mockResponse.metadata.metadata_file_path,
+);
+
 const partitionStatisticsForSnapshot = (snapshotId) => {
   const statistics = mockResponse.nodes.find(
     (node) =>
@@ -1838,6 +1863,7 @@ const metadataForNode = (node) => {
   return {
     ...mockResponse.metadata,
     metadata_file_path: node.file_path,
+    statistics: tableStatisticsForMetadata(node.file_path),
     "current-schema-id": node.current_schema_id,
     "current-snapshot-id": node.snapshot_id,
     "current-partition-statistics": partitionStatisticsForSnapshot(

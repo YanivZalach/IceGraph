@@ -30,7 +30,6 @@ class TableMetadataCollector:
             .drop("metadata-log")
             .drop("snapshot-log")
             .drop("snapshots")
-            .drop("statistics")
             .first()
         )
 
