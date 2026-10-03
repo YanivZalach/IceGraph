@@ -72,7 +72,12 @@ class CollectPartitionStatistics(StatisticsCollector):
                 statistics_file.partition_distribution = {
                     metric: value for metric, value in (statistics_row["summary"]["partition_distribution"] or {}).items() if value is not None
                 }
-                statistics_file.sampled_partitions = [self._parse_partition_row(partition) for partition in statistics_row["sampled_partitions"]]
+                sampled_partitions = sorted(
+                    statistics_row["sampled_partitions"],
+                    key=lambda partition: partition["last_updated_at"] if partition.get("last_updated_at") is not None else float("-inf"),
+                    reverse=True,
+                )
+                statistics_file.sampled_partitions = [self._parse_partition_row(partition) for partition in sampled_partitions]
             except Exception as e:
                 logger.error(f"[{self._table_name}] Partition statistics file parse error for {statistics_file.file_path}", exc_info=True)
                 statistics_file.errors.append(str(e))

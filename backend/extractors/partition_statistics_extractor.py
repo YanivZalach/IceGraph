@@ -58,25 +58,11 @@ class PartitionStatisticsExtractor(Extractor):
     @staticmethod
     def _sample_partitions(partition_statistics_df: pyspark.sql.DataFrame, columns: List[str]) -> pyspark.sql.DataFrame:
         sample_df = partition_statistics_df
-        has_update_time = "last_updated_at" in columns
-        if has_update_time:
+        if "last_updated_at" in columns:
             sample_df = sample_df.orderBy(F.desc_nulls_last("last_updated_at"))
 
         sample_df = sample_df.limit(Env.MAX_PARTITION_STATISTICS_ROWS).select(F.struct("*").alias("partition_row"))
-        samples = F.collect_list("partition_row")
-        if has_update_time:
-            samples = F.array_sort(
-                samples,
-                lambda left, right: (
-                    F.when(left["last_updated_at"].eqNullSafe(right["last_updated_at"]), 0)
-                    .when(left["last_updated_at"].isNull(), 1)
-                    .when(right["last_updated_at"].isNull(), -1)
-                    .when(left["last_updated_at"] > right["last_updated_at"], -1)
-                    .otherwise(1)
-                ),
-            )
-
-        return sample_df.agg(samples.alias("sampled_partitions"))
+        return sample_df.agg(F.collect_list("partition_row").alias("sampled_partitions"))
 
     @staticmethod
     def _partition_distribution(columns: List[str]) -> pyspark.sql.Column:
