@@ -31,6 +31,10 @@ class CollectPartitionStatistics(StatisticsCollector):
         return metadata_file.pointed_partition_statistics_files
 
     def _collect_statistics_files(self, metadata_file_to_added_entries: Dict[str, List[dict]]) -> None:
+        statistics_files = self._build_statistics_files(metadata_file_to_added_entries)
+        self._collect_partition_summaries(statistics_files)
+
+    def _build_statistics_files(self, metadata_file_to_added_entries: Dict[str, List[dict]]) -> Dict[str, PartitionStatisticsFileRecord]:
         statistics_files = {}
         for metadata_file in self._metadata_files:
             for entry in metadata_file_to_added_entries.get(metadata_file.file_path, []):
@@ -48,6 +52,9 @@ class CollectPartitionStatistics(StatisticsCollector):
                 statistics_files[statistics_file.file_path] = statistics_file
                 self._statistics_files.append(statistics_file)
 
+        return statistics_files
+
+    def _collect_partition_summaries(self, statistics_files: Dict[str, PartitionStatisticsFileRecord]) -> None:
         try:
             rows = PartitionStatisticsExtractor(self._table_name, list(statistics_files.values())).extract_dataframe().collect()
         except Exception as e:
