@@ -1,6 +1,11 @@
 import { createColumnHelper } from "@tanstack/react-table";
 import type { z } from "zod";
 import { UI_HELPER_TEXT_CLASS } from "../../../uiTypography";
+import {
+  formatBytesAsMebibytes,
+  isByteFieldName,
+  stripByteUnitFromFieldName,
+} from "../../../shared/lib/formatBytes";
 import StatisticsTable from "../../../shared/components/StatisticsTable";
 import {
   formatValue,
@@ -39,6 +44,12 @@ const formatPartitionValue = (columnId: string, value: unknown): string => {
   if (columnId === LAST_UPDATED_AT_COLUMN && typeof value === "number") {
     return formatLocaleDateTime(new Date(value));
   }
+  if (
+    isByteFieldName(columnId) &&
+    (typeof value === "number" || typeof value === "string")
+  ) {
+    return formatBytesAsMebibytes(value);
+  }
   return formatValue(value);
 };
 
@@ -47,7 +58,9 @@ const buildColumns = (sampledPartitions: PartitionStatisticsRow[]) =>
     (columnId) =>
       columnHelper.accessor((row) => row[columnId], {
         cell: ({ getValue }) => formatPartitionValue(columnId, getValue()),
-        header: columnId,
+        header: isByteFieldName(columnId)
+          ? stripByteUnitFromFieldName(columnId)
+          : columnId,
         id: columnId,
         sortFn: (first, second) =>
           comparePartitionValues(

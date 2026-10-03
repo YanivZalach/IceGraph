@@ -1,27 +1,30 @@
 import { useState } from "react";
+import { copyText } from "../shared/lib/clipboard";
 
 export default function CopyIconButton({
   text,
   className = "",
   title = "Copy value",
 }) {
-  const [copied, setCopied] = useState(false);
+  const [copyStatus, setCopyStatus] = useState("idle");
 
   if (!text) return null;
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(String(text));
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async () => {
+    const isCopied = await copyText(String(text));
+    setCopyStatus(isCopied ? "copied" : "failed");
+    setTimeout(() => setCopyStatus("idle"), 2000);
   };
+  const copied = copyStatus === "copied";
+  const failed = copyStatus === "failed";
 
   return (
     <button
       type="button"
       onClick={handleCopy}
       onMouseDown={(e) => e.preventDefault()}
-      title={copied ? "Copied!" : title}
-      className={`p-1 rounded border border-edge bg-surface/90 text-slate-500 hover:text-slate-300 hover:border-slate-500 transition-colors cursor-pointer ${className}`}
+      title={copied ? "Copied!" : failed ? "Copy failed" : title}
+      className={`p-1 rounded border border-edge bg-surface/90 ${failed ? "text-red-400" : "text-slate-500"} hover:text-slate-300 hover:border-slate-500 transition-colors cursor-pointer ${className}`}
     >
       {copied ? (
         <svg

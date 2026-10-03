@@ -6,6 +6,7 @@ import type {
   SnapshotNode,
 } from "../types";
 import FileTreeViewSettings from "./FileTreeViewSettings";
+import { copyText } from "../../../shared/lib/clipboard";
 
 interface FileTreeToolbarProps {
   branches: Branch[];
@@ -71,12 +72,8 @@ const FileTreeToolbar = ({
     if (copyStatusTimeoutRef.current !== null) {
       window.clearTimeout(copyStatusTimeoutRef.current);
     }
-    try {
-      await navigator.clipboard.writeText([...checkedFileIds].join("\n"));
-      setCopyStatus("copied");
-    } catch {
-      setCopyStatus("failed");
-    }
+    const isCopied = await copyText([...checkedFileIds].join("\n"));
+    setCopyStatus(isCopied ? "copied" : "failed");
     copyStatusTimeoutRef.current = window.setTimeout(() => {
       setCopyStatus("idle");
       copyStatusTimeoutRef.current = null;

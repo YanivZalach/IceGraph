@@ -47,6 +47,7 @@ const StatisticsTable = <TData extends RowData>({
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
+                  const canSort = header.column.getCanSort();
                   const sortDirection = header.column.getIsSorted();
                   const nextSortDirection = header.column.getNextSortingOrder();
                   const headerLabel =
@@ -62,36 +63,42 @@ const StatisticsTable = <TData extends RowData>({
                     <th
                       key={header.id}
                       aria-sort={
-                        sortDirection === "asc"
-                          ? "ascending"
-                          : sortDirection === "desc"
-                            ? "descending"
-                            : "none"
+                        !canSort
+                          ? undefined
+                          : sortDirection === "asc"
+                            ? "ascending"
+                            : sortDirection === "desc"
+                              ? "descending"
+                              : "none"
                       }
                       className="whitespace-nowrap px-3 py-2 font-semibold"
                     >
-                      <button
-                        type="button"
-                        aria-label={`${headerLabel}, ${nextSortLabel}`}
-                        onClick={header.column.getToggleSortingHandler()}
-                        className="group flex cursor-pointer items-center gap-1 rounded text-left hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                      >
-                        <table.FlexRender header={header} />
-                        <span
-                          aria-hidden="true"
-                          className={
-                            sortDirection === false
-                              ? "text-slate-600 group-hover:text-slate-400"
-                              : "text-accent"
-                          }
+                      {canSort ? (
+                        <button
+                          type="button"
+                          aria-label={`${headerLabel}, ${nextSortLabel}`}
+                          onClick={header.column.getToggleSortingHandler()}
+                          className="group flex cursor-pointer items-center gap-1 rounded text-left hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                         >
-                          {sortDirection === "asc"
-                            ? "↑"
-                            : sortDirection === "desc"
-                              ? "↓"
-                              : "↕"}
-                        </span>
-                      </button>
+                          <table.FlexRender header={header} />
+                          <span
+                            aria-hidden="true"
+                            className={
+                              sortDirection === false
+                                ? "text-slate-600 group-hover:text-slate-400"
+                                : "text-accent"
+                            }
+                          >
+                            {sortDirection === "asc"
+                              ? "↑"
+                              : sortDirection === "desc"
+                                ? "↓"
+                                : "↕"}
+                          </span>
+                        </button>
+                      ) : (
+                        <table.FlexRender header={header} />
+                      )}
                     </th>
                   );
                 })}
