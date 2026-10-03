@@ -45,17 +45,9 @@ class TableMetadataCollector:
     def _collect_current_partition_statistics(
         self, metadata: dict[str, Any], metadata_path: str, partition_statistics_files: list[PartitionStatisticsFileRecord]
     ) -> None:
-        snapshot_id = metadata.get("current-snapshot-id")
-        if snapshot_id is None or snapshot_id == -1:
-            return
-
-        entry = next((entry for entry in metadata.get("partition-statistics") or [] if entry["snapshot-id"] == snapshot_id), None)
-        if entry is None:
-            return
-
-        statistics_file = next((file for file in partition_statistics_files if file.file_path == entry["statistics-path"]), None)
+        statistics_file = self._collect_current_partition_statistics_file(metadata, metadata_path, partition_statistics_files)
         if statistics_file is None:
-            statistics_file = CollectPartitionStatistics(self._table_name, []).collect_file(metadata_path, entry, include_samples=False)
+            return
 
         statistics = statistics_file.to_dict()
         metadata["current-partition-statistics"] = {
@@ -71,6 +63,31 @@ class TableMetadataCollector:
                 "warnings",
             )
         }
+
+    def _collect_current_partition_statistics_file(
+        self, metadata: dict[str, Any], metadata_path: str, partition_statistics_files: list[PartitionStatisticsFileRecord]
+    ) -> PartitionStatisticsFileRecord | None:
+        snapshot_id = metadata.get("current-snapshot-id")
+        if snapshot_id is None or snapshot_id == -1:
+            return None
+
+        entry = None
+        for candidate in metadata.get("partition-statistics") or []:
+            if candidate["snapshot-id"] == snapshot_id:
+                entry = candidate
+                break
+        if entry is None:
+            return None
+
+        statistics_file = None
+        for candidate in partition_statistics_files:
+            if candidate.file_path == entry["statistics-path"]:
+                statistics_file = candidate
+                break
+        if statistics_file is None:
+            statistics_file = CollectPartitionStatistics(self._table_name, []).collect_file(metadata_path, entry, include_samples=False)
+
+        return statistics_file
 
     @staticmethod
     def _current_snapshot_column(metadata_df: DataFrame) -> Column:

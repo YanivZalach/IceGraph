@@ -26,6 +26,8 @@ Instructions for coding agents working in IceGraph.
   unless the user explicitly requests it.
 - Do not disable lint, type, or formatting rules to make checks pass.
 - Python files must not exceed 400 lines. This is a repository convention, not a formatter check.
+- In Python, use an explicit `for` loop with `break` for first-match searches. Do not use
+  `next(...)` with a generator expression for these lookups.
 - Define every backend runtime environment setting in `backend/env.py`.
 - Never write docstrings, or comments in Python code, unless the user asks for them. Exception: follow an
   existing per-entry comment convention, such as the one-line comment above each setting in `backend/env.py`.
