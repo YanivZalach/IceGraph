@@ -65,7 +65,7 @@ have.
 
 ```
 icegraph [--base-url URL] [--token TOKEN] [--cookie COOKIE] [--no-verify-ssl] tables
-icegraph [...] snapshots <table>
+icegraph [...] snapshots <table> [-b/--before-snapshot-id ID]
 icegraph [...] metadata <table>
 icegraph [...] graph <table> [-s/--start-snapshot-id ID] [-e/--end-snapshot-id ID]
 ```
@@ -78,12 +78,15 @@ etc.) go to stderr, so stdout is always safe to parse directly.
 **Output shapes:**
 
 - `tables` → a JSON array of table name strings.
-- `snapshots <table>` → a JSON array of `{timestamp, snapshot_id, operation}` objects (timestamp is
-  ISO 8601, converted to local time).
+- `snapshots <table>` → `{snapshots: [...], next_before_snapshot_id}`. `snapshots` is one page of
+  `{timestamp, snapshot_id, operation}` objects (timestamp is ISO 8601, converted to local time),
+  starting from the table's newest snapshots. To reach older snapshots, pass
+  `next_before_snapshot_id` as `--before-snapshot-id`; it is `null` when no older snapshots remain.
 - `metadata <table>` → the latest table metadata dictionary, including `metadata_file_path` and
   `current-snapshot` (the current snapshot's entry from the metadata file, with its `summary`
   counts such as `total-records`, `total-data-files`, and `total-files-size-bytes`).
 - `graph <table>` → `{nodes: [...], metadata: {...}, issues: {errors: {...}, warnings: {...}}}`.
+  `errors` and `warnings` each map a source, such as a file path, to a list of messages.
   Each entry in `nodes` is one file's fields as a flat dict, with no wrapper object around them, so
   a field is read directly as `node["summary"]`. Every node carries `file_path`, `type`, and
   `child_files`, plus fields specific to its type. A node's identity for
