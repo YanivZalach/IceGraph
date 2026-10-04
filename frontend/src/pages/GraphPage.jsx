@@ -1037,6 +1037,7 @@ export default function GraphPage() {
               />
             ))}
           {stickyNode.details.type === FileType.PARTITION_STATISTICS &&
+            stickyNode.details.partitions_count != null &&
             stickyNode.details.partition_distribution && (
               <PartitionDistributionTable
                 partitionDistribution={
@@ -1045,9 +1046,10 @@ export default function GraphPage() {
               />
             )}
           {stickyNode.details.type === FileType.PARTITION_STATISTICS &&
+            stickyNode.details.partitions_count != null &&
             Array.isArray(stickyNode.details.sampled_partitions) && (
               <PartitionStatisticsTable
-                partitionsCount={stickyNode.details.partitions_count ?? null}
+                partitionsCount={stickyNode.details.partitions_count}
                 sampledPartitions={stickyNode.details.sampled_partitions}
               />
             )}

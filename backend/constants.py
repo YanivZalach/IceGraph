@@ -80,6 +80,16 @@ Failed to read the metadata file before the selected range: {metadata_file}
 {statistics_name} files that existed before the range may be shown as added by the oldest metadata file in view.
 """)
 
+PARTITION_STATISTICS_READ_LIMIT_WARNING = inspect.cleandoc("""
+Showing partial partition statistics! {skipped_files_count} of {total_files_count} partition statistics files were not read because the read limit of {max_partition_statistics_files_to_read} was reached.
+
+Only the newest files were read. Older files show only the fields from the metadata file.
+""")
+
+PARTITION_STATISTICS_FILE_NOT_READ_WARNING = inspect.cleandoc("""
+The partition statistics file was not read because the limit of {max_partition_statistics_files_to_read} partition statistics files to read was reached.
+""")
+
 TABLE_STATISTICS_COLLECTION_ERROR = "Failed to read the table statistics entries, so table statistics files are not shown: {error}"
 
 STATISTICS_ATTRIBUTION_WARNING = inspect.cleandoc("""
