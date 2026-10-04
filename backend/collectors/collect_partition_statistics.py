@@ -5,7 +5,8 @@ from base_classes.base_file import BaseFile
 from collectors.collect_metadata import MetadataFileRecord
 from collectors.statistics_collector import HiddenStatisticsMetadata, StatisticsCollector
 from collectors.utils import format_partition
-from constants import FileType
+from constants import PARTITION_STATISTICS_FILE_NOT_READ_WARNING, PARTITION_STATISTICS_READ_LIMIT_WARNING, FileType
+from env import Env
 from extractors.partition_statistics_extractor import PartitionStatisticsExtractor
 from icegraph_logger import logger
 
@@ -33,7 +34,27 @@ class CollectPartitionStatistics(StatisticsCollector):
 
     def _collect_statistics_files(self, metadata_file_to_added_entries: Dict[str, List[dict]]) -> None:
         statistics_files = self._build_statistics_files(metadata_file_to_added_entries)
-        self._collect_partition_summaries(statistics_files)
+        files_to_read = dict(list(statistics_files.items())[: Env.MAX_PARTITION_STATISTICS_FILES_TO_READ])
+        if files_to_read:
+            self._collect_partition_summaries(files_to_read)
+        self._warn_unread_files([statistics_file for path, statistics_file in statistics_files.items() if path not in files_to_read])
+
+    def _warn_unread_files(self, unread_files: List[PartitionStatisticsFileRecord]) -> None:
+        if not unread_files:
+            return
+
+        for statistics_file in unread_files:
+            statistics_file.warnings.append(
+                PARTITION_STATISTICS_FILE_NOT_READ_WARNING.format(max_partition_statistics_files_to_read=Env.MAX_PARTITION_STATISTICS_FILES_TO_READ)
+            )
+
+        self._warnings[f"{self.STATISTICS_KEY}_read_limit"] = [
+            PARTITION_STATISTICS_READ_LIMIT_WARNING.format(
+                skipped_files_count=len(unread_files),
+                total_files_count=len(self._statistics_files),
+                max_partition_statistics_files_to_read=Env.MAX_PARTITION_STATISTICS_FILES_TO_READ,
+            )
+        ]
 
     def collect_file(self, metadata_path: str, entry: dict, include_samples: bool = True) -> PartitionStatisticsFileRecord:
         statistics_file = self._parse_statistics_entry(metadata_path, entry)

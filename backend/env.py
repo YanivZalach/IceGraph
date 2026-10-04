@@ -32,6 +32,9 @@ class Env:
     # Maximum number of partitions sampled from each partition statistics file.
     MAX_PARTITION_STATISTICS_ROWS: int = int(os.getenv("MAX_PARTITION_STATISTICS_ROWS", "10"))
 
+    # Maximum number of partition statistics files read per graph, newest first.
+    MAX_PARTITION_STATISTICS_FILES_TO_READ: int = int(os.getenv("MAX_PARTITION_STATISTICS_FILES_TO_READ", "50"))
+
     # Cache lifetime for the table selection endpoint.
     TABLE_LIST_CACHE_TTL_SECONDS: int = int(os.getenv("TABLE_LIST_CACHE_TTL_SECONDS", "60"))
 
