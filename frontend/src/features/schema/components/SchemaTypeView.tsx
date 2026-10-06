@@ -3,12 +3,14 @@ import { formatRequiredness, formatUnknownType } from "../schemaModel";
 import SchemaCollectionMember from "./SchemaCollectionMember";
 import SchemaTypeBadge from "./SchemaTypeBadge";
 import SchemaFieldDoc from "./SchemaFieldDoc";
+import { cn } from "../../../shared/lib/cn";
 
 interface SchemaTypeViewProps {
   type: IcebergType;
+  showIds?: boolean;
 }
 
-const SchemaTypeView = ({ type }: SchemaTypeViewProps) => {
+const SchemaTypeView = ({ type, showIds = true }: SchemaTypeViewProps) => {
   switch (type.kind) {
     case "primitive":
       return <SchemaTypeBadge kind="primitive">{type.name}</SchemaTypeBadge>;
@@ -23,9 +25,11 @@ const SchemaTypeView = ({ type }: SchemaTypeViewProps) => {
                 className="flex flex-col gap-1.5 border-b border-edge py-3 last:border-0"
               >
                 <div className="flex items-center gap-2">
-                  <span className="w-7 shrink-0 text-right font-mono text-sm text-slate-500">
-                    {field.id ?? "?"}
-                  </span>
+                  {showIds && (
+                    <span className="w-7 shrink-0 text-right font-mono text-sm text-slate-500">
+                      {field.id ?? "?"}
+                    </span>
+                  )}
                   <span className="font-mono text-sm font-semibold text-ink">
                     {field.name}
                   </span>
@@ -33,11 +37,13 @@ const SchemaTypeView = ({ type }: SchemaTypeViewProps) => {
                     {formatRequiredness(field.isRequired)}
                   </span>
                 </div>
-                <div className="ml-9">
-                  <SchemaTypeView type={field.type} />
+                <div className={cn(showIds && "ml-9")}>
+                  <SchemaTypeView type={field.type} showIds={showIds} />
                 </div>
                 {field.doc && (
-                  <SchemaFieldDoc className="ml-9">{field.doc}</SchemaFieldDoc>
+                  <SchemaFieldDoc className={cn(showIds && "ml-9")}>
+                    {field.doc}
+                  </SchemaFieldDoc>
                 )}
               </div>
             ))}
@@ -51,12 +57,12 @@ const SchemaTypeView = ({ type }: SchemaTypeViewProps) => {
           <div className="ml-3 border-l-2 border-edge py-1 pl-4">
             <div className="mb-2">
               <SchemaCollectionMember
-                id={type.elementId ?? "?"}
+                id={showIds ? (type.elementId ?? "?") : undefined}
                 name="element"
                 requiredness={formatRequiredness(type.isElementRequired)}
               />
             </div>
-            <SchemaTypeView type={type.element} />
+            <SchemaTypeView type={type.element} showIds={showIds} />
           </div>
         </div>
       );
@@ -68,22 +74,22 @@ const SchemaTypeView = ({ type }: SchemaTypeViewProps) => {
             <div>
               <div className="mb-2">
                 <SchemaCollectionMember
-                  id={type.keyId ?? "?"}
+                  id={showIds ? (type.keyId ?? "?") : undefined}
                   name="key"
                   requiredness="required"
                 />
               </div>
-              <SchemaTypeView type={type.key} />
+              <SchemaTypeView type={type.key} showIds={showIds} />
             </div>
             <div>
               <div className="mb-2">
                 <SchemaCollectionMember
-                  id={type.valueId ?? "?"}
+                  id={showIds ? (type.valueId ?? "?") : undefined}
                   name="value"
                   requiredness={formatRequiredness(type.isValueRequired)}
                 />
               </div>
-              <SchemaTypeView type={type.value} />
+              <SchemaTypeView type={type.value} showIds={showIds} />
             </div>
           </div>
         </div>

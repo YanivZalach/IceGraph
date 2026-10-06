@@ -1,12 +1,13 @@
-from constants import STANDART_DATE_FORMAT
+from constants import STANDART_DATE_FORMAT, UNREACHABLE_METADATA_FILE_PATTERN
 from spark_connect import open_spark_connect_session
 import functools
 import inspect
+import re
 import time
 from contextlib import suppress
 
 import arrow
-from pyspark.errors import AnalysisException
+from pyspark.errors import AnalysisException, PySparkException
 from pyspark.sql import functions as F
 
 from icegraph_logger import logger
@@ -38,15 +39,32 @@ def timed(fn):
     return wrapper
 
 
+class NotIcebergTableError(AnalysisException):
+    pass
+
+
+class UnreachableMetadataFileError(AnalysisException):
+    def __init__(self, table_name: str, metadata_file: str):
+        super().__init__(f"Table '{table_name}' is unreachable: its current metadata file can't be read: {metadata_file}")
+        self.metadata_file = metadata_file
+
+
 def verify_iceberg_table(table_name: str) -> bool:
     spark = open_spark_connect_session()
 
-    with suppress(AnalysisException, AttributeError, IndexError):
-        provider_row = spark.sql(f"DESCRIBE FORMATTED {table_name}").filter(F.col("col_name") == "Provider").collect()
-        if provider_row:
-            return provider_row[0].data_type.lower().strip() == "iceberg"
+    try:
+        provider_rows = spark.sql(f"DESCRIBE FORMATTED {table_name}").filter(F.col("col_name") == "Provider").collect()
+    except PySparkException as error:
+        metadata_file_match = re.search(UNREACHABLE_METADATA_FILE_PATTERN, str(error))
+        if metadata_file_match:
+            raise UnreachableMetadataFileError(table_name, metadata_file_match.group(1)) from error
+        raise
 
-    raise AnalysisException(f"Table '{table_name}' is not an Iceberg table.")
+    with suppress(AttributeError, IndexError):
+        if provider_rows[0].data_type.lower().strip() == "iceberg":
+            return True
+
+    raise NotIcebergTableError(f"Table '{table_name}' is not an Iceberg table.")
 
 
 def to_arrow_utc(timestamp):

@@ -9,9 +9,10 @@ import {
 
 interface SchemaFieldListProps {
   schema: unknown;
+  showIds?: boolean;
 }
 
-const SchemaFieldList = ({ schema }: SchemaFieldListProps) => {
+const SchemaFieldList = ({ schema, showIds = true }: SchemaFieldListProps) => {
   const parsedSchema = parseIcebergSchema(schema);
 
   if (parsedSchema.fields.length === 0) {
@@ -25,18 +26,20 @@ const SchemaFieldList = ({ schema }: SchemaFieldListProps) => {
   return (
     <div className="overflow-x-auto">
       <table className={SPEC_TABLE_CLASS}>
-        <SchemaFieldHeader />
+        <SchemaFieldHeader showIds={showIds} />
         <tbody className="font-mono">
           {parsedSchema.fields.map((field, fieldIndex) => (
             <tr
               key={`${field.id ?? "missing-id"}.${String(fieldIndex)}`}
               className="border-b border-edge last:border-0"
             >
-              <td
-                className={`${SPEC_CELL_CLASS} font-mono text-xs text-slate-400`}
-              >
-                {field.id ?? "?"}
-              </td>
+              {showIds && (
+                <td
+                  className={`${SPEC_CELL_CLASS} font-mono text-xs text-slate-400`}
+                >
+                  {field.id ?? "?"}
+                </td>
+              )}
               <td className={SPEC_CELL_CLASS}>
                 <code className="text-xs text-ink">{field.name}</code>
                 {field.doc && (
@@ -44,7 +47,7 @@ const SchemaFieldList = ({ schema }: SchemaFieldListProps) => {
                 )}
               </td>
               <td className={SPEC_CELL_CLASS}>
-                <SchemaTypeView type={field.type} />
+                <SchemaTypeView type={field.type} showIds={showIds} />
               </td>
               <td className={`${SPEC_CELL_CLASS} font-mono text-xs text-ink`}>
                 {formatRequiredness(field.isRequired)}

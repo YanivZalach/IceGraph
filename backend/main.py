@@ -9,8 +9,8 @@ from pathlib import Path
 from flask import Flask, jsonify, request, send_from_directory
 from pyspark.errors import AnalysisException
 
-from base_classes.utils import collect_graph_metadata_file, verify_iceberg_table
-from constants import COLLECTION_STAGES, JOB_TOKEN_FIELD, STAGE_BUILD_GRAPH
+from base_classes.utils import NotIcebergTableError, UnreachableMetadataFileError, collect_graph_metadata_file, verify_iceberg_table
+from constants import COLLECTION_STAGES, JOB_TOKEN_FIELD, NOT_ICEBERG_TABLE_ERROR_CODE, STAGE_BUILD_GRAPH, UNREACHABLE_METADATA_FILE_ERROR_CODE
 from env import Env
 from graph_normalizer.graph_normalizer import GraphNormalizer
 from icegraph_logger import logger
@@ -18,6 +18,7 @@ from snapshot_analyzer.snapshot_analyzer import SnapshotAnalyzer
 from snapshot_map.snapshot_mapping import collect_snapshot_map
 from spark_connect import close_spark_connect_session
 from table_inventory.table_inventory import TableInventory
+from collectors.collect_table_description import TableDescriptionCollector
 from collectors.collect_table_metadata import TableMetadataCollector
 from table_list_catalog.table_list_catalog import TableListCatalog
 
@@ -55,6 +56,17 @@ def _schedule_cleanup(job_id, is_in_lock_block=False):
         _safe_update_job(job_id, timer=timer)
 
     timer.start()
+
+
+def _spark_error_response(error: AnalysisException):
+    body = {"error": str(error)}
+    if isinstance(error, NotIcebergTableError):
+        body["error_code"] = NOT_ICEBERG_TABLE_ERROR_CODE
+    elif isinstance(error, UnreachableMetadataFileError):
+        body["error_code"] = UNREACHABLE_METADATA_FILE_ERROR_CODE
+        body["metadata_file"] = error.metadata_file
+
+    return jsonify(body), 400
 
 
 def _compute_graph_background(job_id, table_name, start_snapshot_id, end_snapshot_id):
@@ -139,7 +151,7 @@ def graph_metadata_file(table_name):
 
     except AnalysisException as e:
         logger.error(f"Spark Error: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": str(e)}), 400
+        return _spark_error_response(e)
 
     except Exception as e:
         logger.error(f"Unexpected error: {e}\n{traceback.format_exc()}")
@@ -155,6 +167,20 @@ def table_metadata(table_name):
     except ValueError as e:
         logger.error(f"Invalid table metadata request: {e}\n{traceback.format_exc()}")
         return jsonify({"error": str(e)}), 400
+
+    except AnalysisException as e:
+        logger.error(f"Spark Error: {e}\n{traceback.format_exc()}")
+        return _spark_error_response(e)
+
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}\n{traceback.format_exc()}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/v1/table-description/<path:table_name>", methods=["GET"])
+def table_description(table_name):
+    try:
+        return jsonify(TableDescriptionCollector(table_name).collect())
 
     except AnalysisException as e:
         logger.error(f"Spark Error: {e}\n{traceback.format_exc()}")
@@ -183,7 +209,7 @@ def snapshot_map(table_name):
 
     except AnalysisException as e:
         logger.error(f"Spark Error: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": str(e)}), 400
+        return _spark_error_response(e)
 
     except Exception as e:
         logger.error(f"Unexpected error: {e}\n{traceback.format_exc()}")
@@ -204,7 +230,10 @@ def graph_data():
         verify_iceberg_table(table_name)
     except AnalysisException as e:
         logger.error(f"Spark Error: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": str(e)}), 400
+        return _spark_error_response(e)
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}\n{traceback.format_exc()}")
+        return jsonify({"error": str(e)}), 500
 
     key_table_name = table_name.replace(".", "_")
     job_id = re.sub(

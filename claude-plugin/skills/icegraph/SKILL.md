@@ -1,6 +1,6 @@
 ---
 name: icegraph
-description: Use the icegraph-client CLI to talk to a remote IceGraph server — list tables, fetch snapshot history, and build the metadata graph — and construct working deep-link URLs into the IceGraph web UI (e.g. pointing at a specific table, snapshot range, or graph node). Use when the user references an IceGraph server or table, asks to inspect/debug an Iceberg table via command line, or wants a link/URL that shows them a specific view or node instead of raw JSON.
+description: Use the icegraph-client CLI to talk to a remote IceGraph server — list tables, fetch snapshot history, build the metadata graph, and describe non-Iceberg tables — and construct working deep-link URLs into the IceGraph web UI (e.g. pointing at a specific table, snapshot range, or graph node). Use when the user references an IceGraph server or table, asks to inspect/debug an Iceberg table via command line, or wants a link/URL that shows them a specific view or node instead of raw JSON.
 user-invocable: true
 ---
 
@@ -67,6 +67,7 @@ have.
 icegraph [--base-url URL] [--token TOKEN] [--cookie COOKIE] [--no-verify-ssl] tables
 icegraph [...] snapshots <table> [-b/--before-snapshot-id ID]
 icegraph [...] metadata <table>
+icegraph [...] describe <table>
 icegraph [...] graph <table> [-s/--start-snapshot-id ID] [-e/--end-snapshot-id ID]
 ```
 
@@ -85,6 +86,16 @@ etc.) go to stderr, so stdout is always safe to parse directly.
 - `metadata <table>` → the latest table metadata dictionary, including `metadata_file_path` and
   `current-snapshot` (the current snapshot's entry from the metadata file, with its `summary`
   counts such as `total-records`, `total-data-files`, and `total-files-size-bytes`).
+- `describe <table>` → `{spark_schema, spark_partitions, sections, properties}` for any table Spark
+  can resolve, Iceberg or not. Use it when another command reports that the table is not an Iceberg
+  table. `spark_schema` is the table schema as Spark reports it, with Spark type names (`int`,
+  `bigint`, `timestamp`, ...), in the Iceberg schema JSON layout (`struct`/`list`/`map`, `required`,
+  `doc`), without field IDs. `spark_partitions` lists the partitions as Spark reports them as
+  `[{name, value, comment}]`, empty when unpartitioned. `sections` lists the other
+  `DESCRIBE FORMATTED` sections as `{title, rows: [{name, value, comment}]}`, and `properties` maps
+  table property keys to values. If Spark cannot read the schema, `spark_schema` is `null` and the
+  column rows appear as a `Columns` section; if it cannot read the properties, `properties` is
+  `null` and the raw `Table Properties` row stays in its section.
 - `graph <table>` → `{nodes: [...], metadata: {...}, issues: {errors: {...}, warnings: {...}}}`.
   `errors` and `warnings` each map a source, such as a file path, to a list of messages.
   Each entry in `nodes` is one file's fields as a flat dict, with no wrapper object around them, so

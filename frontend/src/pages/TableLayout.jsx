@@ -9,6 +9,12 @@ import { formatLocaleDateTime, parseUtcDate } from "../utils/dateUtils";
 import { UI_BODY_MUTED_CLASS } from "../uiTypography";
 
 import SpecDetailsOverlay from "../features/specs/components/SpecDetailsOverlay";
+import NotIcebergTablePage from "../features/table/components/NotIcebergTablePage";
+import UnreachableMetadataFilePage from "../features/table/components/UnreachableMetadataFilePage";
+import {
+  getUnreachableMetadataFile,
+  isNotIcebergTableError,
+} from "../features/table/api/tableDescriptionQueries";
 import { useTableSpecs } from "../features/specs/tableSpecs";
 import {
   BRANCH_CONNECTION_COLOR,
@@ -261,6 +267,22 @@ export default function TableLayout() {
           <GraphCollectionChecklist stages={collectionStages} />
         </div>
       </div>
+    );
+  }
+
+  const unreachableMetadataFile = getUnreachableMetadataFile(graphQuery.error);
+  if (unreachableMetadataFile !== null) {
+    return (
+      <UnreachableMetadataFilePage metadataFile={unreachableMetadataFile} />
+    );
+  }
+
+  if (isNotIcebergTableError(graphQuery.error)) {
+    return (
+      <NotIcebergTablePage
+        tableName={tableName}
+        errorMessages={[graphQuery.error.message]}
+      />
     );
   }
 

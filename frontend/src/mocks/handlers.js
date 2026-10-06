@@ -2053,6 +2053,29 @@ export const handlers = [
     return HttpResponse.json(mockResponse.metadata);
   }),
 
+  http.get("/api/v1/table-description/:tableName", ({ params }) => {
+    return HttpResponse.json({
+      spark_schema: {
+        type: "struct",
+        fields: [
+          { name: "event_id", required: false, type: "int" },
+          { name: "event_date", required: false, type: "string" },
+        ],
+      },
+      spark_partitions: [{ name: "event_date", value: "string", comment: "" }],
+      sections: [
+        {
+          title: "Detailed Table Information",
+          rows: [
+            { name: "Name", value: params.tableName, comment: "" },
+            { name: "Provider", value: "hive", comment: "" },
+          ],
+        },
+      ],
+      properties: { transient_lastDdlTime: "1791131935" },
+    });
+  }),
+
   http.post("/api/v1/graph-data", async ({ request }) => {
     const form = new URLSearchParams(await request.text());
     const range = {
