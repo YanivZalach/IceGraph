@@ -9,8 +9,6 @@ STANDART_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss.SSSSSS"
 
 REPLACE_OPERATION = "replace"
 
-NOT_ICEBERG_TABLE_ERROR_CODE = "not_iceberg_table"
-UNREACHABLE_METADATA_FILE_ERROR_CODE = "unreachable_metadata_file"
 UNREACHABLE_METADATA_FILE_PATTERN = r"(?:Failed to open input stream for file|Location does not exist): (\S+\.metadata\.json(?:\.gz)?)(?=[\s,]|$)"
 
 STAGE_COLLECT_SNAPSHOTS = "Collecting snapshots"

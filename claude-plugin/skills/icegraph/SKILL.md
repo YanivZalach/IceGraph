@@ -67,7 +67,7 @@ have.
 icegraph [--base-url URL] [--token TOKEN] [--cookie COOKIE] [--no-verify-ssl] tables
 icegraph [...] snapshots <table> [-b/--before-snapshot-id ID]
 icegraph [...] metadata <table>
-icegraph [...] describe <table>
+icegraph [...] sparkdesc <table>
 icegraph [...] graph <table> [-s/--start-snapshot-id ID] [-e/--end-snapshot-id ID]
 ```
 
@@ -86,7 +86,7 @@ etc.) go to stderr, so stdout is always safe to parse directly.
 - `metadata <table>` → the latest table metadata dictionary, including `metadata_file_path` and
   `current-snapshot` (the current snapshot's entry from the metadata file, with its `summary`
   counts such as `total-records`, `total-data-files`, and `total-files-size-bytes`).
-- `describe <table>` → `{spark_schema, spark_partitions, sections, properties}` for any table Spark
+- `sparkdesc <table>` → `{spark_schema, spark_partitions, sections, properties}` for any table Spark
   can resolve, Iceberg or not. Use it when another command reports that the table is not an Iceberg
   table. `spark_schema` is the table schema as Spark reports it, with Spark type names (`int`,
   `bigint`, `timestamp`, ...), in the Iceberg schema JSON layout (`struct`/`list`/`map`, `required`,

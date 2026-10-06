@@ -2053,7 +2053,8 @@ export const handlers = [
     return HttpResponse.json(mockResponse.metadata);
   }),
 
-  http.get("/api/v1/table-description/:tableName", ({ params }) => {
+  http.get("/api/v1/table-description", ({ request }) => {
+    const tableName = new URL(request.url).searchParams.get("table_name");
     return HttpResponse.json({
       spark_schema: {
         type: "struct",
@@ -2067,7 +2068,7 @@ export const handlers = [
         {
           title: "Detailed Table Information",
           rows: [
-            { name: "Name", value: params.tableName, comment: "" },
+            { name: "Name", value: tableName, comment: "" },
             { name: "Provider", value: "hive", comment: "" },
           ],
         },

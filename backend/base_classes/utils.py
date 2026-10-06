@@ -39,16 +39,6 @@ def timed(fn):
     return wrapper
 
 
-class NotIcebergTableError(AnalysisException):
-    pass
-
-
-class UnreachableMetadataFileError(AnalysisException):
-    def __init__(self, table_name: str, metadata_file: str):
-        super().__init__(f"Table '{table_name}' is unreachable: its current metadata file can't be read: {metadata_file}")
-        self.metadata_file = metadata_file
-
-
 def verify_iceberg_table(table_name: str) -> bool:
     spark = open_spark_connect_session()
 
@@ -57,14 +47,16 @@ def verify_iceberg_table(table_name: str) -> bool:
     except PySparkException as error:
         metadata_file_match = re.search(UNREACHABLE_METADATA_FILE_PATTERN, str(error))
         if metadata_file_match:
-            raise UnreachableMetadataFileError(table_name, metadata_file_match.group(1)) from error
+            raise AnalysisException(
+                f"Table '{table_name}' is unreachable: its current metadata file can't be read: {metadata_file_match.group(1)}"
+            ) from error
         raise
 
     with suppress(AttributeError, IndexError):
         if provider_rows[0].data_type.lower().strip() == "iceberg":
             return True
 
-    raise NotIcebergTableError(f"Table '{table_name}' is not an Iceberg table.")
+    raise AnalysisException(f"Table '{table_name}' is not an Iceberg table.")
 
 
 def to_arrow_utc(timestamp):

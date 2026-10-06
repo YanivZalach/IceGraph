@@ -21,7 +21,7 @@ class TablesClient:
         return response.json()
 
     def get_table_description(self, table: str) -> dict:
-        response = requests.get(f"{self.base_url}/api/v1/table-description/{table}", **self.requests_kwargs)
+        response = requests.get(f"{self.base_url}/api/v1/table-description", params={"table_name": table}, **self.requests_kwargs)
         raise_for_status(response)
 
         return response.json()
