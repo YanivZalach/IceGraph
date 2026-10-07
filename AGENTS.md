@@ -31,6 +31,7 @@ Instructions for coding agents working in IceGraph.
 - In Python, leave a blank line between the last line of a `try` block and its `except`, and before
   a `return` that follows other statements in the same block. A block whose only statement is a
   `return` needs no blank line.
+- In Python, when a function returns multiple values, return a dataclass instead of a tuple.
 - Define every backend runtime environment setting in `backend/env.py`.
 - Never write docstrings, or comments in Python code, unless the user asks for them. Exception: follow an
   existing per-entry comment convention, such as the one-line comment above each setting in `backend/env.py`.

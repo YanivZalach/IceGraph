@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Any
 
 from pyspark.errors import AnalysisException
@@ -14,15 +15,22 @@ COLUMNS_SECTION_TITLE = "Columns"
 PARTITION_SECTION_TITLES = {"Partition Information", "Partitioning"}
 
 
+@dataclass(frozen=True)
+class DescribeFormattedResult:
+    column_rows: list[dict[str, str]]
+    sections: list[dict[str, Any]]
+
+
 class TableDescriptionCollector(SparkTableAction):
     @timed
     def collect(self) -> dict[str, Any]:
         spark_schema = self._collect_spark_schema()
         properties = self._collect_properties()
-        column_rows, sections = self._collect_describe(skip_table_properties=properties is not None)
+        describe_result = self._collect_describe(skip_table_properties=properties is not None)
+        sections = describe_result.sections
 
         if spark_schema is None:
-            sections.insert(0, {"title": COLUMNS_SECTION_TITLE, "rows": column_rows})
+            sections.insert(0, {"title": COLUMNS_SECTION_TITLE, "rows": describe_result.column_rows})
 
         spark_partitions = []
         for section in sections:
@@ -51,7 +59,7 @@ class TableDescriptionCollector(SparkTableAction):
 
             return None
 
-    def _collect_describe(self, skip_table_properties: bool) -> tuple[list[dict[str, str]], list[dict[str, Any]]]:
+    def _collect_describe(self, skip_table_properties: bool) -> DescribeFormattedResult:
         column_rows = []
         sections = []
         current_rows = column_rows
@@ -67,7 +75,7 @@ class TableDescriptionCollector(SparkTableAction):
             else:
                 current_rows.append({"name": name, "value": row.data_type or "", "comment": row.comment or ""})
 
-        return column_rows, sections
+        return DescribeFormattedResult(column_rows=column_rows, sections=sections)
 
     def _convert_type(self, data_type: DataType) -> dict[str, Any] | str:
         if isinstance(data_type, StructType):
