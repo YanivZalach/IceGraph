@@ -22,6 +22,10 @@ class DescribeFormattedResult:
 
 
 class TableDescriptionCollector(SparkTableAction):
+    def __init__(self, full_table_name: str):
+        super().__init__(full_table_name)
+        self._warnings: dict[str, list[str]] = {}
+
     @timed
     def collect(self) -> dict[str, Any]:
         spark_schema = self._collect_spark_schema()
@@ -39,7 +43,13 @@ class TableDescriptionCollector(SparkTableAction):
                 sections.remove(section)
                 break
 
-        return {"spark_schema": spark_schema, "spark_partitions": spark_partitions, "sections": sections, "properties": properties}
+        return {
+            "spark_schema": spark_schema,
+            "spark_partitions": spark_partitions,
+            "sections": sections,
+            "properties": properties,
+            "warnings": self._warnings,
+        }
 
     def _collect_spark_schema(self) -> dict[str, Any] | None:
         try:
@@ -47,6 +57,7 @@ class TableDescriptionCollector(SparkTableAction):
 
         except AnalysisException as error:
             logger.warning(f"[{self._table_name}] Could not read the Spark schema: {error}")
+            self._warnings["spark_schema"] = [f"Could not read the Spark schema, so the columns are shown as Spark describes them: {error}"]
 
             return None
 
@@ -56,6 +67,7 @@ class TableDescriptionCollector(SparkTableAction):
 
         except AnalysisException as error:
             logger.warning(f"[{self._table_name}] Could not read the table properties: {error}")
+            self._warnings["properties"] = [f"Could not read the table properties, so they are shown as one raw row: {error}"]
 
             return None
 

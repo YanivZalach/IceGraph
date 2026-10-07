@@ -28,7 +28,7 @@ Each command prints its result as JSON on stdout; status messages go to stderr, 
 
 `metadata` returns the table's latest metadata, plus `warnings`, which maps a source to a list of messages and is empty when there are none. For example, it warns when the table uses an Iceberg format version other than 2, which IceGraph doesn't fully support yet.
 
-`sparkdesc` returns Spark's description of any table Spark can resolve, Iceberg or not, as `{"spark_schema": {...}, "spark_partitions": [...], "sections": [...], "properties": {...}}`. Use it when another command reports that the table is not an Iceberg table.
+`sparkdesc` returns Spark's description of any table Spark can resolve, Iceberg or not, as `{"spark_schema": {...}, "spark_partitions": [...], "sections": [...], "properties": {...}, "warnings": {...}}`. Use it when another command reports that the table is not an Iceberg table.
 
 ## Python
 

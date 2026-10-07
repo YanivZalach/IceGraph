@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
+import MetadataWarnings from "../../metadata/components/MetadataWarnings";
 import ExpandableSchemaSection from "../../schema/components/ExpandableSchemaSection";
 import { parseIcebergSchema } from "../../schema/schemaModel";
 import { tableDescriptionQueryOptions } from "../api/tableDescriptionQueries";
@@ -39,11 +40,12 @@ const TableDescription = ({ tableName }: TableDescriptionProps) => {
       </p>
     );
 
-  const { spark_schema, spark_partitions, sections, properties } =
+  const { spark_schema, spark_partitions, sections, properties, warnings } =
     descriptionQuery.data;
 
   return (
     <>
+      <MetadataWarnings warnings={warnings} />
       {spark_schema != null && (
         <ExpandableSchemaSection
           ariaLabel="Spark schema"

@@ -2077,6 +2077,7 @@ export const handlers = [
         },
       ],
       properties: metadata.properties,
+      warnings: {},
     });
   }),
 

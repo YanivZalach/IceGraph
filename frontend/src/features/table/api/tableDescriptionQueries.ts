@@ -23,6 +23,7 @@ const tableDescriptionSchema = z.object({
     z.object({ title: z.string(), rows: tableDescriptionRowsSchema }),
   ),
   properties: z.record(z.string(), z.string()).nullable(),
+  warnings: z.record(z.string(), z.array(z.string())),
 });
 
 export type TableDescriptionRow = z.infer<

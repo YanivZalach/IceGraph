@@ -20,6 +20,8 @@ IceGraph prepares the graph in place of the snapshot list, so the table's latest
 
 IceGraph only analyzes Iceberg tables. When the table you entered isn't an Iceberg table, for example a Hive or Parquet table, the snapshot selection page and the Graph view show a single page with the "not an Iceberg table" error at the top. Below the error, IceGraph shows the table's description from Spark's `DESCRIBE FORMATTED` so you can still see what the table is: its Spark schema, its Spark partitions, its table properties, and the detailed table information such as the provider and location. A table that doesn't exist shows Spark's "not found" error instead, without a description.
 
+If Spark can describe the table but can't read its schema or its table properties, for example a view over a table that was dropped, a Warning above the description shows Spark's error. The description still appears: without a readable schema, the columns are listed as Spark describes them, in a Columns section, and without readable properties, they appear as Spark's single raw Table Properties row.
+
 When Spark can't read an Iceberg table's current metadata file, for example because the file was deleted or moved, the snapshot selection page and the Graph view show a single "Metadata File Unreachable" page. That file is the table's entry point, the metadata file the catalog points to, so the table can't be loaded until the file is restored or the catalog points to a readable metadata file. The page shows the path of that metadata file. Any other error from Spark is shown as Spark reports it. Neither case shows a description, since Spark can't describe a table it can't read.
 
 ### Switching tables

@@ -88,7 +88,7 @@ etc.) go to stderr, so stdout is always safe to parse directly.
   counts such as `total-records`, `total-data-files`, and `total-files-size-bytes`), and
   `warnings`, which maps a source to messages, such as a warning that only format version 2 is
   currently supported.
-- `sparkdesc <table>` → `{spark_schema, spark_partitions, sections, properties}` for any table Spark
+- `sparkdesc <table>` → `{spark_schema, spark_partitions, sections, properties, warnings}` for any table Spark
   can resolve, Iceberg or not. Use it when another command reports that the table is not an Iceberg
   table. `spark_schema` is the table schema as Spark reports it, with Spark type names (`int`,
   `bigint`, `timestamp`, ...), in the Iceberg schema JSON layout (`struct`/`list`/`map`, `required`,
@@ -97,7 +97,8 @@ etc.) go to stderr, so stdout is always safe to parse directly.
   `DESCRIBE FORMATTED` sections as `{title, rows: [{name, value, comment}]}`, and `properties` maps
   table property keys to values. If Spark cannot read the schema, `spark_schema` is `null` and the
   column rows appear as a `Columns` section; if it cannot read the properties, `properties` is
-  `null` and the raw `Table Properties` row stays in its section.
+  `null` and the raw `Table Properties` row stays in its section. Each such fallback adds the Spark
+  error to `warnings`, which maps `spark_schema` or `properties` to a list of messages.
 - `graph <table>` → `{nodes: [...], metadata: {...}, issues: {errors: {...}, warnings: {...}}}`.
   `errors` and `warnings` each map a source, such as a file path, to a list of messages.
   Each entry in `nodes` is one file's fields as a flat dict, with no wrapper object around them, so
