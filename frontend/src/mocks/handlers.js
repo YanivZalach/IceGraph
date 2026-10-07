@@ -2050,7 +2050,7 @@ export const handlers = [
   }),
 
   http.get("/api/v1/table-metadata/:tableName", () => {
-    return HttpResponse.json(mockResponse.metadata);
+    return HttpResponse.json({ ...mockResponse.metadata, warnings: {} });
   }),
 
   http.get("/api/v1/table-description", ({ request }) => {

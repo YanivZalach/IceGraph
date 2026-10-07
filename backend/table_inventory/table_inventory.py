@@ -26,7 +26,7 @@ from env import Env
 from icegraph_logger import logger
 from iceberg_ports.readable_metrics import ReadableMetricsConverter
 from search_cutoff.find_search_cutoff import SearchCutoff, find_search_cutoff
-from collectors.collect_table_metadata import TableMetadataCollector
+from collectors.collect_table_metadata import TableMetadataCollector, collect_format_version_warnings
 
 
 @dataclass
@@ -89,6 +89,7 @@ class TableInventory(SparkTableAction):
         self._warn_if_data_cutoff_happened()
 
         self._set_current_table_specs()
+        self._warnings.update(collect_format_version_warnings(self._current_table_specs))
         self._set_data_file_readable_metrics()
         self._collect_file_errors()
 

@@ -8,6 +8,8 @@ IceGraph shows the table's snapshot history as a single list, newest first. The 
 
 The page also shows the table's latest metadata without building a graph. The metadata file and current snapshot statistics appear above the list, and the schema, partitioning, sort order, technical details, and metadata JSON appear below it. The Schema, Spec, and Order links and the navbar **Specs** button open the Specs panel here as well.
 
+When the table uses an Iceberg format version other than 2, a warning above the metadata says that IceGraph currently supports only format version 2. You can still pick a range and build the graph, but some information may be incomplete or inaccurate.
+
 When the table has a `comment` property, its text appears below the table name. The Schema section shows column documentation when recorded and provides a Spark SQL example for adding it.
 
 ### 3. Wait for the graph

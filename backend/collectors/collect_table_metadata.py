@@ -8,8 +8,21 @@ from pyspark.sql.types import ArrayType, MapType, StringType, StructType
 
 from base_classes.utils import collect_graph_metadata_file, format_snapshot_summary, timed
 from collectors.collect_partition_statistics import CollectPartitionStatistics, PartitionStatisticsFileRecord
+from constants import SUPPORTED_FORMAT_VERSION, UNSUPPORTED_FORMAT_VERSION_WARNING
 from graph_normalizer.utils import to_json_safe
 from spark_connect import open_spark_connect_session
+
+
+def collect_format_version_warnings(metadata: dict[str, Any]) -> dict[str, list[str]]:
+    format_version = metadata.get("format-version")
+    if format_version is None or format_version == SUPPORTED_FORMAT_VERSION:
+        return {}
+
+    return {
+        "unsupported_format_version": [
+            UNSUPPORTED_FORMAT_VERSION_WARNING.format(format_version=format_version, supported_format_version=SUPPORTED_FORMAT_VERSION)
+        ]
+    }
 
 
 class TableMetadataCollector:
@@ -19,8 +32,9 @@ class TableMetadataCollector:
     @timed
     def collect_latest(self) -> dict[str, Any]:
         metadata_path = collect_graph_metadata_file(self._table_name, None)
+        metadata = self.collect(metadata_path)
 
-        return self.collect(metadata_path)
+        return {**metadata, "warnings": collect_format_version_warnings(metadata)}
 
     def collect(self, metadata_path: str, partition_statistics_files: list[PartitionStatisticsFileRecord] | None = None) -> dict[str, Any]:
         spark = open_spark_connect_session()

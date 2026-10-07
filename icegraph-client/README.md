@@ -26,7 +26,9 @@ Each command prints its result as JSON on stdout; status messages go to stderr, 
 
 `snapshots` returns one page, starting from the table's newest snapshots, as `{"snapshots": [...], "next_before_snapshot_id": ...}`. Pass `next_before_snapshot_id` as `--before-snapshot-id` to get the next older page; it is `null` when no older snapshots remain.
 
-`sparkdesc` works for any table Spark can resolve, Iceberg or not, and returns `{"spark_schema": {...}, "spark_partitions": [...], "sections": [...], "properties": {...}}`: `spark_schema` is the table schema as Spark reports it, with Spark type names (`int`, `bigint`, `timestamp`, ...), in the Iceberg schema JSON layout (`struct`/`list`/`map`, `required`, `doc`), without field IDs. `spark_partitions` lists the partitions as Spark reports them, `sections` holds the other sections of Spark's `DESCRIBE FORMATTED` output, and `properties` holds the table properties. If Spark cannot read the schema, `spark_schema` is `null` and the column rows appear as a `Columns` section; if it cannot read the table properties, `properties` is `null` and the raw `Table Properties` row stays in its section.
+`metadata` returns the table's latest metadata, plus `warnings`, which maps a source to a list of messages and is empty when there are none. For example, it warns when the table uses an Iceberg format version other than 2, which IceGraph doesn't fully support yet.
+
+`sparkdesc` returns Spark's description of any table Spark can resolve, Iceberg or not, as `{"spark_schema": {...}, "spark_partitions": [...], "sections": [...], "properties": {...}}`. Use it when another command reports that the table is not an Iceberg table.
 
 ## Python
 
