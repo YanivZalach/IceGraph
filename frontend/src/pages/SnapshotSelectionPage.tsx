@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { snapshotMapQueryOptions } from "../features/snapshots/api/snapshotQueries";
@@ -12,6 +12,13 @@ import { useTableSpecs } from "../features/specs/tableSpecs";
 import { useMetadataKeyboardScroll } from "../features/metadata/useMetadataKeyboardScroll";
 import SnapshotRangeSelector from "../features/snapshots/components/SnapshotRangeSelector";
 import GraphPreparation from "../features/table/components/GraphPreparation";
+import NotIcebergTablePage from "../features/table/components/NotIcebergTablePage";
+import UnreachableMetadataFilePage from "../features/table/components/UnreachableMetadataFilePage";
+import {
+  getUnreachableMetadataFile,
+  isNotIcebergTableError,
+} from "../features/table/api/tableDescriptionQueries";
+import { tableMetadataQueryOptions } from "../features/table/api/tableMetadataQueries";
 import type { GraphRequestParameters } from "../features/table/api/graphCache";
 import LatestMetadataSection from "../features/metadata/components/LatestMetadataSection";
 import SpecDetailsOverlay from "../features/specs/components/SpecDetailsOverlay";
@@ -33,6 +40,7 @@ const SnapshotSelectionPage = () => {
   const tableName = search.table ?? "";
   const { detailsOpen } = useTableSpecs();
   const snapshotQuery = useInfiniteQuery(snapshotMapQueryOptions(tableName));
+  const metadataQuery = useQuery(tableMetadataQueryOptions(tableName));
   const entries = (snapshotQuery.data?.pages ?? []).flatMap((page) =>
     sortSnapshotEntries(page.snapshots),
   );
@@ -137,6 +145,24 @@ const SnapshotSelectionPage = () => {
           {goHomeButton}
         </div>
       </div>
+    );
+
+  const unreachableMetadataFile =
+    getUnreachableMetadataFile(snapshotQuery.error) ??
+    getUnreachableMetadataFile(metadataQuery.error);
+  if (unreachableMetadataFile !== null)
+    return (
+      <UnreachableMetadataFilePage metadataFile={unreachableMetadataFile} />
+    );
+
+  if (isNotIcebergTableError(snapshotQuery.error))
+    return (
+      <NotIcebergTablePage
+        tableName={tableName}
+        errorMessages={[snapshotQuery.error, metadataQuery.error].flatMap(
+          (error) => (error ? [error.message] : []),
+        )}
+      />
     );
 
   return (

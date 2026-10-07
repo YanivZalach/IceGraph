@@ -18,6 +18,7 @@ from snapshot_analyzer.snapshot_analyzer import SnapshotAnalyzer
 from snapshot_map.snapshot_mapping import collect_snapshot_map
 from spark_connect import close_spark_connect_session
 from table_inventory.table_inventory import TableInventory
+from collectors.collect_table_description import TableDescriptionCollector
 from collectors.collect_table_metadata import TableMetadataCollector
 from table_list_catalog.table_list_catalog import TableListCatalog
 
@@ -165,6 +166,21 @@ def table_metadata(table_name):
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/v1/table-description", methods=["GET"])
+def table_description():
+    table_name = request.args.get("table_name")
+    try:
+        return jsonify(TableDescriptionCollector(table_name).collect())
+
+    except AnalysisException as e:
+        logger.error(f"Spark Error: {e}\n{traceback.format_exc()}")
+        return jsonify({"error": str(e)}), 400
+
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}\n{traceback.format_exc()}")
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/v1/snapshot-map/<path:table_name>", methods=["GET"])
 def snapshot_map(table_name):
     before_snapshot_id = request.args.get("before_snapshot_id")
@@ -205,6 +221,9 @@ def graph_data():
     except AnalysisException as e:
         logger.error(f"Spark Error: {e}\n{traceback.format_exc()}")
         return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}\n{traceback.format_exc()}")
+        return jsonify({"error": str(e)}), 500
 
     key_table_name = table_name.replace(".", "_")
     job_id = re.sub(

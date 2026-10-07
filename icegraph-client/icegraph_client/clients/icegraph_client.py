@@ -24,6 +24,9 @@ class IceGraphClient:
     def get_table_metadata(self, table: str) -> dict:
         return self._tables_client.get_table_metadata(table)
 
+    def get_table_description(self, table: str) -> dict:
+        return self._tables_client.get_table_description(table)
+
     def get_snapshot_map(self, table: str, before_snapshot_id: str = None):
         return self._snapshots_client.get_snapshot_map(table, before_snapshot_id)
 

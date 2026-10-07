@@ -5,6 +5,7 @@ import { useTableSpecs } from "../../specs/tableSpecs";
 import LoadingIndicator from "../../../components/LoadingIndicator";
 import MetadataOverview from "./MetadataOverview";
 import MetadataDetails from "./MetadataDetails";
+import MetadataWarnings from "./MetadataWarnings";
 
 interface LatestMetadataSectionProps {
   tableName: string;
@@ -29,6 +30,7 @@ const LatestMetadataSection = ({
 
   return (
     <>
+      {metadata?.warnings && <MetadataWarnings warnings={metadata.warnings} />}
       {metadata ? (
         <MetadataOverview
           metadata={metadata}

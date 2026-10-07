@@ -2050,7 +2050,35 @@ export const handlers = [
   }),
 
   http.get("/api/v1/table-metadata/:tableName", () => {
-    return HttpResponse.json(mockResponse.metadata);
+    return HttpResponse.json({ ...mockResponse.metadata, warnings: {} });
+  }),
+
+  http.get("/api/v1/table-description", ({ request }) => {
+    const { metadata } = mockResponse;
+    return HttpResponse.json({
+      spark_schema: metadata.schemas.at(-1),
+      spark_partitions: metadata["partition-specs"][0].fields.map((field) => ({
+        name: field.name,
+        value: field.transform,
+        comment: "",
+      })),
+      sections: [
+        {
+          title: "Detailed Table Information",
+          rows: [
+            {
+              name: "Name",
+              value: new URL(request.url).searchParams.get("table_name"),
+              comment: "",
+            },
+            { name: "Location", value: metadata.location, comment: "" },
+            { name: "Provider", value: "iceberg", comment: "" },
+          ],
+        },
+      ],
+      properties: metadata.properties,
+      warnings: {},
+    });
   }),
 
   http.post("/api/v1/graph-data", async ({ request }) => {

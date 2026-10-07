@@ -1,12 +1,12 @@
-from constants import STANDART_DATE_FORMAT
+from constants import STANDART_DATE_FORMAT, UNREACHABLE_METADATA_FILE_PATTERN
 from spark_connect import open_spark_connect_session
 import functools
 import inspect
+import re
 import time
-from contextlib import suppress
 
 import arrow
-from pyspark.errors import AnalysisException
+from pyspark.errors import AnalysisException, PySparkException
 from pyspark.sql import functions as F
 
 from icegraph_logger import logger
@@ -41,10 +41,18 @@ def timed(fn):
 def verify_iceberg_table(table_name: str) -> bool:
     spark = open_spark_connect_session()
 
-    with suppress(AnalysisException, AttributeError, IndexError):
-        provider_row = spark.sql(f"DESCRIBE FORMATTED {table_name}").filter(F.col("col_name") == "Provider").collect()
-        if provider_row:
-            return provider_row[0].data_type.lower().strip() == "iceberg"
+    try:
+        provider_row = spark.sql(f"DESCRIBE FORMATTED {table_name}").filter(F.col("col_name") == "Provider").first()
+    except PySparkException as error:
+        metadata_file_match = re.search(UNREACHABLE_METADATA_FILE_PATTERN, str(error))
+        if metadata_file_match:
+            raise AnalysisException(
+                f"Table '{table_name}' is unreachable: its current metadata file can't be read: {metadata_file_match.group(1)}"
+            ) from error
+        raise
+
+    if provider_row and (provider_row.data_type or "").lower().strip() == "iceberg":
+        return True
 
     raise AnalysisException(f"Table '{table_name}' is not an Iceberg table.")
 

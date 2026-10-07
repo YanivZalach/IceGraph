@@ -26,9 +26,14 @@ If your server uses a self-signed or otherwise untrusted TLS certificate, pass `
 icegraph tables
 icegraph snapshots <table> [--before-snapshot-id ID]
 icegraph metadata <table>
+icegraph sparkdesc <table>
 icegraph graph <table> [--start-snapshot-id ID] [--end-snapshot-id ID]
 ```
 
 Each command prints its result as JSON on stdout, so it pipes and redirects cleanly (e.g. into `jq`, Python, or a file). Status messages go to stderr, so they never end up mixed into the JSON output.
 
 `snapshots` returns one page of the table's history, starting from its newest snapshots, as `{"snapshots": [...], "next_before_snapshot_id": ...}`. Pass `next_before_snapshot_id` as `--before-snapshot-id` to get the next older page. It is `null` when no older snapshots remain.
+
+`metadata` returns the table's latest metadata, plus `warnings`, which maps a source to a list of messages and is empty when there are none. For example, it warns when the table uses an Iceberg format version other than 2, which IceGraph doesn't fully support yet.
+
+`sparkdesc` returns Spark's description of any table Spark can resolve, Iceberg or not, as `{"spark_schema": {...}, "spark_partitions": [...], "sections": [...], "properties": {...}, "warnings": {...}}`. Use it when another command reports that the table is not an Iceberg table.

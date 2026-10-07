@@ -29,6 +29,11 @@ def _metadata(client: IceGraphClient, args: argparse.Namespace):
     return client.get_table_metadata(args.table)
 
 
+def _sparkdesc(client: IceGraphClient, args: argparse.Namespace):
+    print(f"Fetching description for '{args.table}'...", file=sys.stderr)
+    return client.get_table_description(args.table)
+
+
 def _graph(client: IceGraphClient, args: argparse.Namespace):
     print(f"Building graph for '{args.table}'...", file=sys.stderr)
     return client.get_graph(args.table, args.start_snapshot_id, args.end_snapshot_id)
@@ -66,6 +71,10 @@ def build_parser() -> argparse.ArgumentParser:
     metadata_parser = subparsers.add_parser("metadata", help="Get the latest metadata for a table")
     metadata_parser.add_argument("table", help="Full table name")
     metadata_parser.set_defaults(handler=_metadata)
+
+    sparkdesc_parser = subparsers.add_parser("sparkdesc", help="Show Spark's description of any table Spark can resolve, Iceberg or not")
+    sparkdesc_parser.add_argument("table", help="Full table name")
+    sparkdesc_parser.set_defaults(handler=_sparkdesc)
 
     graph_parser = subparsers.add_parser("graph", help="Build the metadata graph for a table")
     graph_parser.add_argument("table", help="Full table name")

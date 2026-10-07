@@ -9,6 +9,10 @@ STANDART_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss.SSSSSS"
 
 REPLACE_OPERATION = "replace"
 
+SUPPORTED_FORMAT_VERSION = 2
+
+UNREACHABLE_METADATA_FILE_PATTERN = r"(?:Failed to open input stream for file|Location does not exist): (\S+\.metadata\.json(?:\.gz)?)(?=[\s,]|$)"
+
 STAGE_COLLECT_SNAPSHOTS = "Collecting snapshots"
 STAGE_COLLECT_METADATA_FILES = "Collecting metadata files"
 STAGE_COLLECT_TABLE_STATISTICS = "Collecting table statistics files"
@@ -96,3 +100,5 @@ STATISTICS_ATTRIBUTION_WARNING = inspect.cleandoc("""
 Some metadata files could not be read. {statistics_name} files are still shown, but IceGraph may not reliably identify which metadata file first added them.
 Statistics files first observed after an unreadable metadata file may be linked to a later metadata version.
 """)
+
+UNSUPPORTED_FORMAT_VERSION_WARNING = "This table uses Iceberg format version {format_version}. IceGraph currently supports only format version {supported_format_version}, so some information may be incomplete or inaccurate. Support for other format versions is planned."

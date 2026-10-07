@@ -3,10 +3,14 @@ import {
   SpecHeaderCell,
 } from "../../specs/components/SpecFieldTable";
 
-const SchemaFieldHeader = () => (
+interface SchemaFieldHeaderProps {
+  showIds?: boolean;
+}
+
+const SchemaFieldHeader = ({ showIds = true }: SchemaFieldHeaderProps) => (
   <thead className={SPEC_HEAD_CLASS}>
     <tr>
-      <SpecHeaderCell>Field ID</SpecHeaderCell>
+      {showIds && <SpecHeaderCell>Field ID</SpecHeaderCell>}
       <SpecHeaderCell>Column</SpecHeaderCell>
       <SpecHeaderCell>Type</SpecHeaderCell>
       <SpecHeaderCell>Required</SpecHeaderCell>

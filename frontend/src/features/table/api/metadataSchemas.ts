@@ -55,6 +55,7 @@ export const tableMetadataSchema = z.looseObject({
   "table-uuid": z.string().optional(),
   location: z.string().optional(),
   "format-version": icebergIntegerSchema.optional(),
+  warnings: z.record(z.string(), z.array(z.string())).optional(),
   "last-sequence-number": icebergIntegerSchema.optional(),
   "last-column-id": icebergIntegerSchema.optional(),
   "last-partition-id": icebergIntegerSchema.optional(),
