@@ -3,9 +3,9 @@ from typing import Any
 from pyspark.errors import AnalysisException
 from pyspark.sql.types import ArrayType, DataType, MapType, StructField, StructType
 
+from base_classes.spark_table_action import SparkTableAction
 from base_classes.utils import timed
 from icegraph_logger import logger
-from spark_connect import open_spark_connect_session
 
 SECTION_TITLE_PREFIX = "#"
 SKIPPED_DESCRIBE_ROW_NAMES = {"", "# col_name"}
@@ -14,10 +14,7 @@ COLUMNS_SECTION_TITLE = "Columns"
 PARTITION_SECTION_TITLES = {"Partition Information", "Partitioning"}
 
 
-class TableDescriptionCollector:
-    def __init__(self, table_name: str):
-        self._table_name = table_name
-
+class TableDescriptionCollector(SparkTableAction):
     @timed
     def collect(self) -> dict[str, Any]:
         spark_schema = self._collect_spark_schema()
@@ -38,16 +35,20 @@ class TableDescriptionCollector:
 
     def _collect_spark_schema(self) -> dict[str, Any] | None:
         try:
-            return self._convert_type(open_spark_connect_session().table(self._table_name).schema)
+            return self._convert_type(self._spark.table(self._table_name).schema)
+
         except AnalysisException as error:
             logger.warning(f"[{self._table_name}] Could not read the Spark schema: {error}")
+
             return None
 
     def _collect_properties(self) -> dict[str, str] | None:
         try:
-            return {row.key: row.value for row in open_spark_connect_session().sql(f"SHOW TBLPROPERTIES {self._table_name}").collect()}
+            return {row.key: row.value for row in self._spark.sql(f"SHOW TBLPROPERTIES {self._table_name}").collect()}
+
         except AnalysisException as error:
             logger.warning(f"[{self._table_name}] Could not read the table properties: {error}")
+
             return None
 
     def _collect_describe(self, skip_table_properties: bool) -> tuple[list[dict[str, str]], list[dict[str, Any]]]:
@@ -55,7 +56,7 @@ class TableDescriptionCollector:
         sections = []
         current_rows = column_rows
 
-        for row in open_spark_connect_session().sql(f"DESCRIBE FORMATTED {self._table_name}").collect():
+        for row in self._spark.sql(f"DESCRIBE FORMATTED {self._table_name}").collect():
             name = row.col_name or ""
             if name in SKIPPED_DESCRIBE_ROW_NAMES or (skip_table_properties and name == TABLE_PROPERTIES_ROW_NAME):
                 continue
