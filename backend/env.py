@@ -38,6 +38,9 @@ class Env:
     # Cache lifetime for the table selection endpoint.
     TABLE_LIST_CACHE_TTL_SECONDS: int = int(os.getenv("TABLE_LIST_CACHE_TTL_SECONDS", "60"))
 
+    # Age after which the browser automatically refreshes its saved table list.
+    TABLE_LIST_BROWSER_REFRESH_SECONDS: int = int(os.getenv("TABLE_LIST_BROWSER_REFRESH_SECONDS", "82800"))
+
     # Base URL used to link Spark snapshots to their History Server applications.
     SPARK_HISTORY_SERVER_URL: str = os.getenv("SPARK_HISTORY_SERVER_URL", "")
 

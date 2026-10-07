@@ -42,6 +42,14 @@
   max-width: calc(100% - var(--spacing-panel-gutter));
 }
 
+@utility bg-home-glow {
+  background-image: radial-gradient(
+    ellipse 40% 45% at 50% 45%,
+    color-mix(in srgb, var(--color-accent) 9%, transparent),
+    transparent 70%
+  );
+}
+
 @utility bg-graph-grid {
   background-color: var(--color-canvas);
   background-image: radial-gradient(
