@@ -1839,6 +1839,91 @@ const METADATA_NODE_TYPES = new Set(["main_metadata", "metadata"]);
 const REACHABLE_NODE_TYPES = new Set(["snapshot", "manifest"]);
 const graphJobs = new Map();
 
+const SPARK_TYPE_NAMES = { long: "bigint", timestamptz: "timestamp" };
+const SPARK_PARTITION_TRANSFORMS = {
+  year: "years",
+  month: "months",
+  day: "days",
+  hour: "hours",
+};
+
+const toSparkType = (icebergType) =>
+  SPARK_TYPE_NAMES[icebergType] ?? icebergType;
+
+const describeRow = (name, value) => ({ name, value, comment: "" });
+
+const buildMockTableDescription = (tableName) => {
+  const metadata = mockResponse.metadata;
+  const currentSchema = metadata.schemas.find(
+    (schema) => schema["schema-id"] === metadata["current-schema-id"],
+  );
+  const defaultSpec = metadata["partition-specs"].find(
+    (spec) => spec["spec-id"] === metadata["default-spec-id"],
+  );
+  const sourceField = (partitionField) =>
+    currentSchema.fields.find(
+      (field) => field.id === partitionField["source-id"],
+    );
+  const partitionStruct = defaultSpec.fields
+    .map((partitionField) => {
+      const partitionType =
+        partitionField.transform === "identity"
+          ? toSparkType(sourceField(partitionField).type)
+          : "int";
+      return `${partitionField.name}:${partitionType}`;
+    })
+    .join(",");
+
+  return {
+    spark_schema: {
+      type: "struct",
+      fields: currentSchema.fields.map((field) => ({
+        name: field.name,
+        required: field.required,
+        type: toSparkType(field.type),
+      })),
+    },
+    spark_partitions: defaultSpec.fields.map((partitionField, index) => {
+      const sourceName = sourceField(partitionField).name;
+      const sparkTransform =
+        SPARK_PARTITION_TRANSFORMS[partitionField.transform];
+      return describeRow(
+        `Part ${String(index)}`,
+        sparkTransform ? `${sparkTransform}(${sourceName})` : sourceName,
+      );
+    }),
+    sections: [
+      {
+        title: "Metadata Columns",
+        rows: [
+          describeRow("_spec_id", "int"),
+          describeRow("_partition", `struct<${partitionStruct}>`),
+          describeRow("_file", "string"),
+          describeRow("_pos", "bigint"),
+          describeRow("_deleted", "boolean"),
+        ],
+      },
+      {
+        title: "Detailed Table Information",
+        rows: [
+          describeRow("Name", tableName),
+          describeRow("Type", "MANAGED"),
+          describeRow("Comment", metadata.properties.comment ?? ""),
+          describeRow("Location", metadata.location),
+          describeRow("Provider", "iceberg"),
+          describeRow("Owner", metadata.properties.owner ?? ""),
+        ],
+      },
+    ],
+    properties: {
+      ...metadata.properties,
+      "current-snapshot-id": metadata["current-snapshot-id"],
+      format: "iceberg/parquet",
+      "format-version": String(metadata["format-version"]),
+    },
+  };
+};
+
 const tableStatisticsForMetadata = (metadataPath) => {
   const metadataNode = mockResponse.nodes.find(
     (node) => node.file_path === metadataPath,
@@ -2055,26 +2140,7 @@ export const handlers = [
 
   http.get("/api/v1/table-description", ({ request }) => {
     const tableName = new URL(request.url).searchParams.get("table_name");
-    return HttpResponse.json({
-      spark_schema: {
-        type: "struct",
-        fields: [
-          { name: "event_id", required: false, type: "int" },
-          { name: "event_date", required: false, type: "string" },
-        ],
-      },
-      spark_partitions: [{ name: "event_date", value: "string", comment: "" }],
-      sections: [
-        {
-          title: "Detailed Table Information",
-          rows: [
-            { name: "Name", value: tableName, comment: "" },
-            { name: "Provider", value: "hive", comment: "" },
-          ],
-        },
-      ],
-      properties: { transient_lastDdlTime: "1791131935" },
-    });
+    return HttpResponse.json(buildMockTableDescription(tableName));
   }),
 
   http.post("/api/v1/graph-data", async ({ request }) => {

@@ -4,7 +4,6 @@ import functools
 import inspect
 import re
 import time
-from contextlib import suppress
 
 import arrow
 from pyspark.errors import AnalysisException, PySparkException
@@ -43,7 +42,7 @@ def verify_iceberg_table(table_name: str) -> bool:
     spark = open_spark_connect_session()
 
     try:
-        provider_rows = spark.sql(f"DESCRIBE FORMATTED {table_name}").filter(F.col("col_name") == "Provider").collect()
+        provider_row = spark.sql(f"DESCRIBE FORMATTED {table_name}").filter(F.col("col_name") == "Provider").first()
     except PySparkException as error:
         metadata_file_match = re.search(UNREACHABLE_METADATA_FILE_PATTERN, str(error))
         if metadata_file_match:
@@ -52,9 +51,8 @@ def verify_iceberg_table(table_name: str) -> bool:
             ) from error
         raise
 
-    with suppress(AttributeError, IndexError):
-        if provider_rows[0].data_type.lower().strip() == "iceberg":
-            return True
+    if provider_row and (provider_row.data_type or "").lower().strip() == "iceberg":
+        return True
 
     raise AnalysisException(f"Table '{table_name}' is not an Iceberg table.")
 
