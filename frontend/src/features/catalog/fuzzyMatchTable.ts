@@ -80,14 +80,33 @@ const matchSubstring = (
   };
 };
 
+const findSubsequenceStart = (
+  name: string,
+  token: string,
+  fromIndex: number,
+  remainingText: string,
+): number => {
+  const restOfSearch = token.slice(1) + remainingText;
+  for (
+    let candidate = name.indexOf(token.charAt(0), fromIndex);
+    candidate !== -1;
+    candidate = name.indexOf(token.charAt(0), candidate + 1)
+  ) {
+    if (!isSubsequence(name, restOfSearch, candidate + 1)) break;
+    if (isSegmentStart(name, candidate)) return candidate;
+  }
+  return fromIndex;
+};
+
 const matchSubsequence = (
   name: string,
   token: string,
   fromIndex: number,
+  remainingText: string,
 ): TokenMatch | null => {
   const indexes: number[] = [];
   let score = 0;
-  let cursor = fromIndex;
+  let cursor = findSubsequenceStart(name, token, fromIndex, remainingText);
   for (const character of token) {
     const index = name.indexOf(character, cursor);
     if (index === -1) return null;
@@ -135,7 +154,13 @@ const scoreTable = (
         token,
         cursor,
         remainingTexts[tokenIndex] ?? "",
-      ) ?? matchSubsequence(lowerName, token, cursor);
+      ) ??
+      matchSubsequence(
+        lowerName,
+        token,
+        cursor,
+        remainingTexts[tokenIndex] ?? "",
+      );
     if (match === null) return null;
     indexes.push(...match.indexes);
     score += match.score;
