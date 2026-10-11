@@ -21,14 +21,10 @@ export default function HomePage() {
 
   return (
     <div
-      className="relative flex min-h-[34rem] flex-col"
+      className="flex min-h-[34rem] flex-col"
       style={{ height: `calc(100dvh - ${NAV_HEIGHT_REM}rem)` }}
     >
-      <div
-        className="pointer-events-none absolute inset-0 bg-home-glow"
-        aria-hidden="true"
-      />
-      <main className="relative flex min-h-0 flex-1 flex-col items-center justify-center px-6 py-6">
+      <main className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 py-6">
         <div className="flex max-h-full min-h-0 w-full max-w-3xl flex-col rounded-2xl border border-edge bg-surface p-6 shadow-2xl shadow-black/40">
           <div className="mb-5 flex shrink-0 items-center gap-3">
             <img
@@ -54,7 +50,7 @@ export default function HomePage() {
         </div>
       </main>
 
-      <footer className={`${UI_FOOTER_TEXT_CLASS} relative shrink-0`}>
+      <footer className={`${UI_FOOTER_TEXT_CLASS} shrink-0`}>
         IceGraph, open source Apache Iceberg Metadata Visualizer
       </footer>
     </div>

@@ -118,23 +118,6 @@ const matchSubsequence = (
   return { indexes, score };
 };
 
-// Matches strings made only of printable ASCII (space through "~"). These lowercase safely in one
-// call; other strings are lowercased per character because some letters, such as Greek sigma,
-// lowercase differently depending on their position. The range excludes control characters
-// because ESLint's no-control-regex rejects them.
-const PRINTABLE_ASCII = /^[ -~]*$/;
-
-const toLowerCasePreservingLength = (name: string): string => {
-  if (PRINTABLE_ASCII.test(name)) return name.toLowerCase();
-  return name
-    .split("")
-    .map((character) => {
-      const lowerCharacter = character.toLowerCase();
-      return lowerCharacter.length === 1 ? lowerCharacter : character;
-    })
-    .join("");
-};
-
 const searchableTablesByNames = new WeakMap<string[], SearchableTable[]>();
 const lastSearchByTables = new WeakMap<SearchableTable[], LastSearch>();
 
@@ -175,7 +158,8 @@ const scoreTable = (
 };
 
 const splitSearchQuery = (query: string): string[] =>
-  toLowerCasePreservingLength(query)
+  query
+    .toLowerCase()
     .split(/[\s.]+/)
     .filter(Boolean);
 
@@ -184,7 +168,7 @@ export const toSearchableTables = (names: string[]): SearchableTable[] => {
   if (cached !== undefined) return cached;
   const searchable = names.map((name) => ({
     name,
-    lowerName: toLowerCasePreservingLength(name),
+    lowerName: name.toLowerCase(),
   }));
   searchableTablesByNames.set(names, searchable);
   return searchable;
@@ -196,7 +180,7 @@ const prepareQuery = (query: string): PreparedQuery => {
     tokens,
     remainingTexts: tokens.map((_, index) => tokens.slice(index + 1).join("")),
     searchKey: tokens.join(""),
-    exactName: toLowerCasePreservingLength(query.trim()),
+    exactName: query.trim().toLowerCase(),
   };
 };
 
