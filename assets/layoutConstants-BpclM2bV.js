@@ -1,0 +1,1 @@
+const E=4,e=25,o=20,s=35,R=2,c=.3125,N=5,a=2.5,A=1.75;function n(){return typeof document>"u"?16:parseFloat(getComputedStyle(document.documentElement).fontSize)||16}function _(t){return t*n()}function r(t){return t/n()}function u(){return _(4)}export{A as G,E as N,s as P,e as a,a as b,N as c,R as d,o as e,c as f,u as g,r as p,_ as r};
