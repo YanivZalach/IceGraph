@@ -2023,6 +2023,7 @@ export const handlers = [
     return HttpResponse.json({
       tables: ["default.events"],
       include_none_iceberg_catalogs: false,
+      browser_refresh_seconds: 82800,
     });
   }),
 

@@ -54,8 +54,6 @@ export const UI_TEXT_INPUT_CLASS = `${UI_TEXT_INPUT_BASE} rounded-lg px-3 py-2 t
 
 export const UI_TEXT_INPUT_LG_CLASS = `${UI_TEXT_INPUT_BASE} rounded-lg px-4 py-2.5 text-sm`;
 
-export const UI_FILTER_INPUT_CLASS = `${UI_TEXT_INPUT_BASE} rounded-md px-3 py-1.5 text-xs`;
-
 export const UI_TOOLBAR_BUTTON_LAYOUT =
   "w-full rounded-lg cursor-pointer font-bold text-xs uppercase tracking-wide shadow-md transition";
 

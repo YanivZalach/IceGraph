@@ -111,6 +111,7 @@ def list_tables():
             {
                 "tables": tables,
                 "include_none_iceberg_catalogs": Env.INCLUDE_NONE_ICEBERG_CATALOGS,
+                "browser_refresh_seconds": Env.TABLE_LIST_BROWSER_REFRESH_SECONDS,
             }
         )
 

@@ -1,6 +1,10 @@
 ### 1. Enter the table name
 
-From the Home page, type the fully-qualified name of your Iceberg table (e.g. `database.table_name` ) and press Enter or click Continue. You can also click **Browse catalog** to list Iceberg tables from the Spark catalog. Use the filter field to narrow the list when many tables are available. When the non-Iceberg catalogs are included, the list notes that non-Iceberg tables may also appear.
+From the Home page, search for your Iceberg table. The list below the search field shows the tables from the Spark catalog and narrows as you type. The search is fuzzy, so letters can be skipped and words separated by spaces or dots are matched in order. For example, `db evt` finds `db.events`. Each result shows the table name, with its catalog and database below it, and matching letters are highlighted. Hover over a result to see its full name. The best matches are listed first, and the top match is highlighted. Click a table to open it, or press Enter to open the highlighted one. Use the arrow keys to highlight a different table, and press Esc to clear the search. When the search is empty, the list shows your recently opened tables in a **Recent** section above the catalog in a **Tables** section. Each section appears only when it has tables and shows how many it holds. The list shows the first 100 results, so keep typing to narrow a large catalog. When the non-Iceberg catalogs are included, the list notes that non-Iceberg tables may also appear.
+
+To open a table that is not listed, type its fully-qualified name (e.g. `database.table_name` ). The last result then offers to open the name as typed. When nothing matches, it is the only result, so pressing Enter opens it.
+
+IceGraph saves the table list in your browser, so it appears immediately when the page opens. The bar below the list shows how many tables it holds and how long ago it was updated. A saved list older than the backend's refresh interval (23 hours by default) is refreshed automatically in the background, while the saved list stays visible. Click the refresh icon to reload the list from the catalog at any time. If a refresh fails, the saved list is kept and the error is shown with a **Retry** button.
 
 ### 2. Pick a snapshot range
 
@@ -26,4 +30,4 @@ When Spark can't read an Iceberg table's current metadata file, for example beca
 
 ### Switching tables
 
-While viewing a table, on the snapshot selection page or any table view, click the table name in the navbar to change tables. Enter a new table or use **Browse catalog**, then click Continue. IceGraph opens the new table in a separate browser tab so your current page stays loaded. The navbar **Docs** button and the IceGraph logo, which leads to the Home page, also open in a new tab, so your selected range and loaded graph are kept.
+While viewing a table, on the snapshot selection page or any table view, click the table name in the navbar to change tables. A search window opens over the page. Search for a table as on the Home page and open it. Press Esc to clear the search, then Esc again or click outside the window to close it. IceGraph opens the new table in a separate browser tab so your current page stays loaded. The navbar **Docs** button and the IceGraph logo, which leads to the Home page, also open in a new tab, so your selected range and loaded graph are kept.
