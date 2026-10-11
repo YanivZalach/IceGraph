@@ -99,6 +99,10 @@ const matchSubsequence = (
   return { indexes, score };
 };
 
+// Matches strings made only of printable ASCII (space through "~"). These lowercase safely in one
+// call; other strings are lowercased per character because some letters, such as Greek sigma,
+// lowercase differently depending on their position. The range excludes control characters
+// because ESLint's no-control-regex rejects them.
 const PRINTABLE_ASCII = /^[ -~]*$/;
 
 const toLowerCasePreservingLength = (name: string): string => {
