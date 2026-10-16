@@ -26,15 +26,12 @@ def format_partition(partition_dict: dict) -> str:
 def read_metadata_df(metadata_path: str):
     spark = open_spark_connect_session()
     df = spark.read.option("multiLine", True).json(metadata_path)
-    if "format-version" in df.columns:
-        row = df.select("format-version").first()
-        if row is not None and row["format-version"] == 1:
-            df = normalize_v1_metadata(df)
+    df = normalize_legacy_v1_metadata_fields(df)
 
     return df
 
 
-def normalize_v1_metadata(df):
+def normalize_legacy_v1_metadata_fields(df):
     existing = set(df.columns)
 
     if "schema" in existing and "schemas" not in existing:
