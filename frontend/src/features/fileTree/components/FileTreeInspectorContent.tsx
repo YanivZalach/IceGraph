@@ -75,7 +75,7 @@ const FileTreeInspectorContent = ({
           [
             {
               data: "Data rows (before deletes)",
-              position_delete: "Position delete records",
+              position_delete: "Position-delete file records",
               deletion_vector: "Deleted positions (vector)",
               equality_delete: "Equality delete records",
             }[file.type],

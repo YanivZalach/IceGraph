@@ -19,7 +19,7 @@ const FileTreeStatistics = ({ statistics }: FileTreeStatisticsProps) => {
       statistics.dataRowCount?.toLocaleString() ?? "Unavailable",
     ],
     [
-      "Position delete records",
+      "Position-delete file records",
       statistics.positionDeleteRecordCount?.toLocaleString() ?? "Unavailable",
     ],
     [
@@ -62,7 +62,12 @@ const FileTreeStatistics = ({ statistics }: FileTreeStatisticsProps) => {
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-slate-400">Position deletes</span>
+            <span className="text-slate-400">
+              <HelpTerm label="Position deletes">
+                Number of traditional position-delete files. Deletion vectors
+                are counted separately.
+              </HelpTerm>
+            </span>
             <span className="font-mono text-ink">
               {statistics.positionDeleteFileCount}
             </span>
@@ -70,10 +75,11 @@ const FileTreeStatistics = ({ statistics }: FileTreeStatisticsProps) => {
           <div className="flex justify-between">
             <span className="text-slate-400">
               <HelpTerm label="Deletion vectors">
-                Deletes are counted separately and are not applied to the
-                data-row count. Equality delete records are matching rules, not
-                a count of deleted rows. Sizes and file counts include data
-                files and delete entries.
+                Position-delete file records exclude deletion vectors. Deleted
+                positions in vectors are counted separately. Deletes are not
+                applied to the data-row count. Equality delete records are
+                matching rules, not a count of deleted rows. Sizes and file
+                counts include data files and delete entries.
               </HelpTerm>
             </span>
             <span className="font-mono text-ink">
