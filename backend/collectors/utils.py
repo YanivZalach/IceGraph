@@ -32,22 +32,22 @@ def read_metadata_df(metadata_path: str):
 
 
 def normalize_legacy_v1_metadata_fields(df):
-    existing = set(df.columns)
+    existing_fields = set(df.columns)
 
-    if "schema" in existing and "schemas" not in existing:
+    if "schema" in existing_fields and "schemas" not in existing_fields:
         schema = F.col("schema")
 
         if "schema-id" not in df.schema["schema"].dataType.fieldNames():
             schema = schema.withField("`schema-id`", F.lit(0))
         df = df.withColumn("schemas", F.array(schema))
 
-        if "current-schema-id" not in existing:
+        if "current-schema-id" not in existing_fields:
             df = df.withColumn("current-schema-id", schema["schema-id"])
 
-    if "partition-spec" in existing and "partition-specs" not in existing:
+    if "partition-spec" in existing_fields and "partition-specs" not in existing_fields:
         df = df.withColumn("partition-specs", F.array(F.struct(F.lit(0).alias("spec-id"), F.col("partition-spec").alias("fields"))))
 
-        if "default-spec-id" not in existing:
+        if "default-spec-id" not in existing_fields:
             df = df.withColumn("default-spec-id", F.lit(0))
 
     return df
