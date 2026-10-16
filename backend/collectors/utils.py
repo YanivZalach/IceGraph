@@ -83,6 +83,7 @@ def get_metadata_row_slim_df_from_path(metadata_path: str):
         "current-snapshot-id",
         "default-sort-order-id",
         "default-spec-id",
+        "format-version",
         "last-column-id",
         "last-partition-id",
         "last-sequence-number",

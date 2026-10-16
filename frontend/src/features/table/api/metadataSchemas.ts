@@ -57,6 +57,7 @@ export const tableMetadataSchema = z.looseObject({
   "format-version": icebergIntegerSchema.optional(),
   warnings: z.record(z.string(), z.array(z.string())).optional(),
   "last-sequence-number": icebergIntegerSchema.optional(),
+  "next-row-id": icebergIntegerSchema.nullish(),
   "last-column-id": icebergIntegerSchema.optional(),
   "last-partition-id": icebergIntegerSchema.optional(),
   "last-updated-ms": icebergIntegerSchema.nullish(),

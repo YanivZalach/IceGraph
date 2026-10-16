@@ -1071,6 +1071,10 @@ export default function TimelinePage() {
                 value={selected.details.snapshot_id}
               />
               <PanelDetailRow
+                label="Format version"
+                value={selected.details.format_version}
+              />
+              <PanelDetailRow
                 label="Schema ID"
                 value={selected.details.current_schema_id}
               />

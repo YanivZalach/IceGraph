@@ -22,4 +22,6 @@ Scroll the mouse wheel to zoom in and out (text and nodes scale together, like G
 
 Click a timeline event to open its details in a panel on the right - the same panel used in Graph view. Drag the left-edge grip to widen it, use fullscreen to expand, and copy field values with the clipboard icon. Long JSON diffs are collapsed by default and can be expanded or collapsed with **▼** / **▲**.
 
+The initial event shows the table's Iceberg format version. An upgrade, such as from format version 2 to 3, appears as a `format_version` change in that event's metadata changes.
+
 When the event's snapshot points at the job that wrote it, an **`action_link`** row links out to it, opening in a new tab.

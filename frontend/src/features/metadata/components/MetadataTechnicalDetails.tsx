@@ -20,6 +20,9 @@ const MetadataTechnicalDetails = ({
   metadata,
 }: MetadataTechnicalDetailsProps) => {
   const snapshot = metadata["current-snapshot"];
+  const snapshotId = integerText(metadata["current-snapshot-id"]);
+  const hasSnapshot = snapshotId !== null && snapshotId !== "-1";
+  const nextRowId = integerText(metadata["next-row-id"]);
   const facts = [
     { label: "Table UUID", value: metadata["table-uuid"], isCopyable: true },
     { label: "Table location", value: metadata.location, isCopyable: true },
@@ -30,11 +33,8 @@ const MetadataTechnicalDetails = ({
     },
     {
       label: "Current snapshot in this metadata",
-      value:
-        integerText(metadata["current-snapshot-id"]) === "-1"
-          ? "None"
-          : integerText(metadata["current-snapshot-id"]),
-      isCopyable: integerText(metadata["current-snapshot-id"]) !== "-1",
+      value: hasSnapshot ? snapshotId : "None",
+      isCopyable: hasSnapshot,
     },
     {
       label: "Snapshot committed",
@@ -50,6 +50,9 @@ const MetadataTechnicalDetails = ({
             isCopyable: true,
           },
         ]),
+    ...(nextRowId === null
+      ? []
+      : [{ label: "Next row ID", value: nextRowId, isCopyable: true }]),
     {
       label: "Last column ID",
       value: integerText(metadata["last-column-id"]),
