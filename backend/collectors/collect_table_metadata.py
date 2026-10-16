@@ -8,19 +8,21 @@ from pyspark.sql.types import ArrayType, MapType, StringType, StructType
 
 from base_classes.utils import collect_graph_metadata_file, format_snapshot_summary, timed
 from collectors.collect_partition_statistics import CollectPartitionStatistics, PartitionStatisticsFileRecord
-from constants import SUPPORTED_FORMAT_VERSION, UNSUPPORTED_FORMAT_VERSION_WARNING
+from constants import SUPPORTED_FORMAT_VERSIONS, UNSUPPORTED_FORMAT_VERSION_WARNING
 from graph_normalizer.utils import to_json_safe
-from spark_connect import open_spark_connect_session
+from collectors.utils import read_metadata_df
 
 
 def collect_format_version_warnings(metadata: dict[str, Any]) -> dict[str, list[str]]:
     format_version = metadata.get("format-version")
-    if format_version is None or format_version == SUPPORTED_FORMAT_VERSION:
+    if format_version is None or format_version in SUPPORTED_FORMAT_VERSIONS:
         return {}
 
     return {
         "unsupported_format_version": [
-            UNSUPPORTED_FORMAT_VERSION_WARNING.format(format_version=format_version, supported_format_version=SUPPORTED_FORMAT_VERSION)
+            UNSUPPORTED_FORMAT_VERSION_WARNING.format(
+                format_version=format_version, supported_format_versions=" and ".join(map(str, SUPPORTED_FORMAT_VERSIONS))
+            )
         ]
     }
 
@@ -37,8 +39,7 @@ class TableMetadataCollector:
         return {**metadata, "warnings": collect_format_version_warnings(metadata)}
 
     def collect(self, metadata_path: str, partition_statistics_files: list[PartitionStatisticsFileRecord] | None = None) -> dict[str, Any]:
-        spark = open_spark_connect_session()
-        metadata_df = spark.read.option("multiLine", True).json(metadata_path)
+        metadata_df = read_metadata_df(metadata_path)
         row = (
             metadata_df.withColumn("current-snapshot", self._current_snapshot_column(metadata_df))
             .drop("metadata-log")
@@ -108,8 +109,14 @@ class TableMetadataCollector:
         if not (isinstance(snapshots_type, ArrayType) and isinstance(snapshots_type.elementType, StructType)):
             return F.lit(None)
 
-        current_snapshots = F.filter("snapshots", lambda snapshot: snapshot["snapshot-id"] == F.col("current-snapshot-id"))
+        current_snapshots = F.filter(
+            "snapshots",
+            lambda snapshot: snapshot["snapshot-id"] == (F.col("current-snapshot-id") if "current-snapshot-id" in metadata_df.columns else F.lit(-1)),
+        )
         current_snapshot = F.get(current_snapshots, 0)
+        if "summary" not in snapshots_type.elementType.fieldNames():
+            return current_snapshot.withField("summary", F.lit(None).cast(MapType(StringType(), StringType())))
+
         summary_json = F.to_json(current_snapshot["summary"], {"ignoreNullFields": "true"})
         summary_without_absent_keys = F.from_json(summary_json, MapType(StringType(), StringType()))
 

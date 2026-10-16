@@ -79,11 +79,15 @@ class DataFilesExtractor(Extractor):
         return avro_df
 
     def _collect_data_files_from_manifest(self, manifest_entry: ManifestRecord):
+        df = self._spark.read.format("avro").load(manifest_entry.file_path).select("status", "data_file")
+        existing = set(df.schema["data_file"].dataType.fieldNames())
+        for field in DATA_FILE_RECORD_SCHEMA["data_file"].dataType.fields:
+            if field.name not in existing:
+                value = F.lit(0) if field.name == "content" else F.lit(None)
+                df = df.withColumn("data_file", F.col("data_file").withField(field.name, value.cast("long") if field.name == "content" else value))
+
         return (
-            self._spark.read.format("avro")
-            .load(manifest_entry.file_path)
-            .select("status", "data_file")
-            .withColumn("manifest_path", F.lit(manifest_entry.file_path))
+            df.withColumn("manifest_path", F.lit(manifest_entry.file_path))
             .withColumn(
                 "added_snapshot_timestamp",
                 F.lit(manifest_entry.added_snapshot_timestamp),

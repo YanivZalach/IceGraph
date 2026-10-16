@@ -33,3 +33,7 @@ Help on Iceberg-specific terms opens on hover, focus, or click. Press Escape to 
 Expand the technical sections for storage paths and identifiers, branches and tags, properties, and delete statistics. JSON-valued properties are formatted and long values can be expanded.
 
 **Advanced: metadata JSON** shows the returned metadata in a scrollable, highlighted block, including its `statistics` entries when present. **Copy metadata JSON** copies exactly the displayed JSON. The backend omits `metadata-log`, `snapshot-log`, and `snapshots` due to size; this export is not the full original metadata file.
+
+For format version 1 tables, technical details omit the last sequence number because v1 has no sequence numbers. Very early v1 snapshots with inline manifests are skipped with a warning; their manifests cannot be shown.
+
+Sort orders recorded in metadata are shown for both format versions 1 and 2. When no current sort order is recorded, the page says **No sort order recorded**. IceGraph does not add an unsorted order to metadata that omits it.
