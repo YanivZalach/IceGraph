@@ -1,10 +1,11 @@
 import type {
   DataFileNode,
+  DataFileType,
   FileStatistics,
   PartitionGroup,
   PartitionPathNode,
 } from "../types";
-import { aggregateReadableMetrics } from "./aggregateReadableMetrics";
+import { parseSignedInteger } from "../../../shared/components/statisticsTableBase";
 
 interface MutablePartitionPathNode {
   children: Map<string, MutablePartitionPathNode>;
@@ -12,6 +13,20 @@ interface MutablePartitionPathNode {
   label: string;
   path: string;
 }
+
+const countRecords = (
+  files: DataFileNode[],
+  type: DataFileType,
+): bigint | null => {
+  let total = 0n;
+  for (const file of files) {
+    if (file.type !== type) continue;
+    const count = parseSignedInteger(file.details.row_count);
+    if (count === undefined || count < 0n) return null;
+    total += count;
+  }
+  return total;
+};
 
 export const calculateFileStatistics = (
   files: DataFileNode[],
@@ -23,6 +38,10 @@ export const calculateFileStatistics = (
   return {
     averageSizeBytes:
       fileSizes.length === 0 ? 0 : totalSizeBytes / fileSizes.length,
+    dataRowCount: countRecords(files, "data"),
+    deletionVectorPositionCount: countRecords(files, "deletion_vector"),
+    equalityDeleteRecordCount: countRecords(files, "equality_delete"),
+    positionDeleteRecordCount: countRecords(files, "position_delete"),
     dataFileCount: files.filter((file) => file.type === "data").length,
     deletionVectorCount: files.filter((file) => file.type === "deletion_vector")
       .length,
@@ -35,12 +54,7 @@ export const calculateFileStatistics = (
     positionDeleteFileCount: files.filter(
       (file) => file.type === "position_delete",
     ).length,
-    readableMetrics: aggregateReadableMetrics(files),
     smallestSizeBytes: fileSizes.length === 0 ? 0 : Math.min(...fileSizes),
-    totalRowCount: files.reduce(
-      (total, file) => total + (file.details.row_count ?? 0),
-      0,
-    ),
     totalSizeBytes,
   };
 };

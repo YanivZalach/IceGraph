@@ -1,5 +1,4 @@
 import type { GraphNode } from "./schemas";
-import type { ReadableMetrics } from "../../utils/readableMetrics";
 
 export type DataFileType =
   "data" | "position_delete" | "deletion_vector" | "equality_delete";
@@ -17,15 +16,17 @@ export interface SnapshotNode extends GraphNode {
 export interface FileStatistics {
   averageSizeBytes: number;
   dataFileCount: number;
+  dataRowCount: bigint | null;
   deletionVectorCount: number;
+  deletionVectorPositionCount: bigint | null;
   equalityDeleteFileCount: number;
+  equalityDeleteRecordCount: bigint | null;
   fileCount: number;
   hasCompleteFileSizes: boolean;
   largestSizeBytes: number;
   positionDeleteFileCount: number;
-  readableMetrics: ReadableMetrics;
+  positionDeleteRecordCount: bigint | null;
   smallestSizeBytes: number;
-  totalRowCount: number;
   totalSizeBytes: number;
 }
 

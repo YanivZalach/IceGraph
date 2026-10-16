@@ -32,4 +32,6 @@ Help on Iceberg-specific terms opens on hover, focus, or click. Press Escape to 
 
 Expand the technical sections for storage paths and identifiers, branches and tags, properties, and delete statistics. JSON-valued properties are formatted and long values can be expanded. Format version 3 tables also show the **Next row ID**, the row ID Iceberg assigns to the next row written. The current snapshot also shows the **Snapshot first row ID**, where the commit's row IDs start, and **Snapshot added rows**, the most row IDs the commit could have assigned. Older format versions, and snapshots written before a table was upgraded to version 3, do not track row IDs, so these rows are hidden.
 
+The **Position deletes** statistic counts both traditional position-delete records and positions marked in Puffin deletion vectors. It is not a file count or necessarily a count of unique deleted rows across all delete entries. **Equality deletes** counts matching records, not the number of data rows they remove.
+
 **Advanced: metadata JSON** shows the returned metadata in a scrollable, highlighted block, including its `statistics` entries when present. **Copy metadata JSON** copies exactly the displayed JSON. The backend omits `metadata-log`, `snapshot-log`, and `snapshots` due to size; this export is not the full original metadata file.

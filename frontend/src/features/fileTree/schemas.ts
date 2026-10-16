@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { icebergIntegerSchema } from "../table/api/metadataSchemas";
 
 const identifierSchema = z
   .union([z.string(), z.number(), z.bigint()])
@@ -33,9 +34,9 @@ const readableColumnMetricsSchema = z
     source_id: z.union([z.string(), z.number()]),
     field_type: z.string(),
     column_size_in_bytes: z.string().nullish(),
-    value_count: z.number().nullish(),
-    null_value_count: z.number().nullish(),
-    nan_value_count: z.number().nullish(),
+    value_count: icebergIntegerSchema.nullish(),
+    null_value_count: icebergIntegerSchema.nullish(),
+    nan_value_count: icebergIntegerSchema.nullish(),
     lower_bound: z.unknown().optional(),
     upper_bound: z.unknown().optional(),
   })
@@ -69,7 +70,10 @@ export const fileDetailsSchema = z
     file_size_in_bytes: optionalStringValueSchema,
     content_size_in_bytes: optionalNumericValueSchema,
     readable_metrics: readableMetricsSchema.optional(),
-    row_count: optionalNumericValueSchema,
+    row_count: icebergIntegerSchema
+      .nullish()
+      .transform((value) => value ?? undefined)
+      .optional(),
   })
   .catchall(z.unknown());
 

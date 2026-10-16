@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { CSSProperties, MouseEvent } from "react";
+import { fileTypeLabel } from "../../../graphConstants.js";
 import { PanelHeader } from "../../../components/PanelContent";
 import SidePanelFrame, {
   SidePanelResizeHandle,
@@ -29,7 +30,7 @@ const FileTreeInspector = ({
   const [panelWidthPx, setPanelWidthPx] = useState<number | null>(null);
   const title =
     inspectedItem.kind === "file"
-      ? "Data file"
+      ? fileTypeLabel(inspectedItem.file.type)
       : inspectedItem.kind === "partition-path"
         ? "Partition path statistics"
         : "Partition statistics";

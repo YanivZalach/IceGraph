@@ -108,7 +108,17 @@ export const SpecSourceColumn = ({
         status === "removed" && "text-red-400 line-through",
       )}
     >
-      <code className="text-xs text-ink">{sourceText(sourceIds)}</code>
+      {(sourceIds.length === 0 ? [undefined] : sourceIds).map((id, index) => (
+        <span key={`${String(id)}.${String(index)}`}>
+          {index > 0 && ", "}
+          <code className="text-xs text-ink">
+            {sourceColumnName(columnNames, id)}
+          </code>{" "}
+          <span className="text-xs text-slate-500">
+            ({id === undefined ? "unknown" : String(id)})
+          </span>
+        </span>
+      ))}
       {previousSourceIds !== undefined &&
         previousSourceIds.map(String).join(",") !==
           sourceIds.map(String).join(",") && (

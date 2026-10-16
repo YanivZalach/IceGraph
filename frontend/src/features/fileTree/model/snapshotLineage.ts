@@ -1,3 +1,4 @@
+import { parseSignedInteger } from "../../../shared/components/statisticsTableBase";
 import { fileTypeLabel } from "../../../graphConstants.js";
 import type {
   DataFileNode,
@@ -178,6 +179,47 @@ const getLineageWarnings = (
   ];
 };
 
+const getSnapshotCoverageWarnings = (
+  snapshot: SnapshotNode,
+  files: DataFileNode[],
+): string[] => {
+  const summary = snapshot.details.summary;
+  if (typeof summary !== "object" || summary === null) return [];
+  const expectedDataFiles = parseSignedInteger(
+    "total-data-files" in summary ? summary["total-data-files"] : undefined,
+  );
+  const expectedDeleteFiles = parseSignedInteger(
+    "total-delete-files" in summary ? summary["total-delete-files"] : undefined,
+  );
+  const dataFileCount = BigInt(
+    files.filter((file) => file.type === "data").length,
+  );
+  const deleteFileCount = BigInt(files.length) - dataFileCount;
+  const differences: string[] = [];
+  if (
+    expectedDataFiles !== undefined &&
+    expectedDataFiles >= 0n &&
+    expectedDataFiles !== dataFileCount
+  ) {
+    differences.push(
+      `${String(dataFileCount)} data files loaded; snapshot reports ${String(expectedDataFiles)}`,
+    );
+  }
+  if (
+    expectedDeleteFiles !== undefined &&
+    expectedDeleteFiles >= 0n &&
+    expectedDeleteFiles !== deleteFileCount
+  ) {
+    differences.push(
+      `${String(deleteFileCount)} delete entries loaded; snapshot reports ${String(expectedDeleteFiles)}`,
+    );
+  }
+  if (differences.length === 0) return [];
+  return [
+    `Loaded files do not match snapshot ${getSnapshotIdentifier(snapshot)} totals: ${differences.join("; ")}. Files inherited from before the selected graph range or omitted during collection may be missing. Counts and metrics describe only the loaded files. Expand the graph range to include earlier snapshots and check collection warnings.`,
+  ];
+};
+
 export const getSnapshotFileResult = (
   snapshot: SnapshotNode | undefined,
   graphIndex: FileTreeGraphIndex,
@@ -189,7 +231,10 @@ export const getSnapshotFileResult = (
   }
 
   const lineage = inspectSnapshotLineage(snapshot, graphIndex, scope);
-  const lineageWarnings = getLineageWarnings(snapshot, lineage, scope);
+  const lineageWarnings = [
+    ...getLineageWarnings(snapshot, lineage, scope),
+    ...getSnapshotCoverageWarnings(snapshot, snapshotTraversal.files),
+  ];
   if (scope === "snapshot") {
     return {
       ...snapshotTraversal,

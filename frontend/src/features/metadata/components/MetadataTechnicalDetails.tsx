@@ -161,8 +161,10 @@ const MetadataTechnicalDetails = ({
             <div className="flex flex-wrap justify-between gap-3">
               <dt>
                 <HelpTerm label="Position deletes">
-                  Delete records identifying rows by data file and row position.
-                  These are records, not a count of unique deleted rows.
+                  Position delete records, including positions marked in
+                  deletion vectors stored in Puffin files. This counts records
+                  and marked positions, not necessarily unique deleted rows
+                  across all delete entries.
                 </HelpTerm>
               </dt>
               <dd>
