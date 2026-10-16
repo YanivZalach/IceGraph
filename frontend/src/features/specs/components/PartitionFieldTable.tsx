@@ -10,6 +10,7 @@ import {
   SpecValue,
 } from "./SpecFieldTable";
 import {
+  specSourceIds,
   SPEC_ROW_MARKER,
   SPEC_ROW_MARKER_TONE,
   type PartitionField,
@@ -40,7 +41,7 @@ const PartitionFieldTable = ({
                 from the source column ID.
               </HelpTerm>
             </SpecHeaderCell>
-            <SpecHeaderCell>Source column (schema ID)</SpecHeaderCell>
+            <SpecHeaderCell>Source columns (schema IDs)</SpecHeaderCell>
             <SpecHeaderCell>
               <HelpTerm label="Transform">
                 Derives the partition value: identity keeps it unchanged;
@@ -88,8 +89,10 @@ const PartitionFieldTable = ({
               <td className={SPEC_CELL_CLASS}>
                 <SpecSourceColumn
                   columnNames={columnNames}
-                  sourceId={field["source-id"]}
-                  previousSourceId={previous?.["source-id"]}
+                  sourceIds={specSourceIds(field)}
+                  previousSourceIds={
+                    previous ? specSourceIds(previous) : undefined
+                  }
                   status={status}
                 />
               </td>

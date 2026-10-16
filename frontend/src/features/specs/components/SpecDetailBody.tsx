@@ -2,6 +2,7 @@ import type { TableMetadata } from "../../table/api/metadataSchemas";
 import { findPreviousSpec, type SpecDetail } from "../tableSpecs";
 import {
   diffSpecRows,
+  specSourceIds,
   plainSpecRows,
   type PartitionField,
   type SortField,
@@ -21,7 +22,7 @@ interface SpecDetailBodyProps {
 const partitionFieldIdentity = (field: PartitionField) => field["field-id"];
 
 const sortFieldIdentity = (field: SortField) =>
-  `${String(field["source-id"])}\u0000${field.transform ?? ""}`;
+  `${specSourceIds(field).join(",")}\u0000${field.transform ?? ""}`;
 
 const SpecDetailBody = ({
   metadata,

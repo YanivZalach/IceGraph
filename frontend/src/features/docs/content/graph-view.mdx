@@ -44,3 +44,5 @@ The panel on the right lists every metadata field for the selected node. The hea
 ### Reading the graph
 
 Nodes shared across multiple snapshots mean Iceberg reused those files, data that didn't change is never rewritten. Seeing many shared data files between snapshots is normal and efficient. A snapshot with no shared manifests or data files means a full overwrite occurred.
+
+Numbers inside geometry, geography, and variant bounds are written in full, including nested values, without scientific notation. String values inside bounds retain their original text.

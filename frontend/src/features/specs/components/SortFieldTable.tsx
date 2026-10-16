@@ -10,6 +10,7 @@ import {
   SpecValue,
 } from "./SpecFieldTable";
 import {
+  specSourceIds,
   SPEC_ROW_MARKER,
   SPEC_ROW_MARKER_TONE,
   type SortField,
@@ -35,7 +36,7 @@ const SortFieldTable = ({ rows, columnNames }: SortFieldTableProps) => {
                 are broken by the next one down.
               </HelpTerm>
             </SpecHeaderCell>
-            <SpecHeaderCell>Source column (schema ID)</SpecHeaderCell>
+            <SpecHeaderCell>Source columns (schema IDs)</SpecHeaderCell>
             <SpecHeaderCell>
               <HelpTerm label="Transform">
                 Determines the sort key. identity uses the original column value
@@ -62,7 +63,7 @@ const SortFieldTable = ({ rows, columnNames }: SortFieldTableProps) => {
               index,
             ) => (
               <SpecRow
-                key={`${String(field["source-id"] ?? "none")}.${String(index)}`}
+                key={`${specSourceIds(field).join(",")}.${String(index)}`}
                 status={status}
               >
                 <td className={`${SPEC_CELL_CLASS} font-mono text-xs`}>
@@ -85,8 +86,10 @@ const SortFieldTable = ({ rows, columnNames }: SortFieldTableProps) => {
                 <td className={SPEC_CELL_CLASS}>
                   <SpecSourceColumn
                     columnNames={columnNames}
-                    sourceId={field["source-id"]}
-                    previousSourceId={previous?.["source-id"]}
+                    sourceIds={specSourceIds(field)}
+                    previousSourceIds={
+                      previous ? specSourceIds(previous) : undefined
+                    }
                     status={status}
                   />
                 </td>

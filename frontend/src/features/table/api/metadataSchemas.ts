@@ -28,6 +28,7 @@ export const tableSchemaSchema = z.looseObject({
 const partitionFieldSchema = z.looseObject({
   "field-id": icebergIntegerSchema.optional(),
   "source-id": icebergIntegerSchema.optional(),
+  "source-ids": z.array(icebergIntegerSchema).optional(),
   name: z.string().optional(),
   transform: z.string().optional(),
 });
@@ -39,6 +40,7 @@ export const partitionSpecSchema = z.looseObject({
 
 const sortFieldSchema = z.looseObject({
   "source-id": icebergIntegerSchema.optional(),
+  "source-ids": z.array(icebergIntegerSchema).optional(),
   transform: z.string().optional(),
   direction: z.string().optional(),
   "null-order": z.string().optional(),

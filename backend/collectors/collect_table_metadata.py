@@ -50,7 +50,7 @@ class TableMetadataCollector:
         )
 
         metadata = row.asDict(recursive=True)
-        metadata["schemas"] = self._read_exact_schemas(metadata_path)
+        self._apply_exact_definitions(metadata, metadata_path)
         self._format_current_snapshot_summary(metadata["current-snapshot"])
         self._collect_current_partition_statistics(metadata, metadata_path, partition_statistics_files or [])
 
@@ -125,16 +125,21 @@ class TableMetadataCollector:
         return current_snapshot.withField("summary", summary_without_absent_keys)
 
     @staticmethod
-    def _read_exact_schemas(metadata_path: str) -> list[dict[str, Any]]:
+    def _apply_exact_definitions(metadata: dict[str, Any], metadata_path: str) -> None:
         metadata_text = open_spark_connect_session().read.text(metadata_path, wholetext=True).first().value
         raw_metadata = json.loads(metadata_text)
-        if "schemas" in raw_metadata:
-            return raw_metadata["schemas"]
 
-        if "schema" in raw_metadata:
-            return [{"schema-id": 0, **raw_metadata["schema"]}]
+        metadata["schemas"] = raw_metadata.get("schemas", [])
+        if "schemas" not in raw_metadata and "schema" in raw_metadata:
+            metadata["schemas"] = [{"schema-id": 0, **raw_metadata["schema"]}]
 
-        return []
+        if "partition-specs" in raw_metadata:
+            metadata["partition-specs"] = raw_metadata["partition-specs"]
+        elif "partition-spec" in raw_metadata:
+            metadata["partition-specs"] = [{"spec-id": 0, "fields": raw_metadata["partition-spec"]}]
+
+        if "sort-orders" in raw_metadata:
+            metadata["sort-orders"] = raw_metadata["sort-orders"]
 
     @staticmethod
     def _format_current_snapshot_summary(current_snapshot: dict[str, Any] | None) -> None:
