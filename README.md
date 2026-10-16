@@ -12,7 +12,7 @@ Look at Live Demo! [https://yanivzalach.github.io/IceGraph/](https://yanivzalach
 
 > **Opinionated Design**: IceGraph is built exclusively for **Spark Connect** backends.
 
-> **Table Version**: Currently IceGraph officially supports Table Version 2.
+> **Iceberg Format Versions**: IceGraph supports Iceberg format versions 1 and 2.
 
 
 

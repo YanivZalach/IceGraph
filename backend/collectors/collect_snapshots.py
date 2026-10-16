@@ -41,15 +41,28 @@ class CollectSnapshots(Collector):
 
     @timed
     def collect(self) -> FilesCollection:
+        warnings = {}
         try:
             snapshots_df = self._query_snapshots_df()
             self._validate_snapshot_count(snapshots_df)
-            self._snapshots = [self._parse_snapshot_row(row) for row in snapshots_df.collect()]
+            self._snapshots = []
+            inline_manifest_warnings = []
+            for row in snapshots_df.collect():
+                if not row.manifest_list:
+                    inline_manifest_warnings.append(
+                        f"Snapshot {row.snapshot_id} has inline v1 manifests, which are not supported by this version of IceGraph."
+                    )
+                    continue
+
+                self._snapshots.append(self._parse_snapshot_row(row))
+            if inline_manifest_warnings:
+                warnings["inline_manifests"] = inline_manifest_warnings
+
         except Exception as e:
             logger.error(f"[{self._table_name}] snapshots collection failed", exc_info=True)
             self._errors["snapshot_collection"] = [str(e)]
 
-        return FilesCollection(files=self._snapshots, errors=self._errors)
+        return FilesCollection(files=self._snapshots, errors=self._errors, warnings=warnings)
 
     def _query_snapshots_df(self) -> pyspark.sql.DataFrame:
         return (

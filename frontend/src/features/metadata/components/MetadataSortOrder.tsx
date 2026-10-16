@@ -16,7 +16,7 @@ const MetadataSortOrder = ({
 }: MetadataSortOrderProps) => {
   const sortFields = sortOrder?.fields;
   const sortSummary = !sortFields
-    ? "Sort fields are unavailable."
+    ? "No sort order recorded."
     : sortFields.length === 0
       ? "No sort order configured."
       : "Writers sort new files by these columns when they can. Queries do not return rows in this order.";

@@ -32,13 +32,15 @@ Instructions for coding agents working in IceGraph.
   a `return` that follows other statements in the same block. A block whose only statement is a
   `return` needs no blank line.
 - In Python, when a function returns multiple values, return a dataclass instead of a tuple.
+- Define Spark schemas and data types using objects from `pyspark.sql.types` (such as
+  `StructType`, `StructField`, and `ArrayType`), never DDL schema strings or type-name strings.
 - Define every backend runtime environment setting in `backend/env.py`.
 - Never write docstrings, or comments in Python code, unless the user asks for them. Exception: follow an
   existing per-entry comment convention, such as the one-line comment above each setting in `backend/env.py`.
 
 ## Product invariants
 
-- IceGraph is read-only and targets Spark Connect backends with Iceberg Table Version 2.
+- IceGraph is read-only and targets Spark Connect backends with Iceberg Table Versions 1 and 2.
 - The backend owns Iceberg interpretation, collection, analysis, and graph normalization.
 - The frontend presents normalized data and must preserve its meaning.
 - Snapshot IDs and other large Iceberg integers must not lose precision.

@@ -217,21 +217,21 @@ class CollectMetadata(Collector):
         refs = self._parse_refs(row)
         branches_child_files = self._build_branches_child_files(refs, snap_id_to_path)
 
-        current_snap_path = snap_id_to_path.get(row["current-snapshot-id"])
+        current_snap_path = snap_id_to_path.get(row.get("current-snapshot-id"))
         child_files = ([current_snap_path] if current_snap_path else []) + branches_child_files
 
         return MetadataFileRecord(
             type=FileType.METADATA,
             file_path=row["file"],
             timestamp=str(row["metadata_timestamp"]),
-            snapshot_id=row["current-snapshot-id"],
+            snapshot_id=row.get("current-snapshot-id"),
             previous_file=self._get_previous_metadata_file(row["file"]),
             last_sequence_number=(row["last-sequence-number"] if "last-sequence-number" in row else None),
-            partition_spec_id=row["default-spec-id"],
-            current_schema_id=row["current-schema-id"],
-            sort_order_id=row["default-sort-order-id"],
+            partition_spec_id=row.get("default-spec-id"),
+            current_schema_id=row.get("current-schema-id"),
+            sort_order_id=row.get("default-sort-order-id"),
             refs=refs,
-            properties=json.loads(row["properties"]),
+            properties=json.loads(row.get("properties") or "{}"),
             pointed_snapshots_files=json.loads(row["pointed_snapshots_files"]) if row.get("pointed_snapshots_files") else None,
             pointed_table_statistics_files=self._parse_pointed_statistics(row["statistics"]),
             pointed_partition_statistics_files=self._parse_pointed_statistics(row["partition-statistics"]),

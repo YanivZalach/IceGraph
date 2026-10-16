@@ -121,6 +121,7 @@ class TableInventory(SparkTableAction):
         ).collect()
 
         self._errors.update(snapshot_collection.errors)
+        self._warnings.update(snapshot_collection.warnings)
 
         self._snapshots = snapshot_collection.files
 

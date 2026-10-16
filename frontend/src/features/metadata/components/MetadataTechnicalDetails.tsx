@@ -41,11 +41,15 @@ const MetadataTechnicalDetails = ({
       value: formatMetadataTime(snapshot?.["timestamp-ms"]),
       isCopyable: false,
     },
-    {
-      label: "Last sequence number",
-      value: integerText(metadata["last-sequence-number"]),
-      isCopyable: true,
-    },
+    ...(integerText(metadata["format-version"]) === "1"
+      ? []
+      : [
+          {
+            label: "Last sequence number",
+            value: integerText(metadata["last-sequence-number"]),
+            isCopyable: true,
+          },
+        ]),
     {
       label: "Last column ID",
       value: integerText(metadata["last-column-id"]),
