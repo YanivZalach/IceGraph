@@ -40,7 +40,7 @@ Instructions for coding agents working in IceGraph.
 
 ## Product invariants
 
-- IceGraph is read-only and targets Spark Connect backends with Iceberg Table Versions 1 and 2.
+- IceGraph is read-only and targets Spark Connect backends with Iceberg Table Versions 1, 2, and 3.
 - The backend owns Iceberg interpretation, collection, analysis, and graph normalization.
 - The frontend presents normalized data and must preserve its meaning.
 - Snapshot IDs and other large Iceberg integers must not lose precision.

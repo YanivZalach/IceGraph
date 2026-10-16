@@ -199,11 +199,11 @@ const compareDecimals = (
   );
 };
 
-const compareBoundValues = (
+export const compareNumericBoundValues = (
   first: unknown,
   second: unknown,
   fieldType: string,
-): number => {
+): number | undefined => {
   if (INTEGER_FIELD_TYPES.has(fieldType)) {
     const firstInteger = parseSignedInteger(first);
     const secondInteger = parseSignedInteger(second);
@@ -227,6 +227,17 @@ const compareBoundValues = (
       return compareNumbers(firstNumber, secondNumber);
     }
   }
+
+  return undefined;
+};
+
+const compareBoundValues = (
+  first: unknown,
+  second: unknown,
+  fieldType: string,
+): number => {
+  const numericComparison = compareNumericBoundValues(first, second, fieldType);
+  if (numericComparison !== undefined) return numericComparison;
 
   if (DATE_FIELD_TYPES.has(fieldType)) {
     const firstTimestamp =

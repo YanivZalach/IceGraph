@@ -1,6 +1,7 @@
 import SchemaTypeView from "./SchemaTypeView";
 import SchemaFieldHeader from "./SchemaFieldHeader";
 import SchemaFieldDoc from "./SchemaFieldDoc";
+import SchemaFieldDefaults from "./SchemaFieldDefaults";
 import { formatRequiredness, parseIcebergSchema } from "../schemaModel";
 import {
   SPEC_CELL_CLASS,
@@ -45,6 +46,7 @@ const SchemaFieldList = ({ schema, showIds = true }: SchemaFieldListProps) => {
                 {field.doc && (
                   <SchemaFieldDoc className="mt-1">{field.doc}</SchemaFieldDoc>
                 )}
+                <SchemaFieldDefaults field={field} className="mt-1" />
               </td>
               <td className={SPEC_CELL_CLASS}>
                 <SchemaTypeView type={field.type} showIds={showIds} />

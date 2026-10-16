@@ -71,6 +71,7 @@ export interface SchemaFieldDiff {
   after: IcebergSchemaField | null;
   isNameChanged: boolean;
   isDocChanged: boolean;
+  isDefaultChanged: boolean;
   isRequiredChanged: boolean;
   type: SchemaTypeDiff;
 }

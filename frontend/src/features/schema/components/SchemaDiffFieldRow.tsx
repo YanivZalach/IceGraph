@@ -8,6 +8,7 @@ import {
 } from "../schemaDiffPresentation";
 import SchemaDiffValue from "./SchemaDiffValue";
 import SchemaFieldDoc from "./SchemaFieldDoc";
+import SchemaFieldDefaults from "./SchemaFieldDefaults";
 import SchemaDiffTypeView from "./SchemaDiffTypeView";
 import {
   SPEC_CELL_CLASS,
@@ -85,10 +86,33 @@ const SchemaDiffFieldRow = ({
   ) : field.doc ? (
     <SchemaFieldDoc className="mt-1">{field.doc}</SchemaFieldDoc>
   ) : null;
+  const defaultChanges = fieldDiff.isDefaultChanged
+    ? (
+        [
+          ["initial default", "initialDefault"],
+          ["write default", "writeDefault"],
+        ] as const
+      )
+        .filter(([, key]) => fieldDiff.before?.[key] !== fieldDiff.after?.[key])
+        .map(([label, key]) => (
+          <SchemaFieldDoc key={key} className="mt-1" label={label}>
+            <span className="flex flex-wrap gap-2">
+              <span className="text-red-400 line-through">
+                {fieldDiff.before?.[key] ?? "none"}
+              </span>
+              <span className="text-slate-500">→</span>
+              <span className="text-green-400">
+                {fieldDiff.after?.[key] ?? "none"}
+              </span>
+            </span>
+          </SchemaFieldDoc>
+        ))
+    : null;
   const column = (
     <div>
       {name}
       {doc}
+      {defaultChanges ?? <SchemaFieldDefaults field={field} className="mt-1" />}
     </div>
   );
   const required = (
