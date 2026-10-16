@@ -25,6 +25,8 @@ This view solves a common source of confusion: if you look at the **raw storage 
 
 - Many small files in one partition path often indicates a small-file problem
 
+- On format version 3 tables, each data file shows its `first_row_id`, the row ID of its first row. Its rows have row IDs from `first_row_id` to `first_row_id` + **Rows** - 1. When branches give the file different row IDs, `first_row_id` is hidden and `first_row_id_by_snapshot` lists each value with the earliest snapshot that gave it
+
 - Each file shows its **first appearing timestamp** tracked by Iceberg in the **asked snapshot range**
 
 - Each folder shows a **last modified** timestamp - the most recent first-appearing timestamp among all its files

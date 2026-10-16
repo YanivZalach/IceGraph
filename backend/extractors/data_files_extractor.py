@@ -39,8 +39,13 @@ DATA_FILE_RECORD_SCHEMA = StructType(
         StructField("manifest_path", StringType(), False),
         StructField("added_snapshot_timestamp", StringType(), True),
         StructField("added_snapshot_id", LongType(), True),
+        StructField("stored_first_row_id", LongType(), True),
+        StructField("row_id_offset", LongType(), True),
     ]
 )
+
+DATA_FILE_CONTENT_DATA = 0
+MANIFEST_ENTRY_STATUS_DELETED = 2
 
 
 class DataFilesExtractor(Extractor):
@@ -94,12 +99,37 @@ class DataFilesExtractor(Extractor):
             df = df.withColumn("data_file", data_file)
 
         return (
-            df.withColumn("manifest_path", F.lit(manifest_entry.file_path))
+            self._with_row_id_inheritance(df, existing_fields, bool(manifest_entry.hidden_manifest_data.row_id_assignments))
+            .select("status", "data_file", "stored_first_row_id", "row_id_offset")
+            .withColumn("manifest_path", F.lit(manifest_entry.file_path))
             .withColumn(
                 "added_snapshot_timestamp",
                 F.lit(manifest_entry.added_snapshot_timestamp),
             )
             .withColumn("added_snapshot_id", F.lit(manifest_entry.added_snapshot_id))
+        )
+
+    @staticmethod
+    def _with_row_id_inheritance(manifest_df, data_file_fields: set[str], has_row_id_assignments: bool):
+        if not has_row_id_assignments:
+            return manifest_df.withColumn("stored_first_row_id", F.lit(None).cast(LongType())).withColumn(
+                "row_id_offset", F.lit(None).cast(LongType())
+            )
+
+        stored_first_row_id = F.col("data_file.first_row_id") if "first_row_id" in data_file_fields else F.lit(None).cast(LongType())
+        is_data_file = F.col("data_file.content") == DATA_FILE_CONTENT_DATA
+        is_live_data_file = is_data_file & (F.col("status") != MANIFEST_ENTRY_STATUS_DELETED)
+
+        preceding_entries = Window.orderBy("manifest_entry_position").rowsBetween(Window.unboundedPreceding, -1)
+        unassigned_record_count = F.when(is_live_data_file & stored_first_row_id.isNull(), F.col("data_file.record_count")).otherwise(F.lit(0))
+        preceding_unassigned_rows = F.coalesce(F.sum(unassigned_record_count).over(preceding_entries), F.lit(0))
+
+        row_id_offset = F.when(is_live_data_file & stored_first_row_id.isNull(), preceding_unassigned_rows)
+
+        return (
+            manifest_df.withColumn("manifest_entry_position", F.monotonically_increasing_id())
+            .withColumn("stored_first_row_id", F.when(is_data_file, stored_first_row_id))
+            .withColumn("row_id_offset", row_id_offset)
         )
 
     @staticmethod
@@ -131,7 +161,14 @@ class DataFilesExtractor(Extractor):
                     F.col("manifest_path").alias("path"),
                     F.col("status").alias("status"),
                 )
-            ).alias("pointing_manifests")
+            ).alias("pointing_manifests"),
+            F.collect_list(
+                F.struct(
+                    F.col("manifest_path").alias("path"),
+                    F.col("stored_first_row_id").alias("stored_first_row_id"),
+                    F.col("row_id_offset").alias("row_id_offset"),
+                )
+            ).alias("row_id_entries"),
         )
         return manifest_entries_df
 
@@ -139,6 +176,7 @@ class DataFilesExtractor(Extractor):
     def _join_data_file_with_manifest_entries(latest_df, manifest_entries_df):
         return manifest_entries_df.join(latest_df, on="file_path", how="inner").select(
             "pointing_manifests",
+            "row_id_entries",
             "latest_snapshot_id",
             "latest_snapshot_timestamp",
             "earliest_snapshot_id",

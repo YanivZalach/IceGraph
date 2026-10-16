@@ -1,9 +1,10 @@
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from base_classes.base_file import BaseFile, HiddenFile
 from collectors.collect_manifests import ManifestRecord
 from collectors.collector import Collector, FilesCollection
+from collectors.row_lineage import RowIdAssignment, build_row_id_fields
 from constants import DATA_FILES_CUTOFF_UNKNOWN_WARNING, DATA_FILES_CUTOFF_WARNING, FileType
 from env import Env
 from extractors.data_files_extractor import DataFilesExtractor
@@ -23,6 +24,8 @@ class DataFileRecord(BaseFile):
     format: str
     file_size_in_bytes: str
     row_count: int
+    first_row_id: Optional[int]
+    first_row_id_by_snapshot: Optional[Dict[str, int]]
     partition: str
     earliest_appearing_snapshot_id: int
     earliest_appearing_snapshot_timestamp: Optional[str]
@@ -48,6 +51,7 @@ class CollectDataFiles(Collector):
     ):
         super().__init__(full_table_name)
         self._manifests = manifests
+        self._row_id_assignments_by_manifest = {manifest.file_path: manifest.hidden_manifest_data.row_id_assignments for manifest in manifests}
 
         self._data_files: List[DataFileRecord] = []
 
@@ -66,6 +70,7 @@ class CollectDataFiles(Collector):
 
     def _process_data_file_row(self, data_file_row) -> DataFileRecord:
         data_file_dict = data_file_row.asDict(recursive=True)
+        row_id_fields = build_row_id_fields(self._build_row_id_assignments(data_file_dict["row_id_entries"]))
 
         return DataFileRecord(
             type=self._detect_file_type(data_file_dict["content"]),
@@ -74,6 +79,8 @@ class CollectDataFiles(Collector):
             format=data_file_dict["file_format"],
             file_size_in_bytes=str(data_file_dict["file_size_in_bytes"]),
             row_count=data_file_dict["record_count"],
+            first_row_id=row_id_fields.first_row_id,
+            first_row_id_by_snapshot=row_id_fields.first_row_id_by_snapshot,
             partition=format_partition(data_file_dict["partition"]),
             earliest_appearing_snapshot_id=data_file_dict["earliest_snapshot_id"],
             earliest_appearing_snapshot_timestamp=data_file_dict["earliest_snapshot_timestamp"],
@@ -95,6 +102,19 @@ class CollectDataFiles(Collector):
                 ),
             ),
         )
+
+    def _build_row_id_assignments(self, row_id_entries: List[Dict[str, Any]]) -> List[RowIdAssignment]:
+        assignments = []
+        for entry in row_id_entries:
+            for manifest_assignment in self._row_id_assignments_by_manifest.get(entry["path"], []):
+                first_row_id = entry["stored_first_row_id"]
+                if first_row_id is None and entry["row_id_offset"] is not None:
+                    first_row_id = manifest_assignment.first_row_id + entry["row_id_offset"]
+
+                if first_row_id is not None:
+                    assignments.append(RowIdAssignment(manifest_assignment.snapshot_id, manifest_assignment.snapshot_timestamp, first_row_id))
+
+        return assignments
 
     @staticmethod
     def _detect_file_type(content: int) -> FileType:

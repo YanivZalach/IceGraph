@@ -23,6 +23,8 @@ const MetadataTechnicalDetails = ({
   const snapshotId = integerText(metadata["current-snapshot-id"]);
   const hasSnapshot = snapshotId !== null && snapshotId !== "-1";
   const nextRowId = integerText(metadata["next-row-id"]);
+  const snapshotFirstRowId = integerText(snapshot?.["first-row-id"]);
+  const snapshotAddedRows = integerText(snapshot?.["added-rows"]);
   const facts = [
     { label: "Table UUID", value: metadata["table-uuid"], isCopyable: true },
     { label: "Table location", value: metadata.location, isCopyable: true },
@@ -41,6 +43,24 @@ const MetadataTechnicalDetails = ({
       value: formatMetadataTime(snapshot?.["timestamp-ms"]),
       isCopyable: false,
     },
+    ...(snapshotFirstRowId === null
+      ? []
+      : [
+          {
+            label: "Snapshot first row ID",
+            value: snapshotFirstRowId,
+            isCopyable: true,
+          },
+        ]),
+    ...(snapshotAddedRows === null
+      ? []
+      : [
+          {
+            label: "Snapshot added rows",
+            value: formatCount(snapshotAddedRows),
+            isCopyable: false,
+          },
+        ]),
     ...(integerText(metadata["format-version"]) === "1"
       ? []
       : [

@@ -85,6 +85,8 @@ export const tableMetadataSchema = z.looseObject({
     .looseObject({
       "snapshot-id": icebergIntegerSchema,
       "timestamp-ms": icebergIntegerSchema.optional(),
+      "first-row-id": icebergIntegerSchema.nullish(),
+      "added-rows": icebergIntegerSchema.nullish(),
       summary: z.record(z.string(), z.string()).optional(),
     })
     .nullish(),
