@@ -106,12 +106,14 @@ class TableMetadataCollector:
     @staticmethod
     def _current_snapshot_column(metadata_df: DataFrame) -> Column:
         snapshots_type = metadata_df.schema["snapshots"].dataType if "snapshots" in metadata_df.columns else None
-        if not (isinstance(snapshots_type, ArrayType) and isinstance(snapshots_type.elementType, StructType)):
+        if "current-snapshot-id" not in metadata_df.columns or not (
+            isinstance(snapshots_type, ArrayType) and isinstance(snapshots_type.elementType, StructType)
+        ):
             return F.lit(None)
 
         current_snapshots = F.filter(
             "snapshots",
-            lambda snapshot: snapshot["snapshot-id"] == (F.col("current-snapshot-id") if "current-snapshot-id" in metadata_df.columns else F.lit(-1)),
+            lambda snapshot: snapshot["snapshot-id"] == F.col("current-snapshot-id"),
         )
         current_snapshot = F.get(current_snapshots, 0)
         if "summary" not in snapshots_type.elementType.fieldNames():
