@@ -26,6 +26,9 @@ class DataFileRecord(BaseFile):
     row_count: int
     first_row_id: Optional[int]
     first_row_id_by_snapshot: Optional[Dict[str, int]]
+    referenced_data_file: Optional[str]
+    content_offset: Optional[int]
+    content_size_in_bytes: Optional[int]
     partition: str
     earliest_appearing_snapshot_id: int
     earliest_appearing_snapshot_timestamp: Optional[str]
@@ -73,7 +76,8 @@ class CollectDataFiles(Collector):
         row_id_fields = build_row_id_fields(self._build_row_id_assignments(data_file_dict["row_id_entries"]))
 
         return DataFileRecord(
-            type=self._detect_file_type(data_file_dict["content"]),
+            type=self._detect_file_type(data_file_dict["content"], data_file_dict["content_offset"]),
+            node_id=data_file_dict["node_id"],
             virtual_read=True,
             file_path=data_file_dict["file_path"],
             format=data_file_dict["file_format"],
@@ -81,6 +85,9 @@ class CollectDataFiles(Collector):
             row_count=data_file_dict["record_count"],
             first_row_id=row_id_fields.first_row_id,
             first_row_id_by_snapshot=row_id_fields.first_row_id_by_snapshot,
+            referenced_data_file=data_file_dict["referenced_data_file"],
+            content_offset=data_file_dict["content_offset"],
+            content_size_in_bytes=data_file_dict["content_size_in_bytes"],
             partition=format_partition(data_file_dict["partition"]),
             earliest_appearing_snapshot_id=data_file_dict["earliest_snapshot_id"],
             earliest_appearing_snapshot_timestamp=data_file_dict["earliest_snapshot_timestamp"],
@@ -117,12 +124,12 @@ class CollectDataFiles(Collector):
         return assignments
 
     @staticmethod
-    def _detect_file_type(content: int) -> FileType:
+    def _detect_file_type(content: int, content_offset: Optional[int]) -> FileType:
         if content == 0:
             return FileType.DATA
 
         if content == 1:
-            return FileType.POSITION_DELETE
+            return FileType.POSITION_DELETE if content_offset is None else FileType.DELETION_VECTOR
 
         return FileType.EQUALITY_DELETE
 

@@ -51,10 +51,14 @@ class PartitionStatisticsExtractor(Extractor):
             partition_statistics_df = partition_statistics_df.withColumn("position_delete_file_count", F.lit(0))
         if "equality_delete_file_count" not in columns:
             partition_statistics_df = partition_statistics_df.withColumn("equality_delete_file_count", F.lit(0))
+        if "dv_count" not in columns:
+            partition_statistics_df = partition_statistics_df.withColumn("dv_count", F.lit(0))
 
         partitions_with_deletes = F.count(
             F.when(
-                (F.coalesce(F.col("position_delete_file_count"), F.lit(0)) > 0) | (F.coalesce(F.col("equality_delete_file_count"), F.lit(0)) > 0),
+                (F.coalesce(F.col("position_delete_file_count"), F.lit(0)) > 0)
+                | (F.coalesce(F.col("equality_delete_file_count"), F.lit(0)) > 0)
+                | (F.coalesce(F.col("dv_count"), F.lit(0)) > 0),
                 1,
             )
         )

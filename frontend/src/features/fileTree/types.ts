@@ -1,7 +1,8 @@
 import type { GraphNode } from "./schemas";
 import type { ReadableMetrics } from "../../utils/readableMetrics";
 
-export type DataFileType = "data" | "position_delete" | "equality_delete";
+export type DataFileType =
+  "data" | "position_delete" | "deletion_vector" | "equality_delete";
 export type FileTreeViewMode = "flat" | "tree";
 export type SnapshotFileScope = "commit" | "snapshot";
 
@@ -16,6 +17,7 @@ export interface SnapshotNode extends GraphNode {
 export interface FileStatistics {
   averageSizeBytes: number;
   dataFileCount: number;
+  deletionVectorCount: number;
   equalityDeleteFileCount: number;
   fileCount: number;
   hasCompleteFileSizes: boolean;

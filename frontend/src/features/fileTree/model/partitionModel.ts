@@ -24,6 +24,8 @@ export const calculateFileStatistics = (
     averageSizeBytes:
       fileSizes.length === 0 ? 0 : totalSizeBytes / fileSizes.length,
     dataFileCount: files.filter((file) => file.type === "data").length,
+    deletionVectorCount: files.filter((file) => file.type === "deletion_vector")
+      .length,
     equalityDeleteFileCount: files.filter(
       (file) => file.type === "equality_delete",
     ).length,
@@ -44,7 +46,10 @@ export const calculateFileStatistics = (
 };
 
 export const getFileSizeBytes = (file: DataFileNode): number | null => {
-  const rawFileSize = file.details.file_size_in_bytes;
+  const rawFileSize =
+    file.type === "deletion_vector"
+      ? file.details.content_size_in_bytes
+      : file.details.file_size_in_bytes;
   if (rawFileSize === undefined) return null;
   const fileSizeBytes = Number(rawFileSize);
   return Number.isFinite(fileSizeBytes) && fileSizeBytes >= 0

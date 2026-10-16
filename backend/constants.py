@@ -39,6 +39,7 @@ class FileType(Enum):
     MANIFEST = "manifest"
     DATA = "data"
     POSITION_DELETE = "position_delete"
+    DELETION_VECTOR = "deletion_vector"
     EQUALITY_DELETE = "equality_delete"
     TABLE_STATISTICS = "table_statistics"
     PARTITION_STATISTICS = "partition_statistics"

@@ -65,7 +65,9 @@ export const fileDetailsSchema = z
     earliest_appearing_snapshot_timestamp: z.string().nullish(),
     format: z.string().optional(),
     refs: z.record(z.string(), referenceSchema).optional(),
+    file_path: z.string().optional(),
     file_size_in_bytes: optionalStringValueSchema,
+    content_size_in_bytes: optionalNumericValueSchema,
     readable_metrics: readableMetricsSchema.optional(),
     row_count: optionalNumericValueSchema,
   })

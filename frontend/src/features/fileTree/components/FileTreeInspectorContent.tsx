@@ -26,6 +26,7 @@ const FILE_SUMMARY_KEYS = new Set([
   "file_path",
   "file_size_in_bytes",
   "format",
+  "node_id",
   "readable_metrics",
   "row_count",
   "type",
@@ -138,7 +139,10 @@ const FileTreeInspectorContent = ({
               File information
             </PanelSectionTitle>
             <div className="flex flex-col gap-3">
-              <PanelDetailRow label="File path" value={file.id} />
+              <PanelDetailRow
+                label="File path"
+                value={file.details.file_path ?? file.id}
+              />
               {fileDetailRows.map(([key, value]) => (
                 <PanelDetailRow
                   key={key}

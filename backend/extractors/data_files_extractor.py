@@ -54,7 +54,7 @@ class DataFilesExtractor(Extractor):
         self._manifest_entries = manifest_entries
 
     def extract_dataframe(self) -> pyspark.sql.DataFrame:
-        data_files_df = self._collect_data_files_from_manifests(self._manifest_entries)
+        data_files_df = self._with_deletion_vector_columns(self._collect_data_files_from_manifests(self._manifest_entries))
         data_files_with_latest_ts_df = self._match_data_file_to_latest_snapshot(data_files_df)
 
         data_files_by_manifests_df = self._group_data_files_by_manifests(data_files_df)
@@ -133,9 +133,28 @@ class DataFilesExtractor(Extractor):
         )
 
     @staticmethod
+    def _with_deletion_vector_columns(data_files_df):
+        data_file_fields = data_files_df.schema["data_file"].dataType.fieldNames()
+
+        def data_file_field(name, data_type):
+            return F.col(f"data_file.{name}") if name in data_file_fields else F.lit(None).cast(data_type)
+
+        content_offset = data_file_field("content_offset", LongType())
+        node_id = F.when(content_offset.isNull(), F.col("data_file.file_path")).otherwise(
+            F.concat(F.col("data_file.file_path"), F.lit("#"), content_offset.cast(StringType()))
+        )
+
+        return (
+            data_files_df.withColumn("referenced_data_file", data_file_field("referenced_data_file", StringType()))
+            .withColumn("content_offset", content_offset)
+            .withColumn("content_size_in_bytes", data_file_field("content_size_in_bytes", LongType()))
+            .withColumn("node_id", node_id)
+        )
+
+    @staticmethod
     def _match_data_file_to_latest_snapshot(avro_df):
-        window_desc = Window.partitionBy("data_file.file_path").orderBy(F.desc("added_snapshot_timestamp"))
-        window_asc = Window.partitionBy("data_file.file_path").orderBy(F.asc("added_snapshot_timestamp"))
+        window_desc = Window.partitionBy("node_id").orderBy(F.desc("added_snapshot_timestamp"))
+        window_asc = Window.partitionBy("node_id").orderBy(F.asc("added_snapshot_timestamp"))
 
         avro_df = (
             avro_df.withColumn("row_num", F.row_number().over(window_desc))
@@ -144,8 +163,11 @@ class DataFilesExtractor(Extractor):
         )
 
         latest_df = avro_df.filter(F.col("row_num") == 1).select(
-            F.col("data_file.file_path").alias("file_path"),
+            F.col("node_id"),
             F.col("data_file"),
+            F.col("referenced_data_file"),
+            F.col("content_offset"),
+            F.col("content_size_in_bytes"),
             F.col("added_snapshot_timestamp").alias("latest_snapshot_timestamp"),
             F.col("added_snapshot_id").alias("latest_snapshot_id"),
             F.col("earliest_snapshot_timestamp"),
@@ -155,7 +177,7 @@ class DataFilesExtractor(Extractor):
 
     @staticmethod
     def _group_data_files_by_manifests(avro_df):
-        manifest_entries_df = avro_df.groupBy("data_file.file_path").agg(
+        manifest_entries_df = avro_df.groupBy("node_id").agg(
             F.collect_list(
                 F.struct(
                     F.col("manifest_path").alias("path"),
@@ -174,7 +196,11 @@ class DataFilesExtractor(Extractor):
 
     @staticmethod
     def _join_data_file_with_manifest_entries(latest_df, manifest_entries_df):
-        return manifest_entries_df.join(latest_df, on="file_path", how="inner").select(
+        return manifest_entries_df.join(latest_df, on="node_id", how="inner").select(
+            "node_id",
+            "referenced_data_file",
+            "content_offset",
+            "content_size_in_bytes",
             "pointing_manifests",
             "row_id_entries",
             "latest_snapshot_id",

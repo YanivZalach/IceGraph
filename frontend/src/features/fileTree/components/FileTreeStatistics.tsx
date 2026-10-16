@@ -52,6 +52,12 @@ const FileTreeStatistics = ({ statistics }: FileTreeStatisticsProps) => {
             </span>
           </div>
           <div className="flex justify-between">
+            <span className="text-slate-400">Deletion vectors</span>
+            <span className="font-mono text-ink">
+              {statistics.deletionVectorCount}
+            </span>
+          </div>
+          <div className="flex justify-between">
             <span className="text-slate-400">Equality deletes</span>
             <span className="font-mono text-ink">
               {statistics.equalityDeleteFileCount}
