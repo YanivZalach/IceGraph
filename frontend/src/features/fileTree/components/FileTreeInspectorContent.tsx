@@ -1,20 +1,17 @@
 import type { MouseEvent } from "react";
-import DataFileReadableMetricsTable from "../../../components/DataFileReadableMetricsTable";
 import PanelIssueNotice from "../../../components/PanelIssueNotice";
 import {
   PanelDetailRow,
   PanelSectionTitle,
 } from "../../../components/PanelContent";
-import ReadableMetricsSummary from "../../../components/ReadableMetricsSummary";
 import { fileTypeLabel } from "../../../graphConstants.js";
 import { formatBytesAsMebibytes } from "../../../shared/lib/formatBytes";
 import { isEmptyValue } from "../../../shared/lib/isEmptyValue";
-import {
-  calculateFileStatistics,
-  getFileSizeBytes,
-} from "../model/partitionModel";
+import { parseSignedInteger } from "../../../shared/components/statisticsTableBase";
+import { calculateFileStatistics } from "../model/partitionModel";
 import type { InspectedFileTreeItem } from "../types";
 import FileTreeStatistics from "./FileTreeStatistics";
+import FileTreeMetrics from "./FileTreeMetrics";
 
 interface FileTreeInspectorContentProps {
   inspectedItem: InspectedFileTreeItem;
@@ -26,6 +23,7 @@ const FILE_SUMMARY_KEYS = new Set([
   "file_path",
   "file_size_in_bytes",
   "format",
+  "node_id",
   "readable_metrics",
   "row_count",
   "type",
@@ -52,15 +50,7 @@ const FileTreeInspectorContent = ({
         : null;
   const statistics =
     inspectedFiles === null ? null : calculateFileStatistics(inspectedFiles);
-  const readableMetrics =
-    file?.details.readable_metrics ?? statistics?.readableMetrics ?? {};
-  const hasReadableMetrics = Object.keys(readableMetrics).length > 0;
-  const totalFileSizeBytes =
-    file !== null
-      ? getFileSizeBytes(file)
-      : statistics?.hasCompleteFileSizes === true
-        ? statistics.totalSizeBytes
-        : null;
+  const fileRecordCount = parseSignedInteger(file?.details.row_count);
   const fileSummaryRows =
     file === null
       ? []
@@ -68,12 +58,31 @@ const FileTreeInspectorContent = ({
           file.details.file_size_in_bytes === undefined
             ? null
             : [
-                "File size",
+                file.type === "deletion_vector"
+                  ? "Puffin file size"
+                  : "File size",
                 formatBytesAsMebibytes(file.details.file_size_in_bytes),
               ],
-          file.details.row_count === undefined
+          file.type !== "deletion_vector" ||
+          file.details.content_size_in_bytes === undefined
             ? null
-            : ["Rows", file.details.row_count.toLocaleString()],
+            : [
+                "Vector size (used in totals)",
+                formatBytesAsMebibytes(
+                  String(file.details.content_size_in_bytes),
+                ),
+              ],
+          [
+            {
+              data: "Data rows (before deletes)",
+              position_delete: "Position-delete file records",
+              deletion_vector: "Deleted positions (vector)",
+              equality_delete: "Equality delete records",
+            }[file.type],
+            fileRecordCount !== undefined && fileRecordCount >= 0n
+              ? fileRecordCount.toLocaleString()
+              : "Unavailable",
+          ],
           file.details.format === undefined
             ? null
             : ["Format", file.details.format],
@@ -103,23 +112,10 @@ const FileTreeInspectorContent = ({
       ) : statistics !== null ? (
         <FileTreeStatistics statistics={statistics} />
       ) : null}
-      {hasReadableMetrics && (
-        <>
-          <ReadableMetricsSummary
-            readableMetrics={readableMetrics}
-            sizeScope={file === null ? "files" : "file"}
-            totalFileSizeBytes={totalFileSizeBytes}
-          />
-          <DataFileReadableMetricsTable
-            readableMetrics={readableMetrics}
-            sizeScope={file === null ? "files" : "file"}
-            title={
-              file === null ? "Aggregated Readable Metrics" : "Readable Metrics"
-            }
-            totalFileSizeBytes={totalFileSizeBytes}
-          />
-        </>
-      )}
+      <FileTreeMetrics
+        files={file === null ? (inspectedFiles ?? []) : [file]}
+        isAggregated={file === null}
+      />
       {file !== null && (
         <>
           <div className="flex justify-center border-y border-edge py-4">
@@ -138,7 +134,10 @@ const FileTreeInspectorContent = ({
               File information
             </PanelSectionTitle>
             <div className="flex flex-col gap-3">
-              <PanelDetailRow label="File path" value={file.id} />
+              <PanelDetailRow
+                label="File path"
+                value={file.details.file_path ?? file.id}
+              />
               {fileDetailRows.map(([key, value]) => (
                 <PanelDetailRow
                   key={key}

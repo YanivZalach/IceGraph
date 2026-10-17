@@ -18,6 +18,7 @@ MANIFEST_BASE_SCHEMA = StructType(
         StructField("path", StringType(), False),
         StructField("added_snapshot_id", LongType(), False),
         StructField("snapshot_id", LongType(), False),
+        StructField("first_row_id", LongType(), True),
     ]
 )
 
@@ -63,14 +64,14 @@ class ManifestsExtractor(Extractor):
         return result.select(*(MANIFEST_BASE_SCHEMA.fieldNames()))
 
     def _read_manifests_for_snapshot(self, manifest_list_path: str, snap_id: str) -> pyspark.sql.DataFrame:
-        return (
-            self._spark.read.format("avro")
-            .load(manifest_list_path)
-            .select(
-                F.col("manifest_path").alias("path"),
-                F.col("added_snapshot_id"),
-                F.lit(snap_id).alias("snapshot_id"),
-            )
+        manifest_list_df = self._spark.read.format("avro").load(manifest_list_path)
+        first_row_id = F.col("first_row_id") if "first_row_id" in manifest_list_df.columns else F.lit(None).cast(LongType())
+
+        return manifest_list_df.select(
+            F.col("manifest_path").alias("path"),
+            F.col("added_snapshot_id"),
+            F.lit(snap_id).alias("snapshot_id"),
+            first_row_id.alias("first_row_id"),
         )
 
     def _enrich_manifests_with_timestamps(self, manifests_df: pyspark.sql.DataFrame) -> pyspark.sql.DataFrame:
@@ -88,14 +89,17 @@ class ManifestsExtractor(Extractor):
 
     def _filter_ignored_manifests(self, manifests_df: pyspark.sql.DataFrame) -> pyspark.sql.DataFrame:
         return manifests_df.join(self._manifests_to_ignore_df, on="path", how="left_anti").select(
-            "path", "added_snapshot_id", "added_snapshot_timestamp", "snapshot_id"
+            "path", "added_snapshot_id", "added_snapshot_timestamp", "snapshot_id", "first_row_id"
         )
 
     @staticmethod
     def _aggregate_snapshots_by_manifests_sorted(manifests_df: pyspark.sql.DataFrame) -> pyspark.sql.DataFrame:
         return (
             manifests_df.groupBy("path", "added_snapshot_id", "added_snapshot_timestamp")
-            .agg(F.collect_list("snapshot_id").alias("snapshot_ids"))
+            .agg(
+                F.collect_list("snapshot_id").alias("snapshot_ids"),
+                F.collect_list(F.struct("snapshot_id", "first_row_id")).alias("snapshot_first_row_ids"),
+            )
             .orderBy(F.col("added_snapshot_timestamp"), ascending=False)
         )
 

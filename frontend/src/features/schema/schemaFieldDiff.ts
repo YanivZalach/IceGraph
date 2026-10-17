@@ -25,6 +25,7 @@ const createPresentFieldDiff = (
   after: status === "added" ? field : null,
   isNameChanged: false,
   isDocChanged: false,
+  isDefaultChanged: false,
   isRequiredChanged: false,
   type: createPresentTypeDiff(field.type, status),
 });
@@ -201,12 +202,16 @@ const diffMatchedFields = (
   const type = diffSchemaTypes(before.type, after.type, context);
   const isNameChanged = before.name !== after.name;
   const isDocChanged = before.doc !== after.doc;
+  const isDefaultChanged =
+    before.initialDefault !== after.initialDefault ||
+    before.writeDefault !== after.writeDefault;
   const isRequiredChanged = before.isRequired !== after.isRequired;
 
   return {
     status: nestedStatus(
       isNameChanged ||
         isDocChanged ||
+        isDefaultChanged ||
         isRequiredChanged ||
         type.status === "changed",
       [type.status],
@@ -216,6 +221,7 @@ const diffMatchedFields = (
     after,
     isNameChanged,
     isDocChanged,
+    isDefaultChanged,
     isRequiredChanged,
     type,
   };

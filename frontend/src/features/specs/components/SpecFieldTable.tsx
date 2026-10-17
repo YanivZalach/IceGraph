@@ -85,33 +85,47 @@ export const SpecValue = ({
 
 export const SpecSourceColumn = ({
   columnNames,
-  sourceId,
-  previousSourceId,
+  sourceIds,
+  previousSourceIds,
   status,
 }: {
   columnNames: ReadonlyMap<string, string>;
-  sourceId: IcebergInteger | undefined;
-  previousSourceId?: IcebergInteger | undefined;
+  sourceIds: readonly IcebergInteger[];
+  previousSourceIds?: readonly IcebergInteger[] | undefined;
   status?: SpecFieldStatus | null;
-}) => (
-  <span
-    className={cn(
-      status === "added" && "text-green-400",
-      status === "removed" && "text-red-400 line-through",
-    )}
-  >
-    <code className="text-xs text-ink">
-      {sourceColumnName(columnNames, sourceId)}
-    </code>{" "}
-    <span className="text-xs text-slate-500">
-      ({sourceId === undefined ? "unknown" : String(sourceId)})
-    </span>
-    {previousSourceId !== undefined &&
-      String(previousSourceId) !== String(sourceId) && (
-        <span className="ml-2 text-xs text-amber-600 line-through">
-          {sourceColumnName(columnNames, previousSourceId)} (
-          {String(previousSourceId)})
-        </span>
+}) => {
+  const sourceText = (ids: readonly IcebergInteger[]) =>
+    ids.length === 0
+      ? "Unknown column (unknown)"
+      : ids
+          .map((id) => `${sourceColumnName(columnNames, id)} (${String(id)})`)
+          .join(", ");
+
+  return (
+    <span
+      className={cn(
+        status === "added" && "text-green-400",
+        status === "removed" && "text-red-400 line-through",
       )}
-  </span>
-);
+    >
+      {(sourceIds.length === 0 ? [undefined] : sourceIds).map((id, index) => (
+        <span key={`${String(id)}.${String(index)}`}>
+          {index > 0 && ", "}
+          <code className="text-xs text-ink">
+            {sourceColumnName(columnNames, id)}
+          </code>{" "}
+          <span className="text-xs text-slate-500">
+            ({id === undefined ? "unknown" : String(id)})
+          </span>
+        </span>
+      ))}
+      {previousSourceIds !== undefined &&
+        previousSourceIds.map(String).join(",") !==
+          sourceIds.map(String).join(",") && (
+          <span className="ml-2 text-xs text-amber-600 line-through">
+            {sourceText(previousSourceIds)}
+          </span>
+        )}
+    </span>
+  );
+};

@@ -10,7 +10,7 @@ import { copyText } from "../../../shared/lib/clipboard";
 
 interface FileTreeToolbarProps {
   branches: Branch[];
-  checkedFileIds: Set<string>;
+  checkedFilePaths: string[];
   currentSnapshotId: string;
   fileCount: number;
   onBranchChange: (branchName: string | null) => void;
@@ -35,7 +35,7 @@ const ACTION_CLASS =
 
 const FileTreeToolbar = ({
   branches,
-  checkedFileIds,
+  checkedFilePaths,
   currentSnapshotId,
   fileCount,
   onBranchChange,
@@ -72,7 +72,7 @@ const FileTreeToolbar = ({
     if (copyStatusTimeoutRef.current !== null) {
       window.clearTimeout(copyStatusTimeoutRef.current);
     }
-    const isCopied = await copyText([...checkedFileIds].join("\n"));
+    const isCopied = await copyText(checkedFilePaths.join("\n"));
     setCopyStatus(isCopied ? "copied" : "failed");
     copyStatusTimeoutRef.current = window.setTimeout(() => {
       setCopyStatus("idle");
@@ -133,7 +133,7 @@ const FileTreeToolbar = ({
         <button
           type="button"
           onClick={onClearSelection}
-          disabled={checkedFileIds.size === 0}
+          disabled={checkedFilePaths.length === 0}
           className={ACTION_CLASS}
         >
           Clear
@@ -141,14 +141,14 @@ const FileTreeToolbar = ({
         <button
           type="button"
           onClick={() => void handleCopyPaths()}
-          disabled={checkedFileIds.size === 0}
+          disabled={checkedFilePaths.length === 0}
           className="shrink-0 cursor-pointer rounded-lg border border-accent px-3 py-1.5 text-sm text-accent transition hover:bg-accent-muted disabled:cursor-not-allowed disabled:border-edge disabled:text-slate-600"
         >
           {copyStatus === "copied"
             ? "Copied"
             : copyStatus === "failed"
               ? "Copy failed"
-              : `Copy paths (${String(checkedFileIds.size)})`}
+              : `Copy paths (${String(checkedFilePaths.length)})`}
         </button>
         <span className="whitespace-nowrap text-xs text-slate-500">
           {partitionCount} partitions / {fileCount} files

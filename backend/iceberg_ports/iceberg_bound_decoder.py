@@ -2,11 +2,15 @@
 # https://github.com/apache/iceberg/blob/7f879b11366e17a676a03f15247a821751415529/api/src/main/java/org/apache/iceberg/types/Conversions.java
 
 import base64
+import math
 import re
 import struct
-from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
+from typing import Dict
 from uuid import UUID
+
+from iceberg_ports.date_time_decoder import decode_date, decode_nanosecond_timestamp, decode_time, decode_timestamp
+from iceberg_ports.variant_decoder import decode_variant
 
 
 def decode_iceberg_bound(field_type: str, encoded_bound: bytes):
@@ -15,7 +19,7 @@ def decode_iceberg_bound(field_type: str, encoded_bound: bytes):
 
     if field_type in {"int", "date"}:
         value = struct.unpack("<i", encoded_bound)[0]
-        return _decode_date(value) if field_type == "date" else value
+        return decode_date(value) if field_type == "date" else value
 
     if field_type in {"long", "time", "timestamp", "timestamptz", "timestamp_ns", "timestamptz_ns"}:
         value = _decode_promoted_long(encoded_bound)
@@ -40,10 +44,16 @@ def decode_iceberg_bound(field_type: str, encoded_bound: bytes):
     if decimal_match:
         scale = int(decimal_match.group(1))
         unscaled_value = int.from_bytes(encoded_bound, byteorder="big", signed=True)
-        return str(Decimal(unscaled_value).scaleb(-scale))
+        return format(Decimal(f"{unscaled_value}E-{scale}"), "f")
 
     if field_type == "unknown":
         return None
+
+    if field_type == "variant":
+        return decode_variant(encoded_bound)
+
+    if re.fullmatch(r"(geometry|geography)(\(.*\))?", field_type):
+        return _decode_geospatial_bound(encoded_bound)
 
     raise ValueError(f"Unsupported Iceberg primitive type: {field_type}")
 
@@ -60,33 +70,23 @@ def _decode_long_value(field_type: str, value: int):
         return value
 
     if field_type == "time":
-        return _decode_time(value)
+        return decode_time(value)
 
     if field_type in {"timestamp", "timestamptz"}:
-        return _decode_timestamp(value)
+        return decode_timestamp(value)
 
-    return _decode_nanosecond_timestamp(value)
-
-
-def _decode_date(days_since_epoch: int) -> str:
-    return (date(1970, 1, 1) + timedelta(days=days_since_epoch)).isoformat()
+    return decode_nanosecond_timestamp(value)
 
 
-def _decode_time(microseconds_since_midnight: int) -> str:
-    hours, remainder = divmod(microseconds_since_midnight, 3_600_000_000)
-    minutes, remainder = divmod(remainder, 60_000_000)
-    seconds, microseconds = divmod(remainder, 1_000_000)
-    return time(hours, minutes, seconds, microseconds).isoformat()
+def _decode_geospatial_bound(encoded_bound: bytes) -> Dict[str, float]:
+    if len(encoded_bound) not in {16, 24, 32}:
+        raise ValueError(f"Invalid geospatial bound size: {len(encoded_bound)}. Valid sizes are 16, 24, or 32 bytes.")
 
+    coordinates = struct.unpack(f"<{len(encoded_bound) // 8}d", encoded_bound)
+    bound = {"x": coordinates[0], "y": coordinates[1]}
+    if len(coordinates) >= 3 and not math.isnan(coordinates[2]):
+        bound["z"] = coordinates[2]
+    if len(coordinates) == 4:
+        bound["m"] = coordinates[3]
 
-def _decode_timestamp(microseconds_since_epoch: int) -> str:
-    epoch = datetime(1970, 1, 1, tzinfo=timezone.utc)
-    timestamp = epoch + timedelta(microseconds=microseconds_since_epoch)
-    return timestamp.isoformat()
-
-
-def _decode_nanosecond_timestamp(nanoseconds_since_epoch: int) -> str:
-    seconds, nanoseconds = divmod(nanoseconds_since_epoch, 1_000_000_000)
-    epoch = datetime(1970, 1, 1, tzinfo=timezone.utc)
-    timestamp = epoch + timedelta(seconds=seconds)
-    return f"{timestamp:%Y-%m-%dT%H:%M:%S}.{nanoseconds:09d}+00:00"
+    return bound

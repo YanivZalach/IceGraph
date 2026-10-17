@@ -56,6 +56,13 @@ const FileTreeView = ({ graphData }: FileTreeViewProps) => {
   const partitions = groupFilesByPartition(snapshotFiles, pageState.search);
   const partitionPathNodes = buildPartitionPathTree(partitions);
   const visibleFiles = partitions.flatMap((partition) => partition.files);
+  const checkedFilePaths = [
+    ...new Set(
+      [...pageState.checkedFileIds].map(
+        (id) => graphIndex.nodesById[id]?.details.file_path ?? id,
+      ),
+    ),
+  ];
   const snapshotWarnings = [
     ...new Set([
       ...currentSnapshotSelection.warnings,
@@ -86,7 +93,7 @@ const FileTreeView = ({ graphData }: FileTreeViewProps) => {
     <div className="h-graph flex w-full min-h-0 flex-none flex-col overflow-hidden bg-canvas">
       <FileTreeToolbar
         branches={branches}
-        checkedFileIds={pageState.checkedFileIds}
+        checkedFilePaths={checkedFilePaths}
         currentSnapshotId={currentSnapshotId}
         fileCount={visibleFiles.length}
         onBranchChange={pageState.setBranch}

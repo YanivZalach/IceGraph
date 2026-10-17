@@ -2,7 +2,7 @@ from contextlib import suppress
 
 import arrow
 from pyspark.sql import functions as F
-from pyspark.sql.types import ArrayType, StringType, StructType
+from pyspark.sql.types import ArrayType, LongType, StringType, StructType
 
 from spark_connect import open_spark_connect_session
 
@@ -78,22 +78,23 @@ def get_metadata_row_slim_df_from_path(metadata_path: str):
         existing.add("pointed_snapshots_files")
         df = df.withColumn("pointed_snapshots_files", F.transform(F.col("snapshots"), pointed_snapshot))
 
-    scalar_cols = [
+    integer_cols = [
         "current-schema-id",
         "current-snapshot-id",
         "default-sort-order-id",
         "default-spec-id",
+        "format-version",
         "last-column-id",
         "last-partition-id",
         "last-sequence-number",
         "last-updated-ms",
-        "location",
-        "table-uuid",
         "pointed_metadata_log_count",
     ]
+    string_cols = ["location", "table-uuid"]
     json_cols = ["properties", "refs", "pointed_snapshots_files", "statistics", "partition-statistics"]
 
     return df.select(
-        *[F.col(column) for column in scalar_cols if column in existing],
+        *[F.col(column).cast(LongType()).alias(column) for column in integer_cols if column in existing],
+        *[F.col(column) for column in string_cols if column in existing],
         *[F.to_json(F.col(column)).alias(column) for column in json_cols if column in existing],
     )

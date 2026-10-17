@@ -9,7 +9,7 @@ STANDART_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss.SSSSSS"
 
 REPLACE_OPERATION = "replace"
 
-SUPPORTED_FORMAT_VERSIONS = (1, 2)
+SUPPORTED_FORMAT_VERSIONS = (1, 2, 3)
 
 UNREACHABLE_METADATA_FILE_PATTERN = r"(?:Failed to open input stream for file|Location does not exist): (\S+\.metadata\.json(?:\.gz)?)(?=[\s,]|$)"
 
@@ -39,6 +39,7 @@ class FileType(Enum):
     MANIFEST = "manifest"
     DATA = "data"
     POSITION_DELETE = "position_delete"
+    DELETION_VECTOR = "deletion_vector"
     EQUALITY_DELETE = "equality_delete"
     TABLE_STATISTICS = "table_statistics"
     PARTITION_STATISTICS = "partition_statistics"

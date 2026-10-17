@@ -2,6 +2,7 @@ import type {
   ReadableColumnMetrics,
   ReadableMetrics,
 } from "../../../utils/readableMetrics";
+import { compareNumericBoundValues } from "../../../utils/readableMetricsStatistics";
 import type { DataFileNode } from "../types";
 
 const NUMERIC_BOUND_FIELD_TYPES = new Set(["int", "long", "float", "double"]);
@@ -62,13 +63,12 @@ const compareBoundValues = (
   fieldType: string,
 ): number | null => {
   if (
-    NUMERIC_BOUND_FIELD_TYPES.has(fieldType) &&
-    typeof firstValue === "number" &&
-    Number.isFinite(firstValue) &&
-    typeof secondValue === "number" &&
-    Number.isFinite(secondValue)
+    NUMERIC_BOUND_FIELD_TYPES.has(fieldType) ||
+    fieldType.startsWith("decimal")
   ) {
-    return firstValue === secondValue ? 0 : firstValue < secondValue ? -1 : 1;
+    return (
+      compareNumericBoundValues(firstValue, secondValue, fieldType) ?? null
+    );
   }
   if (
     STRING_BOUND_FIELD_TYPES.has(fieldType) &&

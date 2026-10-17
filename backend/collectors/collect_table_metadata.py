@@ -1,5 +1,4 @@
 import json
-from contextlib import suppress
 from typing import Any
 
 from pyspark.sql import Column, DataFrame
@@ -11,6 +10,7 @@ from collectors.collect_partition_statistics import CollectPartitionStatistics, 
 from constants import SUPPORTED_FORMAT_VERSIONS, UNSUPPORTED_FORMAT_VERSION_WARNING
 from graph_normalizer.utils import to_json_safe
 from collectors.utils import read_metadata_df
+from spark_connect import open_spark_connect_session
 
 
 def collect_format_version_warnings(metadata: dict[str, Any]) -> dict[str, list[str]]:
@@ -18,11 +18,12 @@ def collect_format_version_warnings(metadata: dict[str, Any]) -> dict[str, list[
     if format_version is None or format_version in SUPPORTED_FORMAT_VERSIONS:
         return {}
 
+    supported_format_versions = [str(version) for version in SUPPORTED_FORMAT_VERSIONS]
+    supported_format_versions_text = f"{', '.join(supported_format_versions[:-1])}, and {supported_format_versions[-1]}"
+
     return {
         "unsupported_format_version": [
-            UNSUPPORTED_FORMAT_VERSION_WARNING.format(
-                format_version=format_version, supported_format_versions=" and ".join(map(str, SUPPORTED_FORMAT_VERSIONS))
-            )
+            UNSUPPORTED_FORMAT_VERSION_WARNING.format(format_version=format_version, supported_format_versions=supported_format_versions_text)
         ]
     }
 
@@ -49,8 +50,7 @@ class TableMetadataCollector:
         )
 
         metadata = row.asDict(recursive=True)
-        metadata["schemas"] = metadata.get("schemas", [])
-        self._parse_schema_field_types(metadata["schemas"])
+        self._apply_exact_definitions(metadata, metadata_path)
         self._format_current_snapshot_summary(metadata["current-snapshot"])
         self._collect_current_partition_statistics(metadata, metadata_path, partition_statistics_files or [])
 
@@ -125,11 +125,21 @@ class TableMetadataCollector:
         return current_snapshot.withField("summary", summary_without_absent_keys)
 
     @staticmethod
-    def _parse_schema_field_types(schemas: list[dict[str, Any]]) -> None:
-        for schema in schemas:
-            for field in schema["fields"]:
-                with suppress(Exception):
-                    field["type"] = json.loads(field["type"])
+    def _apply_exact_definitions(metadata: dict[str, Any], metadata_path: str) -> None:
+        metadata_text = open_spark_connect_session().read.text(metadata_path, wholetext=True).first().value
+        raw_metadata = json.loads(metadata_text)
+
+        metadata["schemas"] = raw_metadata.get("schemas", [])
+        if "schemas" not in raw_metadata and "schema" in raw_metadata:
+            metadata["schemas"] = [{"schema-id": 0, **raw_metadata["schema"]}]
+
+        if "partition-specs" in raw_metadata:
+            metadata["partition-specs"] = raw_metadata["partition-specs"]
+        elif "partition-spec" in raw_metadata:
+            metadata["partition-specs"] = [{"spec-id": 0, "fields": raw_metadata["partition-spec"]}]
+
+        if "sort-orders" in raw_metadata:
+            metadata["sort-orders"] = raw_metadata["sort-orders"]
 
     @staticmethod
     def _format_current_snapshot_summary(current_snapshot: dict[str, Any] | None) -> None:

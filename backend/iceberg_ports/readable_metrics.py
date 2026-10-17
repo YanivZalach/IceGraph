@@ -42,6 +42,8 @@ class PrimitiveField:
 RESERVED_FIELDS_BY_ID = {
     2_147_483_546: PrimitiveField(2_147_483_546, "file_path", "string"),
     2_147_483_545: PrimitiveField(2_147_483_545, "pos", "long"),
+    2_147_483_540: PrimitiveField(2_147_483_540, "_row_id", "long"),
+    2_147_483_539: PrimitiveField(2_147_483_539, "_last_updated_sequence_number", "long"),
 }
 
 

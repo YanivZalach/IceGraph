@@ -1,3 +1,5 @@
+import { formatPlainNumber } from "../../utils/readableMetrics";
+
 export interface IcebergSchema {
   fields: IcebergSchemaField[];
   identifierFieldIds: string[];
@@ -7,6 +9,8 @@ export interface IcebergSchemaField {
   id: string | null;
   name: string;
   doc?: string;
+  initialDefault?: string;
+  writeDefault?: string;
   isRequired: boolean | null;
   type: IcebergType;
 }
@@ -80,6 +84,15 @@ const parseRequired = (value: unknown): boolean | null =>
 const parseFieldId = (value: unknown): string | null =>
   parseId(readProperty(value, "id"));
 
+const formatDefaultValue = (value: unknown): string | undefined => {
+  if (value === null || value === undefined) return undefined;
+  if (value === "") return '""';
+  if (typeof value === "string") return value;
+  if (typeof value === "number") return formatPlainNumber(value);
+  if (typeof value === "boolean") return String(value);
+  return JSON.stringify(value);
+};
+
 const parseFields = (value: unknown): IcebergSchemaField[] => {
   if (!Array.isArray(value)) {
     return [];
@@ -89,10 +102,18 @@ const parseFields = (value: unknown): IcebergSchemaField[] => {
     const id = parseFieldId(field);
     const name = readProperty(field, "name");
     const doc = readProperty(field, "doc");
+    const initialDefault = formatDefaultValue(
+      readProperty(field, "initial-default"),
+    );
+    const writeDefault = formatDefaultValue(
+      readProperty(field, "write-default"),
+    );
 
     return {
       id,
       ...(typeof doc === "string" ? { doc } : {}),
+      ...(initialDefault === undefined ? {} : { initialDefault }),
+      ...(writeDefault === undefined ? {} : { writeDefault }),
       name: typeof name === "string" ? name : "Unnamed field",
       isRequired: parseRequired(readProperty(field, "required")),
       type: parseType(readProperty(field, "type")),
