@@ -11,6 +11,7 @@ export const graphDataSchema = z.object({
   nodes: z.array(
     z.looseObject({
       file_path: z.string(),
+      node_id: z.string(),
       type: z.string(),
       virtual_read: z.boolean().optional(),
       snapshot_id: icebergIntegerSchema.nullish(),

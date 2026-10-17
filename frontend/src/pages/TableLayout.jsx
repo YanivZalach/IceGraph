@@ -207,7 +207,7 @@ export default function TableLayout() {
         ? 1
         : (colorShiftByFilePath.get(details.file_path) ?? 1);
 
-      const nodeId = details.node_id ?? details.file_path;
+      const nodeId = details.node_id;
 
       return {
         id: nodeId,
