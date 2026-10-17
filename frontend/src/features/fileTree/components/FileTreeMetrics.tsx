@@ -1,6 +1,5 @@
 import DataFileReadableMetricsTable from "../../../components/DataFileReadableMetricsTable";
 import ReadableMetricsSummary from "../../../components/ReadableMetricsSummary";
-import { PanelSectionTitle } from "../../../components/PanelContent";
 import { aggregateReadableMetrics } from "../model/aggregateReadableMetrics";
 import { calculateFileStatistics } from "../model/partitionModel";
 import type { DataFileNode } from "../types";
@@ -15,6 +14,10 @@ const METRIC_GROUPS = [
   { type: "position_delete", title: "Position-delete file column metrics" },
   { type: "equality_delete", title: "Equality-delete file column metrics" },
 ] as const;
+
+const FILE_TYPE_SECTION_CLASS = "rounded-lg border border-edge";
+const FILE_TYPE_HEADING_CLASS =
+  "rounded-t-lg border-b border-edge bg-surface-deep px-4 py-3 text-base font-semibold leading-snug text-accent";
 
 const FileTreeMetrics = ({ files, isAggregated }: FileTreeMetricsProps) => (
   <>
@@ -31,39 +34,42 @@ const FileTreeMetrics = ({ files, isAggregated }: FileTreeMetricsProps) => (
       const sizeScope = isAggregated ? "files" : "file";
 
       return (
-        <section key={type} className="space-y-4">
-          <PanelSectionTitle>{title}</PanelSectionTitle>
-          <p className="text-xs text-slate-400">
-            {type === "data"
-              ? "Metrics describe stored data before deletes are applied."
-              : "Metrics describe delete-file records, not surviving data rows."}{" "}
-            Sizes and percentages use only these{" "}
-            {type === "data" ? "data" : "delete"} files.
-          </p>
-          <ReadableMetricsSummary
-            readableMetrics={readableMetrics}
-            sizeScope={sizeScope}
-            totalFileSizeBytes={totalFileSizeBytes}
-          />
-          <DataFileReadableMetricsTable
-            readableMetrics={readableMetrics}
-            sizeScope={sizeScope}
-            title={
-              isAggregated ? "Aggregated Readable Metrics" : "Readable Metrics"
-            }
-            totalFileSizeBytes={totalFileSizeBytes}
-          />
+        <section key={type} className={FILE_TYPE_SECTION_CLASS}>
+          <h3 className={FILE_TYPE_HEADING_CLASS}>{title}</h3>
+          <div className="space-y-4 p-4">
+            <p className="text-xs text-slate-400">
+              {type === "data"
+                ? "Metrics describe stored data before deletes are applied."
+                : "Metrics describe delete-file records, not surviving data rows."}{" "}
+              Sizes and percentages use only these{" "}
+              {type === "data" ? "data" : "delete"} files.
+            </p>
+            <ReadableMetricsSummary
+              readableMetrics={readableMetrics}
+              sizeScope={sizeScope}
+              totalFileSizeBytes={totalFileSizeBytes}
+            />
+            <DataFileReadableMetricsTable
+              readableMetrics={readableMetrics}
+              sizeScope={sizeScope}
+              title={
+                isAggregated
+                  ? "Aggregated Readable Metrics"
+                  : "Readable Metrics"
+              }
+              totalFileSizeBytes={totalFileSizeBytes}
+            />
+          </div>
         </section>
       );
     })}
     {files.some((file) => file.type === "deletion_vector") && (
-      <section>
-        <PanelSectionTitle>Deletion vectors</PanelSectionTitle>
-        <p className="mt-3 text-xs text-slate-400">
-          Puffin deletion vectors store bitmaps of deleted positions, not
-          columns. They contribute to delete counts and size totals, but have no
-          per-column metrics. Folder size totals use the vector size, while
-          Puffin file size refers to the whole containing file.
+      <section className={FILE_TYPE_SECTION_CLASS}>
+        <h3 className={FILE_TYPE_HEADING_CLASS}>Deletion vectors</h3>
+        <p className="p-4 text-xs text-slate-400">
+          Deletion vectors mark deleted rows and have no column metrics. Folder
+          totals use each vector’s size; Puffin file size covers the whole
+          container.
         </p>
       </section>
     )}
