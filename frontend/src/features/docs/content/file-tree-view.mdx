@@ -13,11 +13,11 @@ This view solves a common source of confusion: if you look at the **raw storage 
 
 - Branch, selected snapshot, file scope, grouping, and search are stored in the URL so the current FileTree view can be refreshed or shared
 
-- Select a file, partition, or partition-path step to inspect file counts, sizes, separate data-row and delete counts, and readable per-column metrics, including null and NaN percentages, average bytes per value, column-size share, and inferred metadata size. Click a metric-table heading to sort by its original value. Click it again to reverse the order, then once more to restore schema order. For a partition or directory, the lower and upper bounds of comparable columns are the smallest and largest across its files; numeric and decimal bounds are compared exactly, even beyond JavaScript's safe integer range. Geometry, geography, and variant bounds are not combined. Numeric bounds, including numbers inside geometry, geography, and variant bounds for individual files, are shown in full, never in shortened scientific notation such as `1e-7`
+- Select a file, partition, or partition-path step to inspect file counts, sizes, data-row and delete counts, and readable per-column metrics, including null and NaN percentages, average bytes per value, column-size share, and inferred metadata size. Click a metric-table heading to sort by its original value. Click it again to reverse the order, then once more to restore schema order. For a partition or directory, bounds are the smallest and largest across its files; geometry, geography, and variant bounds are not combined. Numbers in bounds are shown in full, never as `1e-7`
 
-- **Data rows (before deletes)** counts only records in data files. **Position-delete file records**, **Deleted positions (vectors)**, and equality delete records are shown separately. The first count excludes vectors. Under **Files by type**, **Position deletes** counts traditional delete files, while **Deletion vectors** counts vectors. These counts are not subtracted to estimate surviving rows; equality delete records are matching rules and can remove multiple rows or none. Missing record counts appear as **Unavailable**. Large record counts remain exact. In folder statistics, hover, focus, or click **Deletion vectors** under **Files by type** for help with these counts and size totals
+- **Data rows (before deletes)** counts only records in data files; delete records are shown separately and are not subtracted, because an equality delete can remove many rows or none
 
-- File counts and size totals include both data and delete entries. Column metrics are separated into data-file, position-delete file, and equality-delete file sections. Each file-type section has a bordered block and a prominent heading, with its summary and metrics table grouped inside; deletion vectors have a matching explanatory block. Each section's sizes, percentages, and inferred metadata size use only the files of that type. Data-column metrics describe stored values before deletes are applied. The `file_path` and `pos` columns belong to traditional position-delete files. Puffin deletion vectors store bitmaps rather than columns, so they contribute no per-column metrics; their counts and sizes still appear in the totals
+- File counts and size totals include data and delete files. Column metrics are shown separately for data, position-delete, and equality-delete files, and describe stored values before deletes are applied
 
 - If the selected snapshot or one of its included files could not be read, an error notice identifies the file and explains why. Several errors or warnings in one notice are separated by divider lines
 
@@ -29,15 +29,13 @@ This view solves a common source of confusion: if you look at the **raw storage 
 
 - Many small files in one partition path often indicates a small-file problem
 
-- Delete-file inspectors use the file's actual type as their heading. A deletion-vector inspector distinguishes the **Puffin file size** of the whole containing file from the **Vector size (used in totals)**
-
 - **Copy paths** copies physical file paths, rather than vector IDs with `#<offset>`. If selected vectors share a Puffin file, its path is copied once
 
 - If the loaded data/delete entry counts disagree with the selected snapshot's summary, a warning shows both counts. Bounded graphs can omit manifests inherited from before the selected graph range. The displayed counts and metrics then describe only loaded files; expand the graph range to include earlier snapshots and check collection warnings
 
-- Deletion vectors are listed one per vector, as `<Puffin file path>#<offset>`, and counted separately from **Position deletes**. Their size in totals is the size of the vector, not of the whole Puffin file, so a Puffin file holding several vectors is not counted more than once
+- Deletion vectors are listed one per vector, as `<Puffin file path>#<offset>`, and counted separately from **Position deletes**. They have no column metrics. Totals use the vector's own size, so a shared Puffin file isn't counted twice; the inspector also shows the whole **Puffin file size**
 
-- On format version 3 tables, each data file shows its `first_row_id`, the row ID of its first row. Its rows have row IDs from `first_row_id` to `first_row_id` + **Data rows (before deletes)** - 1. When branches give the file different row IDs, `first_row_id` is hidden and `first_row_id_by_snapshot` lists each value with the earliest snapshot that gave it
+- On format version 3 tables, each data file shows its `first_row_id`; its rows have IDs from `first_row_id` to `first_row_id` + **Data rows (before deletes)** - 1
 
 - Each file shows its **first appearing timestamp** tracked by Iceberg in the **asked snapshot range**
 
