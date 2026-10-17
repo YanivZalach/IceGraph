@@ -10,6 +10,10 @@ The Graph view shows all Iceberg metadata objects in your selected range as a di
 
 - **Data file** - the actual Parquet, ORC, or Avro file containing your rows. IceGraph is not reading the data file: all of the data shown comes from the manifest entries that point at it. When available, the details panel also shows human-readable per-column metrics derived from the manifest entry, including the inferred metadata size that is not represented by reported column sizes. On format version 3 tables, files written by an update or merge can also show metrics for `_row_id` and `_last_updated_sequence_number`.
 
+- **Position delete** - file listing deleted rows by data file path and row position. `row_count` is the number of deleted positions
+
+- **Equality delete** - file of column values; every row matching one of them is deleted. `row_count` is the number of these values, not the number of rows they delete
+
 - **Deletion vector** - a format version 3 delete: a bitmap of deleted row positions for one data file, stored in a Puffin file. One Puffin file can hold deletion vectors for many data files, so each deletion vector is its own node, with its own partition, row count, and status in each manifest. Its node ID is the Puffin file path followed by `#` and its `content_offset`. `referenced_data_file` is the data file it deletes from, `row_count` is the number of deleted rows, `content_size_in_bytes` is the size of the vector, and `file_size_in_bytes` is the size of the whole Puffin file
 
 On format version 3 tables, snapshots, data manifests, and data files show `first_row_id`, where their row IDs start; snapshots also show `added_rows`. If branches gave a manifest or file different row IDs, `first_row_id_by_snapshot` lists each value instead.
