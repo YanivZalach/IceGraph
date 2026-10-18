@@ -106,6 +106,7 @@ def _decode_primitive(buffer: bytes, offset: int, type_id: int) -> Any:
 
     if type_id in {3, 4, 5, 6}:
         size = {3: 1, 4: 2, 5: 4, 6: 8}[type_id]
+
         return int.from_bytes(buffer[offset : offset + size], byteorder="little", signed=True)
 
     if type_id == 7:
@@ -114,6 +115,7 @@ def _decode_primitive(buffer: bytes, offset: int, type_id: int) -> Any:
     if type_id in {8, 9, 10}:
         size = {8: 4, 9: 8, 10: 16}[type_id]
         unscaled_value = int.from_bytes(buffer[offset + 1 : offset + 1 + size], byteorder="little", signed=True)
+
         return format(Decimal(f"{unscaled_value}E-{buffer[offset]}"), "f")
 
     if type_id == 11:
@@ -128,6 +130,7 @@ def _decode_primitive(buffer: bytes, offset: int, type_id: int) -> Any:
     if type_id in {15, 16}:
         size = struct.unpack_from("<I", buffer, offset)[0]
         value = buffer[offset + 4 : offset + 4 + size]
+
         return base64.b64encode(value).decode("ascii") if type_id == 15 else value.decode("utf-8")
 
     if type_id == 20:

@@ -19,10 +19,12 @@ def decode_iceberg_bound(field_type: str, encoded_bound: bytes):
 
     if field_type in {"int", "date"}:
         value = struct.unpack("<i", encoded_bound)[0]
+
         return decode_date(value) if field_type == "date" else value
 
     if field_type in {"long", "time", "timestamp", "timestamptz", "timestamp_ns", "timestamptz_ns"}:
         value = _decode_promoted_long(encoded_bound)
+
         return _decode_long_value(field_type, value)
 
     if field_type == "float":
@@ -44,6 +46,7 @@ def decode_iceberg_bound(field_type: str, encoded_bound: bytes):
     if decimal_match:
         scale = int(decimal_match.group(1))
         unscaled_value = int.from_bytes(encoded_bound, byteorder="big", signed=True)
+
         return format(Decimal(f"{unscaled_value}E-{scale}"), "f")
 
     if field_type == "unknown":
