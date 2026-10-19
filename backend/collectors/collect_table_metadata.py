@@ -6,6 +6,7 @@ from pyspark.sql import functions as F
 from pyspark.sql.types import ArrayType, MapType, StringType, StructType
 
 from base_classes.utils import collect_graph_metadata_file, format_snapshot_summary, timed
+from collectors.collect_snapshots import SnapshotRowLineage
 from collectors.collect_partition_statistics import CollectPartitionStatistics, PartitionStatisticsFileRecord
 from constants import SUPPORTED_FORMAT_VERSIONS, UNSUPPORTED_FORMAT_VERSION_WARNING
 from graph_normalizer.utils import to_json_safe
@@ -31,6 +32,7 @@ def collect_format_version_warnings(metadata: dict[str, Any]) -> dict[str, list[
 class TableMetadataCollector:
     def __init__(self, table_name: str):
         self._table_name = table_name
+        self.snapshot_row_lineage: dict[int, SnapshotRowLineage] = {}
 
     @timed
     def collect_latest(self) -> dict[str, Any]:
@@ -124,10 +126,27 @@ class TableMetadataCollector:
 
         return current_snapshot.withField("summary", summary_without_absent_keys)
 
+    def collect_snapshot_row_lineage(self, metadata_path: str) -> dict[int, SnapshotRowLineage]:
+        self.snapshot_row_lineage = self._snapshot_row_lineage(self._read_raw_metadata(metadata_path))
+
+        return self.snapshot_row_lineage
+
     @staticmethod
-    def _apply_exact_definitions(metadata: dict[str, Any], metadata_path: str) -> None:
+    def _read_raw_metadata(metadata_path: str) -> dict[str, Any]:
         metadata_text = open_spark_connect_session().read.text(metadata_path, wholetext=True).first().value
-        raw_metadata = json.loads(metadata_text)
+
+        return json.loads(metadata_text)
+
+    @staticmethod
+    def _snapshot_row_lineage(raw_metadata: dict[str, Any]) -> dict[int, SnapshotRowLineage]:
+        return {
+            snapshot["snapshot-id"]: SnapshotRowLineage(snapshot.get("first-row-id"), snapshot.get("added-rows"))
+            for snapshot in raw_metadata.get("snapshots", [])
+        }
+
+    def _apply_exact_definitions(self, metadata: dict[str, Any], metadata_path: str) -> None:
+        raw_metadata = self._read_raw_metadata(metadata_path)
+        self.snapshot_row_lineage = self._snapshot_row_lineage(raw_metadata)
 
         metadata["schemas"] = raw_metadata.get("schemas", [])
         if "schemas" not in raw_metadata and "schema" in raw_metadata:

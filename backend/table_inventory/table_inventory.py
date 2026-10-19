@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Type
 
 from base_classes.spark_table_action import SparkTableAction
-from base_classes.utils import timed
+from base_classes.utils import collect_graph_metadata_file, timed
 from collectors.collect_data_files import CollectDataFiles, DataFileRecord
 from collectors.collect_manifests import CollectManifests, ManifestRecord
 from collectors.collect_metadata import CollectMetadata, MetadataFileRecord
@@ -302,13 +302,12 @@ class TableInventory(SparkTableAction):
 
     def _set_current_table_specs(self):
         self._current_table_specs = {"table-name": self._table_name}
+        table_metadata_collector = TableMetadataCollector(self._table_name)
 
         try:
             current_main_metadata_file = next(metadata_file for metadata_file in self._metadata_files if metadata_file.type == FileType.MAIN_METADATA)
 
-            self._current_table_specs = TableMetadataCollector(self._table_name).collect(
-                current_main_metadata_file.file_path, self._partition_statistics_files
-            )
+            self._current_table_specs = table_metadata_collector.collect(current_main_metadata_file.file_path, self._partition_statistics_files)
 
         except Exception as e:
             logger.error(
@@ -316,6 +315,30 @@ class TableInventory(SparkTableAction):
                 exc_info=True,
             )
             self._errors["collect_current_table_specs"] = [f"Metadata specs error: {e}"]
+
+        self._apply_snapshot_row_lineage(table_metadata_collector)
+
+    def _apply_snapshot_row_lineage(self, table_metadata_collector: TableMetadataCollector):
+        snapshot_row_lineage = table_metadata_collector.snapshot_row_lineage
+        has_missing_snapshot = False
+        for snapshot in self._snapshots:
+            if snapshot.snapshot_id not in snapshot_row_lineage:
+                has_missing_snapshot = True
+                break
+
+        if has_missing_snapshot:
+            try:
+                snapshot_row_lineage = table_metadata_collector.collect_snapshot_row_lineage(collect_graph_metadata_file(self._table_name, None))
+
+            except Exception as e:
+                logger.error(f"[{self._table_name}] snapshot row lineage collection failed", exc_info=True)
+                self._warnings["snapshot_row_lineage"] = [str(e)]
+
+        for snapshot in self._snapshots:
+            row_lineage = snapshot_row_lineage.get(snapshot.snapshot_id)
+            if row_lineage:
+                snapshot.first_row_id = row_lineage.first_row_id
+                snapshot.added_rows = row_lineage.added_rows
 
     def _set_data_file_readable_metrics(self):
         if not self._data_files:

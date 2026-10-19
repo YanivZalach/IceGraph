@@ -22,6 +22,14 @@ MANIFEST_BASE_SCHEMA = StructType(
     ]
 )
 
+MANIFEST_LIST_READ_SCHEMA = StructType(
+    [
+        StructField("manifest_path", StringType(), True),
+        StructField("added_snapshot_id", LongType(), True),
+        StructField("first_row_id", LongType(), True),
+    ]
+)
+
 
 class ManifestsExtractor(Extractor):
     def __init__(
@@ -64,14 +72,16 @@ class ManifestsExtractor(Extractor):
         return result.select(*(MANIFEST_BASE_SCHEMA.fieldNames()))
 
     def _read_manifests_for_snapshot(self, manifest_list_path: str, snap_id: str) -> pyspark.sql.DataFrame:
-        manifest_list_df = self._spark.read.format("avro").load(manifest_list_path)
-        first_row_id = F.col("first_row_id") if "first_row_id" in manifest_list_df.columns else F.lit(None).cast(LongType())
-
-        return manifest_list_df.select(
-            F.col("manifest_path").alias("path"),
-            F.col("added_snapshot_id"),
-            F.lit(snap_id).alias("snapshot_id"),
-            first_row_id.alias("first_row_id"),
+        return (
+            self._spark.read.format("avro")
+            .schema(MANIFEST_LIST_READ_SCHEMA)
+            .load(manifest_list_path)
+            .select(
+                F.col("manifest_path").alias("path"),
+                F.col("added_snapshot_id"),
+                F.lit(snap_id).alias("snapshot_id"),
+                F.col("first_row_id"),
+            )
         )
 
     def _enrich_manifests_with_timestamps(self, manifests_df: pyspark.sql.DataFrame) -> pyspark.sql.DataFrame:

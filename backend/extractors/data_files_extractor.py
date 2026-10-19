@@ -41,6 +41,10 @@ DATA_FILE_RECORD_SCHEMA = StructType(
         StructField("added_snapshot_id", LongType(), True),
         StructField("stored_first_row_id", LongType(), True),
         StructField("row_id_offset", LongType(), True),
+        StructField("referenced_data_file", StringType(), True),
+        StructField("content_offset", LongType(), True),
+        StructField("content_size_in_bytes", LongType(), True),
+        StructField("node_id", StringType(), True),
     ]
 )
 
@@ -54,7 +58,7 @@ class DataFilesExtractor(Extractor):
         self._manifest_entries = manifest_entries
 
     def extract_dataframe(self) -> pyspark.sql.DataFrame:
-        data_files_df = self._with_deletion_vector_columns(self._collect_data_files_from_manifests(self._manifest_entries))
+        data_files_df = self._collect_data_files_from_manifests(self._manifest_entries)
         data_files_with_latest_ts_df = self._match_data_file_to_latest_snapshot(data_files_df)
 
         data_files_by_manifests_df = self._group_data_files_by_manifests(data_files_df)
@@ -99,8 +103,19 @@ class DataFilesExtractor(Extractor):
             df = df.withColumn("data_file", data_file)
 
         return (
-            self._with_row_id_inheritance(df, existing_fields, bool(manifest_entry.hidden_manifest_data.row_id_assignments))
-            .select("status", "data_file", "stored_first_row_id", "row_id_offset")
+            self._with_deletion_vector_columns(
+                self._with_row_id_inheritance(df, existing_fields, bool(manifest_entry.hidden_manifest_data.row_id_assignments)), existing_fields
+            )
+            .select(
+                "status",
+                "data_file",
+                "stored_first_row_id",
+                "row_id_offset",
+                "referenced_data_file",
+                "content_offset",
+                "content_size_in_bytes",
+                "node_id",
+            )
             .withColumn("manifest_path", F.lit(manifest_entry.file_path))
             .withColumn(
                 "added_snapshot_timestamp",
@@ -133,9 +148,7 @@ class DataFilesExtractor(Extractor):
         )
 
     @staticmethod
-    def _with_deletion_vector_columns(data_files_df):
-        data_file_fields = data_files_df.schema["data_file"].dataType.fieldNames()
-
+    def _with_deletion_vector_columns(data_files_df, data_file_fields: set[str]):
         def data_file_field(name, data_type):
             return F.col(f"data_file.{name}") if name in data_file_fields else F.lit(None).cast(data_type)
 
