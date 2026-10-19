@@ -108,7 +108,7 @@ class ManifestsExtractor(Extractor):
             manifests_df.groupBy("path", "added_snapshot_id", "added_snapshot_timestamp")
             .agg(
                 F.collect_list("snapshot_id").alias("snapshot_ids"),
-                F.collect_list(F.struct("snapshot_id", "first_row_id")).alias("snapshot_first_row_ids"),
+                F.collect_list(F.when(F.col("first_row_id").isNotNull(), F.struct("snapshot_id", "first_row_id"))).alias("snapshot_first_row_ids"),
             )
             .orderBy(F.col("added_snapshot_timestamp"), ascending=False)
         )
