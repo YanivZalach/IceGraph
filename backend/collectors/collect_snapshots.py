@@ -26,12 +26,6 @@ class SnapshotRecord(BaseFile):
     added_rows: Optional[int]
 
 
-@dataclass
-class SnapshotRowLineage:
-    first_row_id: Optional[int]
-    added_rows: Optional[int]
-
-
 class CollectSnapshots(Collector):
     def __init__(
         self,

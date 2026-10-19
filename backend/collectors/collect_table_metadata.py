@@ -1,12 +1,12 @@
 import json
-from typing import Any
+from dataclasses import dataclass
+from typing import Any, Optional
 
 from pyspark.sql import Column, DataFrame
 from pyspark.sql import functions as F
 from pyspark.sql.types import ArrayType, MapType, StringType, StructType
 
 from base_classes.utils import collect_graph_metadata_file, format_snapshot_summary, timed
-from collectors.collect_snapshots import SnapshotRowLineage
 from collectors.collect_partition_statistics import CollectPartitionStatistics, PartitionStatisticsFileRecord
 from constants import SUPPORTED_FORMAT_VERSIONS, UNSUPPORTED_FORMAT_VERSION_WARNING
 from graph_normalizer.utils import to_json_safe
@@ -27,6 +27,12 @@ def collect_format_version_warnings(metadata: dict[str, Any]) -> dict[str, list[
             UNSUPPORTED_FORMAT_VERSION_WARNING.format(format_version=format_version, supported_format_versions=supported_format_versions_text)
         ]
     }
+
+
+@dataclass
+class SnapshotRowLineage:
+    first_row_id: Optional[int]
+    added_rows: Optional[int]
 
 
 class TableMetadataCollector:
