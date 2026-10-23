@@ -1,4 +1,4 @@
-Shows all data files in your selected snapshot range organized as a directory tree, grouped by their partition paths. Partition paths follow stored field order and show formatted values, such as `event_ts_hour = 2025-06-15 11:00` for fields whose name ends in `_hour`. Unpartitioned files appear under `Root`.
+Shows all data files in your selected snapshot range organized as a directory tree, grouped by their partition paths. Partition paths follow stored field order and show formatted values; fields whose name ends in `_hour` show an hour decoded as `UTC`, which is not necessarily the source column's timezone. Unpartitioned files appear under `Root`.
 
 This view solves a common source of confusion: if you look at the **raw storage directory** written by your engine (Spark, for example), you see all files ever written, including files from old snapshots that have since been replaced, and files that belong to different table versions.
 

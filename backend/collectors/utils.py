@@ -16,7 +16,7 @@ def format_partition(partition_dict: dict) -> list[dict]:
         formatted_value = "null" if value is None else str(value)
         if key.endswith("_hour") and isinstance(value, int) and not isinstance(value, bool):
             with suppress(Exception):
-                formatted_value = arrow.Arrow.utcfromtimestamp(value * 3600).format("YYYY-MM-DD HH:00")
+                formatted_value = arrow.Arrow.utcfromtimestamp(value * 3600).format("YYYY-MM-DD HH:00 UTC")
 
         partition.append({"name": key, "value": value, "formatted_value": formatted_value})
 

@@ -4,7 +4,7 @@ const mockPartition = (eventTsHour, eventName) => [
   {
     name: "event_ts_hour",
     value: eventTsHour,
-    formatted_value: `${new Date(eventTsHour * 3600000).toISOString().slice(0, 13).replace("T", " ")}:00`,
+    formatted_value: `${new Date(eventTsHour * 3600000).toISOString().slice(0, 13).replace("T", " ")}:00 UTC`,
   },
   {
     name: "event_name",
