@@ -18,7 +18,8 @@ class RowIdFields:
 def earliest_assignment_per_value(assignments: List[RowIdAssignment]) -> List[RowIdAssignment]:
     earliest_by_value: Dict[int, RowIdAssignment] = {}
     for assignment in sorted(assignments, key=lambda candidate: (candidate.snapshot_timestamp, candidate.snapshot_id)):
-        earliest_by_value.setdefault(assignment.first_row_id, assignment)
+        if assignment.first_row_id not in earliest_by_value:
+            earliest_by_value[assignment.first_row_id] = assignment
 
     return list(earliest_by_value.values())
 
