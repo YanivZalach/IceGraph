@@ -26,7 +26,7 @@ Each command prints its result as JSON on stdout; status messages go to stderr, 
 
 `snapshots` returns one page, starting from the table's newest snapshots, as `{"snapshots": [...], "next_before_snapshot_id": ...}`. Pass `next_before_snapshot_id` as `--before-snapshot-id` to get the next older page; it is `null` when no older snapshots remain.
 
-`metadata` returns the table's latest metadata, plus `warnings`, which maps a source to a list of messages and is empty when there are none. For example, it warns when the table uses an Iceberg format version other than 1 or 2, which IceGraph doesn't fully support yet.
+`metadata` returns the table's latest metadata, plus `warnings`, which maps a source to a list of messages and is empty when there are none. For example, it warns when the table uses an Iceberg format version other than 1, 2, or 3, which IceGraph doesn't fully support yet.
 
 `sparkdesc` returns Spark's description of any table Spark can resolve, Iceberg or not, as `{"spark_schema": {...}, "spark_partitions": [...], "sections": [...], "properties": {...}, "warnings": {...}}`. Use it when another command reports that the table is not an Iceberg table.
 

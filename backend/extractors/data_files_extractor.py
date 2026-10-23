@@ -39,8 +39,17 @@ DATA_FILE_RECORD_SCHEMA = StructType(
         StructField("manifest_path", StringType(), False),
         StructField("added_snapshot_timestamp", StringType(), True),
         StructField("added_snapshot_id", LongType(), True),
+        StructField("stored_first_row_id", LongType(), True),
+        StructField("row_id_offset", LongType(), True),
+        StructField("referenced_data_file", StringType(), True),
+        StructField("content_offset", LongType(), True),
+        StructField("content_size_in_bytes", LongType(), True),
+        StructField("node_id", StringType(), True),
     ]
 )
+
+DATA_FILE_CONTENT_DATA = 0
+MANIFEST_ENTRY_STATUS_DELETED = 2
 
 
 class DataFilesExtractor(Extractor):
@@ -93,8 +102,22 @@ class DataFilesExtractor(Extractor):
             data_file = F.col("data_file").withField(field.name, default_value)
             df = df.withColumn("data_file", data_file)
 
+        has_row_id_assignments = bool(manifest_entry.hidden_manifest_data.row_id_assignments)
+        row_id_df = self._with_row_id_inheritance(df, existing_fields, has_row_id_assignments)
+        data_files_df = self._with_deletion_vector_columns(row_id_df, existing_fields)
+
         return (
-            df.withColumn("manifest_path", F.lit(manifest_entry.file_path))
+            data_files_df.select(
+                "status",
+                "data_file",
+                "stored_first_row_id",
+                "row_id_offset",
+                "referenced_data_file",
+                "content_offset",
+                "content_size_in_bytes",
+                "node_id",
+            )
+            .withColumn("manifest_path", F.lit(manifest_entry.file_path))
             .withColumn(
                 "added_snapshot_timestamp",
                 F.lit(manifest_entry.added_snapshot_timestamp),
@@ -103,9 +126,50 @@ class DataFilesExtractor(Extractor):
         )
 
     @staticmethod
+    def _with_row_id_inheritance(manifest_df, data_file_fields: set[str], has_row_id_assignments: bool):
+        if not has_row_id_assignments:
+            return manifest_df.withColumn("stored_first_row_id", F.lit(None).cast(LongType())).withColumn(
+                "row_id_offset", F.lit(None).cast(LongType())
+            )
+
+        stored_first_row_id = F.col("data_file.first_row_id") if "first_row_id" in data_file_fields else F.lit(None).cast(LongType())
+        is_data_file = F.col("data_file.content") == DATA_FILE_CONTENT_DATA
+        is_live_data_file = is_data_file & (F.col("status") != MANIFEST_ENTRY_STATUS_DELETED)
+        inherits_row_id = is_live_data_file & stored_first_row_id.isNull()
+
+        preceding_entries = Window.orderBy("manifest_entry_position").rowsBetween(Window.unboundedPreceding, -1)
+        unassigned_record_count = F.when(inherits_row_id, F.col("data_file.record_count")).otherwise(F.lit(0))
+        preceding_unassigned_rows = F.coalesce(F.sum(unassigned_record_count).over(preceding_entries), F.lit(0))
+
+        row_id_offset = F.when(inherits_row_id, preceding_unassigned_rows)
+
+        return (
+            manifest_df.withColumn("manifest_entry_position", F.monotonically_increasing_id())
+            .withColumn("stored_first_row_id", F.when(is_data_file, stored_first_row_id))
+            .withColumn("row_id_offset", row_id_offset)
+        )
+
+    @staticmethod
+    def _with_deletion_vector_columns(data_files_df, data_file_fields: set[str]):
+        def _data_file_field(name, data_type):
+            return F.col(f"data_file.{name}") if name in data_file_fields else F.lit(None).cast(data_type)
+
+        content_offset = _data_file_field("content_offset", LongType())
+        node_id = F.when(content_offset.isNull(), F.col("data_file.file_path")).otherwise(
+            F.concat(F.col("data_file.file_path"), F.lit("#"), content_offset.cast(StringType()))
+        )
+
+        return (
+            data_files_df.withColumn("referenced_data_file", _data_file_field("referenced_data_file", StringType()))
+            .withColumn("content_offset", content_offset)
+            .withColumn("content_size_in_bytes", _data_file_field("content_size_in_bytes", LongType()))
+            .withColumn("node_id", node_id)
+        )
+
+    @staticmethod
     def _match_data_file_to_latest_snapshot(avro_df):
-        window_desc = Window.partitionBy("data_file.file_path").orderBy(F.desc("added_snapshot_timestamp"))
-        window_asc = Window.partitionBy("data_file.file_path").orderBy(F.asc("added_snapshot_timestamp"))
+        window_desc = Window.partitionBy("node_id").orderBy(F.desc("added_snapshot_timestamp"))
+        window_asc = Window.partitionBy("node_id").orderBy(F.asc("added_snapshot_timestamp"))
 
         avro_df = (
             avro_df.withColumn("row_num", F.row_number().over(window_desc))
@@ -114,8 +178,11 @@ class DataFilesExtractor(Extractor):
         )
 
         latest_df = avro_df.filter(F.col("row_num") == 1).select(
-            F.col("data_file.file_path").alias("file_path"),
+            F.col("node_id"),
             F.col("data_file"),
+            F.col("referenced_data_file"),
+            F.col("content_offset"),
+            F.col("content_size_in_bytes"),
             F.col("added_snapshot_timestamp").alias("latest_snapshot_timestamp"),
             F.col("added_snapshot_id").alias("latest_snapshot_id"),
             F.col("earliest_snapshot_timestamp"),
@@ -125,20 +192,32 @@ class DataFilesExtractor(Extractor):
 
     @staticmethod
     def _group_data_files_by_manifests(avro_df):
-        manifest_entries_df = avro_df.groupBy("data_file.file_path").agg(
+        manifest_entries_df = avro_df.groupBy("node_id").agg(
             F.collect_list(
                 F.struct(
                     F.col("manifest_path").alias("path"),
                     F.col("status").alias("status"),
                 )
-            ).alias("pointing_manifests")
+            ).alias("pointing_manifests"),
+            F.collect_list(
+                F.struct(
+                    F.col("manifest_path").alias("path"),
+                    F.col("stored_first_row_id").alias("stored_first_row_id"),
+                    F.col("row_id_offset").alias("row_id_offset"),
+                )
+            ).alias("row_id_entries"),
         )
         return manifest_entries_df
 
     @staticmethod
     def _join_data_file_with_manifest_entries(latest_df, manifest_entries_df):
-        return manifest_entries_df.join(latest_df, on="file_path", how="inner").select(
+        return manifest_entries_df.join(latest_df, on="node_id", how="inner").select(
+            "node_id",
+            "referenced_data_file",
+            "content_offset",
+            "content_size_in_bytes",
             "pointing_manifests",
+            "row_id_entries",
             "latest_snapshot_id",
             "latest_snapshot_timestamp",
             "earliest_snapshot_id",

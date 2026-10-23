@@ -86,8 +86,8 @@ etc.) go to stderr, so stdout is always safe to parse directly.
 - `metadata <table>` → the latest table metadata dictionary, including `metadata_file_path` and
   `current-snapshot` (the current snapshot's entry from the metadata file, with its `summary`
   counts such as `total-records`, `total-data-files`, and `total-files-size-bytes`), and
-  `warnings`, which maps a source to messages, such as a warning that only format versions 1 and 2 are
-  currently supported.
+  `warnings`, which maps a source to messages, such as a warning that only format versions 1, 2, and 3
+  are currently supported.
 - `sparkdesc <table>` → `{spark_schema, spark_partitions, sections, properties, warnings}` for any table Spark
   can resolve, Iceberg or not. Use it when another command reports that the table is not an Iceberg
   table. `spark_schema` is the table schema as Spark reports it, with Spark type names (`int`,
@@ -176,7 +176,7 @@ time to skip it is when there's genuinely nothing to point at — a bare `tables
 particular table in focus.
 
 ```
-<base_url>/table/graph?table=<uri-encoded database.table>&start_snapshot_id=<id>&end_snapshot_id=<id>&select_node_id=<uri-encoded file_path>
+<base_url>/table/graph?table=<uri-encoded database.table>&start_snapshot_id=<id>&end_snapshot_id=<id>&select_node_id=<uri-encoded node_id>
 ```
 
 - Reuse the exact same `base_url` you already resolved for the CLI. There is no extra path prefix
@@ -185,8 +185,9 @@ particular table in focus.
 - To link to a table before graph generation, use
   `<base_url>/snapshots-selection?table=<uri-encoded database.table>`.
 - URI-encode `table` and `select_node_id`.
-- `select_node_id` is a node's Iceberg file path — get it from a `graph` command's `nodes` output
-  (or a filename the user already gave you). It stays valid as long as that file is still part of
+- `select_node_id` is a node's `node_id` — get it from a `graph` command's `nodes` output. It is
+  the node's Iceberg file path, except for a deletion vector, which shares its Puffin file with
+  other deletion vectors: its `node_id` is `<file path>#<content_offset>`. It stays valid as long as that file is still part of
   the selected snapshot range.
 
 ### FileTree links

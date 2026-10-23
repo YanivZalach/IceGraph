@@ -48,6 +48,7 @@ class MetadataFileRecord(BaseFile):
     snapshot_id: Optional[int]
     previous_file: Optional[str]
     last_sequence_number: Optional[int]
+    format_version: Optional[int]
     partition_spec_id: Optional[int]
     current_schema_id: Optional[int]
     sort_order_id: Optional[int]
@@ -152,6 +153,7 @@ class CollectMetadata(Collector):
                         snapshot_id=None,
                         previous_file=self._get_previous_metadata_file(file),
                         last_sequence_number=None,
+                        format_version=None,
                         partition_spec_id=None,
                         current_schema_id=None,
                         sort_order_id=None,
@@ -227,6 +229,7 @@ class CollectMetadata(Collector):
             snapshot_id=row.get("current-snapshot-id"),
             previous_file=self._get_previous_metadata_file(row["file"]),
             last_sequence_number=(row["last-sequence-number"] if "last-sequence-number" in row else None),
+            format_version=row.get("format-version"),
             partition_spec_id=row.get("default-spec-id"),
             current_schema_id=row.get("current-schema-id"),
             sort_order_id=row.get("default-sort-order-id"),

@@ -1,9 +1,19 @@
-import type { PartitionSpec, SortOrder } from "../table/api/metadataSchemas";
+import type {
+  IcebergInteger,
+  PartitionSpec,
+  SortOrder,
+} from "../table/api/metadataSchemas";
 
 export type SpecFieldStatus = "added" | "removed" | "changed" | "unchanged";
 
 export type PartitionField = NonNullable<PartitionSpec["fields"]>[number];
 export type SortField = NonNullable<SortOrder["fields"]>[number];
+
+export const specSourceIds = (
+  field: PartitionField | SortField,
+): IcebergInteger[] =>
+  field["source-ids"] ??
+  (field["source-id"] === undefined ? [] : [field["source-id"]]);
 
 export interface SpecFieldRow<TField> {
   status: SpecFieldStatus | null;

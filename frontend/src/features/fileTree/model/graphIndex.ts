@@ -4,6 +4,7 @@ import type { DataFileNode, FileTreeGraphIndex, SnapshotNode } from "../types";
 export const isDataFileNode = (node: GraphNode): node is DataFileNode =>
   node.type === "data" ||
   node.type === "position_delete" ||
+  node.type === "deletion_vector" ||
   node.type === "equality_delete";
 
 const isSnapshotNode = (node: GraphNode): node is SnapshotNode =>

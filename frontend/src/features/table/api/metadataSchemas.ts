@@ -28,6 +28,7 @@ export const tableSchemaSchema = z.looseObject({
 const partitionFieldSchema = z.looseObject({
   "field-id": icebergIntegerSchema.optional(),
   "source-id": icebergIntegerSchema.optional(),
+  "source-ids": z.array(icebergIntegerSchema).optional(),
   name: z.string().optional(),
   transform: z.string().optional(),
 });
@@ -39,6 +40,7 @@ export const partitionSpecSchema = z.looseObject({
 
 const sortFieldSchema = z.looseObject({
   "source-id": icebergIntegerSchema.optional(),
+  "source-ids": z.array(icebergIntegerSchema).optional(),
   transform: z.string().optional(),
   direction: z.string().optional(),
   "null-order": z.string().optional(),
@@ -57,6 +59,7 @@ export const tableMetadataSchema = z.looseObject({
   "format-version": icebergIntegerSchema.optional(),
   warnings: z.record(z.string(), z.array(z.string())).optional(),
   "last-sequence-number": icebergIntegerSchema.optional(),
+  "next-row-id": icebergIntegerSchema.nullish(),
   "last-column-id": icebergIntegerSchema.optional(),
   "last-partition-id": icebergIntegerSchema.optional(),
   "last-updated-ms": icebergIntegerSchema.nullish(),
@@ -84,6 +87,8 @@ export const tableMetadataSchema = z.looseObject({
     .looseObject({
       "snapshot-id": icebergIntegerSchema,
       "timestamp-ms": icebergIntegerSchema.optional(),
+      "first-row-id": icebergIntegerSchema.nullish(),
+      "added-rows": icebergIntegerSchema.nullish(),
       summary: z.record(z.string(), z.string()).optional(),
     })
     .nullish(),

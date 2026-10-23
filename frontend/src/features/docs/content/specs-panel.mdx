@@ -10,6 +10,8 @@ The Metadata view and the latest metadata on the snapshot selection page can ope
 
 The currently active version in each section is highlighted with an **ACTIVE** badge. Click any version to expand its full field-level definition.
 
+On format version 3 tables, a schema field can have default values. When both are the same, the field shows `default:`. When they differ, it shows `initial default:`, the value for rows written before the column existed, and `write default:`, the value used when a writer leaves the column out. A change to either default marks the field as changed in the schema diff, which shows the old and new value.
+
 Schema diff markers appear before each field ID:
 
 - `+` means added
@@ -22,3 +24,5 @@ Moved fields appear under both parent paths: `‚Üê` marks the old location and `‚
 Hovering a marker shows its meaning.
 
 Partition and sort diffs use `+`, `-`, and `~` for added, removed, and changed rows. Removed values are struck through.
+
+Multi-argument partition and sort transforms show all their source columns, in order.

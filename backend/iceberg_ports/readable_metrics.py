@@ -42,6 +42,8 @@ class PrimitiveField:
 RESERVED_FIELDS_BY_ID = {
     2_147_483_546: PrimitiveField(2_147_483_546, "file_path", "string"),
     2_147_483_545: PrimitiveField(2_147_483_545, "pos", "long"),
+    2_147_483_540: PrimitiveField(2_147_483_540, "_row_id", "long"),
+    2_147_483_539: PrimitiveField(2_147_483_539, "_last_updated_sequence_number", "long"),
 }
 
 
@@ -124,6 +126,7 @@ class ReadableMetricsConverter:
         historical_field = self._historical_fields_by_id.get(field_id)
         field_type = historical_field.field_type if historical_field else "unknown"
         field_name = f"{historical_field.qualified_name} (dropped)" if historical_field else f"__deprecated_column_id_{field_id}"
+
         return PrimitiveField(field_id, field_name, field_type)
 
     def _collect_primitive_fields(self, iceberg_schema: Dict[str, Any]) -> list[PrimitiveField]:
@@ -143,6 +146,7 @@ class ReadableMetricsConverter:
             for child_field in field_type["fields"]:
                 child_name = f"{qualified_name}.{child_field['name']}"
                 fields.extend(self._primitive_fields_for_type(child_field["id"], child_name, child_field["type"]))
+
             return fields
 
         if type_name == "list":
@@ -151,6 +155,7 @@ class ReadableMetricsConverter:
         if type_name == "map":
             key_fields = self._primitive_fields_for_type(field_type["key-id"], f"{qualified_name}.key", field_type["key"])
             value_fields = self._primitive_fields_for_type(field_type["value-id"], f"{qualified_name}.value", field_type["value"])
+
             return key_fields + value_fields
 
         return [PrimitiveField(field_id, qualified_name, "unknown")]

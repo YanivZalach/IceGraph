@@ -20,6 +20,11 @@ const MetadataTechnicalDetails = ({
   metadata,
 }: MetadataTechnicalDetailsProps) => {
   const snapshot = metadata["current-snapshot"];
+  const snapshotId = integerText(metadata["current-snapshot-id"]);
+  const hasSnapshot = snapshotId !== null && snapshotId !== "-1";
+  const nextRowId = integerText(metadata["next-row-id"]);
+  const snapshotFirstRowId = integerText(snapshot?.["first-row-id"]);
+  const snapshotAddedRows = integerText(snapshot?.["added-rows"]);
   const facts = [
     { label: "Table UUID", value: metadata["table-uuid"], isCopyable: true },
     { label: "Table location", value: metadata.location, isCopyable: true },
@@ -30,17 +35,32 @@ const MetadataTechnicalDetails = ({
     },
     {
       label: "Current snapshot in this metadata",
-      value:
-        integerText(metadata["current-snapshot-id"]) === "-1"
-          ? "None"
-          : integerText(metadata["current-snapshot-id"]),
-      isCopyable: integerText(metadata["current-snapshot-id"]) !== "-1",
+      value: hasSnapshot ? snapshotId : "None",
+      isCopyable: hasSnapshot,
     },
     {
       label: "Snapshot committed",
       value: formatMetadataTime(snapshot?.["timestamp-ms"]),
       isCopyable: false,
     },
+    ...(snapshotFirstRowId === null
+      ? []
+      : [
+          {
+            label: "Snapshot first row ID",
+            value: snapshotFirstRowId,
+            isCopyable: true,
+          },
+        ]),
+    ...(snapshotAddedRows === null
+      ? []
+      : [
+          {
+            label: "Snapshot added rows",
+            value: formatCount(snapshotAddedRows),
+            isCopyable: false,
+          },
+        ]),
     ...(integerText(metadata["format-version"]) === "1"
       ? []
       : [
@@ -50,6 +70,9 @@ const MetadataTechnicalDetails = ({
             isCopyable: true,
           },
         ]),
+    ...(nextRowId === null
+      ? []
+      : [{ label: "Next row ID", value: nextRowId, isCopyable: true }]),
     {
       label: "Last column ID",
       value: integerText(metadata["last-column-id"]),
@@ -137,9 +160,11 @@ const MetadataTechnicalDetails = ({
           >
             <div className="flex flex-wrap justify-between gap-3">
               <dt>
-                <HelpTerm label="Position deletes">
-                  Delete records identifying rows by data file and row position.
-                  These are records, not a count of unique deleted rows.
+                <HelpTerm label="Position-delete records (including vectors)">
+                  Traditional position-delete file records plus positions marked
+                  in deletion vectors stored in Puffin files. This counts
+                  records and marked positions, not necessarily unique deleted
+                  rows across all delete entries.
                 </HelpTerm>
               </dt>
               <dd>

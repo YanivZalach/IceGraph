@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field, fields
-from typing import List
+from typing import List, Optional
 
 from constants import FileType
 
@@ -17,6 +17,11 @@ class BaseFile:
     virtual_read: bool = field(default=False, kw_only=True)
     errors: List[str] = field(default_factory=list, kw_only=True)
     warnings: List[str] = field(default_factory=list, kw_only=True)
+    node_id: Optional[str] = field(default=None, kw_only=True)
+
+    def __post_init__(self):
+        if self.node_id is None:
+            self.node_id = self.file_path
 
     def to_dict(self):
         result_dict = {field.name: getattr(self, field.name) for field in fields(self) if not isinstance(getattr(self, field.name), HiddenFile)}

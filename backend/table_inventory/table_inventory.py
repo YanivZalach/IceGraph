@@ -268,17 +268,17 @@ class TableInventory(SparkTableAction):
 
                 manifest = manifest_file_path_to_manifest_map.get(manifest_file_path)
                 if not manifest:
-                    self._errors[f"Linking {manifest_file_path} -> {data_file.file_path}"] = ["Manifest not found"]
+                    self._errors[f"Linking {manifest_file_path} -> {data_file.node_id}"] = ["Manifest not found"]
 
                 else:
                     manifest.partitions.add(data_file.partition)
                     manifest.total_rows_in_downstream_files += data_file.row_count
 
-                    manifest.child_files.append(data_file.file_path)
+                    manifest.child_files.append(data_file.node_id)
                     if manifest_pointing_status == 2:
-                        manifest.deleted_child_files.append(data_file.file_path)
+                        manifest.deleted_child_files.append(data_file.node_id)
                     else:
-                        manifest.existing_child_files.append(data_file.file_path)
+                        manifest.existing_child_files.append(data_file.node_id)
 
     def _warn_if_data_cutoff_happened(self):
         if not self._data_files_cutoff_reached:
@@ -298,17 +298,16 @@ class TableInventory(SparkTableAction):
             self._data_files,
         )
         for files in file_groups:
-            self._errors.update({file.file_path: file.errors for file in files if file.errors})
+            self._errors.update({file.node_id: file.errors for file in files if file.errors})
 
     def _set_current_table_specs(self):
         self._current_table_specs = {"table-name": self._table_name}
+        table_metadata_collector = TableMetadataCollector(self._table_name)
 
         try:
             current_main_metadata_file = next(metadata_file for metadata_file in self._metadata_files if metadata_file.type == FileType.MAIN_METADATA)
 
-            self._current_table_specs = TableMetadataCollector(self._table_name).collect(
-                current_main_metadata_file.file_path, self._partition_statistics_files
-            )
+            self._current_table_specs = table_metadata_collector.collect(current_main_metadata_file.file_path, self._partition_statistics_files)
 
         except Exception as e:
             logger.error(
@@ -316,6 +315,15 @@ class TableInventory(SparkTableAction):
                 exc_info=True,
             )
             self._errors["collect_current_table_specs"] = [f"Metadata specs error: {e}"]
+
+        self._apply_snapshot_row_lineage(table_metadata_collector)
+
+    def _apply_snapshot_row_lineage(self, table_metadata_collector: TableMetadataCollector):
+        for snapshot in self._snapshots:
+            row_lineage = table_metadata_collector.snapshot_row_lineage_by_id.get(snapshot.snapshot_id)
+            if row_lineage:
+                snapshot.first_row_id = row_lineage.first_row_id
+                snapshot.added_rows = row_lineage.added_rows
 
     def _set_data_file_readable_metrics(self):
         if not self._data_files:

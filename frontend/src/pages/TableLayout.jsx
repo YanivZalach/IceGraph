@@ -207,9 +207,11 @@ export default function TableLayout() {
         ? 1
         : (colorShiftByFilePath.get(details.file_path) ?? 1);
 
+      const nodeId = details.node_id;
+
       return {
-        id: details.file_path,
-        label: fileNameFromPath(details.file_path),
+        id: nodeId,
+        label: fileNameFromPath(nodeId),
         type: details.type,
         details: localizeNodeTimestamps(details),
         shape: "box",

@@ -3,6 +3,7 @@ import { formatRequiredness, formatUnknownType } from "../schemaModel";
 import SchemaCollectionMember from "./SchemaCollectionMember";
 import SchemaTypeBadge from "./SchemaTypeBadge";
 import SchemaFieldDoc from "./SchemaFieldDoc";
+import SchemaFieldDefaults from "./SchemaFieldDefaults";
 import { cn } from "../../../shared/lib/cn";
 
 interface SchemaTypeViewProps {
@@ -45,6 +46,10 @@ const SchemaTypeView = ({ type, showIds = true }: SchemaTypeViewProps) => {
                     {field.doc}
                   </SchemaFieldDoc>
                 )}
+                <SchemaFieldDefaults
+                  field={field}
+                  className={cn(showIds && "ml-9")}
+                />
               </div>
             ))}
           </div>

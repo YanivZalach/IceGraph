@@ -51,6 +51,7 @@ const DELETED_CONNECTION_LABLE = "deleted";
 const DATA_AND_DELETE_FILE_TYPES = new Set([
   FileType.DATA,
   FileType.POSITION_DELETE,
+  FileType.DELETION_VECTOR,
   FileType.EQUALITY_DELETE,
 ]);
 
@@ -844,6 +845,7 @@ export default function GraphPage() {
             ([label]) =>
               ![
                 "type",
+                "node_id",
                 "errors",
                 "warnings",
                 "readable_metrics",

@@ -13,7 +13,11 @@ This view solves a common source of confusion: if you look at the **raw storage 
 
 - Branch, selected snapshot, file scope, grouping, and search are stored in the URL so the current FileTree view can be refreshed or shared
 
-- Select a file, partition, or partition-path step to inspect file counts, sizes, rows, and readable per-column metrics, including null and NaN percentages, average bytes per value, column-size share, and inferred metadata size. Click a metric-table heading to sort by its original value. Click it again to reverse the order, then once more to restore schema order
+- Select a file, partition, or partition-path step to inspect file counts, sizes, data-row and delete counts, and readable per-column metrics, including null and NaN percentages, average bytes per value, column-size share, and inferred metadata size. Click a metric-table heading to sort by its original value. Click it again to reverse the order, then once more to restore schema order. For a partition or directory, bounds are the smallest and largest across its files; geometry, geography, and variant bounds are not combined
+
+- **Data rows (before deletes)** counts only records in data files; delete records are shown separately and are not subtracted, because an equality delete can remove many rows or none
+
+- File counts and size totals include data and delete files. Column metrics are shown separately for data, position-delete, and equality-delete files, and describe stored values before deletes are applied
 
 - If the selected snapshot or one of its included files could not be read, an error notice identifies the file and explains why. Several errors or warnings in one notice are separated by divider lines
 
@@ -24,6 +28,14 @@ This view solves a common source of confusion: if you look at the **raw storage 
 - If a readable snapshot has unreadable snapshots in its loaded history, a warning identifies them. Added in commit compares with the nearest readable parent and may therefore span multiple commits
 
 - Many small files in one partition path often indicates a small-file problem
+
+- **Copy paths** copies physical file paths, rather than vector IDs with `#<offset>`. If selected vectors share a Puffin file, its path is copied once
+
+- If the loaded data/delete entry counts disagree with the selected snapshot's summary, a warning shows both counts. Bounded graphs can omit manifests inherited from before the selected graph range. The displayed counts and metrics then describe only loaded files; expand the graph range to include earlier snapshots and check collection warnings
+
+- Deletion vectors are listed one per vector, as `<Puffin file path>#<offset>`, and counted separately from **Position deletes**. They have no column metrics. Totals use the vector's own size, so a shared Puffin file isn't counted twice; the inspector also shows the whole **Puffin file size**. A folder shows its **Deletion vectors** and **Deleted positions (vectors)** counts only when it contains deletion vectors
+
+- On format version 3 tables, each data file shows its `first_row_id`; its rows have IDs from `first_row_id` to `first_row_id` + **Data rows (before deletes)** - 1
 
 - Each file shows its **first appearing timestamp** tracked by Iceberg in the **asked snapshot range**
 
