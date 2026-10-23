@@ -450,7 +450,9 @@ function SnapSummary({ summary }) {
 }
 
 function DiffList({ diff }) {
-  const rows = diff.filter(({ key }) => key.toLowerCase() !== "type");
+  const rows = diff.filter(
+    ({ key }) => !["type", "node_id"].includes(key.toLowerCase()),
+  );
   return rows.length > 0 ? (
     <div className="flex flex-col gap-4">
       {rows.map(({ key, before, after }) => (

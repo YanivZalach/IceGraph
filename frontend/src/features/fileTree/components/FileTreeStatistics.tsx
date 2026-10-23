@@ -9,6 +9,7 @@ interface FileTreeStatisticsProps {
 const FileTreeStatistics = ({ statistics }: FileTreeStatisticsProps) => {
   const formatByteCount = (byteCount: number): string =>
     formatBytesAsMebibytes(String(byteCount));
+  const hasDeletionVectors = statistics.deletionVectorCount > 0;
   const rows = [
     ["Total size", formatByteCount(statistics.totalSizeBytes)],
     ["Average file size", formatByteCount(statistics.averageSizeBytes)],
@@ -22,10 +23,15 @@ const FileTreeStatistics = ({ statistics }: FileTreeStatisticsProps) => {
       "Position-delete file records",
       statistics.positionDeleteRecordCount?.toLocaleString() ?? "Unavailable",
     ],
-    [
-      "Deleted positions (vectors)",
-      statistics.deletionVectorPositionCount?.toLocaleString() ?? "Unavailable",
-    ],
+    ...(hasDeletionVectors
+      ? [
+          [
+            "Deleted positions (vectors)",
+            statistics.deletionVectorPositionCount?.toLocaleString() ??
+              "Unavailable",
+          ],
+        ]
+      : []),
     [
       "Equality delete records",
       statistics.equalityDeleteRecordCount?.toLocaleString() ?? "Unavailable",
@@ -72,20 +78,22 @@ const FileTreeStatistics = ({ statistics }: FileTreeStatisticsProps) => {
               {statistics.positionDeleteFileCount}
             </span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-slate-400">
-              <HelpTerm label="Deletion vectors">
-                Position-delete file records exclude deletion vectors. Deleted
-                positions in vectors are counted separately. Deletes are not
-                applied to the data-row count. Equality delete records are
-                matching rules, not a count of deleted rows. Sizes and file
-                counts include data files and delete entries.
-              </HelpTerm>
-            </span>
-            <span className="font-mono text-ink">
-              {statistics.deletionVectorCount}
-            </span>
-          </div>
+          {hasDeletionVectors && (
+            <div className="flex justify-between">
+              <span className="text-slate-400">
+                <HelpTerm label="Deletion vectors">
+                  Position-delete file records exclude deletion vectors. Deleted
+                  positions in vectors are counted separately. Deletes are not
+                  applied to the data-row count. Equality delete records are
+                  matching rules, not a count of deleted rows. Sizes and file
+                  counts include data files and delete entries.
+                </HelpTerm>
+              </span>
+              <span className="font-mono text-ink">
+                {statistics.deletionVectorCount}
+              </span>
+            </div>
+          )}
           <div className="flex justify-between">
             <span className="text-slate-400">Equality deletes</span>
             <span className="font-mono text-ink">

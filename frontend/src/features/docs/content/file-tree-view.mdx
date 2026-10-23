@@ -33,7 +33,7 @@ This view solves a common source of confusion: if you look at the **raw storage 
 
 - If the loaded data/delete entry counts disagree with the selected snapshot's summary, a warning shows both counts. Bounded graphs can omit manifests inherited from before the selected graph range. The displayed counts and metrics then describe only loaded files; expand the graph range to include earlier snapshots and check collection warnings
 
-- Deletion vectors are listed one per vector, as `<Puffin file path>#<offset>`, and counted separately from **Position deletes**. They have no column metrics. Totals use the vector's own size, so a shared Puffin file isn't counted twice; the inspector also shows the whole **Puffin file size**
+- Deletion vectors are listed one per vector, as `<Puffin file path>#<offset>`, and counted separately from **Position deletes**. They have no column metrics. Totals use the vector's own size, so a shared Puffin file isn't counted twice; the inspector also shows the whole **Puffin file size**. A folder shows its **Deletion vectors** and **Deleted positions (vectors)** counts only when it contains deletion vectors
 
 - On format version 3 tables, each data file shows its `first_row_id`; its rows have IDs from `first_row_id` to `first_row_id` + **Data rows (before deletes)** - 1
 
