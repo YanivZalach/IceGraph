@@ -151,18 +151,18 @@ class DataFilesExtractor(Extractor):
 
     @staticmethod
     def _with_deletion_vector_columns(data_files_df, data_file_fields: set[str]):
-        def data_file_field(name, data_type):
+        def _data_file_field(name, data_type):
             return F.col(f"data_file.{name}") if name in data_file_fields else F.lit(None).cast(data_type)
 
-        content_offset = data_file_field("content_offset", LongType())
+        content_offset = _data_file_field("content_offset", LongType())
         node_id = F.when(content_offset.isNull(), F.col("data_file.file_path")).otherwise(
             F.concat(F.col("data_file.file_path"), F.lit("#"), content_offset.cast(StringType()))
         )
 
         return (
-            data_files_df.withColumn("referenced_data_file", data_file_field("referenced_data_file", StringType()))
+            data_files_df.withColumn("referenced_data_file", _data_file_field("referenced_data_file", StringType()))
             .withColumn("content_offset", content_offset)
-            .withColumn("content_size_in_bytes", data_file_field("content_size_in_bytes", LongType()))
+            .withColumn("content_size_in_bytes", _data_file_field("content_size_in_bytes", LongType()))
             .withColumn("node_id", node_id)
         )
 
