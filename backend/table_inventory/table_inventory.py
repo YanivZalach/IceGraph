@@ -271,7 +271,8 @@ class TableInventory(SparkTableAction):
                     self._errors[f"Linking {manifest_file_path} -> {data_file.node_id}"] = ["Manifest not found"]
 
                 else:
-                    manifest.partitions.add(data_file.partition)
+                    if data_file.partition not in manifest.partitions:
+                        manifest.partitions.append(data_file.partition)
                     manifest.total_rows_in_downstream_files += data_file.row_count
 
                     manifest.child_files.append(data_file.node_id)

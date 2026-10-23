@@ -25,7 +25,7 @@ class ManifestRecord(BaseFile):
     added_snapshot_timestamp: Optional[str]
     first_row_id: Optional[int]
     first_row_id_by_snapshot: Optional[Dict[str, int]]
-    partitions: set
+    partitions: list
     total_rows_in_downstream_files: int
     existing_child_files: list[str]
     deleted_child_files: list[str]
@@ -76,7 +76,7 @@ class CollectManifests(Collector):
             added_snapshot_timestamp=manifest_dict["added_snapshot_timestamp"],
             first_row_id=row_id_fields.first_row_id,
             first_row_id_by_snapshot=row_id_fields.first_row_id_by_snapshot,
-            partitions=set(),
+            partitions=[],
             total_rows_in_downstream_files=0,
             existing_child_files=[],
             deleted_child_files=[],

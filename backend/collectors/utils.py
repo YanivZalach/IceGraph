@@ -7,20 +7,20 @@ from pyspark.sql.types import ArrayType, LongType, StringType, StructType
 from spark_connect import open_spark_connect_session
 
 
-def format_partition(partition_dict: dict) -> str:
-    if not partition_dict:
-        return "Root"
+def format_partition(partition_dict: dict) -> list[dict]:
+    partition = []
+    for key, value in (partition_dict or {}).items():
+        if value is not None and not isinstance(value, (bool, int, str)):
+            value = str(value)
 
-    partitions_repr = []
-    for key, value in partition_dict.items():
-        if key.endswith("_hour") and isinstance(value, int):
+        formatted_value = "null" if value is None else str(value)
+        if key.endswith("_hour") and isinstance(value, int) and not isinstance(value, bool):
             with suppress(Exception):
-                repr_value = arrow.Arrow.utcfromtimestamp(value * 3600).format("YYYY-MM-DD HH")
-                value = f"{repr_value} ({value})"
+                formatted_value = arrow.Arrow.utcfromtimestamp(value * 3600).format("YYYY-MM-DD HH:00 UTC")
 
-        partitions_repr.append(f"{key} = {value}")
+        partition.append({"name": key, "value": value, "formatted_value": formatted_value})
 
-    return ", ".join(partitions_repr)
+    return partition
 
 
 def read_metadata_df(metadata_path: str):

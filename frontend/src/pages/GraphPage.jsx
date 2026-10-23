@@ -8,10 +8,12 @@ import {
   PANEL_STATUS_BADGE_CLASS,
 } from "../components/PanelContent";
 import PanelIssueNotice from "../components/PanelIssueNotice";
+import CopyIconButton from "../components/CopyIconButton";
 import HelpTerm from "../shared/components/HelpTerm";
 import DataFileReadableMetricsTable from "../components/DataFileReadableMetricsTable";
 import PartitionStatisticsTable from "../features/table/components/PartitionStatisticsTable";
 import PartitionDistributionTable from "../features/table/components/PartitionDistributionTable";
+import PartitionValues from "../features/table/components/PartitionValues";
 import ReadableMetricsSummary from "../components/ReadableMetricsSummary";
 import { isEmptyValue } from "../shared/lib/isEmptyValue";
 import { isKeyboardInputTarget } from "../shared/lib/keyboard";
@@ -1014,7 +1016,17 @@ export default function GraphPage() {
           accentColor={stickyNode.color}
           header={
             <PanelHeader
-              title={fileTypeLabel(stickyNode.details.type)}
+              title={
+                <span className="flex items-center gap-2">
+                  {fileTypeLabel(stickyNode.details.type)}
+                  <CopyIconButton
+                    key={stickyNode.id}
+                    text={JSON.stringify(stickyNode.details, null, 2)}
+                    title="Copy all node details as JSON"
+                    className="shrink-0"
+                  />
+                </span>
+              }
               titleColor={stickyNode.color}
             />
           }
@@ -1040,18 +1052,29 @@ export default function GraphPage() {
             {stickyNode.details.warnings}
           </PanelIssueNotice>
           {sticky.rows
-            .filter((r) => !isEmptyValue(r.value))
-            .map((r, i) => (
-              <PanelDetailRow
-                key={i}
-                label={r.label}
-                value={r.value}
-                relaxedCollapse={
-                  panelLayout.isFullscreen ||
-                  panelLayout.panelWidthRem >= PANEL_WIDTH_RELAXED_REM
-                }
-              />
-            ))}
+            .filter(
+              (r) =>
+                r.label === "partition" ||
+                r.label === "partitions" ||
+                !isEmptyValue(r.value),
+            )
+            .map((r, i) =>
+              r.label === "partition" && Array.isArray(r.value) ? (
+                <PartitionValues key={i} kind="file" value={r.value} />
+              ) : r.label === "partitions" && Array.isArray(r.value) ? (
+                <PartitionValues key={i} kind="manifest" value={r.value} />
+              ) : (
+                <PanelDetailRow
+                  key={i}
+                  label={r.label}
+                  value={r.value}
+                  relaxedCollapse={
+                    panelLayout.isFullscreen ||
+                    panelLayout.panelWidthRem >= PANEL_WIDTH_RELAXED_REM
+                  }
+                />
+              ),
+            )}
           {stickyNode.details.type === FileType.PARTITION_STATISTICS &&
             stickyNode.details.partitions_count != null &&
             stickyNode.details.partition_distribution && (

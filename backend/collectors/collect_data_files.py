@@ -29,7 +29,7 @@ class DataFileRecord(BaseFile):
     referenced_data_file: Optional[str]
     content_offset: Optional[int]
     content_size_in_bytes: Optional[int]
-    partition: str
+    partition: List[Dict[str, Any]]
     earliest_appearing_snapshot_id: int
     earliest_appearing_snapshot_timestamp: Optional[str]
     sort_order_id: int

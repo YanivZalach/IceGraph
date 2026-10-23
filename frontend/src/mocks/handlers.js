@@ -1,5 +1,18 @@
 import { http, HttpResponse } from "msw";
 
+const mockPartition = (eventTsHour, eventName) => [
+  {
+    name: "event_ts_hour",
+    value: eventTsHour,
+    formatted_value: `${new Date(eventTsHour * 3600000).toISOString().slice(0, 13).replace("T", " ")}:00 UTC`,
+  },
+  {
+    name: "event_name",
+    value: eventName,
+    formatted_value: eventName,
+  },
+];
+
 const dataWriteMetadata = {
   type: "metadata",
   virtual_read: false,
@@ -560,8 +573,7 @@ const mockResponse = {
       },
       sampled_partitions: [
         {
-          partition:
-            "event_ts_hour = 2025-06-15 11 (486107), event_name = signup",
+          partition: mockPartition(486107, "signup"),
           spec_id: 0,
           data_record_count: 4,
           data_file_count: 1,
@@ -575,8 +587,7 @@ const mockResponse = {
           last_updated_snapshot_id: "3004708926140182071",
         },
         {
-          partition:
-            "event_ts_hour = 2025-06-15 11 (486107), event_name = logout",
+          partition: mockPartition(486107, "logout"),
           spec_id: 0,
           data_record_count: 3,
           data_file_count: 2,
@@ -590,8 +601,7 @@ const mockResponse = {
           last_updated_snapshot_id: "3004708926140182071",
         },
         {
-          partition:
-            "event_ts_hour = 2025-06-15 11 (486107), event_name = click",
+          partition: mockPartition(486107, "click"),
           spec_id: 0,
           data_record_count: 7,
           data_file_count: 1,
@@ -820,9 +830,9 @@ const mockResponse = {
       added_snapshot_id: "3004708926140182071",
       added_snapshot_timestamp: "2026-06-12 10:32:28.782000",
       partitions: [
-        "event_ts_hour = 2025-06-15 12 (486108), event_name = experiment",
-        "event_ts_hour = 2025-06-15 12 (486108), event_name = experiment1",
-        "event_ts_hour = 2025-06-15 12 (486108), event_name = experiment2",
+        mockPartition(486108, "experiment"),
+        mockPartition(486108, "experiment1"),
+        mockPartition(486108, "experiment2"),
       ],
       total_rows_in_downstream_files: 12,
       existing_child_files: [
@@ -847,8 +857,8 @@ const mockResponse = {
       added_snapshot_id: "7633604781669548673",
       added_snapshot_timestamp: "2026-06-12 10:32:17.777000",
       partitions: [
-        "event_ts_hour = 2025-06-15 13 (486109), event_name = audit_fix",
-        "event_ts_hour = 2025-06-15 13 (486109), event_name = audit_review",
+        mockPartition(486109, "audit_fix"),
+        mockPartition(486109, "audit_review"),
       ],
       total_rows_in_downstream_files: 3,
       existing_child_files: [
@@ -871,8 +881,8 @@ const mockResponse = {
       added_snapshot_id: "3978455952979011601",
       added_snapshot_timestamp: "2026-06-12 10:32:12.316000",
       partitions: [
-        "event_ts_hour = 2025-06-15 10 (486106), event_name = corrected_login",
-        "event_ts_hour = 2025-06-15 11 (486107), event_name = click",
+        mockPartition(486106, "corrected_login"),
+        mockPartition(486107, "click"),
       ],
       total_rows_in_downstream_files: 3,
       existing_child_files: [
@@ -896,8 +906,8 @@ const mockResponse = {
       added_snapshot_id: "3978455952979011601",
       added_snapshot_timestamp: "2026-06-12 10:32:12.316000",
       partitions: [
-        "event_ts_hour = 2025-06-15 10 (486106), event_name = corrected_login",
-        "event_ts_hour = 2025-06-15 10 (486106), event_name = corrected_purchase",
+        mockPartition(486106, "corrected_login"),
+        mockPartition(486106, "corrected_purchase"),
       ],
       total_rows_in_downstream_files: 2,
       existing_child_files: [
@@ -920,8 +930,8 @@ const mockResponse = {
       added_snapshot_id: "3037121856853733940",
       added_snapshot_timestamp: "2026-06-12 10:32:09.809000",
       partitions: [
-        "event_ts_hour = 2025-06-15 11 (486107), event_name = logout",
-        "event_ts_hour = 2025-06-15 11 (486107), event_name = signup",
+        mockPartition(486107, "logout"),
+        mockPartition(486107, "signup"),
       ],
       total_rows_in_downstream_files: 2,
       existing_child_files: [
@@ -944,8 +954,8 @@ const mockResponse = {
       added_snapshot_id: "2170216877480741855",
       added_snapshot_timestamp: "2026-06-12 10:32:09.646000",
       partitions: [
-        "event_ts_hour = 2025-06-15 11 (486107), event_name = logout",
-        "event_ts_hour = 2025-06-15 11 (486107), event_name = signup",
+        mockPartition(486107, "logout"),
+        mockPartition(486107, "signup"),
       ],
       total_rows_in_downstream_files: 2,
       existing_child_files: [
@@ -968,8 +978,8 @@ const mockResponse = {
       added_snapshot_id: "3200045318442131660",
       added_snapshot_timestamp: "2026-06-12 10:31:57.678000",
       partitions: [
-        "event_ts_hour = 2025-06-15 10 (486106), event_name = corrected_login",
-        "event_ts_hour = 2025-06-15 11 (486107), event_name = click",
+        mockPartition(486106, "corrected_login"),
+        mockPartition(486107, "click"),
       ],
       total_rows_in_downstream_files: 3,
       existing_child_files: [
@@ -992,8 +1002,7 @@ const mockResponse = {
       format: "PARQUET",
       file_size_in_bytes: "1451",
       row_count: 10,
-      partition:
-        "event_ts_hour = 2025-06-15 12 (486108), event_name = experiment",
+      partition: mockPartition(486108, "experiment"),
       earliest_appearing_snapshot_id: "3004708926140182071",
       earliest_appearing_snapshot_timestamp: "2026-06-12 10:32:28.782000",
       sort_order_id: 0,
@@ -1054,8 +1063,7 @@ const mockResponse = {
       format: "PARQUET",
       file_size_in_bytes: "1262",
       row_count: 1,
-      partition:
-        "event_ts_hour = 2025-06-15 12 (486108), event_name = experiment1",
+      partition: mockPartition(486108, "experiment1"),
       earliest_appearing_snapshot_id: "3004708926140182071",
       earliest_appearing_snapshot_timestamp: "2026-06-12 10:32:28.782000",
       sort_order_id: 0,
@@ -1116,8 +1124,7 @@ const mockResponse = {
       format: "PARQUET",
       file_size_in_bytes: "1262",
       row_count: 1,
-      partition:
-        "event_ts_hour = 2025-06-15 12 (486108), event_name = experiment2",
+      partition: mockPartition(486108, "experiment2"),
       earliest_appearing_snapshot_id: "3004708926140182071",
       earliest_appearing_snapshot_timestamp: "2026-06-12 10:32:28.782000",
       sort_order_id: 0,
@@ -1178,8 +1185,7 @@ const mockResponse = {
       format: "PARQUET",
       file_size_in_bytes: "1255",
       row_count: 1,
-      partition:
-        "event_ts_hour = 2025-06-15 13 (486109), event_name = audit_fix",
+      partition: mockPartition(486109, "audit_fix"),
       earliest_appearing_snapshot_id: "7633604781669548673",
       earliest_appearing_snapshot_timestamp: "2026-06-12 10:32:17.777000",
       sort_order_id: 0,
@@ -1240,8 +1246,7 @@ const mockResponse = {
       format: "PARQUET",
       file_size_in_bytes: "1443",
       row_count: 2,
-      partition:
-        "event_ts_hour = 2025-06-15 13 (486109), event_name = audit_review",
+      partition: mockPartition(486109, "audit_review"),
       earliest_appearing_snapshot_id: "7633604781669548673",
       earliest_appearing_snapshot_timestamp: "2026-06-12 10:32:17.777000",
       sort_order_id: 0,
@@ -1302,8 +1307,7 @@ const mockResponse = {
       format: "PARQUET",
       file_size_in_bytes: "1283",
       row_count: 1,
-      partition:
-        "event_ts_hour = 2025-06-15 10 (486106), event_name = corrected_login",
+      partition: mockPartition(486106, "corrected_login"),
       earliest_appearing_snapshot_id: "3978455952979011601",
       earliest_appearing_snapshot_timestamp: "2026-06-12 10:32:12.316000",
       sort_order_id: 0,
@@ -1364,8 +1368,7 @@ const mockResponse = {
       format: "PARQUET",
       file_size_in_bytes: "1086",
       row_count: 2,
-      partition:
-        "event_ts_hour = 2025-06-15 10 (486106), event_name = corrected_login",
+      partition: mockPartition(486106, "corrected_login"),
       earliest_appearing_snapshot_id: "3200045318442131660",
       earliest_appearing_snapshot_timestamp: "2026-06-12 10:31:57.678000",
       sort_order_id: 0,
@@ -1426,8 +1429,7 @@ const mockResponse = {
       format: "PARQUET",
       file_size_in_bytes: "1304",
       row_count: 1,
-      partition:
-        "event_ts_hour = 2025-06-15 10 (486106), event_name = corrected_purchase",
+      partition: mockPartition(486106, "corrected_purchase"),
       earliest_appearing_snapshot_id: "3978455952979011601",
       earliest_appearing_snapshot_timestamp: "2026-06-12 10:32:12.316000",
       sort_order_id: 0,
@@ -1488,7 +1490,7 @@ const mockResponse = {
       format: "PARQUET",
       file_size_in_bytes: "960",
       row_count: 1,
-      partition: "event_ts_hour = 2025-06-15 11 (486107), event_name = click",
+      partition: mockPartition(486107, "click"),
       earliest_appearing_snapshot_id: "3200045318442131660",
       earliest_appearing_snapshot_timestamp: "2026-06-12 10:31:57.678000",
       sort_order_id: 0,
@@ -1549,7 +1551,7 @@ const mockResponse = {
       format: "PARQUET",
       file_size_in_bytes: "1241",
       row_count: 1,
-      partition: "event_ts_hour = 2025-06-15 11 (486107), event_name = logout",
+      partition: mockPartition(486107, "logout"),
       earliest_appearing_snapshot_id: "3037121856853733940",
       earliest_appearing_snapshot_timestamp: "2026-06-12 10:32:09.809000",
       sort_order_id: 0,
@@ -1610,7 +1612,7 @@ const mockResponse = {
       format: "PARQUET",
       file_size_in_bytes: "1220",
       row_count: 1,
-      partition: "event_ts_hour = 2025-06-15 11 (486107), event_name = signup",
+      partition: mockPartition(486107, "signup"),
       earliest_appearing_snapshot_id: "3037121856853733940",
       earliest_appearing_snapshot_timestamp: "2026-06-12 10:32:09.809000",
       sort_order_id: 0,
@@ -1671,7 +1673,7 @@ const mockResponse = {
       format: "PARQUET",
       file_size_in_bytes: "1241",
       row_count: 1,
-      partition: "event_ts_hour = 2025-06-15 11 (486107), event_name = logout",
+      partition: mockPartition(486107, "logout"),
       earliest_appearing_snapshot_id: "2170216877480741855",
       earliest_appearing_snapshot_timestamp: "2026-06-12 10:32:09.646000",
       sort_order_id: 0,
@@ -1732,7 +1734,7 @@ const mockResponse = {
       format: "PARQUET",
       file_size_in_bytes: "1220",
       row_count: 1,
-      partition: "event_ts_hour = 2025-06-15 11 (486107), event_name = signup",
+      partition: mockPartition(486107, "signup"),
       earliest_appearing_snapshot_id: "2170216877480741855",
       earliest_appearing_snapshot_timestamp: "2026-06-12 10:32:09.646000",
       sort_order_id: 0,

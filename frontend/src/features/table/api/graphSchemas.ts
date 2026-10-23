@@ -5,7 +5,17 @@ import {
   tableMetadataSchema,
 } from "./metadataSchemas";
 
-export const partitionStatisticsRowSchema = z.record(z.string(), z.unknown());
+export const partitionSchema = z.array(
+  z.object({
+    name: z.string(),
+    value: z.unknown(),
+    formatted_value: z.string(),
+  }),
+);
+
+export const partitionStatisticsRowSchema = z.looseObject({
+  partition: partitionSchema.optional(),
+});
 
 export const graphDataSchema = z.object({
   nodes: z.array(
@@ -16,6 +26,8 @@ export const graphDataSchema = z.object({
       virtual_read: z.boolean().optional(),
       snapshot_id: icebergIntegerSchema.nullish(),
       timestamp: z.string().nullish(),
+      partition: partitionSchema.optional(),
+      partitions: z.array(partitionSchema).optional(),
       summary: z
         .record(
           z.string(),
@@ -61,6 +73,7 @@ export const graphMetadataFileSchema = z.object({
   metadata_file: z.string(),
 });
 
+export type Partition = z.infer<typeof partitionSchema>;
 export type GraphData = z.infer<typeof graphDataSchema>;
 export type GraphProgress = z.infer<typeof graphProgressSchema>;
 export type GraphStages = NonNullable<GraphProgress["stages"]>;

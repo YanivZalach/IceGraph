@@ -39,10 +39,16 @@ export interface PartitionPathNode {
   path: string;
 }
 
+export interface PartitionPathSegment {
+  key: string;
+  label: string;
+}
+
 export interface PartitionGroup {
   files: DataFileNode[];
   id: string;
   name: string;
+  segments: PartitionPathSegment[];
 }
 
 export interface Branch {
