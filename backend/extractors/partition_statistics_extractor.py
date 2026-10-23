@@ -3,10 +3,9 @@ from typing import List
 
 import pyspark.sql
 from pyspark.sql import functions as F
-from pyspark.sql.types import ArrayType, StringType, StructType
+from pyspark.sql.types import StructType
 
 from base_classes.base_file import BaseFile
-from collectors.utils import partition_with_timestamp_text
 from env import Env
 from extractors.extractor import Extractor
 
@@ -31,11 +30,7 @@ class PartitionStatisticsExtractor(Extractor):
             summary_df = self._summarize_partition_statistics(source_df, columns).withColumn("file_path", F.lit(statistics_file.file_path))
             summaries_df = summary_df if summaries_df is None else summaries_df.unionByName(summary_df, allowMissingColumns=True)
             if include_samples:
-                sample_df = (
-                    self._sample_partitions(source_df, columns)
-                    .withColumn("file_path", F.lit(statistics_file.file_path))
-                    .withColumn("partition_field_names", self._partition_field_names(source_df))
-                )
+                sample_df = self._sample_partitions(source_df, columns).withColumn("file_path", F.lit(statistics_file.file_path))
                 samples_df = sample_df if samples_df is None else samples_df.unionByName(sample_df, allowMissingColumns=True)
 
         if summaries_df is None:
@@ -43,25 +38,12 @@ class PartitionStatisticsExtractor(Extractor):
 
         return summaries_df.join(samples_df, on="file_path", how="left") if include_samples else summaries_df
 
-    @staticmethod
-    def _partition_field_names(partition_statistics_df: pyspark.sql.DataFrame) -> pyspark.sql.Column:
-        field_names = []
-        if "partition" in partition_statistics_df.columns:
-            field_names = partition_statistics_df.schema["partition"].dataType.fieldNames()
-
-        return F.array(*[F.lit(field_name) for field_name in field_names]).cast(ArrayType(StringType()))
-
     def _read_partition_statistics_file(self, file_path: str) -> pyspark.sql.DataFrame:
         file_format = PurePosixPath(file_path).suffix.lstrip(".").lower()
         if file_format not in PARTITION_STATISTICS_FILE_FORMATS:
             file_format = DEFAULT_PARTITION_STATISTICS_FILE_FORMAT
 
-        source_df = self._spark.read.format(file_format).load(file_path)
-        if "partition" in source_df.columns:
-            partition = partition_with_timestamp_text(F.col("partition"), source_df.schema["partition"].dataType)
-            source_df = source_df.withColumn("partition", partition)
-
-        return source_df
+        return self._spark.read.format(file_format).load(file_path)
 
     @staticmethod
     def _summarize_partition_statistics(partition_statistics_df: pyspark.sql.DataFrame, columns: List[str]) -> pyspark.sql.DataFrame:

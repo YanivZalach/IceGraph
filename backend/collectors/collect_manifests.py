@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 import pyspark
 
@@ -17,7 +17,6 @@ from extractors.manifests_extractor import ManifestsExtractor
 class HiddenManifestMetadata(HiddenFile):
     pointing_snapshots: list[int]
     row_id_assignments: list[RowIdAssignment]
-    partition_spec_id: Optional[int]
 
 
 @dataclass
@@ -26,7 +25,7 @@ class ManifestRecord(BaseFile):
     added_snapshot_timestamp: Optional[str]
     first_row_id: Optional[int]
     first_row_id_by_snapshot: Optional[Dict[str, int]]
-    partitions: List[List[Dict[str, Any]]]
+    partitions: list
     total_rows_in_downstream_files: int
     existing_child_files: list[str]
     deleted_child_files: list[str]
@@ -82,9 +81,5 @@ class CollectManifests(Collector):
             existing_child_files=[],
             deleted_child_files=[],
             child_files=[],
-            hidden_manifest_data=HiddenManifestMetadata(
-                pointing_snapshots=manifest_dict["snapshot_ids"],
-                row_id_assignments=row_id_assignments,
-                partition_spec_id=manifest_dict["partition_spec_id"],
-            ),
+            hidden_manifest_data=HiddenManifestMetadata(pointing_snapshots=manifest_dict["snapshot_ids"], row_id_assignments=row_id_assignments),
         )

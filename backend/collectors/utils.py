@@ -1,25 +1,24 @@
-from pyspark.sql import Column, functions as F
-from pyspark.sql.types import ArrayType, DataType, LongType, StringType, StructType, TimestampNTZType, TimestampType
+from contextlib import suppress
+
+import arrow
+from pyspark.sql import functions as F
+from pyspark.sql.types import ArrayType, LongType, StringType, StructType
 
 from spark_connect import open_spark_connect_session
 
 
-def partition_with_timestamp_text(partition: Column, partition_type: DataType) -> Column:
-    if not isinstance(partition_type, StructType):
-        return partition
+def format_partition(partition_dict: dict) -> list[dict]:
+    partition = []
+    for key, value in (partition_dict or {}).items():
+        if value is not None and not isinstance(value, (bool, int, str)):
+            value = str(value)
 
-    for field in partition_type.fields:
-        if isinstance(field.dataType, (TimestampType, TimestampNTZType)):
-            timestamp = F.to_json(
-                F.struct(partition.getField(field.name).alias("value")),
-                {
-                    "timeZone": "UTC",
-                    "timestampFormat": "yyyy-MM-dd HH:mm:ss.SSSSSS",
-                    "timestampNTZFormat": "yyyy-MM-dd HH:mm:ss.SSSSSS",
-                },
-            )
-            field_name = "`" + field.name.replace("`", "``") + "`"
-            partition = partition.withField(field_name, F.get_json_object(timestamp, "$.value"))
+        formatted_value = "null" if value is None else str(value)
+        if key.endswith("_hour") and isinstance(value, int) and not isinstance(value, bool):
+            with suppress(Exception):
+                formatted_value = arrow.Arrow.utcfromtimestamp(value * 3600).format("YYYY-MM-DD HH:00")
+
+        partition.append({"name": key, "value": value, "formatted_value": formatted_value})
 
     return partition
 

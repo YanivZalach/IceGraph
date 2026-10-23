@@ -104,7 +104,7 @@ export const groupFilesByPartition = (
         : partition.length === 0
           ? [{ key: ROOT_PARTITION_LABEL, label: ROOT_PARTITION_LABEL }]
           : partition.map((field) => ({
-              key: JSON.stringify([field.name, field.field_id, field.value]),
+              key: JSON.stringify([field.name, field.value]),
               label: formatPartitionFieldLabel(field),
             }));
     const key =

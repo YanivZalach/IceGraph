@@ -3,13 +3,11 @@ import { http, HttpResponse } from "msw";
 const mockPartition = (eventTsHour, eventName) => [
   {
     name: "event_ts_hour",
-    field_id: 1000,
     value: eventTsHour,
-    formatted_value: `${new Date(eventTsHour * 3600000).toISOString().slice(0, 13).replace("T", " ")}:00 UTC`,
+    formatted_value: `${new Date(eventTsHour * 3600000).toISOString().slice(0, 13).replace("T", " ")}:00`,
   },
   {
     name: "event_name",
-    field_id: 1001,
     value: eventName,
     formatted_value: eventName,
   },

@@ -6,7 +6,6 @@ from pyspark.sql import functions as F
 from pyspark.sql.types import BinaryType, IntegerType, LongType, MapType, StringType, StructField, StructType
 
 from collectors.collect_manifests import ManifestRecord
-from collectors.utils import partition_with_timestamp_text
 from env import Env
 from extractors.extractor import Extractor
 
@@ -90,9 +89,6 @@ class DataFilesExtractor(Extractor):
 
     def _collect_data_files_from_manifest(self, manifest_entry: ManifestRecord):
         df = self._spark.read.format("avro").load(manifest_entry.file_path).select("status", "data_file")
-        partition_type = df.schema["data_file"].dataType["partition"].dataType
-        partition = partition_with_timestamp_text(F.col("data_file.partition"), partition_type)
-        df = df.withColumn("data_file", F.col("data_file").withField("partition", partition))
         existing_fields = set(df.schema["data_file"].dataType.fieldNames())
         for field in DATA_FILE_RECORD_SCHEMA["data_file"].dataType.fields:
             if field.name in existing_fields:

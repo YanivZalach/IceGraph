@@ -8,7 +8,6 @@ import {
 export const partitionSchema = z.array(
   z.object({
     name: z.string(),
-    field_id: icebergIntegerSchema.nullable(),
     value: z.unknown(),
     formatted_value: z.string(),
   }),
