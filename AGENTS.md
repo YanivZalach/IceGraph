@@ -182,10 +182,13 @@ the session. Leave the servers running at handoff and say how to stop the sessio
   [`docs/agents/frontend/philosophy.md`](docs/agents/frontend/philosophy.md)
 - Frontend smoke test:
   [`docs/agents/skills/frontend-smoke-test/SKILL.md`](docs/agents/skills/frontend-smoke-test/SKILL.md)
+- Backend Spark conventions, read before writing Spark code:
+  [`docs/agents/skills/spark-backend/SKILL.md`](docs/agents/skills/spark-backend/SKILL.md)
 - Browser graph-cache contract: [`docs/browser-graph-cache.md`](docs/browser-graph-cache.md)
 
-`CLAUDE.md` loads this file. `.claude/skills/frontend-smoke-test/SKILL.md` is a symlink to the smoke
-test above; Claude Code only discovers skills at that path, so it is required, not a leftover.
+`CLAUDE.md` loads this file. `.claude/skills/frontend-smoke-test/SKILL.md` and
+`.claude/skills/spark-backend/SKILL.md` are symlinks to the skills above; Claude Code only discovers
+skills at that path, so they are required, not leftovers.
 
 `claude-plugin/skills/icegraph/SKILL.md` is the distributable skill for IceGraph users and is outside
 this repository-guidance structure. `frontend/public/SKILL.md` is refreshed by `copy-skill`, while
