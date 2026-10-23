@@ -1,26 +1,27 @@
-from contextlib import suppress
-
-import arrow
-from pyspark.sql import functions as F
-from pyspark.sql.types import ArrayType, LongType, StringType, StructType
+from pyspark.sql import Column, functions as F
+from pyspark.sql.types import ArrayType, DataType, LongType, StringType, StructType, TimestampNTZType, TimestampType
 
 from spark_connect import open_spark_connect_session
 
 
-def format_partition(partition_dict: dict) -> str:
-    if not partition_dict:
-        return "Root"
+def partition_with_timestamp_text(partition: Column, partition_type: DataType) -> Column:
+    if not isinstance(partition_type, StructType):
+        return partition
 
-    partitions_repr = []
-    for key, value in partition_dict.items():
-        if key.endswith("_hour") and isinstance(value, int):
-            with suppress(Exception):
-                repr_value = arrow.Arrow.utcfromtimestamp(value * 3600).format("YYYY-MM-DD HH")
-                value = f"{repr_value} ({value})"
+    for field in partition_type.fields:
+        if isinstance(field.dataType, (TimestampType, TimestampNTZType)):
+            timestamp = F.to_json(
+                F.struct(partition.getField(field.name).alias("value")),
+                {
+                    "timeZone": "UTC",
+                    "timestampFormat": "yyyy-MM-dd HH:mm:ss.SSSSSS",
+                    "timestampNTZFormat": "yyyy-MM-dd HH:mm:ss.SSSSSS",
+                },
+            )
+            field_name = "`" + field.name.replace("`", "``") + "`"
+            partition = partition.withField(field_name, F.get_json_object(timestamp, "$.value"))
 
-        partitions_repr.append(f"{key} = {value}")
-
-    return ", ".join(partitions_repr)
+    return partition
 
 
 def read_metadata_df(metadata_path: str):

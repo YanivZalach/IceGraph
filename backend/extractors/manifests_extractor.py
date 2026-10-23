@@ -1,6 +1,6 @@
 import pyspark
 from pyspark.sql import functions as F
-from pyspark.sql.types import LongType, StringType, StructField, StructType
+from pyspark.sql.types import IntegerType, LongType, StringType, StructField, StructType
 
 from collectors.collect_snapshots import SnapshotRecord
 from env import Env
@@ -19,6 +19,7 @@ MANIFEST_BASE_SCHEMA = StructType(
         StructField("added_snapshot_id", LongType(), False),
         StructField("snapshot_id", LongType(), False),
         StructField("first_row_id", LongType(), True),
+        StructField("partition_spec_id", IntegerType(), True),
     ]
 )
 
@@ -27,6 +28,7 @@ MANIFEST_LIST_READ_SCHEMA = StructType(
         StructField("manifest_path", StringType(), True),
         StructField("added_snapshot_id", LongType(), True),
         StructField("first_row_id", LongType(), True),
+        StructField("partition_spec_id", IntegerType(), True),
     ]
 )
 
@@ -81,6 +83,7 @@ class ManifestsExtractor(Extractor):
                 F.col("added_snapshot_id"),
                 F.lit(snap_id).alias("snapshot_id"),
                 F.col("first_row_id"),
+                F.col("partition_spec_id"),
             )
         )
 
@@ -99,13 +102,13 @@ class ManifestsExtractor(Extractor):
 
     def _filter_ignored_manifests(self, manifests_df: pyspark.sql.DataFrame) -> pyspark.sql.DataFrame:
         return manifests_df.join(self._manifests_to_ignore_df, on="path", how="left_anti").select(
-            "path", "added_snapshot_id", "added_snapshot_timestamp", "snapshot_id", "first_row_id"
+            "path", "added_snapshot_id", "added_snapshot_timestamp", "snapshot_id", "first_row_id", "partition_spec_id"
         )
 
     @staticmethod
     def _aggregate_snapshots_by_manifests_sorted(manifests_df: pyspark.sql.DataFrame) -> pyspark.sql.DataFrame:
         return (
-            manifests_df.groupBy("path", "added_snapshot_id", "added_snapshot_timestamp")
+            manifests_df.groupBy("path", "added_snapshot_id", "added_snapshot_timestamp", "partition_spec_id")
             .agg(
                 F.collect_list("snapshot_id").alias("snapshot_ids"),
                 F.collect_list(F.when(F.col("first_row_id").isNotNull(), F.struct("snapshot_id", "first_row_id"))).alias("snapshot_first_row_ids"),

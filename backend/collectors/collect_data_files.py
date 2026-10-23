@@ -8,7 +8,6 @@ from collectors.row_lineage import RowIdAssignment, build_row_id_fields
 from constants import DATA_FILES_CUTOFF_UNKNOWN_WARNING, DATA_FILES_CUTOFF_WARNING, FileType
 from env import Env
 from extractors.data_files_extractor import DataFilesExtractor
-from collectors.utils import format_partition
 from base_classes.utils import timed
 from iceberg_ports.readable_metrics import RawFileMetrics
 
@@ -17,6 +16,7 @@ from iceberg_ports.readable_metrics import RawFileMetrics
 class HiddenDataFileMetadata(HiddenFile):
     pointing_manifests: list[Dict[str, str]]
     raw_metrics: RawFileMetrics
+    raw_partition: Optional[Dict[str, Any]]
 
 
 @dataclass
@@ -29,7 +29,7 @@ class DataFileRecord(BaseFile):
     referenced_data_file: Optional[str]
     content_offset: Optional[int]
     content_size_in_bytes: Optional[int]
-    partition: str
+    partition: List[Dict[str, Any]]
     earliest_appearing_snapshot_id: int
     earliest_appearing_snapshot_timestamp: Optional[str]
     sort_order_id: int
@@ -88,7 +88,7 @@ class CollectDataFiles(Collector):
             referenced_data_file=data_file_dict["referenced_data_file"],
             content_offset=data_file_dict["content_offset"],
             content_size_in_bytes=data_file_dict["content_size_in_bytes"],
-            partition=format_partition(data_file_dict["partition"]),
+            partition=[],
             earliest_appearing_snapshot_id=data_file_dict["earliest_snapshot_id"],
             earliest_appearing_snapshot_timestamp=data_file_dict["earliest_snapshot_timestamp"],
             sort_order_id=data_file_dict["sort_order_id"],
@@ -99,6 +99,7 @@ class CollectDataFiles(Collector):
             child_files=[],
             hidden_data_file_metadata=HiddenDataFileMetadata(
                 pointing_manifests=data_file_dict["pointing_manifests"],
+                raw_partition=data_file_dict["partition"],
                 raw_metrics=RawFileMetrics(
                     column_sizes=data_file_dict["column_sizes"],
                     value_counts=data_file_dict["value_counts"],

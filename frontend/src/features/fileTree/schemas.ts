@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { partitionSchema } from "../table/api/graphSchemas";
 import { icebergIntegerSchema } from "../table/api/metadataSchemas";
 
 const identifierSchema = z
@@ -61,7 +62,7 @@ export const fileDetailsSchema = z
     timestamp: optionalTimestampSchema,
     snapshot_id: nullableIdentifierSchema,
     parent_id: nullableIdentifierSchema,
-    partition: z.string().optional(),
+    partition: partitionSchema.optional(),
     earliest_appearing_snapshot_id: nullableIdentifierSchema,
     earliest_appearing_snapshot_timestamp: z.string().nullish(),
     format: z.string().optional(),

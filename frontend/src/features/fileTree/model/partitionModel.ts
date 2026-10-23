@@ -6,10 +6,18 @@ import type {
   PartitionPathNode,
 } from "../types";
 import { parseSignedInteger } from "../../../shared/components/statisticsTableBase";
+import {
+  formatPartitionFieldLabel,
+  formatPartitionLabel,
+  ROOT_PARTITION_LABEL,
+} from "../../table/partitionLabel";
+
+const UNPARTITIONED_NAME = "(unpartitioned)";
 
 interface MutablePartitionPathNode {
   children: Map<string, MutablePartitionPathNode>;
   directFiles: DataFileNode[];
+  keys: string[];
   label: string;
   path: string;
 }
@@ -87,30 +95,46 @@ export const groupFilesByPartition = (
   files: DataFileNode[],
   search: string,
 ): PartitionGroup[] => {
-  const filesByPartition = new Map<string, DataFileNode[]>();
+  const partitionsByKey = new Map<string, PartitionGroup>();
   for (const file of files) {
-    const rawPartition = file.details.partition;
-    const partition =
-      rawPartition === undefined || rawPartition.trim() === ""
-        ? "(unpartitioned)"
-        : rawPartition;
-    const partitionFiles = filesByPartition.get(partition) ?? [];
-    partitionFiles.push(file);
-    filesByPartition.set(partition, partitionFiles);
+    const partition = file.details.partition;
+    const segments =
+      partition === undefined
+        ? []
+        : partition.length === 0
+          ? [{ key: ROOT_PARTITION_LABEL, label: ROOT_PARTITION_LABEL }]
+          : partition.map((field) => ({
+              key: JSON.stringify([field.name, field.field_id, field.value]),
+              label: formatPartitionFieldLabel(field),
+            }));
+    const key =
+      partition === undefined
+        ? UNPARTITIONED_NAME
+        : JSON.stringify(segments.map((segment) => segment.key));
+    const existingPartition = partitionsByKey.get(key);
+    if (existingPartition !== undefined) {
+      existingPartition.files.push(file);
+      continue;
+    }
+    const name =
+      partition === undefined
+        ? UNPARTITIONED_NAME
+        : formatPartitionLabel(partition);
+    partitionsByKey.set(key, {
+      files: [file],
+      id: `partition:${key}`,
+      name,
+      segments,
+    });
   }
 
   const normalizedSearch = search.trim().toLowerCase();
-  return [...filesByPartition.entries()]
+  return [...partitionsByKey.values()]
     .filter(
-      ([partition]) =>
+      ({ name }) =>
         normalizedSearch === "" ||
-        partition.toLowerCase().includes(normalizedSearch),
+        name.toLowerCase().includes(normalizedSearch),
     )
-    .map(([name, partitionFiles]) => ({
-      files: partitionFiles,
-      id: `partition:${name}`,
-      name,
-    }))
     .sort((first, second) => second.name.localeCompare(first.name));
 };
 
@@ -128,7 +152,7 @@ const convertMutablePartitionPathNode = (
     allFiles,
     children,
     directFiles: mutableNode.directFiles,
-    id: `partition-path:${mutableNode.path}`,
+    id: `partition-path:${JSON.stringify(mutableNode.keys)}`,
     label: mutableNode.label,
     path: mutableNode.path,
   };
@@ -140,17 +164,20 @@ export const buildPartitionPathTree = (
   const root: MutablePartitionPathNode = {
     children: new Map(),
     directFiles: [],
+    keys: [],
     label: "",
     path: "",
   };
 
   for (const partition of partitions) {
-    if (partition.name === "(unpartitioned)") continue;
+    if (partition.name === UNPARTITIONED_NAME) continue;
     let currentNode = root;
-    for (const segment of partition.name.split(", ")) {
+    for (const segment of partition.segments) {
       const path =
-        currentNode.path === "" ? segment : `${currentNode.path}/${segment}`;
-      const existingNode = currentNode.children.get(segment);
+        currentNode.path === ""
+          ? segment.label
+          : `${currentNode.path}/${segment.label}`;
+      const existingNode = currentNode.children.get(segment.key);
       if (existingNode !== undefined) {
         currentNode = existingNode;
         continue;
@@ -158,10 +185,11 @@ export const buildPartitionPathTree = (
       const newNode: MutablePartitionPathNode = {
         children: new Map(),
         directFiles: [],
-        label: segment,
+        keys: [...currentNode.keys, segment.key],
+        label: segment.label,
         path,
       };
-      currentNode.children.set(segment, newNode);
+      currentNode.children.set(segment.key, newNode);
       currentNode = newNode;
     }
     currentNode.directFiles.push(...partition.files);

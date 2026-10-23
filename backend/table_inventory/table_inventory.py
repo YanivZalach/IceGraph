@@ -10,6 +10,7 @@ from collectors.collect_metadata import CollectMetadata, MetadataFileRecord
 from collectors.collect_partition_statistics import CollectPartitionStatistics, PartitionStatisticsFileRecord
 from collectors.collect_table_statistics import CollectTableStatistics, TableStatisticsFileRecord
 from collectors.collector import FilesCollection
+from collectors.partition_formatter import build_partition, build_partition_spec_fields, resolve_stored_partition_field_names, unique_partitions
 from collectors.statistics_collector import StatisticsCollector
 from collectors.collect_snapshots import CollectSnapshots, SnapshotRecord
 from constants import (
@@ -90,6 +91,7 @@ class TableInventory(SparkTableAction):
 
         self._set_current_table_specs()
         self._warnings.update(collect_format_version_warnings(self._current_table_specs))
+        self._set_partitions()
         self._set_data_file_readable_metrics()
         self._collect_file_errors()
 
@@ -271,7 +273,6 @@ class TableInventory(SparkTableAction):
                     self._errors[f"Linking {manifest_file_path} -> {data_file.node_id}"] = ["Manifest not found"]
 
                 else:
-                    manifest.partitions.add(data_file.partition)
                     manifest.total_rows_in_downstream_files += data_file.row_count
 
                     manifest.child_files.append(data_file.node_id)
@@ -324,6 +325,46 @@ class TableInventory(SparkTableAction):
             if row_lineage:
                 snapshot.first_row_id = row_lineage.first_row_id
                 snapshot.added_rows = row_lineage.added_rows
+
+    def _set_partitions(self):
+        spec_fields_by_id = build_partition_spec_fields(self._current_table_specs.get("partition-specs"), self._current_table_specs.get("schemas"))
+        manifests_by_path = {manifest.file_path: manifest for manifest in self._manifests}
+        manifest_partitions = {manifest.file_path: [] for manifest in self._manifests}
+
+        for data_file in self._data_files:
+            pointing_manifests = [
+                manifests_by_path[entry["path"]]
+                for entry in data_file.hidden_data_file_metadata.pointing_manifests
+                if entry["path"] in manifests_by_path
+            ]
+
+            spec_id = None
+            for manifest in pointing_manifests:
+                if manifest.hidden_manifest_data.partition_spec_id is not None:
+                    spec_id = manifest.hidden_manifest_data.partition_spec_id
+                    break
+
+            data_file.partition = build_partition(data_file.hidden_data_file_metadata.raw_partition, spec_fields_by_id.get(spec_id))
+            for manifest in pointing_manifests:
+                manifest_partitions[manifest.file_path].append(data_file.partition)
+
+        for manifest in self._manifests:
+            manifest.partitions = unique_partitions(manifest_partitions[manifest.file_path])
+
+        for statistics_file in self._partition_statistics_files:
+            stored_field_names = statistics_file.hidden_statistics_data.partition_field_names
+            stored_names_by_field_id = resolve_stored_partition_field_names(spec_fields_by_id, stored_field_names)
+            if stored_names_by_field_id is None and spec_fields_by_id and stored_field_names:
+                statistics_file.warnings.append(
+                    "Partition field IDs could not be resolved unambiguously from the statistics schema. "
+                    "Sampled partition values use physical field names without transform formatting."
+                )
+            for sampled_partition in statistics_file.sampled_partitions:
+                if "partition" in sampled_partition:
+                    raw_partition = sampled_partition["partition"] or {}
+                    raw_partition = {name: raw_partition.get(name) for name in stored_field_names}
+                    spec_fields = spec_fields_by_id.get(sampled_partition.get("spec_id")) if stored_names_by_field_id is not None else None
+                    sampled_partition["partition"] = build_partition(raw_partition, spec_fields, stored_names_by_field_id)
 
     def _set_data_file_readable_metrics(self):
         if not self._data_files:

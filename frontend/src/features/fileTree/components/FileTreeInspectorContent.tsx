@@ -9,6 +9,7 @@ import { formatBytesAsMebibytes } from "../../../shared/lib/formatBytes";
 import { isEmptyValue } from "../../../shared/lib/isEmptyValue";
 import { parseSignedInteger } from "../../../shared/components/statisticsTableBase";
 import { calculateFileStatistics } from "../model/partitionModel";
+import PartitionValues from "../../table/components/PartitionValues";
 import type { InspectedFileTreeItem } from "../types";
 import FileTreeStatistics from "./FileTreeStatistics";
 import FileTreeMetrics from "./FileTreeMetrics";
@@ -24,6 +25,7 @@ const FILE_SUMMARY_KEYS = new Set([
   "file_size_in_bytes",
   "format",
   "node_id",
+  "partition",
   "readable_metrics",
   "row_count",
   "type",
@@ -138,6 +140,9 @@ const FileTreeInspectorContent = ({
                 label="File path"
                 value={file.details.file_path ?? file.id}
               />
+              {file.details.partition !== undefined && (
+                <PartitionValues kind="file" value={file.details.partition} />
+              )}
               {fileDetailRows.map(([key, value]) => (
                 <PanelDetailRow
                   key={key}

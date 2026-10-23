@@ -1,16 +1,20 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 from base_classes.base_file import BaseFile
 from collectors.collect_metadata import MetadataFileRecord
 from collectors.statistics_collector import HiddenStatisticsMetadata, StatisticsCollector
-from collectors.utils import format_partition
 from constants import PARTITION_STATISTICS_FILE_NOT_READ_WARNING, PARTITION_STATISTICS_READ_LIMIT_WARNING, FileType
 from env import Env
 from extractors.partition_statistics_extractor import PartitionStatisticsExtractor
 from icegraph_logger import logger
 
 JSON_SAFE_VALUE_TYPES = (bool, int, float, str)
+
+
+@dataclass
+class HiddenPartitionStatisticsMetadata(HiddenStatisticsMetadata):
+    partition_field_names: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -21,7 +25,7 @@ class PartitionStatisticsFileRecord(BaseFile):
     partitions_with_deletes: Optional[int]
     partition_distribution: Dict[str, Any]
     sampled_partitions: List[Dict[str, Any]]
-    hidden_statistics_data: HiddenStatisticsMetadata
+    hidden_statistics_data: HiddenPartitionStatisticsMetadata
 
 
 class CollectPartitionStatistics(StatisticsCollector):
@@ -83,7 +87,7 @@ class CollectPartitionStatistics(StatisticsCollector):
             partitions_with_deletes=None,
             partition_distribution={},
             sampled_partitions=[],
-            hidden_statistics_data=HiddenStatisticsMetadata(added_by_metadata_file=metadata_path),
+            hidden_statistics_data=HiddenPartitionStatisticsMetadata(added_by_metadata_file=metadata_path),
         )
 
     def _collect_partition_summaries(self, statistics_files: Dict[str, PartitionStatisticsFileRecord], include_samples: bool = True) -> None:
@@ -111,6 +115,7 @@ class CollectPartitionStatistics(StatisticsCollector):
                     reverse=True,
                 )
                 statistics_file.sampled_partitions = [self._parse_partition_row(partition) for partition in sampled_partitions]
+                statistics_file.hidden_statistics_data.partition_field_names = statistics_row.get("partition_field_names") or []
             except Exception as e:
                 logger.error(f"[{self._table_name}] Partition statistics file parse error for {statistics_file.file_path}", exc_info=True)
                 statistics_file.errors.append(str(e))
@@ -122,6 +127,6 @@ class CollectPartitionStatistics(StatisticsCollector):
     @staticmethod
     def _parse_partition_value(column: str, value: Any) -> Any:
         if column == "partition":
-            return format_partition(value)
+            return value
 
         return value if value is None or isinstance(value, JSON_SAFE_VALUE_TYPES) else str(value)
