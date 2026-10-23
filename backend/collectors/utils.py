@@ -53,6 +53,16 @@ def normalize_legacy_v1_metadata_fields(df):
     return df
 
 
+def normalize_legacy_v1_metadata_dict(metadata: dict) -> None:
+    if "schema" in metadata and "schemas" not in metadata:
+        metadata["schemas"] = [{"schema-id": 0, **metadata["schema"]}]
+        metadata.setdefault("current-schema-id", metadata["schemas"][0]["schema-id"])
+
+    if "partition-spec" in metadata and "partition-specs" not in metadata:
+        metadata["partition-specs"] = [{"spec-id": 0, "fields": metadata["partition-spec"]}]
+        metadata.setdefault("default-spec-id", 0)
+
+
 def get_metadata_row_slim_df_from_path(metadata_path: str):
     df = read_metadata_df(metadata_path)
     df = df.withColumn("pointed_metadata_log_count", F.size(F.col("metadata-log")) if "metadata-log" in df.columns else F.lit(0))

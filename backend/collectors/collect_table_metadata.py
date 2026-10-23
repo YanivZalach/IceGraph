@@ -8,6 +8,7 @@ from pyspark.sql.types import ArrayType, LongType, MapType, StringType
 
 from base_classes.utils import collect_graph_metadata_file, format_snapshot_summary, timed
 from collectors.collect_partition_statistics import CollectPartitionStatistics, PartitionStatisticsFileRecord
+from collectors.utils import normalize_legacy_v1_metadata_dict
 from constants import SUPPORTED_FORMAT_VERSIONS, UNSUPPORTED_FORMAT_VERSION_WARNING
 from graph_normalizer.utils import to_json_safe
 from spark_connect import open_spark_connect_session
@@ -55,7 +56,8 @@ class TableMetadataCollector:
         self.snapshot_row_lineage_by_id = self._build_snapshot_row_lineage_by_id(metadata_row)
 
         metadata = {key: self._parse_metadata_value(key, value) for key, value in metadata_row.metadata.items()}
-        self._normalize_legacy_v1_fields(metadata)
+        normalize_legacy_v1_metadata_dict(metadata)
+        metadata.setdefault("schemas", [])
         metadata["current-snapshot"] = json.loads(metadata_row.current_snapshot) if metadata_row.current_snapshot else None
         self._format_current_snapshot_summary(metadata["current-snapshot"])
         self._collect_current_partition_statistics(metadata, metadata_path, partition_statistics_files or [])
@@ -162,17 +164,6 @@ class TableMetadataCollector:
 
         except ValueError:
             return value
-
-    @staticmethod
-    def _normalize_legacy_v1_fields(metadata: dict[str, Any]) -> None:
-        if "schemas" not in metadata and "schema" in metadata:
-            metadata["schemas"] = [{"schema-id": 0, **metadata["schema"]}]
-            metadata.setdefault("current-schema-id", metadata["schemas"][0]["schema-id"])
-        metadata.setdefault("schemas", [])
-
-        if "partition-specs" not in metadata and "partition-spec" in metadata:
-            metadata["partition-specs"] = [{"spec-id": 0, "fields": metadata["partition-spec"]}]
-            metadata.setdefault("default-spec-id", 0)
 
     @staticmethod
     def _format_current_snapshot_summary(current_snapshot: dict[str, Any] | None) -> None:
