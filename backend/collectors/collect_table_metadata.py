@@ -41,7 +41,7 @@ class SnapshotRowLineage:
 class TableMetadataCollector:
     def __init__(self, table_name: str):
         self._table_name = table_name
-        self.snapshot_row_lineage: dict[int, SnapshotRowLineage] = {}
+        self.snapshot_row_lineage_by_id: dict[int, SnapshotRowLineage] = {}
 
     @timed
     def collect_latest(self) -> dict[str, Any]:
@@ -52,7 +52,7 @@ class TableMetadataCollector:
 
     def collect(self, metadata_path: str, partition_statistics_files: list[PartitionStatisticsFileRecord] | None = None) -> dict[str, Any]:
         metadata_row = self._read_metadata_row(metadata_path)
-        self.snapshot_row_lineage = self._snapshot_row_lineage(metadata_row)
+        self.snapshot_row_lineage_by_id = self._build_snapshot_row_lineage_by_id(metadata_row)
 
         metadata = {key: self._parse_metadata_value(key, value) for key, value in metadata_row.metadata.items()}
         self._normalize_legacy_v1_fields(metadata)
@@ -110,9 +110,9 @@ class TableMetadataCollector:
         return statistics_file
 
     def collect_snapshot_row_lineage(self, metadata_path: str) -> dict[int, SnapshotRowLineage]:
-        self.snapshot_row_lineage = self._snapshot_row_lineage(self._read_metadata_row(metadata_path))
+        self.snapshot_row_lineage_by_id = self._build_snapshot_row_lineage_by_id(self._read_metadata_row(metadata_path))
 
-        return self.snapshot_row_lineage
+        return self.snapshot_row_lineage_by_id
 
     @staticmethod
     def _read_metadata_row(metadata_path: str) -> Row:
@@ -146,7 +146,7 @@ class TableMetadataCollector:
         )
 
     @staticmethod
-    def _snapshot_row_lineage(metadata_row: Row) -> dict[int, SnapshotRowLineage]:
+    def _build_snapshot_row_lineage_by_id(metadata_row: Row) -> dict[int, SnapshotRowLineage]:
         return {
             snapshot.snapshot_id: SnapshotRowLineage(snapshot.first_row_id, snapshot.added_rows)
             for snapshot in metadata_row.snapshot_row_lineage or []
