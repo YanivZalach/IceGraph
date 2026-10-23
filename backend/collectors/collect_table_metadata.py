@@ -111,12 +111,6 @@ class TableMetadataCollector:
 
         return statistics_file
 
-    def collect_snapshot_row_lineage(self, metadata_path: str) -> dict[int, SnapshotRowLineage]:
-        snapshot_row_lineage = F.transform("snapshots", self._snapshot_row_lineage_column)
-        metadata_row = self._metadata_df(metadata_path).select(snapshot_row_lineage.alias("snapshot_row_lineage")).first()
-
-        return self._build_snapshot_row_lineage_by_id(metadata_row)
-
     def _read_metadata_row(self, metadata_path: str) -> Row:
         metadata_without_logs = F.map_filter("metadata", lambda key, value: ~key.isin(METADATA_LOG_FIELDS))
         current_snapshot = F.get(F.filter("snapshots", self._is_current_snapshot), 0)

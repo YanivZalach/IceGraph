@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Type
 
 from base_classes.spark_table_action import SparkTableAction
-from base_classes.utils import collect_graph_metadata_file, timed
+from base_classes.utils import timed
 from collectors.collect_data_files import CollectDataFiles, DataFileRecord
 from collectors.collect_manifests import CollectManifests, ManifestRecord
 from collectors.collect_metadata import CollectMetadata, MetadataFileRecord
@@ -319,25 +319,8 @@ class TableInventory(SparkTableAction):
         self._apply_snapshot_row_lineage(table_metadata_collector)
 
     def _apply_snapshot_row_lineage(self, table_metadata_collector: TableMetadataCollector):
-        snapshot_row_lineage_by_id = table_metadata_collector.snapshot_row_lineage_by_id
-        has_missing_snapshot = False
         for snapshot in self._snapshots:
-            if snapshot.snapshot_id not in snapshot_row_lineage_by_id:
-                has_missing_snapshot = True
-                break
-
-        if has_missing_snapshot:
-            try:
-                snapshot_row_lineage_by_id = table_metadata_collector.collect_snapshot_row_lineage(
-                    collect_graph_metadata_file(self._table_name, None)
-                )
-
-            except Exception as e:
-                logger.error(f"[{self._table_name}] snapshot row lineage collection failed", exc_info=True)
-                self._warnings["snapshot_row_lineage"] = [str(e)]
-
-        for snapshot in self._snapshots:
-            row_lineage = snapshot_row_lineage_by_id.get(snapshot.snapshot_id)
+            row_lineage = table_metadata_collector.snapshot_row_lineage_by_id.get(snapshot.snapshot_id)
             if row_lineage:
                 snapshot.first_row_id = row_lineage.first_row_id
                 snapshot.added_rows = row_lineage.added_rows
