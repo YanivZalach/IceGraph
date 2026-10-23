@@ -2,7 +2,7 @@ import json
 from dataclasses import dataclass
 from typing import Any, Optional
 
-from pyspark.sql import Column, Row
+from pyspark.sql import Column, DataFrame, Row
 from pyspark.sql import functions as F
 from pyspark.sql.types import ArrayType, LongType, MapType, StringType
 
@@ -112,28 +112,33 @@ class TableMetadataCollector:
         return statistics_file
 
     def collect_snapshot_row_lineage(self, metadata_path: str) -> dict[int, SnapshotRowLineage]:
-        self.snapshot_row_lineage_by_id = self._build_snapshot_row_lineage_by_id(self._read_metadata_row(metadata_path))
+        snapshot_row_lineage = F.transform("snapshots", self._snapshot_row_lineage_column)
+        metadata_row = self._metadata_df(metadata_path).select(snapshot_row_lineage.alias("snapshot_row_lineage")).first()
 
-        return self.snapshot_row_lineage_by_id
+        return self._build_snapshot_row_lineage_by_id(metadata_row)
 
-    @staticmethod
-    def _read_metadata_row(metadata_path: str) -> Row:
-        metadata_text_df = open_spark_connect_session().read.text(metadata_path, wholetext=True)
-        parsed_metadata_df = metadata_text_df.select(F.from_json("value", MapType(StringType(), StringType())).alias("metadata"))
-        metadata_df = parsed_metadata_df.select(
-            "metadata",
-            F.from_json(F.col("metadata")["snapshots"], ArrayType(StringType())).alias("snapshots"),
-        )
-
+    def _read_metadata_row(self, metadata_path: str) -> Row:
         metadata_without_logs = F.map_filter("metadata", lambda key, value: ~key.isin(METADATA_LOG_FIELDS))
-        current_snapshot = F.get(F.filter("snapshots", TableMetadataCollector._is_current_snapshot), 0)
-        snapshot_row_lineage = F.transform("snapshots", TableMetadataCollector._snapshot_row_lineage_column)
+        current_snapshot = F.get(F.filter("snapshots", self._is_current_snapshot), 0)
+        snapshot_row_lineage = F.transform("snapshots", self._snapshot_row_lineage_column)
 
-        return metadata_df.select(
+        metadata_row_df = self._metadata_df(metadata_path).select(
             metadata_without_logs.alias("metadata"),
             current_snapshot.alias("current_snapshot"),
             snapshot_row_lineage.alias("snapshot_row_lineage"),
-        ).first()
+        )
+
+        return metadata_row_df.first()
+
+    @staticmethod
+    def _metadata_df(metadata_path: str) -> DataFrame:
+        metadata_text_df = open_spark_connect_session().read.text(metadata_path, wholetext=True)
+        parsed_metadata_df = metadata_text_df.select(F.from_json("value", MapType(StringType(), StringType())).alias("metadata"))
+
+        return parsed_metadata_df.select(
+            "metadata",
+            F.from_json(F.col("metadata")["snapshots"], ArrayType(StringType())).alias("snapshots"),
+        )
 
     @staticmethod
     def _is_current_snapshot(snapshot: Column) -> Column:
