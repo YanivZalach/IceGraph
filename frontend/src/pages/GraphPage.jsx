@@ -27,6 +27,7 @@ import {
   CATALOG_NODE_ID,
   CATALOG_NODE_SCALE,
   DELETED_DATA_FILE_CONNECTION_COLOR,
+  DELETION_VECTOR_CONNECTION_LABEL,
   FileType,
   NODE_STYLE_MAP,
   fileTypeLabel,
@@ -261,7 +262,10 @@ export default function GraphPage() {
       label:
         e.color === DELETED_DATA_FILE_CONNECTION_COLOR
           ? DELETED_CONNECTION_LABLE
-          : e.branch_names || "",
+          : e.deletes_from_data_file
+            ? DELETION_VECTOR_CONNECTION_LABEL
+            : e.branch_names || "",
+      curvesRight: e.deletes_from_data_file,
     }));
 
     const { levelSeparation, nodeSpacing } = GRAPH_SETTINGS;
@@ -759,22 +763,29 @@ export default function GraphPage() {
       const direction = Math.sign(
         isVertical ? end.y - start.y : end.x - start.x,
       );
-      const sx =
-        start.x + (isVertical ? 0 : (direction * sourceSize.width) / 2);
-      const sy =
-        start.y + (isVertical ? (direction * sourceSize.height) / 2 : 0);
-      const ex = end.x - (isVertical ? 0 : (direction * targetSize.width) / 2);
-      const ey = end.y - (isVertical ? (direction * targetSize.height) / 2 : 0);
+      let sx = start.x + (isVertical ? 0 : (direction * sourceSize.width) / 2);
+      let sy = start.y + (isVertical ? (direction * sourceSize.height) / 2 : 0);
+      let ex = end.x - (isVertical ? 0 : (direction * targetSize.width) / 2);
+      let ey = end.y - (isVertical ? (direction * targetSize.height) / 2 : 0);
       if (direction * (isVertical ? ey - sy : ex - sx) <= 0) return;
 
       const curvature = linkCurvatures.get(link) || 0;
-      const controlX = Math.max(
+      let controlX = Math.max(
         Math.min(sx, ex),
         Math.min(Math.max(sx, ex), (sx + ex) / 2 + (ey - sy) * curvature),
       );
-      const controlY = isVertical
+      let controlY = isVertical
         ? (sy + ey) / 2
         : (sy + ey) / 2 - (ex - sx) * curvature;
+
+      if (link.curvesRight) {
+        sx = start.x + sourceSize.width / 2;
+        sy = start.y;
+        ex = end.x + targetSize.width / 2;
+        ey = end.y;
+        controlX = Math.max(sx, ex) + Math.abs(ey - sy);
+        controlY = (sy + ey) / 2;
+      }
 
       ctx.shadowBlur = 0;
       ctx.strokeStyle = link.color;
@@ -806,7 +817,10 @@ export default function GraphPage() {
       ctx.fill();
 
       if (!link.label) return;
-      const position = link.label === DELETED_CONNECTION_LABLE ? 0.5 : 0.25;
+      const position =
+        link.label === DELETED_CONNECTION_LABLE || link.curvesRight
+          ? 0.5
+          : 0.25;
       const remaining = 1 - position;
       const qX =
         remaining ** 2 * sx +

@@ -19,6 +19,7 @@ import { useTableSpecs } from "../features/specs/tableSpecs";
 import {
   BRANCH_CONNECTION_COLOR,
   DELETED_DATA_FILE_CONNECTION_COLOR,
+  DELETION_VECTOR_CONNECTION_COLOR,
   ERROR_NODE_RGB,
   FileType,
   MAIN_BRANCH_NAME,
@@ -143,6 +144,17 @@ const buildEdgesFromNodes = (nodes) => {
       return;
     }
 
+    if (
+      node.type === FileType.DELETION_VECTOR &&
+      nodeIds.has(details.referenced_data_file)
+    ) {
+      edges.push({
+        from: node.id,
+        to: details.referenced_data_file,
+        deletes_from_data_file: true,
+      });
+    }
+
     const deleted = new Set(details.deleted_child_files || []);
     const childFiles = details.child_files || [];
     childFiles.forEach((childPath) => {
@@ -228,6 +240,8 @@ export default function TableLayout() {
         newEdge.dashes = [15, 20, 5, 20];
         newEdge.color = BRANCH_CONNECTION_COLOR;
         newEdge.title = edge.branch_names;
+      } else if (edge.deletes_from_data_file) {
+        newEdge.color = DELETION_VECTOR_CONNECTION_COLOR;
       } else if (edge.statistics_type) {
         newEdge.color = STATISTICS_CONNECTION_COLORS[edge.statistics_type];
         newEdge.curvature = STATISTICS_CONNECTION_CURVATURE;

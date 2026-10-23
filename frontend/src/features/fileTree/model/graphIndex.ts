@@ -38,6 +38,7 @@ export const buildFileTreeGraphIndex = (
 
   const adjacencyByNodeId: FileTreeGraphIndex["adjacencyByNodeId"] = {};
   for (const edge of context.edges) {
+    if (edge.deletes_from_data_file) continue;
     const connections = adjacencyByNodeId[edge.from] ?? [];
     connections.push({ isDeleted: edge.is_deleted === true, to: edge.to });
     adjacencyByNodeId[edge.from] = connections;

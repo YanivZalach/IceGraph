@@ -88,6 +88,7 @@ export const graphEdgeSchema = z.object({
   from: identifierSchema,
   to: identifierSchema,
   is_deleted: z.boolean().optional(),
+  deletes_from_data_file: z.boolean().optional(),
 });
 
 const metadataSchema = z
