@@ -2,15 +2,14 @@ import json
 from dataclasses import dataclass
 from typing import Any, Optional
 
-from pyspark.sql import Column, DataFrame
+from pyspark.sql import Row
 from pyspark.sql import functions as F
-from pyspark.sql.types import ArrayType, MapType, StringType, StructType
+from pyspark.sql.types import ArrayType, LongType, MapType, StringType
 
 from base_classes.utils import collect_graph_metadata_file, format_snapshot_summary, timed
 from collectors.collect_partition_statistics import CollectPartitionStatistics, PartitionStatisticsFileRecord
 from constants import SUPPORTED_FORMAT_VERSIONS, UNSUPPORTED_FORMAT_VERSION_WARNING
 from graph_normalizer.utils import to_json_safe
-from collectors.utils import read_metadata_df
 from spark_connect import open_spark_connect_session
 
 
@@ -27,6 +26,10 @@ def collect_format_version_warnings(metadata: dict[str, Any]) -> dict[str, list[
             UNSUPPORTED_FORMAT_VERSION_WARNING.format(format_version=format_version, supported_format_versions=supported_format_versions_text)
         ]
     }
+
+
+METADATA_LOG_FIELDS = ["snapshots", "metadata-log", "snapshot-log"]
+STRING_METADATA_FIELDS = {"location", "table-uuid"}
 
 
 @dataclass
@@ -48,17 +51,12 @@ class TableMetadataCollector:
         return {**metadata, "warnings": collect_format_version_warnings(metadata)}
 
     def collect(self, metadata_path: str, partition_statistics_files: list[PartitionStatisticsFileRecord] | None = None) -> dict[str, Any]:
-        metadata_df = read_metadata_df(metadata_path)
-        row = (
-            metadata_df.withColumn("current-snapshot", self._current_snapshot_column(metadata_df))
-            .drop("metadata-log")
-            .drop("snapshot-log")
-            .drop("snapshots")
-            .first()
-        )
+        metadata_row = self._read_metadata_row(metadata_path)
+        self.snapshot_row_lineage = self._snapshot_row_lineage(metadata_row)
 
-        metadata = row.asDict(recursive=True)
-        self._apply_exact_definitions(metadata, metadata_path)
+        metadata = {key: self._parse_metadata_value(key, value) for key, value in metadata_row.metadata.items()}
+        self._normalize_legacy_v1_fields(metadata)
+        metadata["current-snapshot"] = json.loads(metadata_row.current_snapshot) if metadata_row.current_snapshot else None
         self._format_current_snapshot_summary(metadata["current-snapshot"])
         self._collect_current_partition_statistics(metadata, metadata_path, partition_statistics_files or [])
 
@@ -111,62 +109,68 @@ class TableMetadataCollector:
 
         return statistics_file
 
-    @staticmethod
-    def _current_snapshot_column(metadata_df: DataFrame) -> Column:
-        snapshots_type = metadata_df.schema["snapshots"].dataType if "snapshots" in metadata_df.columns else None
-        if "current-snapshot-id" not in metadata_df.columns or not (
-            isinstance(snapshots_type, ArrayType) and isinstance(snapshots_type.elementType, StructType)
-        ):
-            return F.lit(None)
-
-        current_snapshots = F.filter(
-            "snapshots",
-            lambda snapshot: snapshot["snapshot-id"] == F.col("current-snapshot-id"),
-        )
-        current_snapshot = F.get(current_snapshots, 0)
-        if "summary" not in snapshots_type.elementType.fieldNames():
-            return current_snapshot.withField("summary", F.lit(None).cast(MapType(StringType(), StringType())))
-
-        summary_json = F.to_json(current_snapshot["summary"], {"ignoreNullFields": "true"})
-        summary_without_absent_keys = F.from_json(summary_json, MapType(StringType(), StringType()))
-
-        return current_snapshot.withField("summary", summary_without_absent_keys)
-
     def collect_snapshot_row_lineage(self, metadata_path: str) -> dict[int, SnapshotRowLineage]:
-        self.snapshot_row_lineage = self._snapshot_row_lineage(self._read_raw_metadata(metadata_path))
+        self.snapshot_row_lineage = self._snapshot_row_lineage(self._read_metadata_row(metadata_path))
 
         return self.snapshot_row_lineage
 
     @staticmethod
-    def _read_raw_metadata(metadata_path: str) -> dict[str, Any]:
-        metadata_text = open_spark_connect_session().read.text(metadata_path, wholetext=True).first().value
+    def _read_metadata_row(metadata_path: str) -> Row:
+        metadata = F.from_json("value", MapType(StringType(), StringType()))
+        snapshots = F.from_json(metadata["snapshots"], ArrayType(StringType()))
+        current_snapshot_id = F.col("metadata")["current-snapshot-id"]
 
-        return json.loads(metadata_text)
+        return (
+            open_spark_connect_session()
+            .read.text(metadata_path, wholetext=True)
+            .select(metadata.alias("metadata"), snapshots.alias("snapshots"))
+            .select(
+                F.map_filter("metadata", lambda key, value: ~key.isin(METADATA_LOG_FIELDS)).alias("metadata"),
+                F.get(F.filter("snapshots", lambda snapshot: F.get_json_object(snapshot, "$['snapshot-id']") == current_snapshot_id), 0).alias(
+                    "current_snapshot"
+                ),
+                F.transform(
+                    "snapshots",
+                    lambda snapshot: F.struct(
+                        F.get_json_object(snapshot, "$['snapshot-id']").cast(LongType()).alias("snapshot_id"),
+                        F.get_json_object(snapshot, "$['first-row-id']").cast(LongType()).alias("first_row_id"),
+                        F.get_json_object(snapshot, "$['added-rows']").cast(LongType()).alias("added_rows"),
+                    ),
+                ).alias("snapshot_row_lineage"),
+            )
+            .first()
+        )
 
     @staticmethod
-    def _snapshot_row_lineage(raw_metadata: dict[str, Any]) -> dict[int, SnapshotRowLineage]:
+    def _snapshot_row_lineage(metadata_row: Row) -> dict[int, SnapshotRowLineage]:
         return {
-            snapshot["snapshot-id"]: SnapshotRowLineage(snapshot.get("first-row-id"), snapshot.get("added-rows"))
-            for snapshot in raw_metadata.get("snapshots", [])
+            snapshot.snapshot_id: SnapshotRowLineage(snapshot.first_row_id, snapshot.added_rows)
+            for snapshot in metadata_row.snapshot_row_lineage or []
         }
 
-    def _apply_exact_definitions(self, metadata: dict[str, Any], metadata_path: str) -> None:
-        raw_metadata = self._read_raw_metadata(metadata_path)
-        self.snapshot_row_lineage = self._snapshot_row_lineage(raw_metadata)
+    @staticmethod
+    def _parse_metadata_value(key: str, value: str | None) -> Any:
+        if value is None or key in STRING_METADATA_FIELDS:
+            return value
 
-        metadata["schemas"] = raw_metadata.get("schemas", [])
-        if "schemas" not in raw_metadata and "schema" in raw_metadata:
-            metadata["schemas"] = [{"schema-id": 0, **raw_metadata["schema"]}]
+        try:
+            return json.loads(value)
 
-        if "partition-specs" in raw_metadata:
-            metadata["partition-specs"] = raw_metadata["partition-specs"]
-        elif "partition-spec" in raw_metadata:
-            metadata["partition-specs"] = [{"spec-id": 0, "fields": raw_metadata["partition-spec"]}]
+        except ValueError:
+            return value
 
-        if "sort-orders" in raw_metadata:
-            metadata["sort-orders"] = raw_metadata["sort-orders"]
+    @staticmethod
+    def _normalize_legacy_v1_fields(metadata: dict[str, Any]) -> None:
+        if "schemas" not in metadata and "schema" in metadata:
+            metadata["schemas"] = [{"schema-id": 0, **metadata["schema"]}]
+            metadata.setdefault("current-schema-id", metadata["schemas"][0]["schema-id"])
+        metadata.setdefault("schemas", [])
+
+        if "partition-specs" not in metadata and "partition-spec" in metadata:
+            metadata["partition-specs"] = [{"spec-id": 0, "fields": metadata["partition-spec"]}]
+            metadata.setdefault("default-spec-id", 0)
 
     @staticmethod
     def _format_current_snapshot_summary(current_snapshot: dict[str, Any] | None) -> None:
         if current_snapshot:
-            current_snapshot["summary"] = format_snapshot_summary(current_snapshot["summary"] or {})
+            current_snapshot["summary"] = format_snapshot_summary(current_snapshot.get("summary") or {})
