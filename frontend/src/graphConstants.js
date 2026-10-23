@@ -1,5 +1,7 @@
 export const DELETED_DATA_FILE_CONNECTION_COLOR = "#FF0000";
 export const BRANCH_CONNECTION_COLOR = "rgba(56, 189, 248, 0.5)";
+export const DELETION_VECTOR_CONNECTION_COLOR = "rgba(225, 95, 60, 0.8)";
+export const DELETION_VECTOR_CONNECTION_LABEL = "deletes from";
 export const STATISTICS_CONNECTION_CURVATURE = 0.3;
 export const CATALOG_NODE_ID = "catalog";
 export const CATALOG_NODE_SCALE = 1.5;
