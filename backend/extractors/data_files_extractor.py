@@ -135,12 +135,13 @@ class DataFilesExtractor(Extractor):
         stored_first_row_id = F.col("data_file.first_row_id") if "first_row_id" in data_file_fields else F.lit(None).cast(LongType())
         is_data_file = F.col("data_file.content") == DATA_FILE_CONTENT_DATA
         is_live_data_file = is_data_file & (F.col("status") != MANIFEST_ENTRY_STATUS_DELETED)
+        inherits_row_id = is_live_data_file & stored_first_row_id.isNull()
 
         preceding_entries = Window.orderBy("manifest_entry_position").rowsBetween(Window.unboundedPreceding, -1)
-        unassigned_record_count = F.when(is_live_data_file & stored_first_row_id.isNull(), F.col("data_file.record_count")).otherwise(F.lit(0))
+        unassigned_record_count = F.when(inherits_row_id, F.col("data_file.record_count")).otherwise(F.lit(0))
         preceding_unassigned_rows = F.coalesce(F.sum(unassigned_record_count).over(preceding_entries), F.lit(0))
 
-        row_id_offset = F.when(is_live_data_file & stored_first_row_id.isNull(), preceding_unassigned_rows)
+        row_id_offset = F.when(inherits_row_id, preceding_unassigned_rows)
 
         return (
             manifest_df.withColumn("manifest_entry_position", F.monotonically_increasing_id())
