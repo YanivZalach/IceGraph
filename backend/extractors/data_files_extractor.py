@@ -102,11 +102,12 @@ class DataFilesExtractor(Extractor):
             data_file = F.col("data_file").withField(field.name, default_value)
             df = df.withColumn("data_file", data_file)
 
+        has_row_id_assignments = bool(manifest_entry.hidden_manifest_data.row_id_assignments)
+        row_id_df = self._with_row_id_inheritance(df, existing_fields, has_row_id_assignments)
+        data_files_df = self._with_deletion_vector_columns(row_id_df, existing_fields)
+
         return (
-            self._with_deletion_vector_columns(
-                self._with_row_id_inheritance(df, existing_fields, bool(manifest_entry.hidden_manifest_data.row_id_assignments)), existing_fields
-            )
-            .select(
+            data_files_df.select(
                 "status",
                 "data_file",
                 "stored_first_row_id",
