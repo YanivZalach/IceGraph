@@ -1,8 +1,6 @@
-import { Fragment } from "react";
 import { PanelSectionTitle } from "../../../components/PanelContent";
-import HelpTerm from "../../../shared/components/HelpTerm";
 import type { Partition } from "../api/graphSchemas";
-import { formatPartitionFieldLabel } from "../partitionLabel";
+import PartitionLabel from "./PartitionLabel";
 
 type PartitionValuesProps =
   { kind: "file"; value: Partition } | { kind: "manifest"; value: Partition[] };
@@ -23,18 +21,11 @@ const PartitionValues = ({ kind, value }: PartitionValuesProps) => {
           ) : (
             partitions.map((partition, index) => (
               <li key={index} className="whitespace-nowrap px-3 py-2">
-                {partition.length === 0
-                  ? "Root (unpartitioned)"
-                  : partition.map((field, fieldIndex) => (
-                      <Fragment key={fieldIndex}>
-                        {fieldIndex > 0 ? ", " : null}
-                        <HelpTerm label={formatPartitionFieldLabel(field)}>
-                          <span className="block whitespace-pre-wrap break-all font-mono">
-                            {JSON.stringify(field, null, 2)}
-                          </span>
-                        </HelpTerm>
-                      </Fragment>
-                    ))}
+                {partition.length === 0 ? (
+                  "Root (unpartitioned)"
+                ) : (
+                  <PartitionLabel partition={partition} />
+                )}
               </li>
             ))
           )}

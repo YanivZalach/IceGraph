@@ -16,6 +16,7 @@ import { compareBigInts } from "../../../utils/readableMetricsStatistics";
 import { formatLocaleDateTime } from "../../../utils/dateUtils";
 import type { partitionStatisticsRowSchema } from "../api/graphSchemas";
 import { formatPartitionLabel } from "../partitionLabel";
+import PartitionLabel from "./PartitionLabel";
 
 type PartitionStatisticsRow = z.infer<typeof partitionStatisticsRowSchema>;
 
@@ -66,7 +67,13 @@ const buildColumns = (sampledPartitions: PartitionStatisticsRow[]) =>
   [...new Set(sampledPartitions.flatMap((row) => Object.keys(row)))].map(
     (columnId) =>
       columnHelper.accessor((row) => getColumnValue(row, columnId), {
-        cell: ({ getValue }) => formatPartitionValue(columnId, getValue()),
+        cell: ({ getValue, row }) =>
+          columnId === PARTITION_COLUMN &&
+          row.original.partition !== undefined ? (
+            <PartitionLabel partition={row.original.partition} />
+          ) : (
+            formatPartitionValue(columnId, getValue())
+          ),
         header: isByteFieldName(columnId)
           ? stripByteUnitFromFieldName(columnId)
           : columnId,
