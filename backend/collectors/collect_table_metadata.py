@@ -2,7 +2,7 @@ import json
 from dataclasses import dataclass
 from typing import Any, Optional
 
-from pyspark.sql import Row
+from pyspark.sql import Column, Row
 from pyspark.sql import functions as F
 from pyspark.sql.types import ArrayType, LongType, MapType, StringType
 
@@ -116,29 +116,33 @@ class TableMetadataCollector:
 
     @staticmethod
     def _read_metadata_row(metadata_path: str) -> Row:
-        metadata = F.from_json("value", MapType(StringType(), StringType()))
-        snapshots = F.from_json(metadata["snapshots"], ArrayType(StringType()))
-        current_snapshot_id = F.col("metadata")["current-snapshot-id"]
+        metadata_text_df = open_spark_connect_session().read.text(metadata_path, wholetext=True)
+        parsed_metadata_df = metadata_text_df.select(F.from_json("value", MapType(StringType(), StringType())).alias("metadata"))
+        metadata_df = parsed_metadata_df.select(
+            "metadata",
+            F.from_json(F.col("metadata")["snapshots"], ArrayType(StringType())).alias("snapshots"),
+        )
 
-        return (
-            open_spark_connect_session()
-            .read.text(metadata_path, wholetext=True)
-            .select(metadata.alias("metadata"), snapshots.alias("snapshots"))
-            .select(
-                F.map_filter("metadata", lambda key, value: ~key.isin(METADATA_LOG_FIELDS)).alias("metadata"),
-                F.get(F.filter("snapshots", lambda snapshot: F.get_json_object(snapshot, "$['snapshot-id']") == current_snapshot_id), 0).alias(
-                    "current_snapshot"
-                ),
-                F.transform(
-                    "snapshots",
-                    lambda snapshot: F.struct(
-                        F.get_json_object(snapshot, "$['snapshot-id']").cast(LongType()).alias("snapshot_id"),
-                        F.get_json_object(snapshot, "$['first-row-id']").cast(LongType()).alias("first_row_id"),
-                        F.get_json_object(snapshot, "$['added-rows']").cast(LongType()).alias("added_rows"),
-                    ),
-                ).alias("snapshot_row_lineage"),
-            )
-            .first()
+        metadata_without_logs = F.map_filter("metadata", lambda key, value: ~key.isin(METADATA_LOG_FIELDS))
+        current_snapshot = F.get(F.filter("snapshots", TableMetadataCollector._is_current_snapshot), 0)
+        snapshot_row_lineage = F.transform("snapshots", TableMetadataCollector._snapshot_row_lineage_column)
+
+        return metadata_df.select(
+            metadata_without_logs.alias("metadata"),
+            current_snapshot.alias("current_snapshot"),
+            snapshot_row_lineage.alias("snapshot_row_lineage"),
+        ).first()
+
+    @staticmethod
+    def _is_current_snapshot(snapshot: Column) -> Column:
+        return F.get_json_object(snapshot, "$['snapshot-id']") == F.col("metadata")["current-snapshot-id"]
+
+    @staticmethod
+    def _snapshot_row_lineage_column(snapshot: Column) -> Column:
+        return F.struct(
+            F.get_json_object(snapshot, "$['snapshot-id']").cast(LongType()).alias("snapshot_id"),
+            F.get_json_object(snapshot, "$['first-row-id']").cast(LongType()).alias("first_row_id"),
+            F.get_json_object(snapshot, "$['added-rows']").cast(LongType()).alias("added_rows"),
         )
 
     @staticmethod
