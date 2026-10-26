@@ -44,7 +44,12 @@ def normalize_legacy_v1_metadata_dict(metadata: dict) -> None:
 
 def get_metadata_row_slim_df_from_path(metadata_path: str):
     spark = open_spark_connect_session()
-    df = spark.read.text(metadata_path, wholetext=True).select(F.from_json("value", MapType(StringType(), StringType())).alias("metadata"))
+    df = (
+        spark.read.option("ignoreCorruptFiles", False)
+        .option("ignoreMissingFiles", False)
+        .text(metadata_path, wholetext=True)
+        .select(F.from_json("value", MapType(StringType(), StringType())).alias("metadata"))
+    )
 
     metadata = F.col("metadata")
     has_legacy_schema = F.map_contains_key(metadata, "schema") & ~F.map_contains_key(metadata, "schemas")
