@@ -50,17 +50,21 @@ def get_metadata_row_slim_df_from_path(metadata_path: str):
         .text(metadata_path, wholetext=True)
         .select(F.from_json("value", MapType(StringType(), StringType())).alias("metadata"))
     )
+
     metadata = F.col("metadata")
     has_legacy_schema = F.map_contains_key(metadata, "schema") & ~F.map_contains_key(metadata, "schemas")
     has_legacy_partition_spec = F.map_contains_key(metadata, "partition-spec") & ~F.map_contains_key(metadata, "partition-specs")
+
     current_schema_id = F.when(
         ~F.map_contains_key(metadata, "current-schema-id") & has_legacy_schema,
         F.coalesce(F.get_json_object(metadata["schema"], "$['schema-id']"), F.lit("0")),
     ).otherwise(metadata["current-schema-id"])
+
     default_spec_id = F.when(~F.map_contains_key(metadata, "default-spec-id") & has_legacy_partition_spec, F.lit("0")).otherwise(
         metadata["default-spec-id"]
     )
     integer_values = {"current-schema-id": current_schema_id, "default-spec-id": default_spec_id}
+
     snapshots = F.from_json(metadata["snapshots"], METADATA_SNAPSHOTS_SCHEMA)
     pointed_snapshots = F.transform(
         snapshots,
@@ -71,6 +75,7 @@ def get_metadata_row_slim_df_from_path(metadata_path: str):
             snapshot["manifest-list"],
         ),
     )
+
     metadata_log_count = F.when(
         F.map_contains_key(metadata, "metadata-log"), F.size(F.from_json(metadata["metadata-log"], ArrayType(StringType())))
     ).otherwise(F.lit(0))
