@@ -57,27 +57,27 @@ def get_metadata_row_slim_df_from_path(metadata_path: str):
 
     current_schema_id = F.when(
         ~F.map_contains_key(metadata, "current-schema-id") & has_legacy_schema,
-        F.coalesce(F.get_json_object(metadata["schema"], "$['schema-id']"), F.lit("0")),
-    ).otherwise(metadata["current-schema-id"])
+        F.coalesce(F.get_json_object(metadata.getItem("schema"), "$['schema-id']"), F.lit("0")),
+    ).otherwise(metadata.getItem("current-schema-id"))
 
     default_spec_id = F.when(~F.map_contains_key(metadata, "default-spec-id") & has_legacy_partition_spec, F.lit("0")).otherwise(
-        metadata["default-spec-id"]
+        metadata.getItem("default-spec-id")
     )
     integer_values = {"current-schema-id": current_schema_id, "default-spec-id": default_spec_id}
 
-    snapshots = F.from_json(metadata["snapshots"], METADATA_SNAPSHOTS_SCHEMA)
+    snapshots = F.from_json(metadata.getItem("snapshots"), METADATA_SNAPSHOTS_SCHEMA)
     pointed_snapshots = F.transform(
         snapshots,
         lambda snapshot: F.create_map(
             F.lit("snapshot-id"),
-            snapshot["snapshot-id"].cast(StringType()),
+            snapshot.getField("snapshot-id").cast(StringType()),
             F.lit("manifest-list"),
-            snapshot["manifest-list"],
+            snapshot.getField("manifest-list"),
         ),
     )
 
     metadata_log_count = F.when(
-        F.map_contains_key(metadata, "metadata-log"), F.size(F.from_json(metadata["metadata-log"], ArrayType(StringType())))
+        F.map_contains_key(metadata, "metadata-log"), F.size(F.from_json(metadata.getItem("metadata-log"), ArrayType(StringType())))
     ).otherwise(F.lit(0))
 
     integer_cols = [
@@ -95,8 +95,8 @@ def get_metadata_row_slim_df_from_path(metadata_path: str):
     json_cols = ["properties", "refs", "statistics", "partition-statistics"]
 
     return df.select(
-        *[integer_values.get(column, metadata[column]).cast(LongType()).alias(column) for column in integer_cols],
-        *[metadata[column].alias(column) for column in string_cols + json_cols],
+        *[integer_values.get(column, metadata.getItem(column)).cast(LongType()).alias(column) for column in integer_cols],
+        *[metadata.getItem(column).alias(column) for column in string_cols + json_cols],
         metadata_log_count.alias("pointed_metadata_log_count"),
         F.when(F.size(snapshots) > 0, F.to_json(pointed_snapshots)).alias("pointed_snapshots_files"),
     )
