@@ -33,7 +33,7 @@ This view solves a common source of confusion: if you look at the **raw storage 
 
 - **Copy paths** copies physical file paths, rather than vector IDs with `#<offset>`. If selected vectors share a Puffin file, its path is copied once
 
-- If the loaded data/delete entry counts disagree with the selected snapshot's summary, a warning shows both counts. Bounded graphs can omit manifests inherited from before the selected graph range. The displayed counts and metrics then describe only loaded files; expand the graph range to include earlier snapshots and check collection warnings
+- Counts and metrics describe only files loaded in the selected graph range. Bounded graphs can omit manifests inherited from before that range, so totals may differ from the snapshot's full totals. Expand the graph range to include earlier snapshots when you need more history
 
 - Deletion vectors are listed one per vector, as `<Puffin file path>#<offset>`, and counted separately from **Position deletes**. They have no column metrics. Totals use the vector's own size, so a shared Puffin file isn't counted twice; the inspector also shows the whole **Puffin file size**. A folder shows its **Deletion vectors** and **Deleted positions (vectors)** counts only when it contains deletion vectors
 

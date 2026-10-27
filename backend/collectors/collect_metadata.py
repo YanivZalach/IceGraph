@@ -136,6 +136,7 @@ class CollectMetadata(Collector):
         for file, timestamp in self._ordered_metadata_to_timestamp.items():
             try:
                 df = get_metadata_row_slim_df_from_path(file).withColumn("metadata_timestamp", F.lit(timestamp)).withColumn("file", F.lit(file))
+                df.schema
                 metadata_files_df = df if metadata_files_df is None else metadata_files_df.unionByName(df, allowMissingColumns=True)
 
             except Exception as e:
@@ -200,7 +201,8 @@ class CollectMetadata(Collector):
     @staticmethod
     def _build_branches_child_files(refs: dict, snap_id_to_path: dict) -> List[str]:
         branches_child_files = []
-        for branch_name, attrs in refs.items():
+        for branch_name in sorted(refs, key=lambda name: name.encode("utf-16-be")):
+            attrs = refs[branch_name]
             if attrs.get("type") != "branch" or branch_name == MAIN_BRANCH_ICEBERG_TABLE_NAME:
                 continue
 

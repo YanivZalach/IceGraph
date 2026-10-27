@@ -377,7 +377,7 @@ export default function GraphPage() {
   useEffect(() => {
     const goToNeighbors = (neighborIds, direction) => {
       const { nodes } = graphDataRef.current;
-      const neighbors = neighborIds
+      const neighbors = [...new Set(neighborIds)]
         .map((id) => nodes.find((n) => String(n.id) === String(id)))
         .filter(Boolean);
       if (!neighbors.length) return;
@@ -1062,7 +1062,11 @@ export default function GraphPage() {
               r.label === "partition" && Array.isArray(r.value) ? (
                 <PartitionValues key={i} kind="file" value={r.value} />
               ) : r.label === "partitions" && Array.isArray(r.value) ? (
-                <PartitionValues key={i} kind="manifest" value={r.value} />
+                <PartitionValues
+                  key={`${stickyNode.id}:${r.label}`}
+                  kind="manifest"
+                  value={r.value}
+                />
               ) : (
                 <PanelDetailRow
                   key={i}
