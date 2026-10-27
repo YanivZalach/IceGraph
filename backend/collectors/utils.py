@@ -43,6 +43,33 @@ def normalize_legacy_v1_metadata_dict(metadata: dict) -> None:
         metadata.setdefault("default-spec-id", 0)
 
 
+def get_metadata_row_slim_df_from_path(metadata_path: str):
+    df = _read_metadata_map(metadata_path)
+    metadata = F.col("metadata")
+    integer_values = _legacy_aware_integer_values(metadata)
+
+    integer_cols = [
+        "current-schema-id",
+        "current-snapshot-id",
+        "default-sort-order-id",
+        "default-spec-id",
+        "format-version",
+        "last-column-id",
+        "last-partition-id",
+        "last-sequence-number",
+        "last-updated-ms",
+    ]
+    string_cols = ["location", "table-uuid"]
+    json_cols = ["properties", "refs", "statistics", "partition-statistics"]
+
+    return df.select(
+        *[integer_values.get(column, metadata.getItem(column)).cast(LongType()).alias(column) for column in integer_cols],
+        *[metadata.getItem(column).alias(column) for column in string_cols + json_cols],
+        _metadata_log_count(metadata).alias("pointed_metadata_log_count"),
+        _pointed_snapshots_files(metadata).alias("pointed_snapshots_files"),
+    )
+
+
 def _read_metadata_map(metadata_path: str) -> DataFrame:
     spark = open_spark_connect_session()
 
@@ -70,6 +97,12 @@ def _legacy_aware_integer_values(metadata: Column) -> dict[str, Column]:
     return {"current-schema-id": current_schema_id, "default-spec-id": default_spec_id}
 
 
+def _metadata_log_count(metadata: Column) -> Column:
+    return F.when(
+        F.map_contains_key(metadata, "metadata-log"), F.size(F.from_json(metadata.getItem("metadata-log"), ArrayType(StringType())))
+    ).otherwise(F.lit(0))
+
+
 def _pointed_snapshots_files(metadata: Column) -> Column:
     snapshots = F.from_json(metadata.getItem("snapshots"), METADATA_SNAPSHOTS_SCHEMA)
     pointed_snapshots = F.transform(
@@ -83,36 +116,3 @@ def _pointed_snapshots_files(metadata: Column) -> Column:
     )
 
     return F.when(F.size(snapshots) > 0, F.to_json(pointed_snapshots))
-
-
-def _metadata_log_count(metadata: Column) -> Column:
-    return F.when(
-        F.map_contains_key(metadata, "metadata-log"), F.size(F.from_json(metadata.getItem("metadata-log"), ArrayType(StringType())))
-    ).otherwise(F.lit(0))
-
-
-def get_metadata_row_slim_df_from_path(metadata_path: str):
-    df = _read_metadata_map(metadata_path)
-    metadata = F.col("metadata")
-    integer_values = _legacy_aware_integer_values(metadata)
-
-    integer_cols = [
-        "current-schema-id",
-        "current-snapshot-id",
-        "default-sort-order-id",
-        "default-spec-id",
-        "format-version",
-        "last-column-id",
-        "last-partition-id",
-        "last-sequence-number",
-        "last-updated-ms",
-    ]
-    string_cols = ["location", "table-uuid"]
-    json_cols = ["properties", "refs", "statistics", "partition-statistics"]
-
-    return df.select(
-        *[integer_values.get(column, metadata.getItem(column)).cast(LongType()).alias(column) for column in integer_cols],
-        *[metadata.getItem(column).alias(column) for column in string_cols + json_cols],
-        _metadata_log_count(metadata).alias("pointed_metadata_log_count"),
-        _pointed_snapshots_files(metadata).alias("pointed_snapshots_files"),
-    )
