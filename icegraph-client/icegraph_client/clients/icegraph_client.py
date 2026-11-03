@@ -9,13 +9,14 @@ from icegraph_client.utils.user_id import USER_ID_HEADER, get_user_id
 
 class IceGraphClient:
     def __init__(self, base_url: str, **requests_kwargs):
+        caller_headers = requests_kwargs.get("headers") or {}
+        requests_kwargs["headers"] = {USER_ID_HEADER: get_user_id(), **caller_headers}
+
         if "://" not in base_url:
             base_url = f"https://{base_url}"
 
         parsed_base_url = urlparse(base_url)
         self._base_url = f"{parsed_base_url.scheme}://{parsed_base_url.netloc}"
-
-        requests_kwargs["headers"] = {USER_ID_HEADER: get_user_id(), **(requests_kwargs.get("headers") or {})}
 
         self._tables_client = TablesClient(self._base_url, **requests_kwargs)
         self._snapshots_client = SnapshotsClient(self._base_url, **requests_kwargs)
