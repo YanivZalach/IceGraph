@@ -86,13 +86,11 @@ Count distinct `user_id` values to estimate users.
 
 ### Metrics
 
-IceGraph serves Prometheus metrics at `/metrics` on the application port. Set `METRICS_ENABLED=false` to disable the endpoint.
+Prometheus metrics are served at `/metrics`. Disable with `METRICS_ENABLED=false`.
 
-- `icegraph_operation_duration_seconds{operation}`: duration of each timed backend operation.
-- `icegraph_graph_computations_total`: graph computations submitted to Spark.
-- `icegraph_cache_reads_total{cache}`: requests served from a server-side cache (`graph_job` or `table_list`).
-
-Counters reset when the process restarts, and each pod exposes its own values.
+- `icegraph_operation_duration_seconds`: operation durations.
+- `icegraph_graph_computations_total`: graphs computed.
+- `icegraph_cache_reads_total`: server cache hits.
 
 ## Start Using Source Code (Contributor to IceGraph)
 
