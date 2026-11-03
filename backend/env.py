@@ -56,5 +56,8 @@ class Env:
     # Whether to serve the application with Waitress.
     PRODUCTION_MODE: bool = os.getenv("PRODUCTION_MODE", "false").lower() == "true"
 
+    # Whether the Prometheus metrics endpoint is served.
+    METRICS_ENABLED: bool = os.getenv("METRICS_ENABLED", "true").lower() == "true"
+
     # Number of request threads used by Waitress.
     WSGI_THREADS: int = int(os.getenv("WSGI_THREADS", "20"))

@@ -84,6 +84,16 @@ IceGraph's own logs are JSON lines on stderr.
 
 Count distinct `user_id` values to estimate users.
 
+### Metrics
+
+IceGraph serves Prometheus metrics at `/metrics` on the application port. Set `METRICS_ENABLED=false` to disable the endpoint.
+
+- `icegraph_operation_duration_seconds{operation}`: duration of each timed backend operation.
+- `icegraph_graph_computations_total`: graph computations submitted to Spark.
+- `icegraph_cache_reads_total{cache}`: requests served from a server-side cache (`graph_job` or `table_list`).
+
+Counters reset when the process restarts, and each pod exposes its own values.
+
 ## Start Using Source Code (Contributor to IceGraph)
 
 Before contributing, read [ARCHITECTURE_PHILOSOPHY.md](ARCHITECTURE_PHILOSOPHY.md) — the design pillars IceGraph is built on.

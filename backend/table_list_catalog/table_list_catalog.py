@@ -6,6 +6,7 @@ import arrow
 
 from base_classes.utils import timed
 from env import Env
+from metrics import TABLE_LIST_CACHE, cache_reads_total
 from spark_connect import open_spark_connect_session
 from table_list_catalog.utils import (
     collect_catalogs_tables_names,
@@ -34,11 +35,15 @@ class TableListCatalog:
         fresh_tables = self._fresh_cached_tables()
 
         if fresh_tables is not None:
+            cache_reads_total.labels(cache=TABLE_LIST_CACHE).inc()
+
             return fresh_tables
 
         with TableListCatalog._cache_write_lock:
             fresh_tables = self._fresh_cached_tables()
             if fresh_tables is not None:
+                cache_reads_total.labels(cache=TABLE_LIST_CACHE).inc()
+
                 return fresh_tables
 
             cache_entry = self._collect_candidates()
