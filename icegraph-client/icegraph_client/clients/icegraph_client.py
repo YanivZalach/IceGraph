@@ -4,10 +4,14 @@ from urllib.parse import urlparse
 from icegraph_client.clients.tables_client import TablesClient
 from icegraph_client.clients.snapshots_client import SnapshotsClient
 from icegraph_client.clients.graph_client import GraphClient
+from icegraph_client.utils.user_id import USER_ID_HEADER, get_user_id
 
 
 class IceGraphClient:
     def __init__(self, base_url: str, **requests_kwargs):
+        caller_headers = requests_kwargs.get("headers") or {}
+        requests_kwargs["headers"] = {USER_ID_HEADER: get_user_id(), **caller_headers}
+
         if "://" not in base_url:
             base_url = f"https://{base_url}"
 

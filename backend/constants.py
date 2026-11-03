@@ -5,6 +5,8 @@ MAIN_BRANCH_ICEBERG_TABLE_NAME = "main"
 
 JOB_TOKEN_FIELD = "X-IceGraph-Job-Token"
 
+USER_ID_HEADER = "X-IceGraph-User-Id"
+
 STANDART_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss.SSSSSS"
 
 REPLACE_OPERATION = "replace"

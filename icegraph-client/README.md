@@ -45,6 +45,10 @@ client.get_table_description("database.table")
 client.get_graph("database.table", start_snapshot_id, end_snapshot_id)
 ```
 
+## Anonymous user ID
+
+The CLI and `IceGraphClient` send a random anonymous ID in the `X-IceGraph-User-Id` header, so a server can estimate its number of users from its logs. The ID is created on first use and saved in `~/.config/icegraph/client_id`, and if that file can't be written, a new ID is used for each process. The same ID is sent to every server you connect to. To replace it, delete `~/.config/icegraph/client_id`.
+
 ## Docs
 
 Product page: [https://yanivzalach.github.io/IceGraph-Site/](https://yanivzalach.github.io/IceGraph-Site/)

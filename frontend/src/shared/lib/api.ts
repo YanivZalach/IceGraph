@@ -1,6 +1,7 @@
 import JSONbig from "json-bigint";
 import { z } from "zod";
 import { env } from "./env";
+import { getUserId } from "./userId";
 
 const jsonWithBigIntsAsStrings = JSONbig({ storeAsString: true });
 
@@ -37,6 +38,7 @@ export const fetchFromApi = async <Output>(
   options: ApiRequestOptions = {},
 ): Promise<Output> => {
   const headers = new Headers(options.headers);
+  headers.set("X-IceGraph-User-Id", getUserId());
   let body: string | undefined;
 
   if (options.formBody !== undefined) {
