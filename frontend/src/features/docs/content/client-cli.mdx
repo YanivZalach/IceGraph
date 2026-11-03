@@ -20,6 +20,10 @@ IceGraph itself doesn't have a login system, so you'll only need a token or cook
 
 If your server uses a self-signed or otherwise untrusted TLS certificate, pass `--no-verify-ssl` to skip certificate verification, or set the `ICEGRAPH_NO_VERIFY_SSL` environment variable.
 
+### Anonymous user ID
+
+The CLI and Python client send a random anonymous ID in the `X-IceGraph-User-Id` header, so a server can estimate its number of users from its logs. This UI sends one too, saved in your browser's local storage. The client's ID is saved in `~/.config/icegraph/client_id`, and the same ID is sent to every server you connect to. Delete that file to replace it.
+
 ### Commands
 
 ```bash

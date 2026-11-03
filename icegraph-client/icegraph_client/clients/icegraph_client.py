@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 from icegraph_client.clients.tables_client import TablesClient
 from icegraph_client.clients.snapshots_client import SnapshotsClient
 from icegraph_client.clients.graph_client import GraphClient
+from icegraph_client.utils.user_id import USER_ID_HEADER, get_user_id
 
 
 class IceGraphClient:
@@ -13,6 +14,8 @@ class IceGraphClient:
 
         parsed_base_url = urlparse(base_url)
         self._base_url = f"{parsed_base_url.scheme}://{parsed_base_url.netloc}"
+
+        requests_kwargs["headers"] = {USER_ID_HEADER: get_user_id(), **(requests_kwargs.get("headers") or {})}
 
         self._tables_client = TablesClient(self._base_url, **requests_kwargs)
         self._snapshots_client = SnapshotsClient(self._base_url, **requests_kwargs)

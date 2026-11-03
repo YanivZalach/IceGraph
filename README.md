@@ -74,6 +74,16 @@ docker run -e SPARK_REMOTE=sc://<spark-connect-ip>:15002 -p 5050:5050 icegraph
 
 Graph jobs are tracked in each pod's memory, so if you run more than one replica, your load balancer/ingress must route all requests from a given client to the same pod (session affinity / sticky sessions) for the duration of a job, otherwise the polling requests can land on a pod that never received it.
 
+### Logs
+
+IceGraph's own logs are JSON lines on stderr. Library logs, such as Waitress and Werkzeug, stay plain text.
+
+```json
+{"time": "2026-11-02T10:15:30.123456+00:00", "level": "INFO", "logger": "IceGraph", "message": "[db.table] CollectSnapshots.collect took 0.55s", "user_id": "3f2a..."}
+```
+
+To estimate users, count distinct `user_id` values. The ID is random, unverified, and created per browser and per `icegraph-client` install, so it counts installs, not people. Lines from a graph job's inner worker threads don't include it.
+
 ## Start Using Source Code (Contributor to IceGraph)
 
 Before contributing, read [ARCHITECTURE_PHILOSOPHY.md](ARCHITECTURE_PHILOSOPHY.md) — the design pillars IceGraph is built on.

@@ -6,7 +6,7 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, copy_current_request_context, jsonify, request, send_from_directory
 from pyspark.errors import AnalysisException
 
 from base_classes.utils import collect_graph_metadata_file, verify_iceberg_table
@@ -254,7 +254,7 @@ def graph_data():
         jobs[job_id] = response
 
     executor_pool.submit(
-        _compute_graph_background,
+        copy_current_request_context(_compute_graph_background),
         job_id,
         table_name,
         start_snapshot_id,
