@@ -76,13 +76,13 @@ Graph jobs are tracked in each pod's memory, so if you run more than one replica
 
 ### Logs
 
-IceGraph's own logs are JSON lines on stderr. Library logs, such as Waitress and Werkzeug, stay plain text.
+IceGraph's own logs are JSON lines on stderr.
 
 ```json
 {"time": "2026-11-02T10:15:30.123456+00:00", "level": "INFO", "logger": "IceGraph", "message": "[db.table] CollectSnapshots.collect took 0.55s", "user_id": "3f2a..."}
 ```
 
-To estimate users, count distinct `user_id` values. The ID is random, unverified, and created per browser and per `icegraph-client` install, so it counts installs, not people. Lines from a graph job's inner worker threads don't include it.
+Count distinct `user_id` values to estimate users.
 
 ## Start Using Source Code (Contributor to IceGraph)
 
