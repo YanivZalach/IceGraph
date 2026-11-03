@@ -6,7 +6,8 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from flask import Flask, copy_current_request_context, jsonify, request, send_from_directory
+from flask import Flask, Response, copy_current_request_context, jsonify, request, send_from_directory
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from pyspark.errors import AnalysisException
 
 from base_classes.utils import collect_graph_metadata_file, verify_iceberg_table
@@ -14,6 +15,7 @@ from constants import COLLECTION_STAGES, JOB_TOKEN_FIELD, STAGE_BUILD_GRAPH
 from env import Env
 from graph_normalizer.graph_normalizer import GraphNormalizer
 from icegraph_logger import logger
+from metrics import GRAPH_JOB_CACHE, cache_reads_total, graph_computations_total
 from snapshot_analyzer.snapshot_analyzer import SnapshotAnalyzer
 from snapshot_map.snapshot_mapping import collect_snapshot_map
 from spark_connect import close_spark_connect_session
@@ -88,6 +90,14 @@ def _compute_graph_background(job_id, table_name, start_snapshot_id, end_snapsho
 
     finally:
         _schedule_cleanup(job_id)
+
+
+@app.route("/metrics", methods=["GET"])
+def metrics():
+    if not Env.METRICS_ENABLED:
+        return jsonify({"error": "Metrics are disabled"}), 404
+
+    return Response(generate_latest(), content_type=CONTENT_TYPE_LATEST)
 
 
 @app.route("/", defaults={"path": ""})
@@ -239,6 +249,7 @@ def graph_data():
         job = jobs.get(job_id)
         if job:
             if job["status"] == "completed":
+                cache_reads_total.labels(cache=GRAPH_JOB_CACHE).inc()
                 job["timer"].cancel()
                 _schedule_cleanup(job_id, is_in_lock_block=True)
                 logger.info(f"Job {job_id} completed, extended cleanup timer")
@@ -261,6 +272,7 @@ def graph_data():
         end_snapshot_id,
     )
 
+    graph_computations_total.inc()
     logger.info(f"Submitted job {job_id}")
     return jsonify(response), 202
 

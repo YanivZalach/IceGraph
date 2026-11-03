@@ -12,6 +12,7 @@ dependencies = [
     "grpcio==1.78.0",
     "numpy<2.0.0",
     "pandas==2.3.3",
+    "prometheus-client==0.26.0",
     "pyarrow==23.0.1",
     "pyspark[connect]==3.5.4",
     "python-dotenv==1.2.1",

@@ -10,6 +10,7 @@ from pyspark.errors import AnalysisException, PySparkException
 from pyspark.sql import functions as F
 
 from icegraph_logger import logger
+from metrics import operation_duration_seconds
 
 
 def timed(fn):
@@ -30,8 +31,11 @@ def timed(fn):
 
         result = fn(*args, **kwargs)
 
+        duration = time.time() - start
+        operation_duration_seconds.labels(operation=fn.__qualname__).observe(duration)
+
         prefix = f"[{table_name}] " if table_name else ""
-        logger.info(f"{prefix}{fn.__qualname__} took {time.time() - start:.2f}s")
+        logger.info(f"{prefix}{fn.__qualname__} took {duration:.2f}s")
 
         return result
 
