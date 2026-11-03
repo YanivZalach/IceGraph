@@ -20,8 +20,5 @@ cache_reads_total = Counter(
     ["cache"],
 )
 
-GRAPH_JOB_CACHE = "graph_job"
-TABLE_LIST_CACHE = "table_list"
-
-for cache_name in (GRAPH_JOB_CACHE, TABLE_LIST_CACHE):
-    cache_reads_total.labels(cache=cache_name)
+graph_job_cache_reads_total = cache_reads_total.labels(cache="graph_job")
+table_list_cache_reads_total = cache_reads_total.labels(cache="table_list")
