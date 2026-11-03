@@ -15,7 +15,7 @@ from constants import COLLECTION_STAGES, JOB_TOKEN_FIELD, STAGE_BUILD_GRAPH
 from env import Env
 from graph_normalizer.graph_normalizer import GraphNormalizer
 from icegraph_logger import logger
-from metrics import GRAPH_JOB_CACHE, cache_reads_total, graph_computations_total
+from metrics import graph_computations_total, graph_job_cache_reads_total
 from snapshot_analyzer.snapshot_analyzer import SnapshotAnalyzer
 from snapshot_map.snapshot_mapping import collect_snapshot_map
 from spark_connect import close_spark_connect_session
@@ -249,7 +249,7 @@ def graph_data():
         job = jobs.get(job_id)
         if job:
             if job["status"] == "completed":
-                cache_reads_total.labels(cache=GRAPH_JOB_CACHE).inc()
+                graph_job_cache_reads_total.inc()
                 job["timer"].cancel()
                 _schedule_cleanup(job_id, is_in_lock_block=True)
                 logger.info(f"Job {job_id} completed, extended cleanup timer")
