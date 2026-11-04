@@ -152,7 +152,7 @@ pnpm run dev
 
 Go to `http://localhost:3000` and explore your tables.
 
-The backend listens on port `5050`, and the frontend dev server proxies `/api` to it. To use another backend port, set `APPLICATION_PORT` for the backend and `VITE_DEV_BACKEND_PORT` for the frontend to the same value:
+The backend listens on port `5050`, and the frontend dev server proxies `/api` and `/metrics` to it. To use another backend port, set `APPLICATION_PORT` for the backend and `VITE_DEV_BACKEND_PORT` for the frontend to the same value:
 
 ```bash
 APPLICATION_PORT=5051 uv run python main.py
