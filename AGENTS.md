@@ -120,7 +120,7 @@ agreed behavior still requires the user's approval first.
 ## Development ports
 
 The backend listens on `APPLICATION_PORT` (default `5050`), defined in `backend/env.py`. The Vite
-dev server proxies `/api` to `VITE_DEV_BACKEND_PORT` (default `5050`), read in
+dev server proxies `/api` and `/metrics` to `VITE_DEV_BACKEND_PORT` (default `5050`), read in
 `frontend/vite.config.ts`. The two are independent: to run the backend on another port, such as a
 second copy beside one already running, set both to the same value.
 
