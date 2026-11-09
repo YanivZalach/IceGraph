@@ -158,8 +158,10 @@ Canvas node clicks are not required. Keyboard traversal is the deterministic sel
 
 - Use one continuous keyboard sequence: Timeline `2` to Metadata, `3` to FileTree, `4` to Graph, and
   `1` back to Timeline.
-- After a Graph deep-link selection is applied, confirm `select_node_id` is removed while table and
-  snapshot-range parameters remain.
+- After a Graph deep-link selection is applied, confirm `select_node_id` and `lineage_node_id`
+  stay in the URL, Back and Forward move between selected nodes, and leaving Graph removes
+  `select_node_id`, `lineage_node_id`, and `graph_mode` while table and snapshot-range parameters
+  remain.
 - Navigate away from FileTree and confirm all `filetree_*` parameters are removed from Timeline,
   Metadata, and Graph.
 - Confirm closing selections, resetting controls, and leaving each view do not affect the next view.

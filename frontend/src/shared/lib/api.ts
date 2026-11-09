@@ -25,6 +25,7 @@ export class ApiError extends Error {
 }
 
 interface ApiRequestOptions {
+  cache?: RequestCache;
   formBody?: URLSearchParams;
   headers?: Record<string, string>;
   jsonBody?: unknown;
@@ -53,6 +54,7 @@ export const fetchFromApi = async <Output>(
     method: options.method ?? "GET",
     ...(body === undefined ? {} : { body }),
     headers,
+    ...(options.cache === undefined ? {} : { cache: options.cache }),
     ...(options.signal === undefined ? {} : { signal: options.signal }),
   });
 

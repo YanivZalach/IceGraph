@@ -8,3 +8,4 @@ export const IS_MOCK = env.isMock;
 export const APP_VERSION = env.appVersion;
 /** Query param used to hand off which graph node should be auto-selected on load. */
 export const SELECT_NODE_ID_PARAM = "select_node_id";
+export const LINEAGE_NODE_ID_PARAM = "lineage_node_id";

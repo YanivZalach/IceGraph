@@ -180,10 +180,6 @@ export default function TableLayout() {
     warnings,
   } = useTableSpecs();
 
-  useEffect(() => {
-    sessionStorage.removeItem("last_graph_selection");
-  }, []);
-
   useHotkey(
     "Escape",
     () => {
