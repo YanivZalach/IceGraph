@@ -28,3 +28,4 @@ Normal refreshes and new tabs may restore validated data. Recompile graph explic
 - Application version changes isolate incompatible cache records.
 - Bounded historical graphs can remain stale if referenced files are removed without changing the pinned metadata file.
 - Backend collection-setting changes require an application version change or an explicit recompile to invalidate existing graphs.
+- The Graph view's Current metadata node is not part of the cached graph. It is requested on every Graph view open, so a restored graph still shows the table's current metadata file.

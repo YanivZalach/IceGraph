@@ -142,8 +142,10 @@ def graph_metadata_file(table_name):
         verify_iceberg_table(table_name)
         parsed_end_snapshot_id = int(end_snapshot_id) if end_snapshot_id else None
         metadata_file = collect_graph_metadata_file(table_name, parsed_end_snapshot_id)
+        response = jsonify({"metadata_file": metadata_file})
+        response.headers["Cache-Control"] = "no-store"
 
-        return jsonify({"metadata_file": metadata_file})
+        return response
 
     except ValueError as e:
         logger.error(f"Invalid graph metadata request: {e}\n{traceback.format_exc()}")

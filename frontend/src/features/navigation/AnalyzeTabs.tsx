@@ -11,17 +11,25 @@ const ANALYZE_TABS = [
 
 type AnalyzeTabPath = (typeof ANALYZE_TABS)[number]["to"];
 
+const GRAPH_SEARCH_KEYS = new Set([
+  "select_node_id",
+  "lineage_node_id",
+  "graph_mode",
+]);
+
+const isSearchKeyKept = (key: string, destination: AnalyzeTabPath): boolean =>
+  (destination === "/table/filetree" || !key.startsWith("filetree_")) &&
+  (destination === "/table/graph" || !GRAPH_SEARCH_KEYS.has(key));
+
 const tabSearch = (
   previous: Record<string, unknown>,
   destination: AnalyzeTabPath,
 ): Record<string, unknown> =>
-  destination === "/table/filetree"
-    ? previous
-    : Object.fromEntries(
-        Object.entries(previous).filter(
-          ([key]) => !key.startsWith("filetree_"),
-        ),
-      );
+  Object.fromEntries(
+    Object.entries(previous).filter(([key]) =>
+      isSearchKeyKept(key, destination),
+    ),
+  );
 
 const AnalyzeTabs = () => {
   const navigate = useNavigate();

@@ -5,6 +5,7 @@ export const DELETION_VECTOR_CONNECTION_LABEL = "deletes from";
 export const STATISTICS_CONNECTION_CURVATURE = 0.3;
 export const CATALOG_NODE_ID = "catalog";
 export const CATALOG_NODE_SCALE = 1.5;
+export const CURRENT_METADATA_NODE_ID = "current_metadata";
 export const MAIN_BRANCH_NAME = "main";
 
 export const FileType = {
@@ -19,6 +20,7 @@ export const FileType = {
   TABLE_STATISTICS: "table_statistics",
   PARTITION_STATISTICS: "partition_statistics",
   CATALOG: "catalog",
+  CURRENT_METADATA: "current_metadata",
 };
 
 export const STATISTICS_CONNECTION_COLORS = {
@@ -38,6 +40,7 @@ export const NODE_STYLE_MAP = {
   [FileType.TABLE_STATISTICS]: { rgb: [217, 119, 6], level: -2 },
   [FileType.PARTITION_STATISTICS]: { rgb: [148, 163, 184], level: -2 },
   [FileType.CATALOG]: { rgb: [226, 232, 240], level: -1 },
+  [FileType.CURRENT_METADATA]: { rgb: [195, 60, 130], level: -1 },
 };
 
 export const ERROR_NODE_RGB = [185, 35, 60];
@@ -53,6 +56,7 @@ const FILE_TYPE_LABELS = {
   [FileType.TABLE_STATISTICS]: "Table Statistics",
   [FileType.PARTITION_STATISTICS]: "Partition Statistics",
   [FileType.CATALOG]: "Catalog",
+  [FileType.CURRENT_METADATA]: "Current Metadata",
 };
 
 export function fileTypeLabel(type) {

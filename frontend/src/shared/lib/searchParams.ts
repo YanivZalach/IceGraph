@@ -46,6 +46,8 @@ export const tableSearchSchema = z.looseObject({
 
 export const graphSearchSchema = tableSearchSchema.extend({
   select_node_id: z.string().optional(),
+  lineage_node_id: z.string().optional(),
+  graph_mode: z.literal("lineage").optional().catch(undefined),
 });
 
 export const fileTreeSearchSchema = tableSearchSchema.extend({
