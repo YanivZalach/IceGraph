@@ -52,6 +52,7 @@ class MetadataLogEntriesExtractor(SparkTableAction):
         newest_entries = metadata_log_entries.sort(
             [pl.col("timestamp_ms"), pl.col("file").str.len_chars(), pl.col("file")],
             descending=True,
+            nulls_last=True,
         )
         if newest_entries.is_empty():
             return None
