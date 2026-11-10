@@ -1,18 +1,19 @@
 from functools import cached_property
 from typing import List, Optional
 
-from pyspark.sql import DataFrame, Row, Window, functions as F
+from pyspark.sql import DataFrame, Row, functions as F
 from pyspark.sql.types import ArrayType, LongType, MapType, StringType
 
 from constants import NO_REF_LEADS_TO_SNAPSHOT_REASON
 from extractors.extractor import Extractor
 from extractors.utils import (
-    HEAD_CHANGES_SCHEMA,
+    BRANCH_SNAPSHOT_IDS_SCHEMA,
     MAIN_BRANCH,
     METADATA_REFS_SCHEMA,
     METADATA_SNAPSHOTS_LINEAGE_SCHEMA,
     HeadChange,
     ancestry_timeline,
+    heads_at,
 )
 from icegraph_logger import logger
 
@@ -28,21 +29,24 @@ class MetadataLogEntriesExtractor(Extractor):
     @cached_property
     def _metadata_log_entries_df(self) -> DataFrame:
         metadata_log_df = self._spark.sql(f"SELECT timestamp, file, latest_snapshot_id FROM {self._table_name}.metadata_log_entries")
-        current_metadata_file = self._find_current_metadata_file(metadata_log_df)
+        metadata_log_entries = self._collect_metadata_log_entries(metadata_log_df)
+        current_metadata_file = self._find_current_metadata_file(metadata_log_entries)
         ref_timelines = self._read_ref_timelines(current_metadata_file)
-        head_changes_df = self._to_head_changes_df(ref_timelines)
 
-        ref_heads_df = self._match_files_to_ref_heads(metadata_log_df, head_changes_df)
-        branch_heads_df = self._exclude_main_heads(ref_heads_df, metadata_log_df)
-        branch_snapshot_ids_df = self._group_branch_snapshot_ids_by_file(branch_heads_df)
+        branch_snapshot_ids_df = self._to_branch_snapshot_ids_df(metadata_log_entries, ref_timelines)
 
         return self._join_branch_snapshot_ids(metadata_log_df, branch_snapshot_ids_df)
 
     @staticmethod
-    def _find_current_metadata_file(metadata_log_df: DataFrame) -> Optional[str]:
-        current_file_row = metadata_log_df.orderBy(F.desc("timestamp"), F.desc("file")).select("file").first()
+    def _collect_metadata_log_entries(metadata_log_df: DataFrame) -> List[Row]:
+        return metadata_log_df.select("file", F.unix_millis("timestamp").alias("timestamp_ms"), "latest_snapshot_id").collect()
 
-        return current_file_row.file if current_file_row else None
+    @staticmethod
+    def _find_current_metadata_file(metadata_log_entries: List[Row]) -> Optional[str]:
+        if not metadata_log_entries:
+            return None
+
+        return max(metadata_log_entries, key=lambda entry: (entry.timestamp_ms, entry.file)).file
 
     def _read_ref_timelines(self, metadata_file: Optional[str]) -> List[List[HeadChange]]:
         if metadata_file is None:
@@ -84,36 +88,13 @@ class MetadataLogEntriesExtractor(Extractor):
             ancestry_timeline(ref["snapshot-id"], snapshots_by_id) for ref_name, ref in (metadata_row.refs or {}).items() if ref_name != MAIN_BRANCH
         ]
 
-    def _to_head_changes_df(self, ref_timelines: List[List[HeadChange]]) -> DataFrame:
-        head_changes = [
-            (ref_index, position, change.timestamp_ms, change.snapshot_id)
-            for ref_index, timeline in enumerate(ref_timelines)
-            for position, change in enumerate(timeline)
+    def _to_branch_snapshot_ids_df(self, metadata_log_entries: List[Row], ref_timelines: List[List[HeadChange]]) -> DataFrame:
+        main_snapshot_ids = {entry.latest_snapshot_id for entry in metadata_log_entries}
+        branch_snapshot_ids = [
+            (entry.file, sorted(heads_at(ref_timelines, entry.timestamp_ms) - main_snapshot_ids)) for entry in metadata_log_entries
         ]
 
-        return self._spark.createDataFrame(head_changes, HEAD_CHANGES_SCHEMA)
-
-    @staticmethod
-    def _match_files_to_ref_heads(metadata_log_df: DataFrame, head_changes_df: DataFrame) -> DataFrame:
-        latest_change_first = Window.partitionBy("file", "ref_index").orderBy(F.desc("position"))
-
-        return (
-            metadata_log_df.select("file", F.unix_millis("timestamp").alias("file_timestamp_ms"))
-            .join(head_changes_df, F.col("timestamp_ms") <= F.col("file_timestamp_ms"))
-            .withColumn("change_rank", F.row_number().over(latest_change_first))
-            .filter(F.col("change_rank") == 1)
-            .select("file", "snapshot_id")
-        )
-
-    @staticmethod
-    def _exclude_main_heads(ref_heads_df: DataFrame, metadata_log_df: DataFrame) -> DataFrame:
-        main_snapshot_ids_df = metadata_log_df.select(F.col("latest_snapshot_id").alias("snapshot_id")).distinct()
-
-        return ref_heads_df.join(main_snapshot_ids_df, on="snapshot_id", how="left_anti")
-
-    @staticmethod
-    def _group_branch_snapshot_ids_by_file(branch_heads_df: DataFrame) -> DataFrame:
-        return branch_heads_df.groupBy("file").agg(F.array_sort(F.collect_set("snapshot_id")).alias("branch_snapshot_ids"))
+        return self._spark.createDataFrame(branch_snapshot_ids, BRANCH_SNAPSHOT_IDS_SCHEMA)
 
     @staticmethod
     def _join_branch_snapshot_ids(metadata_log_df: DataFrame, branch_snapshot_ids_df: DataFrame) -> DataFrame:
