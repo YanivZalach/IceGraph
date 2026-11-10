@@ -8,7 +8,7 @@ from pyspark.sql.types import StringType, StructField, StructType
 
 from constants import NO_REF_LEADS_TO_SNAPSHOT_REASON, SNAPSHOT_METADATA_WINDOW_WARNING
 from icegraph_logger import logger
-from metadata_log.metadata_log import MetadataLogEntries, points_at_snapshot
+from extractors.metadata_log_entries_extractor import MetadataLogEntriesExtractor, points_at_snapshot
 from base_classes.utils import timed, to_arrow_utc
 
 
@@ -45,16 +45,16 @@ def find_search_cutoff(
     end_snapshot_id: Optional[int],
 ) -> SearchCutoff:
     cutoff = SearchCutoff.with_spark(spark)
-    metadata_log_entries = MetadataLogEntries(spark, table_name)
+    metadata_log_entries_extractor = MetadataLogEntriesExtractor(table_name)
 
     if start_snapshot_id:
-        start = _get_start_cutoffs(spark, table_name, start_snapshot_id, metadata_log_entries, cutoff.warnings)
+        start = _get_start_cutoffs(spark, table_name, start_snapshot_id, metadata_log_entries_extractor, cutoff.warnings)
         cutoff.start_snapshot_cutoff = start.snapshot_cutoff
         cutoff.start_metadata_cutoff = start.metadata_cutoff
         cutoff.manifests_to_ignore_df = start.manifests_to_ignore_df
 
     if end_snapshot_id:
-        end = _get_end_cutoffs(spark, table_name, end_snapshot_id, metadata_log_entries, cutoff.warnings)
+        end = _get_end_cutoffs(spark, table_name, end_snapshot_id, metadata_log_entries_extractor, cutoff.warnings)
         cutoff.end_snapshot_cutoff = end.snapshot_cutoff
         cutoff.end_metadata_cutoff = end.metadata_cutoff
 
@@ -68,7 +68,7 @@ def _get_start_cutoffs(
     spark: SparkSession,
     table_name: str,
     start_snapshot_id: int,
-    metadata_log_entries: MetadataLogEntries,
+    metadata_log_entries_extractor: MetadataLogEntriesExtractor,
     warnings: Dict[str, List[str]],
 ) -> StartCutoffs:
     row = (
@@ -87,7 +87,8 @@ def _get_start_cutoffs(
     snapshot_cutoff = to_arrow_utc(row.committed_at)
 
     meta_row = (
-        metadata_log_entries.df.filter(points_at_snapshot(start_snapshot_id))
+        metadata_log_entries_extractor.extract_dataframe()
+        .filter(points_at_snapshot(start_snapshot_id))
         .select(F.min("timestamp").alias("ts"))
         .withColumn("ts", column_to_string_utc("ts"))
         .first()
@@ -96,7 +97,7 @@ def _get_start_cutoffs(
     if meta_row and meta_row.ts:
         metadata_cutoff = to_arrow_utc(meta_row.ts)
     else:
-        _warn_commit_time_boundary(warnings, "start", start_snapshot_id, metadata_log_entries.refs_read_error)
+        _warn_commit_time_boundary(warnings, "start", start_snapshot_id, metadata_log_entries_extractor.refs_read_error)
         metadata_cutoff = snapshot_cutoff
 
     manifests_to_ignore_df = _get_manifests_to_ignore_df(spark, table_name, row.parent_id)
@@ -112,7 +113,7 @@ def _get_end_cutoffs(
     spark: SparkSession,
     table_name: str,
     end_snapshot_id: int,
-    metadata_log_entries: MetadataLogEntries,
+    metadata_log_entries_extractor: MetadataLogEntriesExtractor,
     warnings: Dict[str, List[str]],
 ) -> EndCutoffs:
     row = (
@@ -131,7 +132,8 @@ def _get_end_cutoffs(
     snapshot_cutoff = to_arrow_utc(row.committed_at)
 
     meta_row = (
-        metadata_log_entries.df.filter(points_at_snapshot(end_snapshot_id))
+        metadata_log_entries_extractor.extract_dataframe()
+        .filter(points_at_snapshot(end_snapshot_id))
         .select(F.max("timestamp").alias("ts"))
         .withColumn("ts", column_to_string_utc("ts"))
         .first()
@@ -140,7 +142,7 @@ def _get_end_cutoffs(
     if meta_row and meta_row.ts:
         metadata_cutoff = to_arrow_utc(meta_row.ts)
     else:
-        _warn_commit_time_boundary(warnings, "end", end_snapshot_id, metadata_log_entries.refs_read_error)
+        _warn_commit_time_boundary(warnings, "end", end_snapshot_id, metadata_log_entries_extractor.refs_read_error)
         metadata_cutoff = snapshot_cutoff
 
     return EndCutoffs(

@@ -10,7 +10,7 @@ from pyspark.errors import AnalysisException, PySparkException
 from pyspark.sql import functions as F
 
 from icegraph_logger import logger
-from metadata_log.metadata_log import MetadataLogEntries, points_at_snapshot
+from extractors.metadata_log_entries_extractor import MetadataLogEntriesExtractor, points_at_snapshot
 from metrics import operation_duration_seconds
 
 
@@ -90,7 +90,7 @@ def column_to_string_utc(column_name: str):
 @timed
 def collect_graph_metadata_file(table_name: str, end_snapshot_id: int | None) -> str:
     spark = open_spark_connect_session()
-    metadata_entries = MetadataLogEntries(spark, table_name).df
+    metadata_entries = MetadataLogEntriesExtractor(table_name).extract_dataframe()
 
     if end_snapshot_id is not None:
         metadata_entries = metadata_entries.filter(points_at_snapshot(end_snapshot_id))
