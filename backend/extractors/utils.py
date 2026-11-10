@@ -1,8 +1,8 @@
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 from pyspark.sql import Column, Row, functions as F
-from pyspark.sql.types import ArrayType, IntegerType, LongType, MapType, StringType, StructField, StructType
+from pyspark.sql.types import ArrayType, LongType, MapType, StringType, StructField, StructType
 
 METADATA_SNAPSHOTS_LINEAGE_SCHEMA = ArrayType(
     StructType(
@@ -14,14 +14,7 @@ METADATA_SNAPSHOTS_LINEAGE_SCHEMA = ArrayType(
     )
 )
 METADATA_REFS_SCHEMA = MapType(StringType(), StructType([StructField("snapshot-id", LongType())]))
-HEAD_CHANGES_SCHEMA = StructType(
-    [
-        StructField("ref_index", IntegerType()),
-        StructField("position", IntegerType()),
-        StructField("timestamp_ms", LongType()),
-        StructField("snapshot_id", LongType()),
-    ]
-)
+BRANCH_SNAPSHOT_IDS_SCHEMA = StructType([StructField("file", StringType()), StructField("branch_snapshot_ids", ArrayType(LongType()))])
 MAIN_BRANCH = "main"
 
 
@@ -45,3 +38,18 @@ def ancestry_timeline(head_snapshot_id: Optional[int], snapshots_by_id: Dict[int
         snapshot = snapshots_by_id.get(snapshot["parent-snapshot-id"])
 
     return list(reversed(timeline))
+
+
+def heads_at(ref_timelines: List[List[HeadChange]], timestamp_ms: int) -> Set[int]:
+    heads = {head_at(timeline, timestamp_ms) for timeline in ref_timelines}
+
+    return heads - {None}
+
+
+def head_at(timeline: List[HeadChange], timestamp_ms: int) -> Optional[int]:
+    head = None
+    for change in timeline:
+        if change.timestamp_ms <= timestamp_ms:
+            head = change.snapshot_id
+
+    return head
