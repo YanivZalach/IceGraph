@@ -5,7 +5,9 @@ import { FileType } from "../../../graphConstants";
 import { isEmptyValue } from "../../../shared/lib/isEmptyValue";
 import PartitionDistributionTable from "../../table/components/PartitionDistributionTable";
 import PartitionStatisticsTable from "../../table/components/PartitionStatisticsTable";
-import PartitionValues from "../../table/components/PartitionValues";
+import PartitionValues, {
+  type ManifestPartitionFilter,
+} from "../../table/components/PartitionValues";
 import type { GraphNodeDetails as Details } from "../graphViewSchemas";
 
 const HIDDEN_DETAIL_KEYS = new Set([
@@ -41,12 +43,14 @@ interface GraphNodeDetailsProps {
   nodeId: string;
   details: Details;
   isRelaxedCollapse: boolean;
+  partitionFilter: ManifestPartitionFilter;
 }
 
 const DetailRows = ({
   nodeId,
   details,
   isRelaxedCollapse,
+  partitionFilter,
 }: GraphNodeDetailsProps) =>
   Object.entries(details)
     .filter(([key]) => !HIDDEN_DETAIL_KEYS.has(key.toLowerCase()))
@@ -64,6 +68,7 @@ const DetailRows = ({
             key={rowKey}
             kind="manifest"
             value={details.partitions}
+            partitionFilter={partitionFilter}
           />
         );
       }
@@ -133,6 +138,7 @@ const GraphNodeDetails = (props: GraphNodeDetailsProps) => (
       nodeId={props.nodeId}
       details={props.details}
       isRelaxedCollapse={props.isRelaxedCollapse}
+      partitionFilter={props.partitionFilter}
     />
     <PartitionStatistics details={props.details} />
     <ReadableMetrics details={props.details} />

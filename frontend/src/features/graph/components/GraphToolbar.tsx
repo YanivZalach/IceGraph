@@ -12,6 +12,7 @@ interface GraphToolbarProps {
   onToggleInspectMode: () => void;
   onCenterGraph: () => void;
   search: ReactNode;
+  notice: ReactNode;
 }
 
 const keepFocusOnGraph = (event: MouseEvent): void => {
@@ -25,6 +26,7 @@ const GraphToolbar = ({
   onToggleInspectMode,
   onCenterGraph,
   search,
+  notice,
 }: GraphToolbarProps) => (
   <div className="pointer-events-none absolute top-4 left-4 flex w-[min(20rem,calc(100%-2rem))] flex-col items-start gap-2 font-sans">
     {search !== null && (
@@ -73,6 +75,9 @@ const GraphToolbar = ({
         Center Graph
       </button>
     </div>
+    {notice !== null && (
+      <div className="pointer-events-auto relative z-[10] w-full">{notice}</div>
+    )}
   </div>
 );
 
