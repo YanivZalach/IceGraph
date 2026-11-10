@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 from pyspark.sql import DataFrame, Window, functions as F
 from pyspark.sql.types import ArrayType, LongType, MapType, StringType
@@ -26,35 +26,32 @@ class MetadataLogEntriesExtractor(Extractor):
 
     @cached_property
     def _metadata_log_entries_df(self) -> DataFrame:
-        view_df = self._spark.sql(f"SELECT timestamp, file, latest_snapshot_id FROM {self._table_name}.metadata_log_entries")
-        branch_heads_df = self._branch_heads_df(view_df)
+        metadata_log_df = self._spark.sql(f"SELECT timestamp, file, latest_snapshot_id FROM {self._table_name}.metadata_log_entries")
+        head_changes_df = self._read_head_changes_df(metadata_log_df)
 
-        return view_df.join(branch_heads_df, on="file", how="left").withColumn(
-            "branch_snapshot_ids", F.coalesce("branch_snapshot_ids", F.array().cast(ArrayType(LongType())))
-        )
+        ref_heads_df = self._match_files_to_ref_heads(metadata_log_df, head_changes_df)
+        branch_heads_df = self._exclude_main_heads(ref_heads_df, metadata_log_df)
+        branch_snapshot_ids_df = self._group_branch_snapshot_ids_by_file(branch_heads_df)
 
-    def _branch_heads_df(self, view_df: DataFrame) -> DataFrame:
-        head_changes_df = self._spark.createDataFrame(self._read_head_changes(view_df), HEAD_CHANGES_SCHEMA)
-        main_snapshot_ids_df = view_df.select(F.col("latest_snapshot_id").alias("snapshot_id")).distinct()
-        latest_change_first = Window.partitionBy("file", "ref_index").orderBy(F.desc("position"))
+        return self._join_branch_snapshot_ids(metadata_log_df, branch_snapshot_ids_df)
 
-        return (
-            view_df.select("file", F.unix_millis("timestamp").alias("file_timestamp_ms"))
-            .join(head_changes_df, F.col("timestamp_ms") <= F.col("file_timestamp_ms"))
-            .withColumn("change_rank", F.row_number().over(latest_change_first))
-            .filter(F.col("change_rank") == 1)
-            .join(main_snapshot_ids_df, on="snapshot_id", how="left_anti")
-            .groupBy("file")
-            .agg(F.array_sort(F.collect_set("snapshot_id")).alias("branch_snapshot_ids"))
-        )
+    def _read_head_changes_df(self, metadata_log_df: DataFrame) -> DataFrame:
+        ref_timelines = self._read_ref_timelines(metadata_log_df)
+        head_changes = [
+            (ref_index, position, change.timestamp_ms, change.snapshot_id)
+            for ref_index, timeline in enumerate(ref_timelines)
+            for position, change in enumerate(timeline)
+        ]
 
-    def _read_head_changes(self, view_df: DataFrame) -> List[Tuple[int, int, int, int]]:
-        current_file_row = view_df.orderBy(F.desc("timestamp"), F.desc("file")).select("file").first()
+        return self._spark.createDataFrame(head_changes, HEAD_CHANGES_SCHEMA)
+
+    def _read_ref_timelines(self, metadata_log_df: DataFrame) -> List[List[HeadChange]]:
+        current_file_row = metadata_log_df.orderBy(F.desc("timestamp"), F.desc("file")).select("file").first()
         if current_file_row is None:
             return []
 
         try:
-            ref_timelines = self._read_ref_timelines(current_file_row.file)
+            return self._read_ref_timelines_from_file(current_file_row.file)
 
         except Exception as e:
             logger.warning(f"[{self._table_name}] Failed to read the branches and tags from the current metadata file", exc_info=True)
@@ -63,16 +60,10 @@ class MetadataLogEntriesExtractor(Extractor):
 
             return []
 
-        return [
-            (ref_index, position, change.timestamp_ms, change.snapshot_id)
-            for ref_index, timeline in enumerate(ref_timelines)
-            for position, change in enumerate(timeline)
-        ]
-
-    def _read_ref_timelines(self, current_file: str) -> List[List[HeadChange]]:
+    def _read_ref_timelines_from_file(self, metadata_file: str) -> List[List[HeadChange]]:
         metadata = F.col("metadata")
         row = (
-            self._spark.read.text(current_file, wholetext=True)
+            self._spark.read.text(metadata_file, wholetext=True)
             .select(F.from_json("value", MapType(StringType(), StringType())).alias("metadata"))
             .select(
                 metadata.isNotNull().alias("is_parsed"),
@@ -82,8 +73,36 @@ class MetadataLogEntriesExtractor(Extractor):
             .first()
         )
         if row is None or not row.is_parsed:
-            raise ValueError(f"The current metadata file could not be parsed: {current_file}")
+            raise ValueError(f"The current metadata file could not be parsed: {metadata_file}")
 
         snapshots_by_id = {snapshot["snapshot-id"]: snapshot for snapshot in row.snapshots or []}
 
         return [ancestry_timeline(ref["snapshot-id"], snapshots_by_id) for ref_name, ref in (row.refs or {}).items() if ref_name != MAIN_BRANCH]
+
+    @staticmethod
+    def _match_files_to_ref_heads(metadata_log_df: DataFrame, head_changes_df: DataFrame) -> DataFrame:
+        latest_change_first = Window.partitionBy("file", "ref_index").orderBy(F.desc("position"))
+
+        return (
+            metadata_log_df.select("file", F.unix_millis("timestamp").alias("file_timestamp_ms"))
+            .join(head_changes_df, F.col("timestamp_ms") <= F.col("file_timestamp_ms"))
+            .withColumn("change_rank", F.row_number().over(latest_change_first))
+            .filter(F.col("change_rank") == 1)
+            .select("file", "snapshot_id")
+        )
+
+    @staticmethod
+    def _exclude_main_heads(ref_heads_df: DataFrame, metadata_log_df: DataFrame) -> DataFrame:
+        main_snapshot_ids_df = metadata_log_df.select(F.col("latest_snapshot_id").alias("snapshot_id")).distinct()
+
+        return ref_heads_df.join(main_snapshot_ids_df, on="snapshot_id", how="left_anti")
+
+    @staticmethod
+    def _group_branch_snapshot_ids_by_file(branch_heads_df: DataFrame) -> DataFrame:
+        return branch_heads_df.groupBy("file").agg(F.array_sort(F.collect_set("snapshot_id")).alias("branch_snapshot_ids"))
+
+    @staticmethod
+    def _join_branch_snapshot_ids(metadata_log_df: DataFrame, branch_snapshot_ids_df: DataFrame) -> DataFrame:
+        return metadata_log_df.join(branch_snapshot_ids_df, on="file", how="left").withColumn(
+            "branch_snapshot_ids", F.coalesce("branch_snapshot_ids", F.array().cast(ArrayType(LongType())))
+        )
