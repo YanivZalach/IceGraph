@@ -6,8 +6,7 @@ from pyspark.sql import Column, DataFrame, Row
 from pyspark.sql import functions as F
 from pyspark.sql.types import ArrayType, LongType, MapType, StringType
 
-from base_classes.utils import format_snapshot_summary, timed
-from search_cutoff.find_search_cutoff import collect_graph_metadata_file
+from base_classes.utils import collect_graph_metadata_file, format_snapshot_summary, timed
 from collectors.collect_partition_statistics import CollectPartitionStatistics, PartitionStatisticsFileRecord
 from collectors.utils import normalize_legacy_v1_metadata_dict
 from constants import SUPPORTED_FORMAT_VERSIONS, UNSUPPORTED_FORMAT_VERSION_WARNING

@@ -105,13 +105,10 @@ Statistics files first observed after an unreadable metadata file may be linked 
 """)
 
 SNAPSHOT_METADATA_WINDOW_WARNING = inspect.cleandoc("""
-No current branch or tag leads to the {label} snapshot {snapshot_id}, for example because its branch was dropped or reset to another snapshot. IceGraph reads branch history from the current metadata file only.
+The metadata files of the {label} snapshot {snapshot_id} could not be found: {reason}
 The {label} of the metadata range is placed at the snapshot's commit time, so metadata files near that boundary may be included or left out.
 """)
 
-METADATA_REFS_READ_WARNING = inspect.cleandoc("""
-The metadata log could not be read to find which branches and tags point at the selected snapshots: {error}
-The metadata range boundaries are placed at the snapshots' commit times, so metadata files near those boundaries may be included or left out.
-""")
+NO_REF_LEADS_TO_SNAPSHOT_REASON = "no current branch or tag leads to it, for example because its branch was dropped or reset to another snapshot. IceGraph reads branch history from the current metadata file only."
 
 UNSUPPORTED_FORMAT_VERSION_WARNING = "This table uses Iceberg format version {format_version}. IceGraph currently supports format versions {supported_format_versions}, so some information may be incomplete or inaccurate. Support for other format versions is planned."
