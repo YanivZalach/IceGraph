@@ -8,7 +8,7 @@ from pyspark.sql.types import StringType, StructField, StructType
 
 from constants import NO_REF_LEADS_TO_SNAPSHOT_REASON, SNAPSHOT_METADATA_WINDOW_WARNING
 from icegraph_logger import logger
-from metadata_log.metadata_log import MetadataLog, RefMetadataWindow
+from metadata_log.metadata_log import MetadataLogEntries, points_at_snapshot
 from base_classes.utils import timed, to_arrow_utc
 
 
@@ -45,16 +45,16 @@ def find_search_cutoff(
     end_snapshot_id: Optional[int],
 ) -> SearchCutoff:
     cutoff = SearchCutoff.with_spark(spark)
-    metadata_log = MetadataLog(spark, table_name)
+    metadata_log_entries = MetadataLogEntries(spark, table_name)
 
     if start_snapshot_id:
-        start = _get_start_cutoffs(spark, table_name, start_snapshot_id, metadata_log, cutoff.warnings)
+        start = _get_start_cutoffs(spark, table_name, start_snapshot_id, metadata_log_entries, cutoff.warnings)
         cutoff.start_snapshot_cutoff = start.snapshot_cutoff
         cutoff.start_metadata_cutoff = start.metadata_cutoff
         cutoff.manifests_to_ignore_df = start.manifests_to_ignore_df
 
     if end_snapshot_id:
-        end = _get_end_cutoffs(spark, table_name, end_snapshot_id, metadata_log, cutoff.warnings)
+        end = _get_end_cutoffs(spark, table_name, end_snapshot_id, metadata_log_entries, cutoff.warnings)
         cutoff.end_snapshot_cutoff = end.snapshot_cutoff
         cutoff.end_metadata_cutoff = end.metadata_cutoff
 
@@ -68,7 +68,7 @@ def _get_start_cutoffs(
     spark: SparkSession,
     table_name: str,
     start_snapshot_id: int,
-    metadata_log: MetadataLog,
+    metadata_log_entries: MetadataLogEntries,
     warnings: Dict[str, List[str]],
 ) -> StartCutoffs:
     row = (
@@ -87,11 +87,8 @@ def _get_start_cutoffs(
     snapshot_cutoff = to_arrow_utc(row.committed_at)
 
     meta_row = (
-        spark.sql(f"""
-        SELECT MIN(timestamp) AS ts
-        FROM {table_name}.metadata_log_entries
-        WHERE latest_snapshot_id = {start_snapshot_id}
-    """)
+        metadata_log_entries.df.filter(points_at_snapshot(start_snapshot_id))
+        .select(F.min("timestamp").alias("ts"))
         .withColumn("ts", column_to_string_utc("ts"))
         .first()
     )
@@ -99,8 +96,8 @@ def _get_start_cutoffs(
     if meta_row and meta_row.ts:
         metadata_cutoff = to_arrow_utc(meta_row.ts)
     else:
-        ref_window = _find_ref_window(metadata_log, table_name, start_snapshot_id, "start", warnings)
-        metadata_cutoff = ref_window.first_entry.timestamp if ref_window else snapshot_cutoff
+        _warn_commit_time_boundary(warnings, "start", start_snapshot_id, metadata_log_entries.refs_read_error)
+        metadata_cutoff = snapshot_cutoff
 
     manifests_to_ignore_df = _get_manifests_to_ignore_df(spark, table_name, row.parent_id)
 
@@ -115,7 +112,7 @@ def _get_end_cutoffs(
     spark: SparkSession,
     table_name: str,
     end_snapshot_id: int,
-    metadata_log: MetadataLog,
+    metadata_log_entries: MetadataLogEntries,
     warnings: Dict[str, List[str]],
 ) -> EndCutoffs:
     row = (
@@ -134,11 +131,8 @@ def _get_end_cutoffs(
     snapshot_cutoff = to_arrow_utc(row.committed_at)
 
     meta_row = (
-        spark.sql(f"""
-        SELECT MAX(timestamp) AS ts
-        FROM {table_name}.metadata_log_entries
-        WHERE latest_snapshot_id = {end_snapshot_id}
-    """)
+        metadata_log_entries.df.filter(points_at_snapshot(end_snapshot_id))
+        .select(F.max("timestamp").alias("ts"))
         .withColumn("ts", column_to_string_utc("ts"))
         .first()
     )
@@ -146,8 +140,8 @@ def _get_end_cutoffs(
     if meta_row and meta_row.ts:
         metadata_cutoff = to_arrow_utc(meta_row.ts)
     else:
-        ref_window = _find_ref_window(metadata_log, table_name, end_snapshot_id, "end", warnings)
-        metadata_cutoff = ref_window.last_entry.timestamp if ref_window else snapshot_cutoff
+        _warn_commit_time_boundary(warnings, "end", end_snapshot_id, metadata_log_entries.refs_read_error)
+        metadata_cutoff = snapshot_cutoff
 
     return EndCutoffs(
         snapshot_cutoff=snapshot_cutoff,
@@ -155,27 +149,9 @@ def _get_end_cutoffs(
     )
 
 
-def _find_ref_window(
-    metadata_log: MetadataLog,
-    table_name: str,
-    snapshot_id: int,
-    label: str,
-    warnings: Dict[str, List[str]],
-) -> Optional[RefMetadataWindow]:
-    try:
-        ref_window = metadata_log.find_ref_window(snapshot_id)
-        reason = NO_REF_LEADS_TO_SNAPSHOT_REASON
-
-    except Exception as e:
-        logger.warning(f"[{table_name}] Failed to read the branches and tags from the current metadata file", exc_info=True)
-        error_lines = str(e).strip().splitlines()
-        ref_window = None
-        reason = error_lines[0] if error_lines else type(e).__name__
-
-    if ref_window is None:
-        warnings[f"{label}_snapshot_metadata_window"] = [SNAPSHOT_METADATA_WINDOW_WARNING.format(label=label, snapshot_id=snapshot_id, reason=reason)]
-
-    return ref_window
+def _warn_commit_time_boundary(warnings: Dict[str, List[str]], label: str, snapshot_id: int, refs_read_error: Optional[str]) -> None:
+    reason = refs_read_error or NO_REF_LEADS_TO_SNAPSHOT_REASON
+    warnings[f"{label}_snapshot_metadata_window"] = [SNAPSHOT_METADATA_WINDOW_WARNING.format(label=label, snapshot_id=snapshot_id, reason=reason)]
 
 
 def _get_manifests_to_ignore_df(
