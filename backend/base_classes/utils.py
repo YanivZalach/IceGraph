@@ -12,6 +12,7 @@ from pyspark.sql import functions as F
 
 from icegraph_logger import logger
 from extractors.metadata_log_entries_extractor import MetadataLogEntriesExtractor
+from extractors.utils import find_newest_file
 from metrics import operation_duration_seconds
 
 
@@ -99,7 +100,7 @@ def collect_graph_metadata_file(table_name: str, end_snapshot_id: int | None) ->
     if end_snapshot_id is not None:
         metadata_entries = metadata_entries.filter(pl.col("snapshot_id") == end_snapshot_id)
 
-    selected_file = MetadataLogEntriesExtractor.find_newest_file(metadata_entries)
+    selected_file = find_newest_file(metadata_entries)
 
     if selected_file is None:
         if end_snapshot_id is None:
