@@ -10,6 +10,12 @@ class SnapshotCommit:
 
 
 @dataclass
+class SnapshotLogEntry:
+    snapshot_id: int
+    timestamp_ms: int
+
+
+@dataclass
 class SnapshotRange:
     snapshot_id: int
     start_ms: int
@@ -19,23 +25,42 @@ class SnapshotRange:
         return self.start_ms <= timestamp_ms and (self.end_ms is None or timestamp_ms < self.end_ms)
 
 
+class SnapshotLog:
+    def __init__(self, entries: List[SnapshotLogEntry]):
+        self._entries = entries
+        self.snapshot_ids = {entry.snapshot_id for entry in entries}
+
+    def snapshot_id_at(self, timestamp_ms: int) -> Optional[int]:
+        snapshot_id = None
+        for entry in self._entries:
+            if entry.timestamp_ms <= timestamp_ms:
+                snapshot_id = entry.snapshot_id
+
+        return snapshot_id
+
+
 class SnapshotRangesBuilder:
-    def __init__(self, snapshots: List[SnapshotCommit], possible_live_tip_ids: Set[int]):
+    def __init__(self, snapshots: List[SnapshotCommit], main_snapshot_ids: Set[int], side_branch_head_ids: Set[int]):
         self._snapshots = snapshots
-        self._possible_live_tip_ids = possible_live_tip_ids
+        self._main_snapshot_ids = main_snapshot_ids
+        self._side_branch_head_ids = side_branch_head_ids
         self._superseded_at_by_snapshot_id = self._find_superseded_at_by_snapshot_id(snapshots)
         self._sorted_commit_times = sorted(snapshot.timestamp_ms for snapshot in snapshots)
 
     def build(self) -> List[SnapshotRange]:
-        return [SnapshotRange(snapshot.snapshot_id, snapshot.timestamp_ms, self._range_end_ms(snapshot)) for snapshot in self._snapshots]
+        snapshot_ranges = []
+        for snapshot in self._snapshots:
+            if snapshot.snapshot_id in self._side_branch_head_ids:
+                snapshot_ranges.append(SnapshotRange(snapshot.snapshot_id, snapshot.timestamp_ms, None))
+            elif snapshot.snapshot_id not in self._main_snapshot_ids:
+                snapshot_ranges.append(SnapshotRange(snapshot.snapshot_id, snapshot.timestamp_ms, self._range_end_ms(snapshot)))
+
+        return snapshot_ranges
 
     def _range_end_ms(self, snapshot: SnapshotCommit) -> Optional[int]:
         superseded_at = self._superseded_at_by_snapshot_id.get(snapshot.snapshot_id)
         if superseded_at is not None:
             return superseded_at
-
-        if snapshot.snapshot_id in self._possible_live_tip_ids:
-            return None
 
         return self._next_commit_time_after(snapshot.timestamp_ms)
 

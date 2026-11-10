@@ -8,7 +8,7 @@ from pyspark.sql.types import ArrayType, LongType, MapType, StringType, StructFi
 
 from base_classes.spark_table_action import SparkTableAction
 from constants import SNAPSHOT_NOT_IN_METADATA_LOG_REASON
-from extractors.snapshot_ranges import SnapshotCommit, SnapshotRange, SnapshotRangesBuilder
+from extractors.snapshot_ranges import SnapshotCommit, SnapshotLog, SnapshotLogEntry, SnapshotRange, SnapshotRangesBuilder
 from extractors.utils import find_newest_file
 from icegraph_logger import logger
 
@@ -23,8 +23,10 @@ METADATA_SNAPSHOTS_LINEAGE_SCHEMA = ArrayType(
 )
 METADATA_REFS_SCHEMA = MapType(StringType(), StructType([StructField("snapshot-id", LongType()), StructField("type", StringType())]))
 METADATA_LOG_SCHEMA = ArrayType(StructType([StructField("timestamp-ms", LongType()), StructField("metadata-file", StringType())]))
+METADATA_SNAPSHOT_LOG_SCHEMA = ArrayType(StructType([StructField("timestamp-ms", LongType()), StructField("snapshot-id", LongType())]))
 METADATA_LOG_ENTRIES_SCHEMA = pl.Schema({"file": pl.String(), "timestamp_ms": pl.Int64(), "snapshot_id": pl.Int64()})
 BRANCH_REF_TYPE = "branch"
+MAIN_BRANCH_NAME = "main"
 
 
 @dataclass
@@ -37,7 +39,8 @@ class MetadataFile:
 class CurrentMetadata:
     metadata_files: List[MetadataFile]
     snapshots: List[SnapshotCommit]
-    possible_live_tip_ids: Set[int]
+    snapshot_log: SnapshotLog
+    side_branch_head_ids: Set[int]
 
 
 class MetadataLogEntriesExtractor(SparkTableAction):
@@ -94,9 +97,9 @@ class MetadataLogEntriesExtractor(SparkTableAction):
             F.col("metadata").isNotNull().alias("is_parsed"),
             F.lit(metadata_file).alias("file"),
             F.col("metadata")["last-updated-ms"].cast(LongType()).alias("last_updated_ms"),
-            F.col("metadata")["current-snapshot-id"].cast(LongType()).alias("current_snapshot_id"),
             F.from_json(F.col("metadata")["metadata-log"], METADATA_LOG_SCHEMA).alias("metadata_log"),
             F.from_json(F.col("metadata")["snapshots"], METADATA_SNAPSHOTS_LINEAGE_SCHEMA).alias("snapshots"),
+            F.from_json(F.col("metadata")["snapshot-log"], METADATA_SNAPSHOT_LOG_SCHEMA).alias("snapshot_log"),
             F.from_json(F.col("metadata")["refs"], METADATA_REFS_SCHEMA).alias("refs"),
         )
 
@@ -104,7 +107,8 @@ class MetadataLogEntriesExtractor(SparkTableAction):
         return CurrentMetadata(
             metadata_files=self._list_metadata_files(metadata_row),
             snapshots=self._list_snapshots(metadata_row),
-            possible_live_tip_ids=self._find_possible_live_tip_ids(metadata_row),
+            snapshot_log=self._read_snapshot_log(metadata_row),
+            side_branch_head_ids=self._find_side_branch_head_ids(metadata_row),
         )
 
     @staticmethod
@@ -122,26 +126,35 @@ class MetadataLogEntriesExtractor(SparkTableAction):
         ]
 
     @staticmethod
-    def _find_possible_live_tip_ids(metadata_row: Row) -> Set[int]:
-        branch_head_ids = {ref["snapshot-id"] for ref in (metadata_row.refs or {}).values() if ref["type"] == BRANCH_REF_TYPE}
+    def _read_snapshot_log(metadata_row: Row) -> SnapshotLog:
+        return SnapshotLog([SnapshotLogEntry(entry["snapshot-id"], entry["timestamp-ms"]) for entry in metadata_row.snapshot_log or []])
 
-        return branch_head_ids | {metadata_row.current_snapshot_id}
+    @staticmethod
+    def _find_side_branch_head_ids(metadata_row: Row) -> Set[int]:
+        return {
+            ref["snapshot-id"]
+            for ref_name, ref in (metadata_row.refs or {}).items()
+            if ref["type"] == BRANCH_REF_TYPE and ref_name != MAIN_BRANCH_NAME
+        }
 
     def _build_metadata_log_entries(self, current_metadata: CurrentMetadata) -> pl.DataFrame:
-        snapshot_ranges = SnapshotRangesBuilder(current_metadata.snapshots, current_metadata.possible_live_tip_ids).build()
+        snapshot_log = current_metadata.snapshot_log
+        branch_ranges = SnapshotRangesBuilder(current_metadata.snapshots, snapshot_log.snapshot_ids, current_metadata.side_branch_head_ids).build()
 
         metadata_log_entries = []
         for metadata_file in current_metadata.metadata_files:
-            metadata_log_entries.extend(self._metadata_log_entries_of(metadata_file, snapshot_ranges))
+            metadata_log_entries.extend(self._metadata_log_entries_of(metadata_file, snapshot_log, branch_ranges))
 
         return pl.DataFrame(metadata_log_entries, schema=METADATA_LOG_ENTRIES_SCHEMA, orient="row")
 
     @staticmethod
-    def _metadata_log_entries_of(metadata_file: MetadataFile, snapshot_ranges: List[SnapshotRange]) -> List[Tuple[str, int, Optional[int]]]:
-        covering_snapshot_ids = [
-            snapshot_range.snapshot_id for snapshot_range in snapshot_ranges if snapshot_range.covers(metadata_file.timestamp_ms)
-        ]
-        if not covering_snapshot_ids:
+    def _metadata_log_entries_of(
+        metadata_file: MetadataFile, snapshot_log: SnapshotLog, branch_ranges: List[SnapshotRange]
+    ) -> List[Tuple[str, int, Optional[int]]]:
+        snapshot_ids = [snapshot_log.snapshot_id_at(metadata_file.timestamp_ms)]
+        snapshot_ids.extend(branch_range.snapshot_id for branch_range in branch_ranges if branch_range.covers(metadata_file.timestamp_ms))
+        unique_snapshot_ids = [snapshot_id for snapshot_id in dict.fromkeys(snapshot_ids) if snapshot_id is not None]
+        if not unique_snapshot_ids:
             return [(metadata_file.path, metadata_file.timestamp_ms, None)]
 
-        return [(metadata_file.path, metadata_file.timestamp_ms, snapshot_id) for snapshot_id in covering_snapshot_ids]
+        return [(metadata_file.path, metadata_file.timestamp_ms, snapshot_id) for snapshot_id in unique_snapshot_ids]
