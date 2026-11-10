@@ -25,6 +25,13 @@ BRANCH_REF_TYPE = "branch"
 
 
 @dataclass
+class SnapshotCommit:
+    snapshot_id: int
+    parent_id: Optional[int]
+    timestamp_ms: int
+
+
+@dataclass
 class SnapshotRange:
     snapshot_id: int
     start_ms: int
@@ -34,36 +41,38 @@ class SnapshotRange:
         return self.start_ms <= timestamp_ms and (self.end_ms is None or timestamp_ms < self.end_ms)
 
 
-def build_snapshot_ranges(snapshots: List[dict], live_tip_ids: Set[int]) -> List[SnapshotRange]:
-    superseded_at_by_snapshot_id: Dict[int, int] = {}
-    for snapshot in snapshots:
-        parent_id = snapshot["parent-snapshot-id"]
-        superseded_at_by_snapshot_id[parent_id] = max(superseded_at_by_snapshot_id.get(parent_id, 0), snapshot["timestamp-ms"])
+class SnapshotRangesBuilder:
+    def __init__(self, snapshots: List[SnapshotCommit], live_tip_ids: Set[int]):
+        self._snapshots = snapshots
+        self._live_tip_ids = live_tip_ids
+        self._superseded_at_by_snapshot_id = self._find_superseded_at_by_snapshot_id(snapshots)
+        self._sorted_commit_times = sorted(snapshot.timestamp_ms for snapshot in snapshots)
 
-    sorted_commit_times = sorted(snapshot["timestamp-ms"] for snapshot in snapshots)
+    def build(self) -> List[SnapshotRange]:
+        return [SnapshotRange(snapshot.snapshot_id, snapshot.timestamp_ms, self._range_end_ms(snapshot)) for snapshot in self._snapshots]
 
-    return [
-        SnapshotRange(
-            snapshot_id=snapshot["snapshot-id"],
-            start_ms=snapshot["timestamp-ms"],
-            end_ms=_range_end_ms(snapshot, superseded_at_by_snapshot_id, live_tip_ids, sorted_commit_times),
-        )
-        for snapshot in snapshots
-    ]
+    def _range_end_ms(self, snapshot: SnapshotCommit) -> Optional[int]:
+        superseded_at = self._superseded_at_by_snapshot_id.get(snapshot.snapshot_id)
+        if superseded_at is not None:
+            return superseded_at
 
+        if snapshot.snapshot_id in self._live_tip_ids:
+            return None
 
-def _range_end_ms(
-    snapshot: dict, superseded_at_by_snapshot_id: Dict[int, int], live_tip_ids: Set[int], sorted_commit_times: List[int]
-) -> Optional[int]:
-    superseded_at = superseded_at_by_snapshot_id.get(snapshot["snapshot-id"])
-    if superseded_at is not None:
-        return superseded_at
+        return self._next_commit_time_after(snapshot.timestamp_ms)
 
-    if snapshot["snapshot-id"] in live_tip_ids:
+    def _next_commit_time_after(self, timestamp_ms: int) -> Optional[int]:
+        for commit_time in self._sorted_commit_times:
+            if commit_time > timestamp_ms:
+                return commit_time
+
         return None
 
-    for commit_time in sorted_commit_times:
-        if commit_time > snapshot["timestamp-ms"]:
-            return commit_time
+    @staticmethod
+    def _find_superseded_at_by_snapshot_id(snapshots: List[SnapshotCommit]) -> Dict[int, int]:
+        superseded_at_by_snapshot_id: Dict[int, int] = {}
+        for snapshot in snapshots:
+            last_child_commit_time = superseded_at_by_snapshot_id.get(snapshot.parent_id, 0)
+            superseded_at_by_snapshot_id[snapshot.parent_id] = max(last_child_commit_time, snapshot.timestamp_ms)
 
-    return None
+        return superseded_at_by_snapshot_id
