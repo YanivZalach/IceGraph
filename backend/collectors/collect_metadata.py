@@ -115,7 +115,7 @@ class CollectMetadata(Collector):
             .select("file", "metadata_timestamp")
             .filter(F.col("metadata_timestamp") >= F.lit(str(self._start_metadata_cutoff)))
             .filter(F.col("metadata_timestamp") <= F.lit(str(self._end_metadata_cutoff)))
-            .orderBy(F.desc("metadata_timestamp"), F.desc("file"))
+            .orderBy(F.desc("metadata_timestamp"), F.desc(F.length("file")), F.desc("file"))
             .limit(Env.MAX_METADATA_FILES_TO_COLLECT + 1)
             .withColumn("metadata_timestamp", column_to_string_utc("metadata_timestamp"))
         )
