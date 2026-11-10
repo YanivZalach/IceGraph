@@ -49,17 +49,22 @@ have.
   compatible with the matching server release. Read it from `<base_url>/docs` → Overview →
   **Version** (open it with browser automation if available; otherwise fetch the page and grep the
   served JS bundle for the version string). Compare it against the installed client
-  (`pip show icegraph-client`). If they differ, tell the user and suggest
-  `pip install icegraph-client==<server version>`, but don't install it yourself. If the version
-  isn't reachable, say so once and continue rather than blocking. Do this check once per session,
-  not per command.
+  (`pip show icegraph-client`). If the version isn't reachable, say so once and continue rather
+  than blocking. Do this check once per session, not per command.
 - Confirm `icegraph` is on PATH with `icegraph --help` before relying on it.
-- **If it's not installed, don't just suggest a bare `pip install icegraph-client`.** Check
-  `<base_url>/docs` first — the Overview section shows a **Version** field — and suggest the
-  version-pinned install command instead: `pip install icegraph-client==<version>`. The client is
-  only guaranteed compatible with the matching server release, so pinning matters. Only fall back
-  to suggesting an unpinned install (and mention that caveat) if the docs page isn't reachable
-  either. Suggest the command for the user to run — don't install it yourself.
+- **If the client is missing or its version differs from the server's, install the matching
+  version yourself and tell the user**: `pip install icegraph-client==<server version>`. Pinning
+  matters because the client is only guaranteed compatible with the matching server release.
+  - **If pip can't find that exact version**, list the versions it can install
+    (`pip index versions icegraph-client`, or the "from versions: ..." list in pip's error) and
+    install the newest version lower than the server's. Tell the user which version you installed,
+    that it is older than the server's, and that some commands may not match.
+  - **If no lower version exists**, say so instead of installing a newer one.
+  - **If the server version isn't reachable**, run `pip install --upgrade icegraph-client` and
+    tell the user it may not match the server.
+  - **If the user has said not to install packages on their system** (in this session, their
+    instructions, or memory), don't install anything. Suggest the same command for them to run
+    instead.
 
 ## 2. Commands
 
