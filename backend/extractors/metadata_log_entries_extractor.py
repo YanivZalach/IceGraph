@@ -2,11 +2,12 @@ from dataclasses import dataclass
 from functools import cached_property
 from typing import List, Optional, Set, Tuple
 
+import polars as pl
 from pyspark.sql import DataFrame, Row, functions as F
 from pyspark.sql.types import ArrayType, LongType, MapType, StringType, StructField, StructType
 
+from base_classes.spark_table_action import SparkTableAction
 from constants import SNAPSHOT_NOT_IN_METADATA_LOG_REASON
-from extractors.extractor import Extractor
 from extractors.snapshot_ranges import SnapshotCommit, SnapshotRange, SnapshotRangesBuilder
 from icegraph_logger import logger
 
@@ -21,13 +22,7 @@ METADATA_SNAPSHOTS_LINEAGE_SCHEMA = ArrayType(
 )
 METADATA_REFS_SCHEMA = MapType(StringType(), StructType([StructField("snapshot-id", LongType()), StructField("type", StringType())]))
 METADATA_LOG_SCHEMA = ArrayType(StructType([StructField("timestamp-ms", LongType()), StructField("metadata-file", StringType())]))
-METADATA_LOG_ENTRIES_SCHEMA = StructType(
-    [
-        StructField("file", StringType()),
-        StructField("timestamp_ms", LongType()),
-        StructField("snapshot_id", LongType()),
-    ]
-)
+METADATA_LOG_ENTRIES_SCHEMA = pl.Schema({"file": pl.String(), "timestamp_ms": pl.Int64(), "snapshot_id": pl.Int64()})
 BRANCH_REF_TYPE = "branch"
 
 
@@ -44,25 +39,44 @@ class CurrentMetadata:
     possible_live_tip_ids: Set[int]
 
 
-class MetadataLogEntriesExtractor(Extractor):
+class MetadataLogEntriesExtractor(SparkTableAction):
     def __init__(self, table_name: str):
         super().__init__(table_name)
         self.missing_snapshot_reason = SNAPSHOT_NOT_IN_METADATA_LOG_REASON
 
-    def extract_dataframe(self) -> DataFrame:
-        return self._metadata_log_entries_df
+    def extract_entries(self) -> pl.DataFrame:
+        return self._metadata_log_entries
+
+    @staticmethod
+    def find_newest_file(metadata_log_entries: pl.DataFrame) -> Optional[str]:
+        newest_entries = metadata_log_entries.sort(
+            [pl.col("timestamp_ms"), pl.col("file").str.len_chars(), pl.col("file")],
+            descending=True,
+        )
+        if newest_entries.is_empty():
+            return None
+
+        return newest_entries["file"][0]
 
     @cached_property
-    def _metadata_log_entries_df(self) -> DataFrame:
-        metadata_log_view_df = self._spark.sql(f"SELECT timestamp, file, latest_snapshot_id FROM {self._table_name}.metadata_log_entries")
-        metadata_row = self._read_current_metadata_row(metadata_log_view_df)
+    def _metadata_log_entries(self) -> pl.DataFrame:
+        metadata_log_view_entries = self._collect_metadata_log_view()
+        metadata_row = self._read_current_metadata_row(metadata_log_view_entries)
         if metadata_row is None:
-            return metadata_log_view_df.withColumnRenamed("latest_snapshot_id", "snapshot_id")
+            return metadata_log_view_entries
 
-        return self._build_metadata_log_entries_df(self._to_current_metadata(metadata_row))
+        return self._build_metadata_log_entries(self._to_current_metadata(metadata_row))
 
-    def _read_current_metadata_row(self, metadata_log_view_df: DataFrame) -> Optional[Row]:
-        current_metadata_file = self._find_current_metadata_file(metadata_log_view_df)
+    def _collect_metadata_log_view(self) -> pl.DataFrame:
+        metadata_log_view_rows = self._spark.sql(
+            f"SELECT file, unix_millis(timestamp) AS timestamp_ms, latest_snapshot_id AS snapshot_id FROM {self._table_name}.metadata_log_entries"
+        ).collect()
+        metadata_log_view_entries = [(row.file, row.timestamp_ms, row.snapshot_id) for row in metadata_log_view_rows]
+
+        return pl.DataFrame(metadata_log_view_entries, schema=METADATA_LOG_ENTRIES_SCHEMA, orient="row")
+
+    def _read_current_metadata_row(self, metadata_log_view_entries: pl.DataFrame) -> Optional[Row]:
+        current_metadata_file = self.find_newest_file(metadata_log_view_entries)
         if current_metadata_file is None:
             return None
 
@@ -74,12 +88,6 @@ class MetadataLogEntriesExtractor(Extractor):
             self.missing_snapshot_reason = str(e)
 
             return None
-
-    @staticmethod
-    def _find_current_metadata_file(metadata_log_view_df: DataFrame) -> Optional[str]:
-        newest_file_row = metadata_log_view_df.orderBy(F.desc("timestamp"), F.desc(F.length("file")), F.desc("file")).select("file").first()
-
-        return newest_file_row.file if newest_file_row else None
 
     def _read_metadata_row(self, metadata_file: str) -> Row:
         metadata_row = self._metadata_fields_df(metadata_file).first()
@@ -129,16 +137,14 @@ class MetadataLogEntriesExtractor(Extractor):
 
         return branch_head_ids | {metadata_row.current_snapshot_id}
 
-    def _build_metadata_log_entries_df(self, current_metadata: CurrentMetadata) -> DataFrame:
+    def _build_metadata_log_entries(self, current_metadata: CurrentMetadata) -> pl.DataFrame:
         snapshot_ranges = SnapshotRangesBuilder(current_metadata.snapshots, current_metadata.possible_live_tip_ids).build()
 
         metadata_log_entries = []
         for metadata_file in current_metadata.metadata_files:
             metadata_log_entries.extend(self._metadata_log_entries_of(metadata_file, snapshot_ranges))
 
-        metadata_log_entries_df = self._spark.createDataFrame(metadata_log_entries, METADATA_LOG_ENTRIES_SCHEMA)
-
-        return metadata_log_entries_df.withColumn("timestamp", F.timestamp_millis("timestamp_ms"))
+        return pl.DataFrame(metadata_log_entries, schema=METADATA_LOG_ENTRIES_SCHEMA, orient="row")
 
     @staticmethod
     def _metadata_log_entries_of(metadata_file: MetadataFile, snapshot_ranges: List[SnapshotRange]) -> List[Tuple[str, int, Optional[int]]]:
