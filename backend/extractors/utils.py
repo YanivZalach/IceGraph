@@ -1,7 +1,8 @@
+from collections import defaultdict
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Set
 
-from pyspark.sql import Column, Row, functions as F
+from pyspark.sql import Row
 from pyspark.sql.types import ArrayType, LongType, MapType, StringType, StructField, StructType
 
 METADATA_SNAPSHOTS_LINEAGE_SCHEMA = ArrayType(
@@ -13,52 +14,55 @@ METADATA_SNAPSHOTS_LINEAGE_SCHEMA = ArrayType(
         ]
     )
 )
-METADATA_REFS_SCHEMA = MapType(StringType(), StructType([StructField("snapshot-id", LongType())]))
+METADATA_REFS_SCHEMA = MapType(StringType(), StructType([StructField("snapshot-id", LongType()), StructField("type", StringType())]))
 METADATA_LOG_SCHEMA = ArrayType(StructType([StructField("timestamp-ms", LongType()), StructField("metadata-file", StringType())]))
-METADATA_SNAPSHOT_LOG_SCHEMA = ArrayType(StructType([StructField("timestamp-ms", LongType()), StructField("snapshot-id", LongType())]))
 METADATA_LOG_ENTRIES_SCHEMA = StructType(
     [
         StructField("file", StringType()),
         StructField("timestamp_ms", LongType()),
-        StructField("latest_snapshot_id", LongType()),
-        StructField("branch_snapshot_ids", ArrayType(LongType())),
+        StructField("snapshot_ids", ArrayType(LongType())),
     ]
 )
-MAIN_BRANCH = "main"
+BRANCH_REF_TYPE = "branch"
 
 
 @dataclass
-class HeadChange:
-    timestamp_ms: int
+class SnapshotRange:
     snapshot_id: int
+    start_ms: int
+    end_ms: Optional[int]
+
+    def covers(self, timestamp_ms: int) -> bool:
+        return self.start_ms <= timestamp_ms and (self.end_ms is None or timestamp_ms < self.end_ms)
 
 
-def points_at_snapshot(snapshot_id: int) -> Column:
-    return (F.col("latest_snapshot_id") == snapshot_id) | F.array_contains("branch_snapshot_ids", snapshot_id)
+def build_snapshot_ranges(snapshots: List[Row], live_tip_ids: Set[int]) -> List[SnapshotRange]:
+    child_timestamps: Dict[int, List[int]] = defaultdict(list)
+    for snapshot in snapshots:
+        child_timestamps[snapshot["parent-snapshot-id"]].append(snapshot["timestamp-ms"])
+
+    commit_timestamps = sorted(snapshot["timestamp-ms"] for snapshot in snapshots)
+
+    return [
+        SnapshotRange(
+            snapshot_id=snapshot["snapshot-id"],
+            start_ms=snapshot["timestamp-ms"],
+            end_ms=_range_end_ms(snapshot, child_timestamps, live_tip_ids, commit_timestamps),
+        )
+        for snapshot in snapshots
+    ]
 
 
-def ancestry_timeline(head_snapshot_id: Optional[int], snapshots_by_id: Dict[int, Row]) -> List[HeadChange]:
-    timeline = []
-    visited = set()
-    snapshot = snapshots_by_id.get(head_snapshot_id)
-    while snapshot is not None and snapshot["snapshot-id"] not in visited:
-        visited.add(snapshot["snapshot-id"])
-        timeline.append(HeadChange(snapshot["timestamp-ms"], snapshot["snapshot-id"]))
-        snapshot = snapshots_by_id.get(snapshot["parent-snapshot-id"])
+def _range_end_ms(snapshot: Row, child_timestamps: Dict[int, List[int]], live_tip_ids: Set[int], commit_timestamps: List[int]) -> Optional[int]:
+    children = child_timestamps.get(snapshot["snapshot-id"])
+    if children:
+        return max(children)
 
-    return list(reversed(timeline))
+    if snapshot["snapshot-id"] in live_tip_ids:
+        return None
 
+    for commit_timestamp in commit_timestamps:
+        if commit_timestamp > snapshot["timestamp-ms"]:
+            return commit_timestamp
 
-def heads_at(ref_timelines: List[List[HeadChange]], timestamp_ms: int) -> Set[int]:
-    heads = {head_at(timeline, timestamp_ms) for timeline in ref_timelines}
-
-    return heads - {None}
-
-
-def head_at(timeline: List[HeadChange], timestamp_ms: int) -> Optional[int]:
-    head = None
-    for change in timeline:
-        if change.timestamp_ms <= timestamp_ms:
-            head = change.snapshot_id
-
-    return head
+    return None

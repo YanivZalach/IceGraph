@@ -109,6 +109,6 @@ The metadata files of the {label} snapshot {snapshot_id} could not be found: {re
 The {label} of the metadata range is placed at the snapshot's commit time, so metadata files near that boundary may be included or left out.
 """)
 
-NO_REF_LEADS_TO_SNAPSHOT_REASON = "no current branch or tag leads to it, for example because its branch was dropped or reset to another snapshot. IceGraph reads branch history from the current metadata file only."
+SNAPSHOT_NOT_IN_METADATA_LOG_REASON = "the metadata files written around its commit are no longer in the table's metadata log."
 
 UNSUPPORTED_FORMAT_VERSION_WARNING = "This table uses Iceberg format version {format_version}. IceGraph currently supports format versions {supported_format_versions}, so some information may be incomplete or inaccurate. Support for other format versions is planned."

@@ -11,7 +11,6 @@ from pyspark.sql import functions as F
 
 from icegraph_logger import logger
 from extractors.metadata_log_entries_extractor import MetadataLogEntriesExtractor
-from extractors.utils import points_at_snapshot
 from metrics import operation_duration_seconds
 
 
@@ -94,9 +93,9 @@ def collect_graph_metadata_file(table_name: str, end_snapshot_id: int | None) ->
     metadata_entries = MetadataLogEntriesExtractor(table_name).extract_dataframe()
 
     if end_snapshot_id is not None:
-        metadata_entries = metadata_entries.filter(points_at_snapshot(end_snapshot_id))
+        metadata_entries = metadata_entries.filter(F.array_contains("snapshot_ids", end_snapshot_id))
 
-    selected_entry = metadata_entries.orderBy(F.desc("timestamp"), F.desc("file")).select("file").first()
+    selected_entry = metadata_entries.orderBy(F.desc("timestamp"), F.desc(F.length("file")), F.desc("file")).select("file").first()
 
     if not selected_entry:
         if end_snapshot_id is None:

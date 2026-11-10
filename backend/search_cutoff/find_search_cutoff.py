@@ -9,7 +9,6 @@ from pyspark.sql.types import StringType, StructField, StructType
 from constants import SNAPSHOT_METADATA_WINDOW_WARNING
 from icegraph_logger import logger
 from extractors.metadata_log_entries_extractor import MetadataLogEntriesExtractor
-from extractors.utils import points_at_snapshot
 from base_classes.utils import timed, to_arrow_utc
 
 
@@ -89,7 +88,7 @@ def _get_start_cutoffs(
 
     meta_row = (
         metadata_log_entries_extractor.extract_dataframe()
-        .filter(points_at_snapshot(start_snapshot_id))
+        .filter(F.array_contains("snapshot_ids", start_snapshot_id))
         .select(F.min("timestamp").alias("ts"))
         .withColumn("ts", column_to_string_utc("ts"))
         .first()
@@ -134,7 +133,7 @@ def _get_end_cutoffs(
 
     meta_row = (
         metadata_log_entries_extractor.extract_dataframe()
-        .filter(points_at_snapshot(end_snapshot_id))
+        .filter(F.array_contains("snapshot_ids", end_snapshot_id))
         .select(F.max("timestamp").alias("ts"))
         .withColumn("ts", column_to_string_utc("ts"))
         .first()
