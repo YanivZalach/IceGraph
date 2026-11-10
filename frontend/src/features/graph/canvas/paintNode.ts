@@ -11,7 +11,6 @@ const NODE_BORDER_COLOR = "#ffffff";
 const CATALOG_TEXT_COLOR = "#0f172a";
 const NODE_TEXT_COLOR = "#ffffff";
 const NODE_TEXT_OUTLINE_COLOR = "#000000";
-const CURRENT_METADATA_BORDER_DASH = [24, 16];
 const SEARCH_RING_COLOR = "#facc15";
 const SEARCH_RING_GAP_PX = 4;
 const SEARCH_RING_WIDTH_PX = 3;
@@ -33,11 +32,7 @@ const strokeNodeBorder = (
 ): void => {
   context.strokeStyle = NODE_BORDER_COLOR;
   context.lineWidth = node.kind === "catalog" ? 6 : 2;
-  context.setLineDash(
-    node.kind === "current_metadata" ? CURRENT_METADATA_BORDER_DASH : [],
-  );
   context.stroke();
-  context.setLineDash([]);
 };
 
 const fillNodeLabel = (

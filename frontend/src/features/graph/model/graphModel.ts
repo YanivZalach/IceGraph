@@ -51,6 +51,7 @@ export interface GraphLink {
   curvature: number;
   bend: GraphLinkBend;
   labelPosition: number;
+  dashed: boolean;
 }
 
 export interface FileGraph {
@@ -97,10 +98,15 @@ const toFileLink = (edge: GraphFileEdge): GraphLink => {
       edge.curvature ?? (label === "" || isDeleted ? 0 : LINK_CURVATURE),
     bend: isDeletionVector ? "right" : "none",
     labelPosition: isDeleted || isDeletionVector ? 0.5 : 0.25,
+    dashed: false,
   };
 };
 
-const linkBetween = (source: string, target: string): GraphLink => ({
+const linkBetween = (
+  source: string,
+  target: string,
+  dashed = false,
+): GraphLink => ({
   source,
   target,
   color: DEFAULT_LINK_COLOR,
@@ -108,6 +114,7 @@ const linkBetween = (source: string, target: string): GraphLink => ({
   curvature: 0,
   bend: "none",
   labelPosition: 0.25,
+  dashed,
 });
 
 const buildCatalogNode = (metadata: TableMetadata): GraphNodeContent => ({
@@ -205,7 +212,7 @@ const entryLinks = (
   }
   const links = [linkBetween(CATALOG_NODE_ID, CURRENT_METADATA_NODE_ID)];
   if (currentMetadata.currentMetadataStatus === "resolved") {
-    links.push(linkBetween(CURRENT_METADATA_NODE_ID, mainMetadata.id));
+    links.push(linkBetween(CURRENT_METADATA_NODE_ID, mainMetadata.id, true));
   }
   return links;
 };
