@@ -4,6 +4,7 @@ import { useViewInGraph } from "../../hooks/useViewInGraph";
 import FileTreeContent from "./components/FileTreeContent";
 import FileTreeInspector from "./components/FileTreeInspector";
 import FileTreeToolbar from "./components/FileTreeToolbar";
+import NoBranchSnapshotsNotice from "./components/NoBranchSnapshotsNotice";
 import { buildFileTreeGraphIndex } from "./model/graphIndex";
 import {
   getBranches,
@@ -148,9 +149,7 @@ const FileTreeView = ({ graphData }: FileTreeViewProps) => {
             </div>
           )}
           {currentSnapshot === undefined ? (
-            <p className="flex h-full items-center justify-center text-sm italic text-slate-500">
-              No snapshots available for this branch in the loaded range.
-            </p>
+            <NoBranchSnapshotsNotice branchName={selectedBranchName} />
           ) : (
             <FileTreeContent
               checkedFileIds={pageState.checkedFileIds}

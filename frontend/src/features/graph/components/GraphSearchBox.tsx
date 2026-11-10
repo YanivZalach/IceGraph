@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useHotkey } from "@tanstack/react-hotkeys";
+import { useRef, useState, type KeyboardEvent } from "react";
 import { fileTypeLabel } from "../../../graphConstants";
 import { cn } from "../../../shared/lib/cn";
 import type { GraphNode } from "../model/graphModel";
@@ -6,7 +7,7 @@ import {
   MAX_LISTED_SEARCH_RESULTS,
   normalizeSearchQuery,
 } from "../model/nodeSearch";
-import { isFindShortcut, type GraphSearch } from "../hooks/useGraphSearch";
+import type { GraphSearch } from "../hooks/useGraphSearch";
 
 interface GraphSearchBoxProps {
   search: GraphSearch;
@@ -41,18 +42,14 @@ const GraphSearchBox = ({
   const listedMatches = search.matches.slice(0, MAX_LISTED_SEARCH_RESULTS);
   const safeActiveIndex = Math.min(activeIndex, listedMatches.length - 1);
 
-  useEffect(() => {
-    const focusInput = (event: globalThis.KeyboardEvent): void => {
-      if (!isFindShortcut(event)) return;
-      event.preventDefault();
+  useHotkey(
+    "Mod+F",
+    () => {
       inputRef.current?.focus();
       inputRef.current?.select();
-    };
-    window.addEventListener("keydown", focusInput);
-    return () => {
-      window.removeEventListener("keydown", focusInput);
-    };
-  }, []);
+    },
+    { conflictBehavior: "allow" },
+  );
 
   const moveActive = (step: number): void => {
     if (listedMatches.length === 0) return;

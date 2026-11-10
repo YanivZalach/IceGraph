@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent } from "react";
+import { useHotkey } from "@tanstack/react-hotkeys";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import type { GraphNode } from "../model/graphModel";
 import { findMatchingNodes } from "../model/nodeSearch";
@@ -13,12 +13,6 @@ export interface GraphSearch {
   changeQuery: (query: string) => void;
   close: () => void;
 }
-
-export const isFindShortcut = (event: KeyboardEvent): boolean =>
-  (event.ctrlKey || event.metaKey) &&
-  !event.altKey &&
-  !event.shiftKey &&
-  event.key.toLowerCase() === "f";
 
 export const useGraphSearch = (
   nodes: GraphNode[],
@@ -40,21 +34,13 @@ export const useGraphSearch = (
     });
   };
 
-  const openSearch = useEffectEvent((event: KeyboardEvent): void => {
-    if (!isFindShortcut(event) || searchQuery !== undefined) return;
-    event.preventDefault();
-    updateQuery("");
-  });
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent): void => {
-      openSearch(event);
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
+  useHotkey(
+    "Mod+F",
+    () => {
+      updateQuery("");
+    },
+    { conflictBehavior: "allow", enabled: searchQuery === undefined },
+  );
 
   return {
     isOpen: searchQuery !== undefined,
