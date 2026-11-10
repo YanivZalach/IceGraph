@@ -2,9 +2,10 @@ from dataclasses import dataclass
 from functools import cached_property
 from typing import Dict, List, Optional
 
-from pyspark.sql import Column, DataFrame, Row, SparkSession, functions as F
+from pyspark.sql import Column, DataFrame, Row, functions as F
 from pyspark.sql.types import ArrayType, LongType, MapType, StringType, StructField, StructType
 
+from extractors.extractor import Extractor
 from icegraph_logger import logger
 
 SNAPSHOTS_SCHEMA = ArrayType(
@@ -27,14 +28,16 @@ class HeadChange:
     snapshot_id: int
 
 
-class MetadataLogEntries:
-    def __init__(self, spark: SparkSession, table_name: str):
-        self._spark = spark
-        self._table_name = table_name
+class MetadataLogEntriesExtractor(Extractor):
+    def __init__(self, table_name: str):
+        super().__init__(table_name)
         self.refs_read_error: Optional[str] = None
 
+    def extract_dataframe(self) -> DataFrame:
+        return self._metadata_log_entries_df
+
     @cached_property
-    def df(self) -> DataFrame:
+    def _metadata_log_entries_df(self) -> DataFrame:
         view_df = self._spark.sql(f"SELECT timestamp, file, latest_snapshot_id FROM {self._table_name}.metadata_log_entries")
         entries = view_df.select("file", F.unix_millis("timestamp").alias("timestamp_ms"), "latest_snapshot_id").collect()
         if not entries:
