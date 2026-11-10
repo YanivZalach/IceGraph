@@ -1,5 +1,7 @@
 The Graph view shows all Iceberg metadata objects in your selected range as a directed acyclic graph. Each node is a file, except the Catalog node, the Current metadata node, and deletion vectors, which get one node each even when several share a Puffin file. Links connect node edges, with arrowheads pointing from parent to child.
 
+The metadata files in the range are the ones written while the start and end snapshots were current. For a snapshot that was the head of the main branch, that is while main pointed at it. For a snapshot that only exists on another branch or a tag, it is while that branch or tag pointed at it. IceGraph works this out from the table's current metadata file, the same file Iceberg's own `metadata_log_entries` table reads: main's history comes from its snapshot log, and each other branch's and tag's history is rebuilt by following parent snapshots back from where it points now. A branch that was rolled back, reset to another snapshot, or dropped leaves no record of that in the current file. When no current branch or tag leads to a selected snapshot because of this, the range edge is placed at the snapshot's commit time and the issues panel says so.
+
 ### Node types
 
 - **Metadata file** - JSON file describing the full state of the table at one point in time: schema, partition spec, properties, and the snapshots it knows of. It links only to the snapshots it points to: its current snapshot and the head of each branch. The other snapshots it lists, kept for time travel until they expire, are not linked; they appear in `pointed_snapshots_files` in its details panel. The statistics files it lists appear in `pointed_table_statistics_files` and `pointed_partition_statistics_files`. Its `format_version` is the Iceberg format version the table had when the file was written
@@ -32,7 +34,9 @@ On format version 3 tables, snapshots, data manifests, and data files show `firs
 
 - Click a node to select it and open its details in the side panel
 
-- The selected node, the highlighted lineage, and the Inspect or Lineage Traversal mode are kept in the page URL, so a copied link reopens the same view and the browser Back and Forward buttons step through the nodes you visited. Leaving the Graph view clears them
+- Press **Ctrl+F** (**⌘F** on Mac) to find nodes. In the Graph view this opens the graph's own search box instead of the browser's find bar. Type part of a node's name, file path, or node type: every matching node gets a yellow ring on the graph and is listed below the box. Click a result, or use the arrow keys and **Enter**, to center on that node and select it, the same as clicking it on the graph. The search stays open so you can go through the other results. Only visible nodes are searched, so in Lineage Traversal mode nodes outside the highlighted lineage are skipped. **Esc** closes the search
+
+- The selected node, the highlighted lineage, the Inspect or Lineage Traversal mode, and the search text are kept in the page URL, so a copied link reopens the same view and the browser Back and Forward buttons step through the nodes you visited. Leaving the Graph view clears them
 
 - Drag a node to reposition it
 - Scroll to zoom, drag the background to pan. When zoomed out far enough that text would be unreadable, node and link labels are hidden and only the boxes and arrows are drawn

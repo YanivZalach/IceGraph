@@ -14,7 +14,7 @@ The project avoids additional services and treats Iceberg metadata as the source
 
 Store completed graph responses in IndexedDB, keyed by application version, table, and requested snapshot range.
 
-Before restoring a graph, request the metadata file associated with the selected end snapshot. When the end snapshot is omitted, request the latest metadata file. Restore the cached graph only when that file matches the value extracted from its `main_metadata` node.
+Before restoring a graph, request the metadata file associated with the selected end snapshot: the newest metadata file in the range graph collection would use, found from main's snapshot log and from each branch's and tag's parent snapshots in the current metadata file, so ranges ending on a non-main branch validate too. When the end snapshot is omitted, request the latest metadata file. Restore the cached graph only when that file matches the value extracted from its `main_metadata` node.
 
 Keep at most 20 graphs. Evict least-recently-used entries and entries unused for more than 24 hours. Browser storage failures must never prevent graph compilation or rendering.
 
@@ -24,7 +24,7 @@ Normal refreshes and new tabs may restore validated data. Recompile graph explic
 
 - No new backend service or persistent server state is required.
 - Cache validation adds one lightweight backend request.
-- A cache miss or validation failure falls back to normal graph compilation.
+- A cache miss or validation failure falls back to normal graph compilation. A validation failure is shown on the graph loading screen with its reason.
 - Application version changes isolate incompatible cache records.
 - Bounded historical graphs can remain stale if referenced files are removed without changing the pinned metadata file.
 - Backend collection-setting changes require an application version change or an explicit recompile to invalidate existing graphs.

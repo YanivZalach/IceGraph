@@ -4,15 +4,17 @@ import { useSearch } from "@tanstack/react-router";
 import ForceGraph2D from "react-force-graph-2d";
 import { PANEL_GUTTER_REM, remToPx } from "../../layoutConstants";
 import { currentMetadataFileQueryOptions } from "./api/currentMetadataFileQuery";
-import { readFrameBounds, type FrameBounds } from "./canvas/frameBounds";
+import { readFrameBounds, UNBOUNDED_FRAME } from "./canvas/frameBounds";
 import { paintLinks } from "./canvas/paintLink";
 import { paintNode, paintNodePointerArea } from "./canvas/paintNode";
 import GraphNeighborPopup from "./components/GraphNeighborPopup";
 import GraphNodePanel from "./components/GraphNodePanel";
+import GraphSearchBox from "./components/GraphSearchBox";
 import GraphToolbar from "./components/GraphToolbar";
 import { useCanvasGesture } from "./hooks/useCanvasGesture";
 import { useGraphCamera, type GraphMethods } from "./hooks/useGraphCamera";
 import { useGraphKeyboard } from "./hooks/useGraphKeyboard";
+import { useGraphSearch } from "./hooks/useGraphSearch";
 import { useGraphSelection } from "./hooks/useGraphSelection";
 import { useGraphViewport } from "./hooks/useGraphViewport";
 import {
@@ -32,14 +34,7 @@ interface GraphViewProps {
 }
 
 const NO_FORCE_GRAPH_LINKS: GraphLink[] = [];
-
-const UNBOUNDED_FRAME: FrameBounds = {
-  minX: -Infinity,
-  minY: -Infinity,
-  maxX: Infinity,
-  maxY: Infinity,
-  globalScale: 1,
-};
+const SEARCH_CENTER_DURATION_MS = 400;
 
 const GraphView = ({ fileGraph }: GraphViewProps) => {
   const tableName = useSearch({ from: "/table/graph" }).table ?? "";
@@ -65,6 +60,14 @@ const GraphView = ({ fileGraph }: GraphViewProps) => {
   const isHighlighted = (nodeId: string): boolean =>
     selection.highlightedNodeIds === null ||
     selection.highlightedNodeIds.has(nodeId);
+
+  const search = useGraphSearch(model.nodes, isHighlighted);
+
+  const handleSearchPick = (node: GraphNode): void => {
+    setNeighborPopup(null);
+    selection.selectNode(node);
+    camera.centerOn(node, SEARCH_CENTER_DURATION_MS);
+  };
 
   const handleNavigateToNode = (node: GraphNode): void => {
     setNeighborPopup(null);
@@ -132,7 +135,13 @@ const GraphView = ({ fileGraph }: GraphViewProps) => {
           });
         }}
         nodeCanvasObject={(node, context) => {
-          paintNode(node, context, viewport.nodeMetrics, frameRef.current);
+          paintNode(
+            node,
+            context,
+            viewport.nodeMetrics,
+            frameRef.current,
+            search.matchIds.has(node.id),
+          );
         }}
         nodePointerAreaPaint={(node, color, context) => {
           paintNodePointerArea(node, color, context, viewport.nodeMetrics);
@@ -152,6 +161,15 @@ const GraphView = ({ fileGraph }: GraphViewProps) => {
         onResetView={handleResetView}
         onToggleInspectMode={selection.toggleInspectMode}
         onCenterGraph={selection.centerGraph}
+        search={
+          search.isOpen ? (
+            <GraphSearchBox
+              search={search}
+              selectedNodeId={selection.selectedNode?.id ?? null}
+              onPick={handleSearchPick}
+            />
+          ) : null
+        }
       />
 
       {neighborPopup !== null && (

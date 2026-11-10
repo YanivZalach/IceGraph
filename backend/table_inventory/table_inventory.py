@@ -112,6 +112,7 @@ class TableInventory(SparkTableAction):
             self._start_snapshot_id,
             self._end_snapshot_id,
         )
+        self._warnings.update(self._search_cutoff.warnings)
 
     def _collect_and_set_snapshots(self):
         snapshot_collection = CollectSnapshots(

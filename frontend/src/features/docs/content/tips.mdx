@@ -9,3 +9,5 @@ IceGraph keeps up to 20 completed graphs in browser storage for 24 hours after t
 Use **Recompile graph** in the navbar when you explicitly want to discard the cached result and collect the graph again.
 
 For a bounded snapshot range, IceGraph validates the metadata file associated with the selected end snapshot. Later removal of referenced files, or backend collection-setting changes made without an application version change, may not invalidate that cached graph. Use **Recompile graph** when investigating either case.
+
+If IceGraph cannot check whether a saved graph is still current, for example because the backend lookup fails, it rebuilds the graph and shows the reason on the loading screen.

@@ -10,7 +10,8 @@ from flask import Flask, Response, copy_current_request_context, jsonify, reques
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from pyspark.errors import AnalysisException
 
-from base_classes.utils import collect_graph_metadata_file, verify_iceberg_table
+from base_classes.utils import verify_iceberg_table
+from search_cutoff.find_search_cutoff import collect_graph_metadata_file
 from constants import COLLECTION_STAGES, JOB_TOKEN_FIELD, STAGE_BUILD_GRAPH
 from env import Env
 from graph_normalizer.graph_normalizer import GraphNormalizer

@@ -15,6 +15,7 @@ const GRAPH_SEARCH_KEYS = new Set([
   "select_node_id",
   "lineage_node_id",
   "graph_mode",
+  "graph_search",
 ]);
 
 const isSearchKeyKept = (key: string, destination: AnalyzeTabPath): boolean =>

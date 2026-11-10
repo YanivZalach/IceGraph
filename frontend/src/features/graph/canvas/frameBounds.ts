@@ -8,6 +8,14 @@ export interface FrameBounds {
   globalScale: number;
 }
 
+export const UNBOUNDED_FRAME: FrameBounds = {
+  minX: -Infinity,
+  minY: -Infinity,
+  maxX: Infinity,
+  maxY: Infinity,
+  globalScale: 1,
+};
+
 export const readFrameBounds = (
   context: CanvasRenderingContext2D,
   globalScale: number,

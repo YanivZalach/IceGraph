@@ -147,6 +147,7 @@ export interface TableSpecsState {
   specsMetadata: TableMetadata | undefined;
   graphQuery: UseQueryResult<GraphData>;
   collectionStages: GraphStages | null | undefined;
+  graphCacheIssue: string | null | undefined;
   rebuildGraph: () => Promise<void>;
   errors: Record<string, string[]>;
   warnings: Record<string, string[]>;
