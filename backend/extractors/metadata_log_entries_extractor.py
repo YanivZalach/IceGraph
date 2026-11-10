@@ -81,7 +81,7 @@ class MetadataLogEntriesExtractor(Extractor):
         ref_timelines = [
             ancestry_timeline(ref["snapshot-id"], snapshots_by_id) for ref_name, ref in (metadata.refs or {}).items() if ref_name != MAIN_BRANCH
         ]
-        main_snapshot_ids = {head_at(main_timeline, timestamp_ms) for _, timestamp_ms in metadata_files}
+        main_snapshot_ids = {change.snapshot_id for change in main_timeline}
 
         return [
             (file, timestamp_ms, head_at(main_timeline, timestamp_ms), sorted(heads_at(ref_timelines, timestamp_ms) - main_snapshot_ids))
