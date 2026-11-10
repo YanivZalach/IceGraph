@@ -9,6 +9,7 @@ from pyspark.sql.types import ArrayType, LongType, MapType, StringType, StructFi
 from base_classes.spark_table_action import SparkTableAction
 from constants import SNAPSHOT_NOT_IN_METADATA_LOG_REASON
 from extractors.snapshot_ranges import SnapshotCommit, SnapshotRange, SnapshotRangesBuilder
+from extractors.utils import find_newest_file
 from icegraph_logger import logger
 
 METADATA_SNAPSHOTS_LINEAGE_SCHEMA = ArrayType(
@@ -47,18 +48,6 @@ class MetadataLogEntriesExtractor(SparkTableAction):
     def extract_entries(self) -> pl.DataFrame:
         return self._metadata_log_entries
 
-    @staticmethod
-    def find_newest_file(metadata_log_entries: pl.DataFrame) -> Optional[str]:
-        newest_entries = metadata_log_entries.sort(
-            [pl.col("timestamp_ms"), pl.col("file").str.len_chars(), pl.col("file")],
-            descending=True,
-            nulls_last=True,
-        )
-        if newest_entries.is_empty():
-            return None
-
-        return newest_entries["file"][0]
-
     @cached_property
     def _metadata_log_entries(self) -> pl.DataFrame:
         metadata_log_view_entries = self._collect_metadata_log_view()
@@ -77,7 +66,7 @@ class MetadataLogEntriesExtractor(SparkTableAction):
         return pl.DataFrame(metadata_log_view_entries, schema=METADATA_LOG_ENTRIES_SCHEMA, orient="row")
 
     def _read_current_metadata_row(self, metadata_log_view_entries: pl.DataFrame) -> Optional[Row]:
-        current_metadata_file = self.find_newest_file(metadata_log_view_entries)
+        current_metadata_file = find_newest_file(metadata_log_view_entries)
         if current_metadata_file is None:
             return None
 
