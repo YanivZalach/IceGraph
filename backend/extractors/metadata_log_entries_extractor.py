@@ -7,15 +7,13 @@ from pyspark.sql.types import LongType, MapType, StringType
 
 from constants import SNAPSHOT_NOT_IN_METADATA_LOG_REASON
 from extractors.extractor import Extractor
+from extractors.snapshot_ranges import SnapshotCommit, SnapshotRange, SnapshotRangesBuilder
 from extractors.utils import (
     BRANCH_REF_TYPE,
     METADATA_LOG_ENTRIES_SCHEMA,
     METADATA_LOG_SCHEMA,
     METADATA_REFS_SCHEMA,
     METADATA_SNAPSHOTS_LINEAGE_SCHEMA,
-    SnapshotCommit,
-    SnapshotRange,
-    SnapshotRangesBuilder,
 )
 from icegraph_logger import logger
 
