@@ -2,9 +2,10 @@ from dataclasses import dataclass
 from functools import cached_property
 from typing import Dict, List, Optional
 
-import arrow
-from pyspark.sql import Row, SparkSession, functions as F
+from pyspark.sql import Column, DataFrame, Row, SparkSession, functions as F
 from pyspark.sql.types import ArrayType, LongType, MapType, StringType, StructField, StructType
+
+from icegraph_logger import logger
 
 SNAPSHOTS_SCHEMA = ArrayType(
     StructType(
@@ -16,17 +17,8 @@ SNAPSHOTS_SCHEMA = ArrayType(
     )
 )
 REFS_SCHEMA = MapType(StringType(), StructType([StructField("snapshot-id", LongType())]))
+BRANCH_SNAPSHOT_IDS_SCHEMA = StructType([StructField("file", StringType()), StructField("branch_snapshot_ids", ArrayType(LongType()))])
 MAIN_BRANCH = "main"
-
-
-@dataclass
-class MetadataLogEntry:
-    file: str
-    timestamp_ms: int
-
-    @property
-    def timestamp(self) -> arrow.Arrow:
-        return arrow.get(self.timestamp_ms / 1000)
 
 
 @dataclass
@@ -35,41 +27,38 @@ class HeadChange:
     snapshot_id: int
 
 
-@dataclass
-class RefMetadataWindow:
-    first_entry: MetadataLogEntry
-    last_entry: MetadataLogEntry
-
-
-class MetadataLog:
+class MetadataLogEntries:
     def __init__(self, spark: SparkSession, table_name: str):
         self._spark = spark
         self._table_name = table_name
-
-    def find_ref_window(self, snapshot_id: int) -> Optional[RefMetadataWindow]:
-        pointing_entries = [entry for entry in self._entries if any(_head_at(timeline, entry) == snapshot_id for timeline in self._ref_timelines)]
-        if not pointing_entries:
-            return None
-
-        return RefMetadataWindow(first_entry=pointing_entries[-1], last_entry=pointing_entries[0])
+        self.refs_read_error: Optional[str] = None
 
     @cached_property
-    def _entries(self) -> List[MetadataLogEntry]:
-        rows = (
-            self._spark.sql(f"SELECT file, timestamp FROM {self._table_name}.metadata_log_entries")
-            .select("file", F.unix_millis("timestamp").alias("timestamp_ms"))
-            .orderBy(F.desc("timestamp_ms"), F.desc("file"))
-            .collect()
-        )
+    def df(self) -> DataFrame:
+        view_df = self._spark.sql(f"SELECT timestamp, file, latest_snapshot_id FROM {self._table_name}.metadata_log_entries")
+        entries = view_df.select("file", F.unix_millis("timestamp").alias("timestamp_ms"), "latest_snapshot_id").collect()
+        if not entries:
+            return view_df.withColumn("branch_snapshot_ids", F.array().cast(ArrayType(LongType())))
 
-        return [MetadataLogEntry(file=row.file, timestamp_ms=row.timestamp_ms) for row in rows]
+        try:
+            ref_timelines = self._read_ref_timelines(max(entries, key=lambda entry: (entry.timestamp_ms, entry.file)).file)
 
-    @cached_property
-    def _ref_timelines(self) -> List[List[HeadChange]]:
-        if not self._entries:
-            return []
+        except Exception as e:
+            logger.warning(f"[{self._table_name}] Failed to read the branches and tags from the current metadata file", exc_info=True)
+            error_lines = str(e).strip().splitlines()
+            self.refs_read_error = error_lines[0] if error_lines else type(e).__name__
+            ref_timelines = []
 
-        current_file = self._entries[0].file
+        main_snapshot_ids = {entry.latest_snapshot_id for entry in entries}
+        branch_rows = [
+            (entry.file, sorted({_head_at(timeline, entry.timestamp_ms) for timeline in ref_timelines} - main_snapshot_ids - {None}))
+            for entry in entries
+        ]
+        branch_df = self._spark.createDataFrame(branch_rows, BRANCH_SNAPSHOT_IDS_SCHEMA)
+
+        return view_df.join(branch_df, on="file", how="left")
+
+    def _read_ref_timelines(self, current_file: str) -> List[List[HeadChange]]:
         metadata = F.col("metadata")
         row = (
             self._spark.read.text(current_file, wholetext=True)
@@ -89,6 +78,10 @@ class MetadataLog:
         return [_ancestry_timeline(ref["snapshot-id"], snapshots_by_id) for ref_name, ref in (row.refs or {}).items() if ref_name != MAIN_BRANCH]
 
 
+def points_at_snapshot(snapshot_id: int) -> Column:
+    return (F.col("latest_snapshot_id") == snapshot_id) | F.array_contains("branch_snapshot_ids", snapshot_id)
+
+
 def _ancestry_timeline(head_snapshot_id: Optional[int], snapshots_by_id: Dict[int, Row]) -> List[HeadChange]:
     timeline = []
     visited = set()
@@ -101,10 +94,10 @@ def _ancestry_timeline(head_snapshot_id: Optional[int], snapshots_by_id: Dict[in
     return list(reversed(timeline))
 
 
-def _head_at(timeline: List[HeadChange], entry: MetadataLogEntry) -> Optional[int]:
+def _head_at(timeline: List[HeadChange], timestamp_ms: int) -> Optional[int]:
     head = None
     for change in timeline:
-        if change.timestamp_ms <= entry.timestamp_ms:
+        if change.timestamp_ms <= timestamp_ms:
             head = change.snapshot_id
 
     return head
