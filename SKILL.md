@@ -49,17 +49,22 @@ have.
   compatible with the matching server release. Read it from `<base_url>/docs` → Overview →
   **Version** (open it with browser automation if available; otherwise fetch the page and grep the
   served JS bundle for the version string). Compare it against the installed client
-  (`pip show icegraph-client`). If they differ, tell the user and suggest
-  `pip install icegraph-client==<server version>`, but don't install it yourself. If the version
-  isn't reachable, say so once and continue rather than blocking. Do this check once per session,
-  not per command.
+  (`pip show icegraph-client`). If the version isn't reachable, say so once and continue rather
+  than blocking. Do this check once per session, not per command.
 - Confirm `icegraph` is on PATH with `icegraph --help` before relying on it.
-- **If it's not installed, don't just suggest a bare `pip install icegraph-client`.** Check
-  `<base_url>/docs` first — the Overview section shows a **Version** field — and suggest the
-  version-pinned install command instead: `pip install icegraph-client==<version>`. The client is
-  only guaranteed compatible with the matching server release, so pinning matters. Only fall back
-  to suggesting an unpinned install (and mention that caveat) if the docs page isn't reachable
-  either. Suggest the command for the user to run — don't install it yourself.
+- **If the client is missing or its version differs from the server's, install the matching
+  version yourself and tell the user**: `pip install icegraph-client==<server version>`. Pinning
+  matters because the client is only guaranteed compatible with the matching server release.
+  - **If pip can't find that exact version**, list the versions it can install
+    (`pip index versions icegraph-client`, or the "from versions: ..." list in pip's error) and
+    install the newest version lower than the server's. Tell the user which version you installed,
+    that it is older than the server's, and that some commands may not match.
+  - **If no lower version exists**, say so instead of installing a newer one.
+  - **If the server version isn't reachable**, run `pip install --upgrade icegraph-client` and
+    tell the user it may not match the server.
+  - **If the user has said not to install packages on their system** (in this session, their
+    instructions, or memory), don't install anything. Suggest the same command for them to run
+    instead.
 
 ## 2. Commands
 
@@ -176,7 +181,7 @@ time to skip it is when there's genuinely nothing to point at — a bare `tables
 particular table in focus.
 
 ```
-<base_url>/table/graph?table=<uri-encoded database.table>&start_snapshot_id=<id>&end_snapshot_id=<id>&select_node_id=<uri-encoded node_id>
+<base_url>/table/graph?table=<uri-encoded database.table>&start_snapshot_id=<id>&end_snapshot_id=<id>&select_node_id=<uri-encoded node_id>&lineage_node_id=<uri-encoded node_id>
 ```
 
 - Reuse the exact same `base_url` you already resolved for the CLI. There is no extra path prefix
@@ -184,11 +189,28 @@ particular table in focus.
   mocked deployment); a real server has none.
 - To link to a table before graph generation, use
   `<base_url>/snapshots-selection?table=<uri-encoded database.table>`.
-- URI-encode `table` and `select_node_id`.
+- URI-encode `table`, `select_node_id`, `lineage_node_id`, `lineage_partition`, and `graph_search`.
 - `select_node_id` is a node's `node_id` — get it from a `graph` command's `nodes` output. It is
   the node's Iceberg file path, except for a deletion vector, which shares its Puffin file with
   other deletion vectors: its `node_id` is `<file path>#<content_offset>`. It stays valid as long as that file is still part of
-  the selected snapshot range.
+  the selected snapshot range. It opens that node's details panel.
+- `lineage_node_id` takes a `node_id` the same way and highlights that node's lineage, centering
+  the view on it. Set it to the same node as `select_node_id` to point at one node; omit it to show
+  the full graph with the panel open.
+- `lineage_partition=<uri-encoded partition label>` narrows a manifest's lineage to the files of one
+  partition. It only applies when `lineage_node_id` is a manifest. The label is the partition's
+  fields as `name = formatted_value`, joined by `, ` in stored field order (for example
+  `dt = 2024-01-01, region = eu`), or `Root` for an unpartitioned file. It must match one of the
+  manifest's `partitions` exactly; otherwise it is dropped and the full manifest lineage shows.
+  Pair it with `graph_mode=lineage`, the mode the panel's partition button opens.
+- `graph_mode=lineage` opens the Graph view in Lineage Traversal mode. Omit it for the default
+  Inspect mode.
+- `graph_search=<uri-encoded text>` opens the Graph view's node search with that text, ringing
+  and listing every visible node whose label, node id, file path, or type name contains it (case
+  insensitive). Use it to point the user at a group of files whose names share some text, such as
+  every `.parquet` file. Omit it to keep the search closed.
+- Graph parameters stay in the URL while the user works in the Graph view, so a URL the user
+  copies from it reproduces their view. Node ids that are not in the loaded graph are removed.
 
 ### FileTree links
 
@@ -224,10 +246,11 @@ their defaults unless an explicit value makes the requested view clearer.
    call, reuse that same range; if it came from a rangeless `graph <table>` call (which auto-selects
    only the latest snapshot), set `start_snapshot_id` equal to that same latest snapshot id, so the
    link reproduces that exact single-snapshot view rather than defaulting to full history.
-2. **`select_node_id` only works on `/table/graph`.** `MetadataPage`, `TimelinePage`, and
-   `FileTreePage` don't read it — they ignore it silently. If the user's request maps more
-   naturally to one of those views, link to that page (`/table/metadata`, `/table/timeline`,
-   `/table/filetree`, same `table`/snapshot query params) *without* `select_node_id`, and say
+2. **`select_node_id`, `lineage_node_id`, `lineage_partition`, `graph_mode`, and `graph_search` only work on `/table/graph`.**
+   `MetadataPage`, `TimelinePage`, and `FileTreePage` don't read them — they ignore them silently.
+   If the user's request maps more naturally to one of those views, link to that page
+   (`/table/metadata`, `/table/timeline`, `/table/filetree`, same `table`/snapshot query params)
+   *without* the Graph parameters, and say
    plainly that node-level selection is only available on the Graph view.
 Don't invent table names, snapshot ids, or node ids — they must come from an actual CLI call or
 from what the user told you directly.
@@ -310,7 +333,7 @@ usually isn't.
    auto-selects only the latest snapshot, say `snap-789`. Read `issues.errors`, explain the
    problem — and proactively include a link, setting **both** bounds to that same resolved
    snapshot so it isn't left open-ended:
-   `https://ice.example.com/table/graph?table=sales.orders&start_snapshot_id=snap-789&end_snapshot_id=snap-789&select_node_id=<file path of the erroring node>`
+   `https://ice.example.com/table/graph?table=sales.orders&start_snapshot_id=snap-789&end_snapshot_id=snap-789&select_node_id=<file path of the erroring node>&lineage_node_id=<file path of the erroring node>`
    so the user can look at the offending node directly, without needing to ask for it.
 4. "What's the schema/properties/partition spec of `sales.orders`?"
    → For the latest metadata, use `icegraph --base-url https://ice.example.com metadata sales.orders`
