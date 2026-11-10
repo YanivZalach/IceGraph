@@ -4,6 +4,7 @@ import { measureNode, type GraphNodeMetrics } from "./nodeMetrics";
 
 const LINK_LABEL_COLOR = "#e3f8f5ff";
 const ARROW_LENGTH_PX = 8;
+const DASHED_LINK_PATTERN = [24, 16];
 
 interface Point {
   x: number;
@@ -184,16 +185,15 @@ const groupVisibleLinksByColor = (
   return linksByColor;
 };
 
-const strokeColorGroup = (
+const strokeLinkLines = (
   context: CanvasRenderingContext2D,
-  color: string,
   visibleLinks: VisibleLink[],
-  globalScale: number,
+  dashed: boolean,
 ): void => {
-  context.strokeStyle = color;
-  context.fillStyle = color;
+  context.setLineDash(dashed ? DASHED_LINK_PATTERN : []);
   context.beginPath();
-  for (const { geometry } of visibleLinks) {
+  for (const { link, geometry } of visibleLinks) {
+    if (link.dashed !== dashed) continue;
     context.moveTo(geometry.start.x, geometry.start.y);
     context.quadraticCurveTo(
       geometry.control.x,
@@ -203,6 +203,19 @@ const strokeColorGroup = (
     );
   }
   context.stroke();
+  context.setLineDash([]);
+};
+
+const strokeColorGroup = (
+  context: CanvasRenderingContext2D,
+  color: string,
+  visibleLinks: VisibleLink[],
+  globalScale: number,
+): void => {
+  context.strokeStyle = color;
+  context.fillStyle = color;
+  strokeLinkLines(context, visibleLinks, false);
+  strokeLinkLines(context, visibleLinks, true);
   context.beginPath();
   for (const { geometry } of visibleLinks) {
     traceArrow(context, geometry, globalScale);
