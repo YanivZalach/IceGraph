@@ -30,7 +30,7 @@ class MetadataFile:
 class CurrentMetadata:
     metadata_files: List[MetadataFile]
     snapshots: List[SnapshotCommit]
-    live_tip_ids: Set[int]
+    possible_live_tip_ids: Set[int]
 
 
 class MetadataLogEntriesExtractor(Extractor):
@@ -95,7 +95,7 @@ class MetadataLogEntriesExtractor(Extractor):
         return CurrentMetadata(
             metadata_files=self._list_metadata_files(metadata_row),
             snapshots=self._list_snapshots(metadata_row),
-            live_tip_ids=self._find_live_tip_ids(metadata_row),
+            possible_live_tip_ids=self._find_possible_live_tip_ids(metadata_row),
         )
 
     @staticmethod
@@ -113,13 +113,13 @@ class MetadataLogEntriesExtractor(Extractor):
         ]
 
     @staticmethod
-    def _find_live_tip_ids(metadata_row: Row) -> Set[int]:
+    def _find_possible_live_tip_ids(metadata_row: Row) -> Set[int]:
         branch_head_ids = {ref["snapshot-id"] for ref in (metadata_row.refs or {}).values() if ref["type"] == BRANCH_REF_TYPE}
 
         return branch_head_ids | {metadata_row.current_snapshot_id}
 
     def _build_metadata_log_entries_df(self, current_metadata: CurrentMetadata) -> DataFrame:
-        snapshot_ranges = SnapshotRangesBuilder(current_metadata.snapshots, current_metadata.live_tip_ids).build()
+        snapshot_ranges = SnapshotRangesBuilder(current_metadata.snapshots, current_metadata.possible_live_tip_ids).build()
 
         metadata_log_entries = []
         for metadata_file in current_metadata.metadata_files:

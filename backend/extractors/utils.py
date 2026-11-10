@@ -42,9 +42,9 @@ class SnapshotRange:
 
 
 class SnapshotRangesBuilder:
-    def __init__(self, snapshots: List[SnapshotCommit], live_tip_ids: Set[int]):
+    def __init__(self, snapshots: List[SnapshotCommit], possible_live_tip_ids: Set[int]):
         self._snapshots = snapshots
-        self._live_tip_ids = live_tip_ids
+        self._possible_live_tip_ids = possible_live_tip_ids
         self._superseded_at_by_snapshot_id = self._find_superseded_at_by_snapshot_id(snapshots)
         self._sorted_commit_times = sorted(snapshot.timestamp_ms for snapshot in snapshots)
 
@@ -56,7 +56,7 @@ class SnapshotRangesBuilder:
         if superseded_at is not None:
             return superseded_at
 
-        if snapshot.snapshot_id in self._live_tip_ids:
+        if snapshot.snapshot_id in self._possible_live_tip_ids:
             return None
 
         return self._next_commit_time_after(snapshot.timestamp_ms)
