@@ -14,7 +14,16 @@ METADATA_SNAPSHOTS_LINEAGE_SCHEMA = ArrayType(
     )
 )
 METADATA_REFS_SCHEMA = MapType(StringType(), StructType([StructField("snapshot-id", LongType())]))
-BRANCH_SNAPSHOT_IDS_SCHEMA = StructType([StructField("file", StringType()), StructField("branch_snapshot_ids", ArrayType(LongType()))])
+METADATA_LOG_SCHEMA = ArrayType(StructType([StructField("timestamp-ms", LongType()), StructField("metadata-file", StringType())]))
+METADATA_SNAPSHOT_LOG_SCHEMA = ArrayType(StructType([StructField("timestamp-ms", LongType()), StructField("snapshot-id", LongType())]))
+METADATA_LOG_ENTRIES_SCHEMA = StructType(
+    [
+        StructField("file", StringType()),
+        StructField("timestamp_ms", LongType()),
+        StructField("latest_snapshot_id", LongType()),
+        StructField("branch_snapshot_ids", ArrayType(LongType())),
+    ]
+)
 MAIN_BRANCH = "main"
 
 
