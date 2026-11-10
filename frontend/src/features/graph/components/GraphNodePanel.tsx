@@ -15,6 +15,7 @@ import {
   PANEL_WIDTH_RELAXED_REM,
 } from "../../../layoutConstants";
 import HelpTerm from "../../../shared/components/HelpTerm";
+import type { ManifestPartitionView } from "../hooks/useGraphSelection";
 import { useScrollKeys } from "../hooks/useGraphKeyboard";
 import { useSmoothScroll } from "../hooks/useSmoothScroll";
 import type { GraphNode } from "../model/graphModel";
@@ -25,6 +26,11 @@ interface GraphNodePanelProps {
   isInspectMode: boolean;
   isKeyboardScrollEnabled: boolean;
   maxContainerWidth: number;
+  manifestPartitionView: ManifestPartitionView | null;
+  onShowManifestPartition: (
+    manifest: GraphNode,
+    partitionLabel: string,
+  ) => void;
   onClose: () => void;
 }
 
@@ -40,6 +46,8 @@ const GraphNodePanel = ({
   isInspectMode,
   isKeyboardScrollEnabled,
   maxContainerWidth,
+  manifestPartitionView,
+  onShowManifestPartition,
   onClose,
 }: GraphNodePanelProps) => {
   const [layout, setLayout] = useState<ResizableSidePanelLayout>({
@@ -100,6 +108,15 @@ const GraphNodePanel = ({
         isRelaxedCollapse={
           layout.isFullscreen || layout.panelWidthRem >= PANEL_WIDTH_RELAXED_REM
         }
+        partitionFilter={{
+          activePartitionLabel:
+            manifestPartitionView?.manifest.id === node.id
+              ? manifestPartitionView.partitionLabel
+              : null,
+          onShowPartition: (partitionLabel) => {
+            onShowManifestPartition(node, partitionLabel);
+          },
+        }}
       />
     </ResizableSidePanel>
   );

@@ -14,6 +14,7 @@ type AnalyzeTabPath = (typeof ANALYZE_TABS)[number]["to"];
 const GRAPH_SEARCH_KEYS = new Set([
   "select_node_id",
   "lineage_node_id",
+  "lineage_partition",
   "graph_mode",
   "graph_search",
 ]);

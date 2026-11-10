@@ -11,9 +11,15 @@ const NODE_BORDER_COLOR = "#ffffff";
 const CATALOG_TEXT_COLOR = "#0f172a";
 const NODE_TEXT_COLOR = "#ffffff";
 const NODE_TEXT_OUTLINE_COLOR = "#000000";
-const SEARCH_RING_COLOR = "#facc15";
-const SEARCH_RING_GAP_PX = 4;
-const SEARCH_RING_WIDTH_PX = 3;
+const RING_WIDTH_PX = 3;
+const SEARCH_RING = { color: "#facc15", gapPx: 4, dashPx: [] };
+const PARTIAL_MANIFEST_RING = { color: "#f59e0b", gapPx: 10, dashPx: [8, 5] };
+
+interface RingStyle {
+  color: string;
+  gapPx: number;
+  dashPx: number[];
+}
 
 const traceNodeShape = (
   context: CanvasRenderingContext2D,
@@ -59,15 +65,16 @@ const fillNodeLabel = (
   context.fillText(label, x, y);
 };
 
-const paintSearchRing = (
+const paintRing = (
   node: GraphNode,
   context: CanvasRenderingContext2D,
   metrics: GraphNodeMetrics,
   bounds: FrameBounds,
+  style: RingStyle,
 ): void => {
   if (node.x === undefined || node.y === undefined) return;
   const { width, height } = cachedNodeSize(node, metrics);
-  const gap = SEARCH_RING_GAP_PX / bounds.globalScale;
+  const gap = style.gapPx / bounds.globalScale;
   const left = node.x - width / 2 - gap;
   const top = node.y - height / 2 - gap;
   const ringWidth = width + gap * 2;
@@ -76,9 +83,11 @@ const paintSearchRing = (
     return;
   }
   traceNodeShape(context, left, top, ringWidth, ringHeight);
-  context.strokeStyle = SEARCH_RING_COLOR;
-  context.lineWidth = SEARCH_RING_WIDTH_PX / bounds.globalScale;
+  context.strokeStyle = style.color;
+  context.lineWidth = RING_WIDTH_PX / bounds.globalScale;
+  context.setLineDash(style.dashPx.map((dash) => dash / bounds.globalScale));
   context.stroke();
+  context.setLineDash([]);
   context.lineWidth = 1;
 };
 
@@ -88,10 +97,14 @@ export const paintNode = (
   metrics: GraphNodeMetrics,
   bounds: FrameBounds,
   isSearchMatch: boolean,
+  isPartialManifest: boolean,
 ): void => {
   if (node.x === undefined || node.y === undefined) return;
   const { font, fontSize, width, height } = measureNode(node, context, metrics);
-  if (isSearchMatch) paintSearchRing(node, context, metrics, bounds);
+  if (isPartialManifest) {
+    paintRing(node, context, metrics, bounds, PARTIAL_MANIFEST_RING);
+  }
+  if (isSearchMatch) paintRing(node, context, metrics, bounds, SEARCH_RING);
   const left = Math.round(node.x - width / 2);
   const top = Math.round(node.y - height / 2);
   if (!isBoxInFrame(bounds, left, top, left + width, top + height)) return;

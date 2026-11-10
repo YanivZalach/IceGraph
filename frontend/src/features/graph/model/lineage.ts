@@ -1,4 +1,5 @@
-import type { GraphLink } from "./graphModel";
+import { formatPartitionLabel } from "../../table/partitionLabel";
+import type { GraphLink, GraphNode } from "./graphModel";
 
 export type NeighborDirection = "parents" | "children";
 
@@ -63,5 +64,23 @@ export const getLineage = (
   const lineage = new Set([nodeId]);
   collectReachable(adjacency.children, nodeId, lineage);
   collectReachable(adjacency.parents, nodeId, lineage);
+  return lineage;
+};
+
+export const getManifestPartitionLineage = (
+  adjacency: LineageAdjacency,
+  nodesById: ReadonlyMap<string, GraphNode>,
+  manifestId: string,
+  partitionLabel: string,
+): Set<string> => {
+  const lineage = new Set([manifestId]);
+  collectReachable(adjacency.parents, manifestId, lineage);
+  for (const childId of adjacency.children.get(manifestId) ?? []) {
+    const partition = nodesById.get(childId)?.details.partition;
+    if (!Array.isArray(partition)) continue;
+    if (formatPartitionLabel(partition) !== partitionLabel) continue;
+    lineage.add(childId);
+    collectReachable(adjacency.children, childId, lineage);
+  }
   return lineage;
 };

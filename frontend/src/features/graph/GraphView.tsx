@@ -9,6 +9,7 @@ import { paintLinks } from "./canvas/paintLink";
 import { paintNode, paintNodePointerArea } from "./canvas/paintNode";
 import GraphNeighborPopup from "./components/GraphNeighborPopup";
 import GraphNodePanel from "./components/GraphNodePanel";
+import GraphPartitionBanner from "./components/GraphPartitionBanner";
 import GraphSearchBox from "./components/GraphSearchBox";
 import GraphToolbar from "./components/GraphToolbar";
 import { useCanvasGesture } from "./hooks/useCanvasGesture";
@@ -56,6 +57,8 @@ const GraphView = ({ fileGraph }: GraphViewProps) => {
   const [neighborPopup, setNeighborPopup] = useState<NeighborPopupState | null>(
     null,
   );
+
+  const partialManifestId = selection.manifestPartitionView?.manifest.id;
 
   const isHighlighted = (nodeId: string): boolean =>
     selection.highlightedNodeIds === null ||
@@ -141,6 +144,7 @@ const GraphView = ({ fileGraph }: GraphViewProps) => {
             viewport.nodeMetrics,
             frameRef.current,
             search.matchIds.has(node.id),
+            node.id === partialManifestId,
           );
         }}
         nodePointerAreaPaint={(node, color, context) => {
@@ -170,6 +174,14 @@ const GraphView = ({ fileGraph }: GraphViewProps) => {
             />
           ) : null
         }
+        notice={
+          selection.manifestPartitionView === null ? null : (
+            <GraphPartitionBanner
+              view={selection.manifestPartitionView}
+              onShowFullManifest={selection.showFullManifest}
+            />
+          )
+        }
       />
 
       {neighborPopup !== null && (
@@ -188,6 +200,8 @@ const GraphView = ({ fileGraph }: GraphViewProps) => {
           isInspectMode={selection.isInspectMode}
           isKeyboardScrollEnabled={neighborPopup === null}
           maxContainerWidth={viewport.width - remToPx(PANEL_GUTTER_REM)}
+          manifestPartitionView={selection.manifestPartitionView}
+          onShowManifestPartition={selection.showManifestPartition}
           onClose={selection.closePanel}
         />
       )}
