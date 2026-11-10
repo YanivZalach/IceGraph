@@ -40,11 +40,13 @@ class SnapshotRangesBuilder:
         return self._next_commit_time_after(snapshot.timestamp_ms)
 
     def _next_commit_time_after(self, timestamp_ms: int) -> Optional[int]:
+        next_commit_time = None
         for commit_time in self._sorted_commit_times:
             if commit_time > timestamp_ms:
-                return commit_time
+                next_commit_time = commit_time
+                break
 
-        return None
+        return next_commit_time
 
     @staticmethod
     def _find_superseded_at_by_snapshot_id(snapshots: List[SnapshotCommit]) -> Dict[int, int]:
