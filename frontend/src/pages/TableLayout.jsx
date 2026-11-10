@@ -5,6 +5,7 @@ import { Outlet, useNavigate, useSearch } from "@tanstack/react-router";
 import { TableGraphDataContext } from "../features/table/tableGraphData";
 import PageLoader from "../components/PageLoader";
 import GraphCollectionChecklist from "../components/GraphCollectionChecklist";
+import GraphCacheIssueNotice from "../features/table/components/GraphCacheIssueNotice";
 import { formatLocaleDateTime, parseUtcDate } from "../utils/dateUtils";
 import { UI_BODY_MUTED_CLASS } from "../uiTypography";
 
@@ -174,6 +175,7 @@ export default function TableLayout() {
   const {
     graphQuery,
     collectionStages,
+    graphCacheIssue,
     issuesOpen,
     setIssuesOpen,
     errors,
@@ -276,6 +278,7 @@ export default function TableLayout() {
               {tableName}
             </p>
           </div>
+          <GraphCacheIssueNotice issue={graphCacheIssue} />
           <GraphCollectionChecklist stages={collectionStages} />
         </div>
       </div>

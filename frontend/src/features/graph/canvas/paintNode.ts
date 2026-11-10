@@ -12,6 +12,9 @@ const CATALOG_TEXT_COLOR = "#0f172a";
 const NODE_TEXT_COLOR = "#ffffff";
 const NODE_TEXT_OUTLINE_COLOR = "#000000";
 const CURRENT_METADATA_BORDER_DASH = [24, 16];
+const SEARCH_RING_COLOR = "#facc15";
+const SEARCH_RING_GAP_PX = 4;
+const SEARCH_RING_WIDTH_PX = 3;
 
 const traceNodeShape = (
   context: CanvasRenderingContext2D,
@@ -61,14 +64,39 @@ const fillNodeLabel = (
   context.fillText(label, x, y);
 };
 
-export const paintNode = (
+const paintSearchRing = (
   node: GraphNode,
   context: CanvasRenderingContext2D,
   metrics: GraphNodeMetrics,
   bounds: FrameBounds,
 ): void => {
   if (node.x === undefined || node.y === undefined) return;
+  const { width, height } = cachedNodeSize(node, metrics);
+  const gap = SEARCH_RING_GAP_PX / bounds.globalScale;
+  const left = node.x - width / 2 - gap;
+  const top = node.y - height / 2 - gap;
+  const ringWidth = width + gap * 2;
+  const ringHeight = height + gap * 2;
+  if (!isBoxInFrame(bounds, left, top, left + ringWidth, top + ringHeight)) {
+    return;
+  }
+  traceNodeShape(context, left, top, ringWidth, ringHeight);
+  context.strokeStyle = SEARCH_RING_COLOR;
+  context.lineWidth = SEARCH_RING_WIDTH_PX / bounds.globalScale;
+  context.stroke();
+  context.lineWidth = 1;
+};
+
+export const paintNode = (
+  node: GraphNode,
+  context: CanvasRenderingContext2D,
+  metrics: GraphNodeMetrics,
+  bounds: FrameBounds,
+  isSearchMatch: boolean,
+): void => {
+  if (node.x === undefined || node.y === undefined) return;
   const { font, fontSize, width, height } = measureNode(node, context, metrics);
+  if (isSearchMatch) paintSearchRing(node, context, metrics, bounds);
   const left = Math.round(node.x - width / 2);
   const top = Math.round(node.y - height / 2);
   if (!isBoxInFrame(bounds, left, top, left + width, top + height)) return;

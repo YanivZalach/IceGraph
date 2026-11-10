@@ -17,6 +17,7 @@ import {
   type SpecView,
 } from "./tableSpecs";
 import {
+  graphCacheIssueQueryOptions,
   graphProgressQueryOptions,
   graphQueryKey,
   graphQueryOptions,
@@ -59,6 +60,9 @@ export const TableSpecsProvider = ({ children }: { children: ReactNode }) => {
     : isSnapshotSelectionPage
       ? tableMetadataQuery.data
       : undefined;
+  const graphCacheIssueQuery = useQuery(
+    graphCacheIssueQueryOptions(graphRequestParameters),
+  );
   const graphProgressQuery = useQuery(
     graphProgressQueryOptions(graphRequestParameters),
   );
@@ -193,6 +197,7 @@ export const TableSpecsProvider = ({ children }: { children: ReactNode }) => {
         specsMetadata,
         graphQuery,
         collectionStages: graphProgressQuery.data,
+        graphCacheIssue: graphCacheIssueQuery.data,
         rebuildGraph,
         errors,
         warnings,

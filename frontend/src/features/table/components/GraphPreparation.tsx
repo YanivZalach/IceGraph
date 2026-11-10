@@ -1,10 +1,12 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate } from "@tanstack/react-router";
 import {
+  graphCacheIssueQueryOptions,
   graphProgressQueryOptions,
   graphQueryOptions,
 } from "../api/graphQueries";
 import type { GraphRequestParameters } from "../api/graphCache";
+import GraphCacheIssueNotice from "./GraphCacheIssueNotice";
 import GraphCollectionChecklist from "../../../components/GraphCollectionChecklist";
 import { UI_BODY_MUTED_CLASS } from "../../../uiTypography";
 
@@ -17,6 +19,7 @@ const GraphPreparation = ({ parameters, onBack }: GraphPreparationProps) => {
   const queryClient = useQueryClient();
   const graphQuery = useQuery(graphQueryOptions(parameters, queryClient));
   const progressQuery = useQuery(graphProgressQueryOptions(parameters));
+  const cacheIssueQuery = useQuery(graphCacheIssueQueryOptions(parameters));
   const stages = progressQuery.data ?? null;
 
   if (graphQuery.isSuccess)
@@ -63,6 +66,7 @@ const GraphPreparation = ({ parameters, onBack }: GraphPreparationProps) => {
       <p className={`${UI_BODY_MUTED_CLASS} mt-1 mb-6 break-all`}>
         {parameters.tableName}
       </p>
+      <GraphCacheIssueNotice issue={cacheIssueQuery.data} />
       <GraphCollectionChecklist stages={stages} />
     </div>
   );

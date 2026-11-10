@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 import type { CSSProperties, MouseEvent, ReactNode } from "react";
 import {
   PANEL_GUTTER_REM,
@@ -49,7 +49,7 @@ const FullscreenToggleIcon = ({ isCompress }: { isCompress: boolean }) => (
 );
 
 const defaultMaxContainerWidth = (): number =>
-  remToPx(window.innerWidth) - remToPx(PANEL_GUTTER_REM);
+  window.innerWidth - remToPx(PANEL_GUTTER_REM);
 
 const ResizableSidePanel = forwardRef<HTMLDivElement, ResizableSidePanelProps>(
   (
@@ -59,12 +59,13 @@ const ResizableSidePanel = forwardRef<HTMLDivElement, ResizableSidePanelProps>(
       children,
       onClose,
       onLayoutChange,
-      maxContainerWidth = defaultMaxContainerWidth(),
+      maxContainerWidth,
     },
     scrollRef,
   ) => {
     const [panelWidthRem, setPanelWidthRem] = useState(PANEL_WIDTH_DEFAULT_REM);
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const stopResizeRef = useRef<(() => void) | null>(null);
 
     const handleClose = () => {
       setIsFullscreen(false);
@@ -73,12 +74,14 @@ const ResizableSidePanel = forwardRef<HTMLDivElement, ResizableSidePanelProps>(
 
     const startResize = (event: MouseEvent<HTMLDivElement>) => {
       event.preventDefault();
+      stopResizeRef.current?.();
       const startX = event.clientX;
-      const startWidthRem = panelWidthRem;
       const maxWidthRem = Math.max(
         PANEL_WIDTH_MIN_REM,
-        pxToRem(maxContainerWidth),
+        pxToRem(maxContainerWidth ?? defaultMaxContainerWidth()),
       );
+      const startWidthRem = Math.min(panelWidthRem, maxWidthRem);
+      const { cursor, userSelect } = document.body.style;
 
       const handleMove = (moveEvent: globalThis.MouseEvent) => {
         setPanelWidthRem(
@@ -95,15 +98,24 @@ const ResizableSidePanel = forwardRef<HTMLDivElement, ResizableSidePanelProps>(
       const handleUp = () => {
         document.removeEventListener("mousemove", handleMove);
         document.removeEventListener("mouseup", handleUp);
-        document.body.style.cursor = "";
-        document.body.style.userSelect = "";
+        document.body.style.cursor = cursor;
+        document.body.style.userSelect = userSelect;
+        stopResizeRef.current = null;
       };
 
       document.body.style.cursor = "ew-resize";
       document.body.style.userSelect = "none";
       document.addEventListener("mousemove", handleMove);
       document.addEventListener("mouseup", handleUp);
+      stopResizeRef.current = handleUp;
     };
+
+    useEffect(
+      () => () => {
+        stopResizeRef.current?.();
+      },
+      [],
+    );
 
     useEffect(() => {
       onLayoutChange?.({ isFullscreen, panelWidthRem });

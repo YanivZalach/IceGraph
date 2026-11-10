@@ -184,7 +184,7 @@ particular table in focus.
   mocked deployment); a real server has none.
 - To link to a table before graph generation, use
   `<base_url>/snapshots-selection?table=<uri-encoded database.table>`.
-- URI-encode `table`, `select_node_id`, and `lineage_node_id`.
+- URI-encode `table`, `select_node_id`, `lineage_node_id`, and `graph_search`.
 - `select_node_id` is a node's `node_id` — get it from a `graph` command's `nodes` output. It is
   the node's Iceberg file path, except for a deletion vector, which shares its Puffin file with
   other deletion vectors: its `node_id` is `<file path>#<content_offset>`. It stays valid as long as that file is still part of
@@ -194,6 +194,10 @@ particular table in focus.
   the full graph with the panel open.
 - `graph_mode=lineage` opens the Graph view in Lineage Traversal mode. Omit it for the default
   Inspect mode.
+- `graph_search=<uri-encoded text>` opens the Graph view's node search with that text, ringing
+  and listing every visible node whose label, node id, file path, or type name contains it (case
+  insensitive). Use it to point the user at a group of files whose names share some text, such as
+  every `.parquet` file. Omit it to keep the search closed.
 - Graph parameters stay in the URL while the user works in the Graph view, so a URL the user
   copies from it reproduces their view. Node ids that are not in the loaded graph are removed.
 
@@ -231,7 +235,7 @@ their defaults unless an explicit value makes the requested view clearer.
    call, reuse that same range; if it came from a rangeless `graph <table>` call (which auto-selects
    only the latest snapshot), set `start_snapshot_id` equal to that same latest snapshot id, so the
    link reproduces that exact single-snapshot view rather than defaulting to full history.
-2. **`select_node_id`, `lineage_node_id`, and `graph_mode` only work on `/table/graph`.**
+2. **`select_node_id`, `lineage_node_id`, `graph_mode`, and `graph_search` only work on `/table/graph`.**
    `MetadataPage`, `TimelinePage`, and `FileTreePage` don't read them — they ignore them silently.
    If the user's request maps more naturally to one of those views, link to that page
    (`/table/metadata`, `/table/timeline`, `/table/filetree`, same `table`/snapshot query params)

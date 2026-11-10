@@ -86,24 +86,6 @@ def column_to_string_utc(column_name: str):
     return F.date_format(timestamp_column_at_utc, STANDART_DATE_FORMAT)
 
 
-@timed
-def collect_graph_metadata_file(table_name: str, end_snapshot_id: int | None) -> str:
-    spark = open_spark_connect_session()
-    metadata_entries = spark.sql(f"SELECT timestamp, file, latest_snapshot_id FROM {table_name}.metadata_log_entries")
-
-    if end_snapshot_id is not None:
-        metadata_entries = metadata_entries.filter(F.col("latest_snapshot_id") == end_snapshot_id)
-
-    selected_entry = metadata_entries.orderBy(F.desc("timestamp")).select("file").first()
-
-    if not selected_entry:
-        if end_snapshot_id is None:
-            raise ValueError(f"No metadata files found for table {table_name}")
-        raise ValueError(f"No metadata file found for table {table_name} at snapshot {end_snapshot_id}")
-
-    return selected_entry.file
-
-
 def format_snapshot_summary(summary: dict[str, str]) -> dict[str, str]:
     formatted = {}
     for key, value in summary.items():

@@ -29,6 +29,21 @@ export const graphQueryKey = (parameters: GraphRequestParameters) =>
 export const graphProgressQueryKey = (parameters: GraphRequestParameters) =>
   [...graphQueryKey(parameters), "progress"] as const;
 
+export const graphCacheIssueQueryKey = (parameters: GraphRequestParameters) =>
+  [...graphQueryKey(parameters), "cache-issue"] as const;
+
+export const graphCacheIssueQueryOptions = (
+  parameters: GraphRequestParameters,
+) =>
+  queryOptions({
+    queryKey: graphCacheIssueQueryKey(parameters),
+    queryFn: (): string | null => null,
+    enabled: false,
+  });
+
+const describeError = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
 export const graphProgressQueryOptions = (parameters: GraphRequestParameters) =>
   queryOptions({
     queryKey: graphProgressQueryKey(parameters),
@@ -167,6 +182,7 @@ const loadGraph = async (
   signal: AbortSignal,
 ): Promise<GraphData> => {
   queryClient.setQueryData(graphProgressQueryKey(parameters), null);
+  queryClient.setQueryData(graphCacheIssueQueryKey(parameters), null);
 
   if (!shouldRebuildGraph(parameters)) {
     try {
@@ -186,6 +202,10 @@ const loadGraph = async (
       console.warn(
         "Graph cache validation failed, rebuilding graph",
         cacheError,
+      );
+      queryClient.setQueryData(
+        graphCacheIssueQueryKey(parameters),
+        describeError(cacheError),
       );
     }
   }
