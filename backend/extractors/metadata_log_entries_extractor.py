@@ -9,7 +9,6 @@ from pyspark.sql.types import ArrayType, LongType, MapType, StringType, StructFi
 from base_classes.spark_table_action import SparkTableAction
 from constants import SNAPSHOT_NOT_IN_METADATA_LOG_REASON
 from extractors.snapshot_ranges import SnapshotCommit, SnapshotLog, SnapshotLogEntry, SnapshotRange, SnapshotRangesBuilder
-from extractors.utils import find_newest_file
 from icegraph_logger import logger
 
 METADATA_SNAPSHOTS_LINEAGE_SCHEMA = ArrayType(
@@ -53,41 +52,40 @@ class MetadataLogEntriesExtractor(SparkTableAction):
 
     @cached_property
     def _metadata_log_entries(self) -> pl.DataFrame:
-        metadata_log_view_entries = self._collect_metadata_log_view()
-        metadata_row = self._read_current_metadata_row(metadata_log_view_entries)
+        current_metadata_entry = self._find_current_metadata_entry()
+        if current_metadata_entry is None:
+            return pl.DataFrame(schema=METADATA_LOG_ENTRIES_SCHEMA)
+
+        metadata_row = self._read_current_metadata_row(current_metadata_entry.file)
         if metadata_row is None:
-            return metadata_log_view_entries
+            current_metadata_entries = [(current_metadata_entry.file, current_metadata_entry.timestamp_ms, current_metadata_entry.snapshot_id)]
+
+            return pl.DataFrame(current_metadata_entries, schema=METADATA_LOG_ENTRIES_SCHEMA, orient="row")
 
         return self._build_metadata_log_entries(self._to_current_metadata(metadata_row))
 
-    def _collect_metadata_log_view(self) -> pl.DataFrame:
-        metadata_log_view_rows = self._spark.sql(
-            f"SELECT file, unix_millis(timestamp) AS timestamp_ms, latest_snapshot_id AS snapshot_id FROM {self._table_name}.metadata_log_entries"
-        ).collect()
-        metadata_log_view_entries = [(row.file, row.timestamp_ms, row.snapshot_id) for row in metadata_log_view_rows]
+    def _find_current_metadata_entry(self) -> Optional[Row]:
+        return (
+            self._spark.sql(
+                f"SELECT file, unix_millis(timestamp) AS timestamp_ms, latest_snapshot_id AS snapshot_id FROM {self._table_name}.metadata_log_entries"
+            )
+            .orderBy(F.desc("timestamp_ms"), F.desc(F.length("file")), F.desc("file"))
+            .first()
+        )
 
-        return pl.DataFrame(metadata_log_view_entries, schema=METADATA_LOG_ENTRIES_SCHEMA, orient="row")
-
-    def _read_current_metadata_row(self, metadata_log_view_entries: pl.DataFrame) -> Optional[Row]:
-        current_metadata_file = find_newest_file(metadata_log_view_entries)
-        if current_metadata_file is None:
-            return None
-
+    def _read_current_metadata_row(self, current_metadata_file: str) -> Optional[Row]:
         try:
-            return self._read_metadata_row(current_metadata_file)
+            metadata_row = self._metadata_fields_df(current_metadata_file).first()
+            if metadata_row is None or not metadata_row.is_parsed:
+                raise ValueError(f"The current metadata file could not be parsed: {current_metadata_file}")
+
+            return metadata_row
 
         except Exception as e:
             logger.warning(f"[{self._table_name}] Failed to read the snapshots from the current metadata file", exc_info=True)
             self.missing_snapshot_reason = str(e)
 
             return None
-
-    def _read_metadata_row(self, metadata_file: str) -> Row:
-        metadata_row = self._metadata_fields_df(metadata_file).first()
-        if metadata_row is None or not metadata_row.is_parsed:
-            raise ValueError(f"The current metadata file could not be parsed: {metadata_file}")
-
-        return metadata_row
 
     def _metadata_fields_df(self, metadata_file: str) -> DataFrame:
         metadata_text_df = self._spark.read.text(metadata_file, wholetext=True)
@@ -151,10 +149,10 @@ class MetadataLogEntriesExtractor(SparkTableAction):
     def _metadata_log_entries_of(
         metadata_file: MetadataFile, snapshot_log: SnapshotLog, branch_ranges: List[SnapshotRange]
     ) -> List[Tuple[str, int, Optional[int]]]:
-        snapshot_ids = [snapshot_log.snapshot_id_at(metadata_file.timestamp_ms)]
-        snapshot_ids.extend(branch_range.snapshot_id for branch_range in branch_ranges if branch_range.covers(metadata_file.timestamp_ms))
-        unique_snapshot_ids = [snapshot_id for snapshot_id in dict.fromkeys(snapshot_ids) if snapshot_id is not None]
-        if not unique_snapshot_ids:
+        snapshot_ids = {snapshot_log.snapshot_id_at(metadata_file.timestamp_ms)}
+        snapshot_ids.update(branch_range.snapshot_id for branch_range in branch_ranges if branch_range.covers(metadata_file.timestamp_ms))
+        snapshot_ids.discard(None)
+        if not snapshot_ids:
             return [(metadata_file.path, metadata_file.timestamp_ms, None)]
 
-        return [(metadata_file.path, metadata_file.timestamp_ms, snapshot_id) for snapshot_id in unique_snapshot_ids]
+        return [(metadata_file.path, metadata_file.timestamp_ms, snapshot_id) for snapshot_id in snapshot_ids]
