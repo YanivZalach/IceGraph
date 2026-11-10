@@ -14,7 +14,7 @@ The project avoids additional services and treats Iceberg metadata as the source
 
 Store completed graph responses in IndexedDB, keyed by application version, table, and requested snapshot range.
 
-Before restoring a graph, request the metadata file associated with the selected end snapshot: the newest metadata file in the range graph collection would use, found from main's snapshot log and from each branch's and tag's parent snapshots in the current metadata file, so ranges ending on a non-main branch validate too. When the end snapshot is omitted, request the latest metadata file. Restore the cached graph only when that file matches the value extracted from its `main_metadata` node.
+Before restoring a graph, request the metadata file associated with the selected end snapshot: the newest metadata file in the range graph collection would use. That range is worked out from the current metadata file: it starts at the first metadata file written when the snapshot was committed and ends before the last snapshot built on top of it was committed, on any branch. A snapshot that nothing was built on yet stays open up to the newest file while a branch points at it, and a snapshot left behind by a dropped or reset branch ends before the next snapshot committed anywhere in the table. Branches and tags never extend a range. Ranges ending on a non-main branch validate the same way as ranges on main. When the end snapshot is omitted, request the latest metadata file. Restore the cached graph only when that file matches the value extracted from its `main_metadata` node.
 
 Keep at most 20 graphs. Evict least-recently-used entries and entries unused for more than 24 hours. Browser storage failures must never prevent graph compilation or rendering.
 
