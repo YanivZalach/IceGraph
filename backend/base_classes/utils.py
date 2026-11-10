@@ -93,7 +93,7 @@ def collect_graph_metadata_file(table_name: str, end_snapshot_id: int | None) ->
     metadata_entries = MetadataLogEntriesExtractor(table_name).extract_dataframe()
 
     if end_snapshot_id is not None:
-        metadata_entries = metadata_entries.filter(F.array_contains("snapshot_ids", end_snapshot_id))
+        metadata_entries = metadata_entries.filter(F.col("snapshot_id") == end_snapshot_id)
 
     selected_entry = metadata_entries.orderBy(F.desc("timestamp"), F.desc(F.length("file")), F.desc("file")).select("file").first()
 

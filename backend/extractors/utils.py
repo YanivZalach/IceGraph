@@ -20,7 +20,7 @@ METADATA_LOG_ENTRIES_SCHEMA = StructType(
     [
         StructField("file", StringType()),
         StructField("timestamp_ms", LongType()),
-        StructField("snapshot_ids", ArrayType(LongType())),
+        StructField("snapshot_id", LongType()),
     ]
 )
 BRANCH_REF_TYPE = "branch"

@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from pyspark.sql import DataFrame, Row, functions as F
 from pyspark.sql.types import LongType, MapType, StringType
@@ -31,7 +31,7 @@ class MetadataLogEntriesExtractor(Extractor):
         metadata_log_df = self._spark.sql(f"SELECT timestamp, file, latest_snapshot_id FROM {self._table_name}.metadata_log_entries")
         current_metadata_file = metadata_log_df.orderBy(F.desc("timestamp"), F.desc(F.length("file")), F.desc("file")).select("file").first()
         if current_metadata_file is None:
-            return self._with_main_snapshot_ids(metadata_log_df)
+            return self._with_main_snapshot_id(metadata_log_df)
 
         try:
             metadata = self._read_metadata(current_metadata_file.file)
@@ -40,7 +40,7 @@ class MetadataLogEntriesExtractor(Extractor):
             logger.warning(f"[{self._table_name}] Failed to read the snapshots from the current metadata file", exc_info=True)
             self.missing_snapshot_reason = str(e)
 
-            return self._with_main_snapshot_ids(metadata_log_df)
+            return self._with_main_snapshot_id(metadata_log_df)
 
         live_tip_ids = {ref["snapshot-id"] for ref in (metadata.refs or {}).values() if ref["type"] == BRANCH_REF_TYPE}
         live_tip_ids.add(metadata.current_snapshot_id)
@@ -74,15 +74,18 @@ class MetadataLogEntriesExtractor(Extractor):
     @staticmethod
     def _build_metadata_log_entries(
         current_metadata_file: str, metadata: Row, snapshot_ranges: List[SnapshotRange]
-    ) -> List[Tuple[str, int, List[int]]]:
+    ) -> List[Tuple[str, int, Optional[int]]]:
         metadata_files = [(entry["metadata-file"], entry["timestamp-ms"]) for entry in metadata.metadata_log or []]
         metadata_files.append((current_metadata_file, metadata.last_updated_ms))
 
-        return [
-            (file, timestamp_ms, [snapshot_range.snapshot_id for snapshot_range in snapshot_ranges if snapshot_range.covers(timestamp_ms)])
-            for file, timestamp_ms in metadata_files
-        ]
+        metadata_log_entries = []
+        for file, timestamp_ms in metadata_files:
+            covering_snapshot_ids = [snapshot_range.snapshot_id for snapshot_range in snapshot_ranges if snapshot_range.covers(timestamp_ms)]
+            for snapshot_id in covering_snapshot_ids or [None]:
+                metadata_log_entries.append((file, timestamp_ms, snapshot_id))
+
+        return metadata_log_entries
 
     @staticmethod
-    def _with_main_snapshot_ids(metadata_log_df: DataFrame) -> DataFrame:
-        return metadata_log_df.withColumn("snapshot_ids", F.array("latest_snapshot_id"))
+    def _with_main_snapshot_id(metadata_log_df: DataFrame) -> DataFrame:
+        return metadata_log_df.withColumnRenamed("latest_snapshot_id", "snapshot_id")
