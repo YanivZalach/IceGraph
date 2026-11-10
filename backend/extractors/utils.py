@@ -2,7 +2,6 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Set
 
-from pyspark.sql import Row
 from pyspark.sql.types import ArrayType, LongType, MapType, StringType, StructField, StructType
 
 METADATA_SNAPSHOTS_LINEAGE_SCHEMA = ArrayType(
@@ -36,33 +35,35 @@ class SnapshotRange:
         return self.start_ms <= timestamp_ms and (self.end_ms is None or timestamp_ms < self.end_ms)
 
 
-def build_snapshot_ranges(snapshots: List[Row], live_tip_ids: Set[int]) -> List[SnapshotRange]:
-    child_timestamps: Dict[int, List[int]] = defaultdict(list)
+def build_snapshot_ranges(snapshots: List[dict], live_tip_ids: Set[int]) -> List[SnapshotRange]:
+    child_commit_times_by_parent_id: Dict[int, List[int]] = defaultdict(list)
     for snapshot in snapshots:
-        child_timestamps[snapshot["parent-snapshot-id"]].append(snapshot["timestamp-ms"])
+        child_commit_times_by_parent_id[snapshot["parent-snapshot-id"]].append(snapshot["timestamp-ms"])
 
-    commit_timestamps = sorted(snapshot["timestamp-ms"] for snapshot in snapshots)
+    sorted_commit_times = sorted(snapshot["timestamp-ms"] for snapshot in snapshots)
 
     return [
         SnapshotRange(
             snapshot_id=snapshot["snapshot-id"],
             start_ms=snapshot["timestamp-ms"],
-            end_ms=_range_end_ms(snapshot, child_timestamps, live_tip_ids, commit_timestamps),
+            end_ms=_range_end_ms(snapshot, child_commit_times_by_parent_id, live_tip_ids, sorted_commit_times),
         )
         for snapshot in snapshots
     ]
 
 
-def _range_end_ms(snapshot: Row, child_timestamps: Dict[int, List[int]], live_tip_ids: Set[int], commit_timestamps: List[int]) -> Optional[int]:
-    children = child_timestamps.get(snapshot["snapshot-id"])
-    if children:
-        return max(children)
+def _range_end_ms(
+    snapshot: dict, child_commit_times_by_parent_id: Dict[int, List[int]], live_tip_ids: Set[int], sorted_commit_times: List[int]
+) -> Optional[int]:
+    child_commit_times = child_commit_times_by_parent_id.get(snapshot["snapshot-id"])
+    if child_commit_times:
+        return max(child_commit_times)
 
     if snapshot["snapshot-id"] in live_tip_ids:
         return None
 
-    for commit_timestamp in commit_timestamps:
-        if commit_timestamp > snapshot["timestamp-ms"]:
-            return commit_timestamp
+    for commit_time in sorted_commit_times:
+        if commit_time > snapshot["timestamp-ms"]:
+            return commit_time
 
     return None
