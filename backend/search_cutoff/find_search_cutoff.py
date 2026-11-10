@@ -88,7 +88,7 @@ def _get_start_cutoffs(
 
     meta_row = (
         metadata_log_entries_extractor.extract_dataframe()
-        .filter(F.array_contains("snapshot_ids", start_snapshot_id))
+        .filter(F.col("snapshot_id") == start_snapshot_id)
         .select(F.min("timestamp").alias("ts"))
         .withColumn("ts", column_to_string_utc("ts"))
         .first()
@@ -133,7 +133,7 @@ def _get_end_cutoffs(
 
     meta_row = (
         metadata_log_entries_extractor.extract_dataframe()
-        .filter(F.array_contains("snapshot_ids", end_snapshot_id))
+        .filter(F.col("snapshot_id") == end_snapshot_id)
         .select(F.max("timestamp").alias("ts"))
         .withColumn("ts", column_to_string_utc("ts"))
         .first()
