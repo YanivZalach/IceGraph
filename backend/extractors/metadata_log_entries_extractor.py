@@ -1,7 +1,7 @@
 from functools import cached_property
 from typing import List, Optional, Set, Tuple
 
-from pyspark.sql import DataFrame, Row, functions as F
+from pyspark.sql import DataFrame, functions as F
 from pyspark.sql.types import LongType, MapType, StringType
 
 from constants import SNAPSHOT_NOT_IN_METADATA_LOG_REASON
@@ -33,14 +33,14 @@ class MetadataLogEntriesExtractor(Extractor):
         if metadata is None:
             return metadata_log_df.withColumnRenamed("latest_snapshot_id", "snapshot_id")
 
-        snapshot_ranges = build_snapshot_ranges(metadata.snapshots or [], self._find_live_tip_ids(metadata))
+        snapshot_ranges = build_snapshot_ranges(metadata["snapshots"] or [], self._find_live_tip_ids(metadata))
         metadata_log_entries = self._build_metadata_log_entries(metadata, snapshot_ranges)
 
         return self._spark.createDataFrame(metadata_log_entries, METADATA_LOG_ENTRIES_SCHEMA).withColumn(
             "timestamp", F.timestamp_millis("timestamp_ms")
         )
 
-    def _read_current_metadata(self, metadata_log_df: DataFrame) -> Optional[Row]:
+    def _read_current_metadata(self, metadata_log_df: DataFrame) -> Optional[dict]:
         current_metadata_file = metadata_log_df.orderBy(F.desc("timestamp"), F.desc(F.length("file")), F.desc("file")).select("file").first()
         if current_metadata_file is None:
             return None
@@ -54,7 +54,7 @@ class MetadataLogEntriesExtractor(Extractor):
 
             return None
 
-    def _read_metadata(self, metadata_file: str) -> Row:
+    def _read_metadata(self, metadata_file: str) -> dict:
         metadata = F.col("metadata")
         row = (
             self._spark.read.text(metadata_file, wholetext=True)
@@ -73,18 +73,18 @@ class MetadataLogEntriesExtractor(Extractor):
         if row is None or not row.is_parsed:
             raise ValueError(f"The current metadata file could not be parsed: {metadata_file}")
 
-        return row
+        return row.asDict(recursive=True)
 
     @staticmethod
-    def _find_live_tip_ids(metadata: Row) -> Set[int]:
-        branch_head_ids = {ref["snapshot-id"] for ref in (metadata.refs or {}).values() if ref["type"] == BRANCH_REF_TYPE}
+    def _find_live_tip_ids(metadata: dict) -> Set[int]:
+        branch_head_ids = {ref["snapshot-id"] for ref in (metadata["refs"] or {}).values() if ref["type"] == BRANCH_REF_TYPE}
 
-        return branch_head_ids | {metadata.current_snapshot_id}
+        return branch_head_ids | {metadata["current_snapshot_id"]}
 
     @staticmethod
-    def _build_metadata_log_entries(metadata: Row, snapshot_ranges: List[SnapshotRange]) -> List[Tuple[str, int, Optional[int]]]:
-        metadata_files = [(entry["metadata-file"], entry["timestamp-ms"]) for entry in metadata.metadata_log or []]
-        metadata_files.append((metadata.file, metadata.last_updated_ms))
+    def _build_metadata_log_entries(metadata: dict, snapshot_ranges: List[SnapshotRange]) -> List[Tuple[str, int, Optional[int]]]:
+        metadata_files = [(entry["metadata-file"], entry["timestamp-ms"]) for entry in metadata["metadata_log"] or []]
+        metadata_files.append((metadata["file"], metadata["last_updated_ms"]))
 
         metadata_log_entries = []
         for file, timestamp_ms in metadata_files:
