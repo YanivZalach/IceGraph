@@ -1,4 +1,3 @@
-from collections import defaultdict
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Set
 
@@ -36,9 +35,10 @@ class SnapshotRange:
 
 
 def build_snapshot_ranges(snapshots: List[dict], live_tip_ids: Set[int]) -> List[SnapshotRange]:
-    child_commit_times_by_parent_id: Dict[int, List[int]] = defaultdict(list)
+    superseded_at_by_snapshot_id: Dict[int, int] = {}
     for snapshot in snapshots:
-        child_commit_times_by_parent_id[snapshot["parent-snapshot-id"]].append(snapshot["timestamp-ms"])
+        parent_id = snapshot["parent-snapshot-id"]
+        superseded_at_by_snapshot_id[parent_id] = max(superseded_at_by_snapshot_id.get(parent_id, 0), snapshot["timestamp-ms"])
 
     sorted_commit_times = sorted(snapshot["timestamp-ms"] for snapshot in snapshots)
 
@@ -46,18 +46,18 @@ def build_snapshot_ranges(snapshots: List[dict], live_tip_ids: Set[int]) -> List
         SnapshotRange(
             snapshot_id=snapshot["snapshot-id"],
             start_ms=snapshot["timestamp-ms"],
-            end_ms=_range_end_ms(snapshot, child_commit_times_by_parent_id, live_tip_ids, sorted_commit_times),
+            end_ms=_range_end_ms(snapshot, superseded_at_by_snapshot_id, live_tip_ids, sorted_commit_times),
         )
         for snapshot in snapshots
     ]
 
 
 def _range_end_ms(
-    snapshot: dict, child_commit_times_by_parent_id: Dict[int, List[int]], live_tip_ids: Set[int], sorted_commit_times: List[int]
+    snapshot: dict, superseded_at_by_snapshot_id: Dict[int, int], live_tip_ids: Set[int], sorted_commit_times: List[int]
 ) -> Optional[int]:
-    child_commit_times = child_commit_times_by_parent_id.get(snapshot["snapshot-id"])
-    if child_commit_times:
-        return max(child_commit_times)
+    superseded_at = superseded_at_by_snapshot_id.get(snapshot["snapshot-id"])
+    if superseded_at is not None:
+        return superseded_at
 
     if snapshot["snapshot-id"] in live_tip_ids:
         return None
