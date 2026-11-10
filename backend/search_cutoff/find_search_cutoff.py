@@ -6,7 +6,7 @@ import arrow
 from pyspark.sql import DataFrame, SparkSession, functions as F
 from pyspark.sql.types import StringType, StructField, StructType
 
-from constants import NO_REF_LEADS_TO_SNAPSHOT_REASON, SNAPSHOT_METADATA_WINDOW_WARNING
+from constants import SNAPSHOT_METADATA_WINDOW_WARNING
 from icegraph_logger import logger
 from extractors.metadata_log_entries_extractor import MetadataLogEntriesExtractor
 from extractors.utils import points_at_snapshot
@@ -98,7 +98,7 @@ def _get_start_cutoffs(
     if meta_row and meta_row.ts:
         metadata_cutoff = to_arrow_utc(meta_row.ts)
     else:
-        _warn_commit_time_boundary(warnings, "start", start_snapshot_id, metadata_log_entries_extractor.refs_read_error)
+        _warn_commit_time_boundary(warnings, "start", start_snapshot_id, metadata_log_entries_extractor.missing_snapshot_reason)
         metadata_cutoff = snapshot_cutoff
 
     manifests_to_ignore_df = _get_manifests_to_ignore_df(spark, table_name, row.parent_id)
@@ -143,7 +143,7 @@ def _get_end_cutoffs(
     if meta_row and meta_row.ts:
         metadata_cutoff = to_arrow_utc(meta_row.ts)
     else:
-        _warn_commit_time_boundary(warnings, "end", end_snapshot_id, metadata_log_entries_extractor.refs_read_error)
+        _warn_commit_time_boundary(warnings, "end", end_snapshot_id, metadata_log_entries_extractor.missing_snapshot_reason)
         metadata_cutoff = snapshot_cutoff
 
     return EndCutoffs(
@@ -152,8 +152,7 @@ def _get_end_cutoffs(
     )
 
 
-def _warn_commit_time_boundary(warnings: Dict[str, List[str]], label: str, snapshot_id: int, refs_read_error: Optional[str]) -> None:
-    reason = refs_read_error or NO_REF_LEADS_TO_SNAPSHOT_REASON
+def _warn_commit_time_boundary(warnings: Dict[str, List[str]], label: str, snapshot_id: int, reason: str) -> None:
     warnings[f"{label}_snapshot_metadata_window"] = [SNAPSHOT_METADATA_WINDOW_WARNING.format(label=label, snapshot_id=snapshot_id, reason=reason)]
 
 

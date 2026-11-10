@@ -1,9 +1,10 @@
 from functools import cached_property
-from typing import List, Optional
+from typing import List
 
 from pyspark.sql import DataFrame, Window, functions as F
 from pyspark.sql.types import ArrayType, LongType, MapType, StringType
 
+from constants import NO_REF_LEADS_TO_SNAPSHOT_REASON
 from extractors.extractor import Extractor
 from extractors.utils import (
     HEAD_CHANGES_SCHEMA,
@@ -19,7 +20,7 @@ from icegraph_logger import logger
 class MetadataLogEntriesExtractor(Extractor):
     def __init__(self, table_name: str):
         super().__init__(table_name)
-        self.refs_read_error: Optional[str] = None
+        self.missing_snapshot_reason = NO_REF_LEADS_TO_SNAPSHOT_REASON
 
     def extract_dataframe(self) -> DataFrame:
         return self._metadata_log_entries_df
@@ -55,8 +56,7 @@ class MetadataLogEntriesExtractor(Extractor):
 
         except Exception as e:
             logger.warning(f"[{self._table_name}] Failed to read the branches and tags from the current metadata file", exc_info=True)
-            error_lines = str(e).strip().splitlines()
-            self.refs_read_error = error_lines[0] if error_lines else type(e).__name__
+            self.missing_snapshot_reason = str(e)
 
             return []
 
