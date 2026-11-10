@@ -10,7 +10,8 @@ from pyspark.errors import AnalysisException, PySparkException
 from pyspark.sql import functions as F
 
 from icegraph_logger import logger
-from extractors.metadata_log_entries_extractor import MetadataLogEntriesExtractor, points_at_snapshot
+from extractors.metadata_log_entries_extractor import MetadataLogEntriesExtractor
+from extractors.utils import points_at_snapshot
 from metrics import operation_duration_seconds
 
 

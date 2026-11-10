@@ -8,7 +8,8 @@ from pyspark.sql.types import StringType, StructField, StructType
 
 from constants import NO_REF_LEADS_TO_SNAPSHOT_REASON, SNAPSHOT_METADATA_WINDOW_WARNING
 from icegraph_logger import logger
-from extractors.metadata_log_entries_extractor import MetadataLogEntriesExtractor, points_at_snapshot
+from extractors.metadata_log_entries_extractor import MetadataLogEntriesExtractor
+from extractors.utils import points_at_snapshot
 from base_classes.utils import timed, to_arrow_utc
 
 
