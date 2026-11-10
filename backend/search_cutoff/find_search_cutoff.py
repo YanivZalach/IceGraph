@@ -3,13 +3,14 @@ from dataclasses import dataclass, field
 from typing import Dict, List, NamedTuple, Optional
 
 import arrow
+import polars as pl
 from pyspark.sql import DataFrame, SparkSession, functions as F
 from pyspark.sql.types import StringType, StructField, StructType
 
 from constants import SNAPSHOT_METADATA_WINDOW_WARNING
 from icegraph_logger import logger
 from extractors.metadata_log_entries_extractor import MetadataLogEntriesExtractor
-from base_classes.utils import timed, to_arrow_utc
+from base_classes.utils import epoch_millis_to_arrow_utc, timed, to_arrow_utc
 
 
 @dataclass
@@ -86,16 +87,10 @@ def _get_start_cutoffs(
 
     snapshot_cutoff = to_arrow_utc(row.committed_at)
 
-    meta_row = (
-        metadata_log_entries_extractor.extract_dataframe()
-        .filter(F.col("snapshot_id") == start_snapshot_id)
-        .select(F.min("timestamp").alias("ts"))
-        .withColumn("ts", column_to_string_utc("ts"))
-        .first()
-    )
+    metadata_timestamp_ms = metadata_log_entries_extractor.extract_entries().filter(pl.col("snapshot_id") == start_snapshot_id)["timestamp_ms"].min()
 
-    if meta_row and meta_row.ts:
-        metadata_cutoff = to_arrow_utc(meta_row.ts)
+    if metadata_timestamp_ms is not None:
+        metadata_cutoff = epoch_millis_to_arrow_utc(metadata_timestamp_ms)
     else:
         _warn_commit_time_boundary(warnings, "start", start_snapshot_id, metadata_log_entries_extractor.missing_snapshot_reason)
         metadata_cutoff = snapshot_cutoff
@@ -131,16 +126,10 @@ def _get_end_cutoffs(
 
     snapshot_cutoff = to_arrow_utc(row.committed_at)
 
-    meta_row = (
-        metadata_log_entries_extractor.extract_dataframe()
-        .filter(F.col("snapshot_id") == end_snapshot_id)
-        .select(F.max("timestamp").alias("ts"))
-        .withColumn("ts", column_to_string_utc("ts"))
-        .first()
-    )
+    metadata_timestamp_ms = metadata_log_entries_extractor.extract_entries().filter(pl.col("snapshot_id") == end_snapshot_id)["timestamp_ms"].max()
 
-    if meta_row and meta_row.ts:
-        metadata_cutoff = to_arrow_utc(meta_row.ts)
+    if metadata_timestamp_ms is not None:
+        metadata_cutoff = epoch_millis_to_arrow_utc(metadata_timestamp_ms)
     else:
         _warn_commit_time_boundary(warnings, "end", end_snapshot_id, metadata_log_entries_extractor.missing_snapshot_reason)
         metadata_cutoff = snapshot_cutoff

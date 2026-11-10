@@ -6,6 +6,7 @@ import re
 import time
 
 import arrow
+import polars as pl
 from pyspark.errors import AnalysisException, PySparkException
 from pyspark.sql import functions as F
 
@@ -66,6 +67,10 @@ def to_arrow_utc(timestamp):
     return arrow.get(timestamp).replace(tzinfo="UTC")
 
 
+def epoch_millis_to_arrow_utc(timestamp_ms: int) -> arrow.Arrow:
+    return arrow.get(0, tzinfo="UTC").shift(microseconds=timestamp_ms * 1000)
+
+
 def column_to_string_utc(column_name: str):
     """
     Converts a timestamp column to a string in UTC format.
@@ -89,20 +94,19 @@ def column_to_string_utc(column_name: str):
 
 @timed
 def collect_graph_metadata_file(table_name: str, end_snapshot_id: int | None) -> str:
-    spark = open_spark_connect_session()
-    metadata_entries = MetadataLogEntriesExtractor(table_name).extract_dataframe()
+    metadata_entries = MetadataLogEntriesExtractor(table_name).extract_entries()
 
     if end_snapshot_id is not None:
-        metadata_entries = metadata_entries.filter(F.col("snapshot_id") == end_snapshot_id)
+        metadata_entries = metadata_entries.filter(pl.col("snapshot_id") == end_snapshot_id)
 
-    selected_entry = metadata_entries.orderBy(F.desc("timestamp"), F.desc(F.length("file")), F.desc("file")).select("file").first()
+    selected_file = MetadataLogEntriesExtractor.find_newest_file(metadata_entries)
 
-    if not selected_entry:
+    if selected_file is None:
         if end_snapshot_id is None:
             raise ValueError(f"No metadata files found for table {table_name}")
         raise ValueError(f"No metadata file found for table {table_name} at snapshot {end_snapshot_id}")
 
-    return selected_entry.file
+    return selected_file
 
 
 def format_snapshot_summary(summary: dict[str, str]) -> dict[str, str]:
