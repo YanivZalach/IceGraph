@@ -3,19 +3,32 @@ from functools import cached_property
 from typing import List, Optional, Set, Tuple
 
 from pyspark.sql import DataFrame, Row, functions as F
-from pyspark.sql.types import LongType, MapType, StringType
+from pyspark.sql.types import ArrayType, LongType, MapType, StringType, StructField, StructType
 
 from constants import SNAPSHOT_NOT_IN_METADATA_LOG_REASON
 from extractors.extractor import Extractor
 from extractors.snapshot_ranges import SnapshotCommit, SnapshotRange, SnapshotRangesBuilder
-from extractors.utils import (
-    BRANCH_REF_TYPE,
-    METADATA_LOG_ENTRIES_SCHEMA,
-    METADATA_LOG_SCHEMA,
-    METADATA_REFS_SCHEMA,
-    METADATA_SNAPSHOTS_LINEAGE_SCHEMA,
-)
 from icegraph_logger import logger
+
+METADATA_SNAPSHOTS_LINEAGE_SCHEMA = ArrayType(
+    StructType(
+        [
+            StructField("snapshot-id", LongType()),
+            StructField("parent-snapshot-id", LongType()),
+            StructField("timestamp-ms", LongType()),
+        ]
+    )
+)
+METADATA_REFS_SCHEMA = MapType(StringType(), StructType([StructField("snapshot-id", LongType()), StructField("type", StringType())]))
+METADATA_LOG_SCHEMA = ArrayType(StructType([StructField("timestamp-ms", LongType()), StructField("metadata-file", StringType())]))
+METADATA_LOG_ENTRIES_SCHEMA = StructType(
+    [
+        StructField("file", StringType()),
+        StructField("timestamp_ms", LongType()),
+        StructField("snapshot_id", LongType()),
+    ]
+)
+BRANCH_REF_TYPE = "branch"
 
 
 @dataclass
