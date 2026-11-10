@@ -27,7 +27,7 @@ class SnapshotRange:
 
 class SnapshotLog:
     def __init__(self, entries: List[SnapshotLogEntry]):
-        self._entries = entries
+        self._entries = list(reversed(entries))
         self.snapshot_ids = {entry.snapshot_id for entry in entries}
 
     def snapshot_id_at(self, timestamp_ms: int) -> Optional[int]:
@@ -35,6 +35,7 @@ class SnapshotLog:
         for entry in self._entries:
             if entry.timestamp_ms <= timestamp_ms:
                 snapshot_id = entry.snapshot_id
+                break
 
         return snapshot_id
 
