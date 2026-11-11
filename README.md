@@ -210,10 +210,3 @@ uv run icegraph --base-url http://localhost:3000 tables
 
 IceGraph is open source under the [Apache License, Version 2.0](LICENSE). See
 [NOTICE](NOTICE) for attribution.
-
-Earlier releases remain available under their original licenses: up to v0.16.2
-under the [MIT License](https://github.com/YanivZalach/IceGraph/blob/v0.16.2/LICENSE),
-and v0.16.3 through v0.23.0 under the
-[GNU Affero General Public License version 3 only](https://github.com/YanivZalach/IceGraph/blob/v0.23.0/LICENSE).
-
-Copyright (c) 2026 Yaniv Zalach and the IceGraph contributors.
