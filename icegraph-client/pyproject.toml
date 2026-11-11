@@ -6,8 +6,8 @@ build-backend = "setuptools.build_meta"
 name = "icegraph-client"
 description = "Python client and CLI for the IceGraph server API"
 readme = "README.md"
-license = "AGPL-3.0-only"
-license-files = ["LICENSE"]
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
 authors = [{ name = "Yaniv Zalach" }]
 requires-python = ">=3.9"
 dynamic = ["version"]
