@@ -29,7 +29,7 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 COPY backend ./backend
 COPY images ./images
-COPY LICENSE ./
+COPY LICENSE NOTICE ./
 
 ENV PRODUCTION_MODE=true
 
