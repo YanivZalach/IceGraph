@@ -9,7 +9,7 @@ ENV UV_COMPILE_BYTECODE=1 \
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv pip install --system \
-    "pyspark[connect]==3.5.4" \
+    "pyspark[connect]==4.1.4" \
     "setuptools>=75.0.0"
 
 COPY create_mock_tables.py .

@@ -52,7 +52,7 @@ docker compose up -d --build icegraph
 
 The easiest way to run IceGraph is via [DockerHub](https://hub.docker.com/r/yanivzalach/icegraph)
 
-### Spark connect 3.5.4
+### Spark connect 4.1.4
 
 ```bash
 docker run -e SPARK_REMOTE=sc://<spark-connect-ip>:15002 -p 5050:5050 yanivzalach/icegraph:latest

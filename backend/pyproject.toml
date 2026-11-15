@@ -15,7 +15,7 @@ dependencies = [
     "polars==2.1.0",
     "prometheus-client==0.26.0",
     "pyarrow==23.0.1",
-    "pyspark[connect]==3.5.4",
+    "pyspark[connect]==4.1.4",
     "python-dotenv==1.2.1",
     "setuptools>=75.0.0",
     "waitress==3.0.2",
