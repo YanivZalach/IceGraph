@@ -1,13 +1,63 @@
 # ─────────────────────────────────────────────────────────────────
 # IceGraph demo stack.
-# Using HADOOP Catalog.
-# After all services are healthy (can take a couple of minutes), open http://localhost:5050 .
-# Creating 2 tables: default.logging, default.events .
+# Using the Iceberg REST catalog (iceberg-rest-fixture, SQLite) with RustFS (S3) storage.
+# After all services are healthy (can take a couple of minutes), open:
+#   http://localhost:5050 for IceGraph on Spark  (tables: default.logging, default.events)
+#   http://localhost:5051 for IceGraph on Trino  (tables: iceberg.default.logging, iceberg.default.events)
 # ─────────────────────────────────────────────────────────────────
 
+x-s3-credentials: &s3-credentials
+  AWS_ACCESS_KEY_ID: icegraph
+  AWS_SECRET_ACCESS_KEY: icegraph-demo-secret
+  AWS_REGION: us-east-1
+
 services:
+  rustfs:
+    image: rustfs/rustfs:1.0.1
+    environment:
+      RUSTFS_ACCESS_KEY: icegraph
+      RUSTFS_SECRET_KEY: icegraph-demo-secret
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_REGION: us-east-1
+
+  create-bucket:
+    image: curlimages/curl:8.16.0
+    restart: "no"
+    depends_on:
+      - rustfs
+    entrypoint:
+      - "/bin/sh"
+      - "-c"
+      - |
+        code=$$(curl -sS -o /dev/null -w '%{http_code}' -X PUT \
+          --retry 30 --retry-delay 2 --retry-connrefused --retry-all-errors \
+          --user icegraph:icegraph-demo-secret --aws-sigv4 aws:amz:us-east-1:s3 \
+          -H 'x-amz-content-sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' \
+          http://rustfs:9000/warehouse)
+        echo "create bucket warehouse -> HTTP $$code"
+        [ "$$code" = 200 ] || [ "$$code" = 409 ]
+
+  iceberg-rest:
+    image: apache/iceberg-rest-fixture:1.10.1
+    depends_on:
+      create-bucket:
+        condition: service_completed_successfully
+    environment:
+      <<: *s3-credentials
+      CATALOG_URI: jdbc:sqlite:file:/tmp/iceberg_catalog.db
+      CATALOG_WAREHOUSE: s3://warehouse/
+      CATALOG_IO__IMPL: org.apache.iceberg.aws.s3.S3FileIO
+      CATALOG_S3_ENDPOINT: http://rustfs:9000
+      CATALOG_S3_PATH__STYLE__ACCESS: "true"
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8181/v1/config"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+
   spark-master:
-    image: apache/spark:3.5.4
+    image: apache/spark:3.5.4-java17
     hostname: spark-master
     ports:
       - "8080:8080"
@@ -27,21 +77,30 @@ services:
     build:
       context: .
       dockerfile_inline: |
-        FROM apache/spark:3.5.4
+        FROM apache/spark:3.5.4-java17
         USER root
-        RUN curl -fL -o /opt/spark/jars/iceberg-spark-runtime-3.5_2.12-1.4.2.jar \
-              "https://repo1.maven.org/maven2/org/apache/iceberg/iceberg-spark-runtime-3.5_2.12/1.4.2/iceberg-spark-runtime-3.5_2.12-1.4.2.jar" \
+        RUN curl -fL -o /opt/spark/jars/iceberg-spark-runtime-3.5_2.12-1.12.0.jar \
+              "https://repo1.maven.org/maven2/org/apache/iceberg/iceberg-spark-runtime-3.5_2.12/1.12.0/iceberg-spark-runtime-3.5_2.12-1.12.0.jar" \
             && curl -fL -o /opt/spark/jars/spark-avro_2.12-3.5.4.jar \
-              "https://repo1.maven.org/maven2/org/apache/spark/spark-avro_2.12/3.5.4/spark-avro_2.12-3.5.4.jar"
+              "https://repo1.maven.org/maven2/org/apache/spark/spark-avro_2.12/3.5.4/spark-avro_2.12-3.5.4.jar" \
+            && curl -fL -o /opt/spark/jars/iceberg-aws-bundle-1.12.0.jar \
+              "https://repo1.maven.org/maven2/org/apache/iceberg/iceberg-aws-bundle/1.12.0/iceberg-aws-bundle-1.12.0.jar" \
+            && curl -fL -o /opt/spark/jars/hadoop-aws-3.3.4.jar \
+              "https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.3.4/hadoop-aws-3.3.4.jar" \
+            && curl -fL -o /opt/spark/jars/aws-java-sdk-bundle-1.12.262.jar \
+              "https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/1.12.262/aws-java-sdk-bundle-1.12.262.jar"
     hostname: spark-connect
     user: root
     ports:
       - "4040:4040"
       - "15002:15002"
     depends_on:
-      - spark-master
-    volumes:
-      - ./data:/warehouse:rw
+      spark-master:
+        condition: service_started
+      iceberg-rest:
+        condition: service_healthy
+    environment:
+      <<: *s3-credentials
     entrypoint: ["/opt/spark/bin/spark-submit"]
     command:
       - "--packages"
@@ -53,9 +112,25 @@ services:
       - "--conf"
       - "spark.sql.catalog.spark_catalog=org.apache.iceberg.spark.SparkCatalog"
       - "--conf"
-      - "spark.sql.catalog.spark_catalog.type=hadoop"
+      - "spark.sql.catalog.spark_catalog.type=rest"
       - "--conf"
-      - "spark.sql.catalog.spark_catalog.warehouse=/warehouse"
+      - "spark.sql.catalog.spark_catalog.uri=http://iceberg-rest:8181"
+      - "--conf"
+      - "spark.sql.catalog.spark_catalog.io-impl=org.apache.iceberg.aws.s3.S3FileIO"
+      - "--conf"
+      - "spark.sql.catalog.spark_catalog.s3.endpoint=http://rustfs:9000"
+      - "--conf"
+      - "spark.sql.catalog.spark_catalog.s3.path-style-access=true"
+      - "--conf"
+      - "spark.hadoop.fs.s3.impl=org.apache.hadoop.fs.s3a.S3AFileSystem"
+      - "--conf"
+      - "spark.hadoop.fs.s3a.endpoint=http://rustfs:9000"
+      - "--conf"
+      - "spark.hadoop.fs.s3a.endpoint.region=us-east-1"
+      - "--conf"
+      - "spark.hadoop.fs.s3a.path.style.access=true"
+      - "--conf"
+      - "spark.hadoop.fs.s3a.connection.ssl.enabled=false"
       - "--class"
       - "org.apache.spark.sql.connect.service.SparkConnectServer"
       - "spark-internal"
@@ -73,7 +148,7 @@ services:
       start_period: 30s
 
   spark-worker:
-    image: apache/spark:3.5.4
+    image: apache/spark:3.5.4-java17
     hostname: spark-worker
     depends_on:
       - spark-master
@@ -93,6 +168,35 @@ services:
     environment:
       - SPARK_REMOTE=sc://spark-connect:15002
 
+  trino:
+    image: trinodb/trino:484
+    depends_on:
+      iceberg-rest:
+        condition: service_healthy
+    environment:
+      <<: *s3-credentials
+    volumes:
+      - ./trino/catalog:/etc/trino/catalog:ro
+    healthcheck:
+      test: ["CMD", "/usr/lib/trino/bin/health-check"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  trino-init:
+    image: trinodb/trino:484
+    restart: "no"
+    depends_on:
+      trino:
+        condition: service_healthy
+    entrypoint:
+      - "trino"
+      - "--server"
+      - "http://trino:8080"
+      - "--execute"
+      - "CREATE SCHEMA IF NOT EXISTS hive.icegraph WITH (location = 's3://warehouse/icegraph-hive-schema')"
+
   icegraph:
     build:
       context: ..
@@ -104,6 +208,20 @@ services:
         condition: service_healthy
     environment:
       - SPARK_REMOTE=sc://spark-connect:15002
+
+  icegraph-trino:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    ports:
+      - "5051:5050"
+    depends_on:
+      trino-init:
+        condition: service_completed_successfully
+    environment:
+      - QUERY_ENGINE=trino
+      - TRINO_HOST=trino
+      - TRINO_PORT=8080
 
 volumes:
   warehouse:

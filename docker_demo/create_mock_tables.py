@@ -3,6 +3,7 @@ from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 
 spark = SparkSession.builder.remote(os.environ["SPARK_REMOTE"]).getOrCreate()
+spark.sql("CREATE NAMESPACE IF NOT EXISTS default")
 
 # ─────────────────────────────────────────────
 # Events table

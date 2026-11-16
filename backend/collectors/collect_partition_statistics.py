@@ -88,7 +88,7 @@ class CollectPartitionStatistics(StatisticsCollector):
 
     def _collect_partition_summaries(self, statistics_files: Dict[str, PartitionStatisticsFileRecord], include_samples: bool = True) -> None:
         try:
-            rows = PartitionStatisticsExtractor(self._table_name, list(statistics_files.values())).extract_dataframe(include_samples).collect()
+            rows = self._read_partition_summary_rows(statistics_files, include_samples)
         except Exception as e:
             logger.error(f"[{self._table_name}] Partition statistics batch read error", exc_info=True)
             for statistics_file in statistics_files.values():
@@ -114,6 +114,9 @@ class CollectPartitionStatistics(StatisticsCollector):
             except Exception as e:
                 logger.error(f"[{self._table_name}] Partition statistics file parse error for {statistics_file.file_path}", exc_info=True)
                 statistics_file.errors.append(str(e))
+
+    def _read_partition_summary_rows(self, statistics_files: Dict[str, PartitionStatisticsFileRecord], include_samples: bool) -> list:
+        return PartitionStatisticsExtractor(self._table_name, list(statistics_files.values())).extract_dataframe(include_samples).collect()
 
     @staticmethod
     def _parse_partition_row(row: dict) -> Dict[str, Any]:

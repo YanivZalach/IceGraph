@@ -43,9 +43,11 @@ docker compose up -d
 
 Go to `http://localhost:5050` and explore table `default.events` and table `default.logging`.
 
-To rebuild only the IceGraph image after local code changes (without restarting Spark or other services):
+The demo also runs IceGraph on Trino at `http://localhost:5051`, reading the same tables as `iceberg.default.events` and `iceberg.default.logging`. Both engines share an Iceberg REST catalog (`iceberg-rest-fixture`) and RustFS (S3) storage.
+
+To rebuild only the IceGraph images after local code changes (without restarting Spark or other services):
 ```bash
-docker compose up -d --build icegraph
+docker compose up -d --build icegraph icegraph-trino
 ```
 
 ## Quick Start Using Docker
@@ -69,6 +71,24 @@ Then run with the same command:
 ```bash
 docker run -e SPARK_REMOTE=sc://<spark-connect-ip>:15002 -p 5050:5050 icegraph
 ```
+
+### Trino
+
+IceGraph can read Iceberg metadata through Trino instead of Spark Connect:
+
+```bash
+docker run -e QUERY_ENGINE=trino -e TRINO_HOST=<trino-host> -e TRINO_PORT=8080 -p 5050:5050 yanivzalach/icegraph:latest
+```
+
+Tables are named `catalog.schema.table`. Trino needs:
+
+- An Iceberg catalog (`connector.name=iceberg`) for the tables to inspect.
+- A Hive catalog with a file metastore (`hive.metastore=file`) that can read the same storage, and an existing schema in it, by default `hive.icegraph` (`TRINO_RAW_FILES_SCHEMA`). IceGraph registers external tables there to read raw metadata, manifest, and statistics files. The tables it inspects are never written to.
+- A Trino user (`TRINO_USER`, optional `TRINO_PASSWORD`) with read access to the Iceberg catalog, and `CREATE TABLE` and `SELECT` on the raw files schema only.
+- `TRINO_PASSWORD` requires `TRINO_HTTP_SCHEME=https`, since Trino refuses passwords over plain HTTP.
+- Hive file-status caching (`hive.file-status-cache-tables`) must not cover the raw files schema, otherwise new metadata files appear missing.
+
+Limitations compared to Spark: tables in a Hadoop catalog can't be read (Trino has no Hadoop catalog), and metadata JSON files must be uncompressed and written on one line, as Iceberg writes them by default. The Trino settings are listed in `backend/env.py`. `docker_demo/trino/catalog` holds a working example of both catalogs.
 
 ### Deploying Multiple Pods
 
