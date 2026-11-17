@@ -20,6 +20,7 @@ const GRAPH_SEARCH_KEYS = new Set([
 ]);
 
 const isSearchKeyKept = (key: string, destination: AnalyzeTabPath): boolean =>
+  (destination === "/table/timeline" || !key.startsWith("timeline_")) &&
   (destination === "/table/filetree" || !key.startsWith("filetree_")) &&
   (destination === "/table/graph" || !GRAPH_SEARCH_KEYS.has(key));
 

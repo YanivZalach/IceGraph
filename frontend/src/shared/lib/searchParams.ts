@@ -52,6 +52,15 @@ export const graphSearchSchema = tableSearchSchema.extend({
   graph_search: z.string().optional(),
 });
 
+export const timelineSearchSchema = tableSearchSchema.extend({
+  timeline_event: z.string().optional(),
+  timeline_kind: z
+    .enum(["all", "writes", "metadata"])
+    .optional()
+    .catch(undefined),
+  timeline_branch: z.string().optional(),
+});
+
 export const fileTreeSearchSchema = tableSearchSchema.extend({
   filetree_branch: z.string().optional(),
   filetree_grouping: z.enum(["flat", "tree"]).optional(),

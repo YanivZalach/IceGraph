@@ -5,15 +5,15 @@ import { selectionAfterArrowKey } from "../lib/timelineNavigation";
 import type { TimelineRow } from "../lib/timelineRow";
 
 export interface TimelineSelection {
-  selectedFilePath: string | null;
   handleSelect: (filePath: string) => void;
   clearSelection: () => void;
 }
 
 export const useTimelineSelection = (
   rows: TimelineRow[],
+  selectedFilePath: string | null,
+  onSelectionChange: (filePath: string | undefined) => void,
 ): TimelineSelection => {
-  const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
   const [rememberedFilePath, setRememberedFilePath] = useState<string | null>(
     null,
   );
@@ -21,11 +21,12 @@ export const useTimelineSelection = (
 
   const handleSelect = (filePath: string) => {
     setRememberedFilePath(filePath);
-    setSelectedFilePath((current) => (current === filePath ? null : filePath));
+    onSelectionChange(selectedFilePath === filePath ? undefined : filePath);
   };
 
   const clearSelection = () => {
-    setSelectedFilePath(null);
+    setRememberedFilePath(selectedFilePath);
+    onSelectionChange(undefined);
   };
 
   const handleArrowKey = (key: "ArrowDown" | "ArrowUp") => {
@@ -35,7 +36,9 @@ export const useTimelineSelection = (
       rememberedFilePath,
       key,
     );
-    setSelectedFilePath(targetFilePath);
+    if (targetFilePath !== selectedFilePath) {
+      onSelectionChange(targetFilePath ?? undefined);
+    }
     if (targetFilePath === null) {
       return;
     }
@@ -60,15 +63,15 @@ export const useTimelineSelection = (
     () => {
       handleArrowKey("ArrowDown");
     },
-    { enabled: !detailsOpen },
+    { enabled: !detailsOpen && !issuesOpen },
   );
   useHotkey(
     "ArrowUp",
     () => {
       handleArrowKey("ArrowUp");
     },
-    { enabled: !detailsOpen },
+    { enabled: !detailsOpen && !issuesOpen },
   );
 
-  return { selectedFilePath, handleSelect, clearSelection };
+  return { handleSelect, clearSelection };
 };
