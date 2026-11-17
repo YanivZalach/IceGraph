@@ -1,29 +1,14 @@
-import {
-  PANEL_DIFF_AFTER_LABEL_CLASS,
-  PANEL_DIFF_AFTER_VALUE_CLASS,
-  PANEL_DIFF_BEFORE_LABEL_CLASS,
-  PANEL_DIFF_BEFORE_VALUE_CLASS,
-  PANEL_FIELD_LABEL_CLASS,
-} from "../../../../components/PanelContent";
+import { describeFieldDiff } from "../../lib/details/describeFieldDiff";
 import type { FieldDiff } from "../../lib/details/diffMetadataFiles";
 import { SECTION_TITLE_CLASS } from "./sectionTitleClass";
+import FieldDiffBlock from "./FieldDiffBlock";
 
 interface RawDiffSectionProps {
   diffs: FieldDiff[];
 }
 
-const formatValue = (value: unknown): string => {
-  if (value === null || value === undefined) {
-    return "—";
-  }
-  if (typeof value === "string") {
-    return value;
-  }
-  if (typeof value === "number" || typeof value === "boolean") {
-    return value.toString();
-  }
-  return JSON.stringify(value, null, 2);
-};
+const countText = (count: number, word: string): string =>
+  `${count.toString()} ${word}${count === 1 ? "" : "s"}`;
 
 const RawDiffSection = ({ diffs }: RawDiffSectionProps) => {
   if (diffs.length === 0) {
@@ -34,28 +19,13 @@ const RawDiffSection = ({ diffs }: RawDiffSectionProps) => {
     <details>
       <summary className={`${SECTION_TITLE_CLASS} cursor-pointer`}>
         Raw metadata diff
+        <span className="ml-2 text-xs font-normal tracking-normal text-slate-500 normal-case">
+          {countText(diffs.length, "field")} changed
+        </span>
       </summary>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col">
         {diffs.map((diff) => (
-          <div key={diff.key} className="flex flex-col gap-1.5">
-            <span className={PANEL_FIELD_LABEL_CLASS}>
-              {diff.key.replace(/_/g, " ")}
-            </span>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <div className={PANEL_DIFF_BEFORE_LABEL_CLASS}>Before</div>
-                <pre className={PANEL_DIFF_BEFORE_VALUE_CLASS}>
-                  {formatValue(diff.before)}
-                </pre>
-              </div>
-              <div>
-                <div className={PANEL_DIFF_AFTER_LABEL_CLASS}>After</div>
-                <pre className={PANEL_DIFF_AFTER_VALUE_CLASS}>
-                  {formatValue(diff.after)}
-                </pre>
-              </div>
-            </div>
-          </div>
+          <FieldDiffBlock key={diff.key} field={describeFieldDiff(diff)} />
         ))}
       </div>
     </details>

@@ -1,10 +1,7 @@
+import { formatDurationMs } from "../format/formatDuration";
 import type { MetadataFileNode, SnapshotNode } from "../../api/nodeSchemas";
 import { diffMetadataFiles, type FieldDiff } from "./diffMetadataFiles";
-import {
-  formatDayAndMonth,
-  formatDayMonthYearAndClock,
-} from "../format/formatTimelineTime";
-import { formatShortId } from "../format/formatShortId";
+import { formatDayMonthYearAndClock } from "../format/formatTimelineTime";
 import {
   groupSnapshotSummary,
   type SummaryEntry,
@@ -18,6 +15,8 @@ import {
 import type { TimelineData, TimelineRow } from "../timelineRow";
 
 export interface DetailRowData {
+  /** Set when labels alone may collide, such as user-chosen ref names. */
+  id?: string;
   label: string;
   value: string;
   isCopyable?: boolean;
@@ -25,6 +24,7 @@ export interface DetailRowData {
 
 export interface MetadataFileData {
   path: string;
+  linkedPaths: DetailRowData[];
   stats: DetailRowData[];
 }
 
@@ -55,10 +55,10 @@ const movedToText = (
   target: SnapshotNode | undefined,
 ): string => {
   if (target === undefined) {
-    return `snapshot ${formatShortId(targetId)} (expired or not loaded)`;
+    return `snapshot ${targetId} (expired or not loaded)`;
   }
   const operation = target.operation ?? "unknown";
-  return `snapshot ${formatShortId(target.snapshot_id)} from ${formatDayMonthYearAndClock(target.timestamp)} (${operation})`;
+  return `snapshot ${target.snapshot_id} from ${formatDayMonthYearAndClock(target.timestamp)} (${operation})`;
 };
 
 const snapshotRows = (
@@ -81,7 +81,15 @@ const snapshotRows = (
     { label: "Snapshot ID", value: snapshot.snapshot_id, isCopyable: true },
     { label: "Parent ID", value: snapshot.parent_id ?? "" },
     { label: "Operation", value: snapshot.operation ?? "" },
+    { label: "Manifest List", value: snapshot.file_path, isCopyable: true },
   ];
+  // Row lineage exists only on v3 tables; older versions leave it null.
+  if (snapshot.first_row_id != null) {
+    rows.push({ label: "First Row ID", value: String(snapshot.first_row_id) });
+  }
+  if (snapshot.added_rows != null) {
+    rows.push({ label: "Added Rows", value: String(snapshot.added_rows) });
+  }
 
   if (
     snapshot.operation_description !== null &&
@@ -116,8 +124,16 @@ const eventRows = (
   if (row.isDraftPublishedLater && row.publishedAtMs !== null) {
     rows.push({
       label: "Published",
-      value: formatDayAndMonth(row.publishedAtMs),
+      value: formatDayMonthYearAndClock(row.publishedAtMs),
     });
+  }
+
+  const isUnpublishedInRange =
+    row.kind === "draft-write" &&
+    !row.isDraftPublishedLater &&
+    row.publishedAsSnapshotId === null;
+  if (isUnpublishedInRange) {
+    rows.push({ label: "Published", value: "not in the loaded range" });
   }
 
   if (row.publishedAsSnapshotId !== null) {
@@ -133,6 +149,9 @@ const eventRows = (
 
 const fileStats = (file: MetadataFileNode): DetailRowData[] => {
   const stats: DetailRowData[] = [
+    ...(file.format_version == null
+      ? []
+      : [{ label: "Format Version", value: String(file.format_version) }]),
     { label: "Schema ID", value: file.current_schema_id?.toString() ?? "" },
     {
       label: "Partition Spec ID",
@@ -176,12 +195,93 @@ const nodeNotices = (
   return notices;
 };
 
-const refRows = (file: MetadataFileNode): DetailRowData[] =>
-  Object.entries(file.refs).map(([name, ref]) => ({
-    label: `${ref.type} ${name}`,
-    value: ref["snapshot-id"],
+const gapNotices = (
+  row: TimelineRow,
+  hasReadablePrevious: boolean,
+): DetailNotice[] => {
+  const count = row.unreadableCommitsBefore;
+  if (count === 0) {
+    return [];
+  }
+  const eventsText =
+    count === 1
+      ? "1 event right before this one"
+      : `${count.toString()} events right before this one`;
+  const consequence = hasReadablePrevious
+    ? "This event is compared with the last readable one, so the changes shown may include theirs."
+    : "No earlier event could be read, so what this event changed cannot be shown.";
+  const fileLines = row.unreadableFilesBefore.map((file) =>
+    file.reasons.length === 0
+      ? file.path
+      : `${file.path}: ${file.reasons.join("; ")}`,
+  );
+  return [
+    {
+      kind: "warning",
+      text: [
+        `${eventsText} could not be read. ${consequence}`,
+        ...fileLines,
+      ].join("\n"),
+    },
+  ];
+};
+
+const statisticsPaths = (
+  kind: string,
+  files: MetadataFileNode["pointed_table_statistics_files"],
+): DetailRowData[] =>
+  (files ?? []).map((statisticsFile) => ({
+    label: `${kind} statistics, snapshot ${statisticsFile["snapshot-id"]}`,
+    value: statisticsFile["statistics-path"],
     isCopyable: true,
   }));
+
+const linkedPaths = (file: MetadataFileNode): DetailRowData[] => [
+  ...(file.previous_file === null
+    ? []
+    : [
+        {
+          label: "Previous metadata file",
+          value: file.previous_file,
+          isCopyable: true,
+        },
+      ]),
+  ...statisticsPaths("Table", file.pointed_table_statistics_files),
+  ...statisticsPaths("Partition", file.pointed_partition_statistics_files),
+];
+
+const REF_RETENTION_FIELDS = [
+  { key: "min-snapshots-to-keep", label: "min snapshots to keep" },
+  { key: "max-snapshot-age-ms", label: "max snapshot age" },
+  { key: "max-ref-age-ms", label: "max ref age" },
+] as const;
+
+const refRows = (file: MetadataFileNode): DetailRowData[] =>
+  Object.entries(file.refs).flatMap(([name, ref]) => [
+    {
+      id: JSON.stringify([ref.type, name]),
+      label: `${ref.type} ${name}`,
+      value: ref["snapshot-id"],
+      isCopyable: true,
+    },
+    ...REF_RETENTION_FIELDS.flatMap(({ key, label }) => {
+      const value = ref[key];
+      if (value == null) {
+        return [];
+      }
+      const text = String(value);
+      return [
+        {
+          id: JSON.stringify([ref.type, name, key]),
+          label: `${ref.type} ${name} ${label}`,
+          value:
+            key === "min-snapshots-to-keep"
+              ? text
+              : `${formatDurationMs(text)} (${text} ms)`,
+        },
+      ];
+    }),
+  ]);
 
 export const buildEventDetails = (
   timeline: TimelineData,
@@ -225,7 +325,10 @@ export const buildEventDetails = (
       : [{ label: "Branch Name", value: row.branchName }];
 
   return {
-    notices: nodeNotices(file, snapshot),
+    notices: [
+      ...gapNotices(row, previousFile !== undefined),
+      ...nodeNotices(file, snapshot),
+    ],
     actionLink: actionLink === "" ? null : actionLink,
     snapshotFilePath: snapshot?.file_path ?? null,
     topRows: [
@@ -239,7 +342,11 @@ export const buildEventDetails = (
       parentSnapshot?.summary ?? null,
     ),
     engine: toRows(summary?.engine ?? []),
-    metadataFile: { path: file.file_path, stats: fileStats(file) },
+    metadataFile: {
+      path: file.file_path,
+      linkedPaths: linkedPaths(file),
+      stats: fileStats(file),
+    },
     refs: refRows(file),
     properties: toRows(Object.entries(file.properties)),
     rawDiff:

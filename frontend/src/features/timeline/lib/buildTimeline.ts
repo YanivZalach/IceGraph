@@ -9,12 +9,14 @@ import { describeCommit } from "./classification/describeCommit";
 import { writeTitle } from "./classification/describeWriteCommit";
 import { findDraftPublication } from "./findDraftPublication";
 import { formatShortId } from "./format/formatShortId";
+import { orderMetadataFilesOldestFirst } from "./orderMetadataFiles";
 import { parseTimelineNodes } from "./parseTimelineNodes";
 import {
   boundaryRow,
   type RefBadge,
   type TimelineData,
   type TimelineRow,
+  type UnreadableFileSummary,
 } from "./timelineRow";
 
 const DEGRADED_COMMIT: CommitDescription = {
@@ -53,6 +55,7 @@ const buildOldestRow = (
   return {
     ...boundaryRow(file),
     kind: "published-write",
+    branchName: "main",
     title: writeTitle(ownSnapshot.operation_description, ownSnapshot.summary),
     impact: readSnapshotImpact(ownSnapshot.summary, ownSnapshot.operation),
     shortId: formatShortId(ownSnapshot.snapshot_id),
@@ -113,20 +116,45 @@ export const buildTimeline = (
   nodes: unknown[],
   tableMetadata: TableMetadata | null,
 ): TimelineData => {
-  const { metadataFiles, snapshotsById, unreadableCommitCount } =
-    parseTimelineNodes(nodes);
-  const filesOldestFirst = [...metadataFiles].sort(
-    (fileA, fileB) =>
-      fileA.timestamp - fileB.timestamp ||
-      fileA.file_path.localeCompare(fileB.file_path),
+  const {
+    metadataFiles,
+    snapshotsById,
+    unreadableCommitCount,
+    unreadableFiles,
+  } = parseTimelineNodes(nodes);
+  const readableByPath = new Map(
+    metadataFiles.map((file) => [file.file_path, file]),
   );
+  const filesOldestFirst: MetadataFileNode[] = [];
+  const unreadableBefore: UnreadableFileSummary[][] = [];
+  let pendingUnreadable: UnreadableFileSummary[] = [];
+  for (const placedFile of orderMetadataFilesOldestFirst([
+    ...metadataFiles,
+    ...unreadableFiles,
+  ])) {
+    const readableFile = readableByPath.get(placedFile.file_path);
+    if (readableFile === undefined) {
+      pendingUnreadable.push({
+        path: placedFile.file_path,
+        reasons: "reasons" in placedFile ? placedFile.reasons : [],
+      });
+      continue;
+    }
+    filesOldestFirst.push(readableFile);
+    unreadableBefore.push(pendingUnreadable);
+    pendingUnreadable = [];
+  }
   const newestRefs = filesOldestFirst.at(-1)?.refs ?? {};
 
   const rowsOldestFirst = filesOldestFirst.map((file, index): TimelineRow => {
     const previousFile = filesOldestFirst[index - 1];
 
     if (previousFile === undefined) {
-      return attachRefBadges(buildOldestRow(file, snapshotsById), newestRefs);
+      return {
+        ...attachRefBadges(buildOldestRow(file, snapshotsById), newestRefs),
+        unreadableCommitsBefore: unreadableBefore[index]?.length ?? 0,
+        unreadableFilesBefore: unreadableBefore[index] ?? [],
+      };
     }
 
     let commit = DEGRADED_COMMIT;
@@ -141,7 +169,16 @@ export const buildTimeline = (
       // the row still renders, titled by the fallback
     }
 
-    const row = attachRefBadges(toTimelineRow(file, commit), newestRefs);
+    const isPreviousFileMissing =
+      file.previous_file !== null && !readableByPath.has(file.previous_file);
+    const row = {
+      ...attachRefBadges(toTimelineRow(file, commit), newestRefs),
+      unreadableCommitsBefore: Math.max(
+        unreadableBefore[index]?.length ?? 0,
+        isPreviousFileMissing ? 1 : 0,
+      ),
+      unreadableFilesBefore: unreadableBefore[index] ?? [],
+    };
 
     return attachDraftPublication(
       row,
@@ -157,7 +194,11 @@ export const buildTimeline = (
     unreadableCommitCount,
     isTableMetadataUnreadable: tableMetadata === null,
     // previous_file is nulled at the load cutoff; the metadata log count survives it
-    olderCommitCount: filesOldestFirst[0]?.pointed_metadata_log_count ?? 0,
+    olderCommitCount: Math.max(
+      0,
+      (filesOldestFirst[0]?.pointed_metadata_log_count ?? 0) -
+        (unreadableBefore[0]?.length ?? 0),
+    ),
     snapshotsById,
     filesByPath: new Map(
       filesOldestFirst.map((file) => [file.file_path, file]),

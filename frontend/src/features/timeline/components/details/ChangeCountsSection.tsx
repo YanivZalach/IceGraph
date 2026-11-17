@@ -1,3 +1,4 @@
+import { PANEL_FIELD_LABEL_CLASS } from "../../../../components/PanelContent";
 import { cn } from "../../../../shared/lib/cn";
 import { UI_FIELD_LABEL_CLASS } from "../../../../uiTypography";
 import Chip from "../Chip";
@@ -7,7 +8,6 @@ import type {
   ChangeValueRow,
 } from "../../lib/details/summaryTables";
 import { humanizeLabel } from "../../lib/format/humanizeSummary";
-import { SECTION_TITLE_CLASS } from "./sectionTitleClass";
 
 interface ChangeCountsSectionProps {
   title: string;
@@ -44,10 +44,8 @@ const ChangeCountsSection = ({
   counts,
   rows,
 }: ChangeCountsSectionProps) => (
-  <details open>
-    <summary className={`${SECTION_TITLE_CLASS} cursor-pointer`}>
-      {title}
-    </summary>
+  <section>
+    <h3 className={`mb-1 ${PANEL_FIELD_LABEL_CLASS}`}>{title}</h3>
     <table className="w-full table-fixed">
       <colgroup>
         <col className="w-1/2" />
@@ -93,7 +91,7 @@ const ChangeCountsSection = ({
         ))}
       </tbody>
     </table>
-  </details>
+  </section>
 );
 
 export default ChangeCountsSection;

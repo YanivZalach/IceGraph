@@ -1,8 +1,7 @@
 import { cn } from "../../../../shared/lib/cn";
 import type { TimelineRow } from "../../lib/timelineRow";
 import { CHIP_BASE_CLASS } from "../Chip";
-import { displayBranchNameFor } from "../../lib/displayBranchName";
-import type { BranchAccent } from "../eventColor";
+import { eventToneFor, type BranchAccent } from "../eventColor";
 
 interface CommitCellProps {
   row: TimelineRow;
@@ -24,7 +23,11 @@ const CommitCell = ({ row, branchAccents }: CommitCellProps) => {
         <span className={cn(CHIP_BASE_CLASS, branchAccents.get("main")?.chip)}>
           main
         </span>
-        <span className="text-sm text-ink">moved to</span>
+        <span
+          className={cn("text-sm font-medium", eventToneFor(row).textClass)}
+        >
+          moved to
+        </span>
         <span
           className={cn(
             CHIP_BASE_CLASS,
@@ -37,13 +40,20 @@ const CommitCell = ({ row, branchAccents }: CommitCellProps) => {
     );
   }
 
-  const branchName = displayBranchNameFor(row);
+  const { branchName } = row;
   const accent =
     branchName === null ? undefined : branchAccents.get(branchName);
 
   return (
     <span className="flex items-center gap-2">
-      <span className="max-w-72 truncate text-sm text-ink">{row.title}</span>
+      <span
+        className={cn(
+          "max-w-72 truncate text-sm font-medium",
+          eventToneFor(row).textClass,
+        )}
+      >
+        {row.title}
+      </span>
       {accent !== undefined && (
         <span className={cn(CHIP_BASE_CLASS, accent.chip)}>{branchName}</span>
       )}

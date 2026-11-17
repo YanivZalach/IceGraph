@@ -1,9 +1,8 @@
-import { format, intlFormatDistance } from "date-fns";
+import { format, intlFormatDistance, isSameDay, subDays } from "date-fns";
 
 const ISO_MILLISECOND_LENGTH = "yyyy-MM-ddTHH:mm:ss.SSS".length;
 
 const MILLISECONDS_PER_HOUR = 60 * 60 * 1000;
-const MILLISECONDS_PER_DAY = 24 * MILLISECONDS_PER_HOUR;
 
 const NARROW_DISTANCE_OPTIONS = {
   locale: "en",
@@ -11,8 +10,8 @@ const NARROW_DISTANCE_OPTIONS = {
   numeric: "always",
 } as const;
 
-const DAY_AND_MONTH_PATTERN = "MMM d";
-const DAY_MONTH_AND_CLOCK_PATTERN = "MMM d, HH:mm";
+const CLOCK_PATTERN = "HH:mm";
+const DAY_HEADING_PATTERN = "EEEE, MMM d, yyyy";
 const DAY_MONTH_YEAR_AND_CLOCK_PATTERN = "MMM d, yyyy, HH:mm";
 const ABSOLUTE_PATTERN = "MMM d, yyyy, HH:mm:ss.SSS XXX";
 
@@ -31,16 +30,15 @@ export const parseUtcTimestampToMillis = (
 };
 
 /**
- * The hour unit is forced below a day because `intlFormatDistance` rounds to days from about 16
- * hours, which would read `1d ago` on a row the column would still show a clock time for.
+ * Rows sit under a day heading, so earlier days show only the clock. The hour unit is forced
+ * below a day because `intlFormatDistance` rounds to days from about 16 hours.
  */
 export const formatEventTime = (timestampMs: number, nowMs: number): string => {
-  const elapsedMs = Math.abs(nowMs - timestampMs);
-
-  if (elapsedMs >= MILLISECONDS_PER_DAY) {
-    return format(timestampMs, DAY_MONTH_AND_CLOCK_PATTERN);
+  if (!isSameDay(timestampMs, nowMs)) {
+    return format(timestampMs, CLOCK_PATTERN);
   }
 
+  const elapsedMs = Math.abs(nowMs - timestampMs);
   if (elapsedMs >= MILLISECONDS_PER_HOUR) {
     return intlFormatDistance(timestampMs, nowMs, {
       unit: "hour",
@@ -51,11 +49,24 @@ export const formatEventTime = (timestampMs: number, nowMs: number): string => {
   return intlFormatDistance(timestampMs, nowMs, NARROW_DISTANCE_OPTIONS);
 };
 
+export const formatDayHeading = (
+  timestampMs: number,
+  nowMs: number,
+): string => {
+  if (isSameDay(timestampMs, nowMs)) {
+    return "Today";
+  }
+  if (isSameDay(timestampMs, subDays(nowMs, 1))) {
+    return "Yesterday";
+  }
+  return format(timestampMs, DAY_HEADING_PATTERN);
+};
+
+export const dayKeyOf = (timestampMs: number): string =>
+  format(timestampMs, "yyyy-MM-dd");
+
 export const formatAbsoluteTimestamp = (timestampMs: number): string =>
   format(timestampMs, ABSOLUTE_PATTERN);
-
-export const formatDayAndMonth = (timestampMs: number): string =>
-  format(timestampMs, DAY_AND_MONTH_PATTERN);
 
 export const formatDayMonthYearAndClock = (timestampMs: number): string =>
   format(timestampMs, DAY_MONTH_YEAR_AND_CLOCK_PATTERN);

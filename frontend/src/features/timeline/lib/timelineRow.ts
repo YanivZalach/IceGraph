@@ -6,6 +6,11 @@ export interface RefBadge {
   type: "branch" | "tag";
 }
 
+export interface UnreadableFileSummary {
+  path: string;
+  reasons: string[];
+}
+
 export interface TimelineRow {
   kind:
     | "published-write"
@@ -27,6 +32,8 @@ export interface TimelineRow {
   isDraftPublishedLater: boolean;
   publishedAsSnapshotId: string | null;
   publishedAtMs: number | null;
+  unreadableCommitsBefore: number;
+  unreadableFilesBefore: UnreadableFileSummary[];
 }
 
 export interface TimelineData {
@@ -54,4 +61,6 @@ export const boundaryRow = (file: MetadataFileNode): TimelineRow => ({
   isDraftPublishedLater: false,
   publishedAsSnapshotId: null,
   publishedAtMs: null,
+  unreadableCommitsBefore: 0,
+  unreadableFilesBefore: [],
 });

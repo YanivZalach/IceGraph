@@ -2,7 +2,6 @@ import type { SnapshotReference } from "../../api/snapshotReferenceSchema";
 import type { SnapshotRefs } from "../../api/nodeSchemas";
 import { sameTextChange, type DescribedChange } from "./describedChange";
 import { formatDurationMs } from "../format/formatDuration";
-import { formatShortId } from "../format/formatShortId";
 
 const refChange = (
   refType: "branch" | "tag",
@@ -81,7 +80,7 @@ export const describeRefChanges = (
         refChange(
           currentRef.type,
           name,
-          `moved to snapshot ${formatShortId(currentRef["snapshot-id"])}`,
+          `moved to snapshot ${currentRef["snapshot-id"]}`,
         ),
       );
     }

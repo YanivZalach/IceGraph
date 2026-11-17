@@ -26,29 +26,31 @@ const TimelineToolbar = ({
   onBranchFilterChange,
 }: TimelineToolbarProps) => {
   const isFiltering = kindFilter !== "all" || branchFilter !== null;
-  const commitsWord = commitCount === 1 ? "commit" : "commits";
+  const eventsWord = commitCount === 1 ? "event" : "events";
   const countText = isFiltering
-    ? `${shownCommitCount.toString()} of ${commitCount.toString()} ${commitsWord}`
-    : `${commitCount.toString()} ${commitsWord}`;
+    ? `${shownCommitCount.toString()} of ${commitCount.toString()} ${eventsWord}`
+    : `${commitCount.toString()} ${eventsWord}`;
 
   return (
-    <div className="shrink-0 border-b border-edge">
-      <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-3 py-2">
-        <p className="text-xs text-slate-400">
-          {countText}
-          {unreadableCommitCount > 0 && (
-            <span className="text-amber-400">
-              {` · ${unreadableCommitCount.toString()} could not be read`}
-            </span>
-          )}
-          {isTableMetadataUnreadable && (
-            <span role="status" className="text-amber-400">
-              {
-                " · table metadata could not be read, so schema, partition and sort changes show ids only"
-              }
-            </span>
-          )}
-        </p>
+    <div className="sticky top-0 z-10 border-b border-edge bg-canvas/90 backdrop-blur">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-3 py-3 sm:px-5">
+        <div className="min-w-0">
+          <p className="text-sm text-slate-400">
+            {countText}
+            {unreadableCommitCount > 0 && (
+              <span className="text-amber-400">
+                {` · ${unreadableCommitCount.toString()} could not be read`}
+              </span>
+            )}
+            {isTableMetadataUnreadable && (
+              <span role="status" className="text-amber-400">
+                {
+                  " · table metadata could not be read, so schema, partition and sort changes show ids only"
+                }
+              </span>
+            )}
+          </p>
+        </div>
 
         <div className="flex items-center gap-2">
           <KindFilterSegments

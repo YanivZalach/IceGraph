@@ -1,11 +1,11 @@
 import type { TableProperties } from "../../api/nodeSchemas";
 import { formatByteSize } from "../format/backendSize";
-import { formatShortId } from "../format/formatShortId";
 import { sameTextChange, type DescribedChange } from "./describedChange";
 
-const BYTE_SIZE_PROPERTY_PATTERN = /-size(-bytes)?$/;
-const ALL_DIGITS_PATTERN = /^\d+$/;
-const LONG_HASH_PATTERN = /^[0-9a-f]{16,}$/i;
+/** `-size` alone is not a unit: `read.parquet.vectorization.batch-size` counts rows. */
+const BYTE_SIZE_PROPERTY_PATTERN = /-bytes$/;
+/** 15 digits keeps Number() exact; longer values are shown as written. */
+const SAFE_WHOLE_NUMBER_PATTERN = /^\d{1,15}$/;
 
 /** Stamped fresh by Nessie on every commit — bookkeeping, not a setting change. */
 const ALWAYS_IGNORED_KEYS = new Set(["nessie.commit.id"]);
@@ -13,12 +13,7 @@ const ALWAYS_IGNORED_KEYS = new Set(["nessie.commit.id"]);
 /** Spark sets this itself as part of `WRITE ORDERED BY`. */
 const SORT_ORDER_SIDE_EFFECT_KEYS = new Set(["write.distribution-mode"]);
 
-const shortenHash = (value: string | undefined): string => {
-  if (value === undefined) {
-    return "unset";
-  }
-  return LONG_HASH_PATTERN.test(value) ? formatShortId(value) : value;
-};
+const valueOrUnset = (value: string | undefined): string => value ?? "unset";
 
 export const describeIgnoredPropertyChanges = (
   previousProperties: TableProperties,
@@ -28,12 +23,12 @@ export const describeIgnoredPropertyChanges = (
     .filter((key) => previousProperties[key] !== currentProperties[key])
     .map((key) =>
       sameTextChange(
-        `${key} ${shortenHash(previousProperties[key])} → ${shortenHash(currentProperties[key])}`,
+        `${key} ${valueOrUnset(previousProperties[key])} → ${valueOrUnset(currentProperties[key])}`,
       ),
     );
 
 const formatPropertyValue = (key: string, value: string): string =>
-  BYTE_SIZE_PROPERTY_PATTERN.test(key) && ALL_DIGITS_PATTERN.test(value)
+  BYTE_SIZE_PROPERTY_PATTERN.test(key) && SAFE_WHOLE_NUMBER_PATTERN.test(value)
     ? formatByteSize(Number(value))
     : value;
 
