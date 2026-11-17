@@ -14,8 +14,8 @@ const pointedSnapshotFileSchema = z.object({
 const baseNodeFields = {
   file_path: z.string(),
   child_files: z.array(z.string()),
-  error: z.string().nullable(),
-  warning: z.string().nullable(),
+  errors: z.array(z.string()).default([]),
+  warnings: z.array(z.string()).default([]),
 };
 
 export const metadataFileNodeSchema = z.object({
