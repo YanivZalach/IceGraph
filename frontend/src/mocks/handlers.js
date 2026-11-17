@@ -2162,6 +2162,10 @@ export const handlers = [
     });
   }),
 
+  http.get("/api/v1/assistant", () => {
+    return HttpResponse.json({ enabled: false, max_context_characters: 0 });
+  }),
+
   http.post("/api/v1/graph-data", async ({ request }) => {
     const form = new URLSearchParams(await request.text());
     const range = {

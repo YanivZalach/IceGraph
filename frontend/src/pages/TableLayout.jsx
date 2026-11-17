@@ -10,6 +10,7 @@ import { formatLocaleDateTime, parseUtcDate } from "../utils/dateUtils";
 import { UI_BODY_MUTED_CLASS } from "../uiTypography";
 
 import SpecDetailsOverlay from "../features/specs/components/SpecDetailsOverlay";
+import Assistant from "../features/assistant/components/Assistant";
 import NotIcebergTablePage from "../features/table/components/NotIcebergTablePage";
 import UnreachableMetadataFilePage from "../features/table/components/UnreachableMetadataFilePage";
 import {
@@ -352,6 +353,7 @@ export default function TableLayout() {
       </TableGraphDataContext.Provider>
 
       <SpecDetailsOverlay />
+      <Assistant />
       {issuesOpen && (errors || warnings) && (
         <div
           className="fixed inset-0 z-[9999] bg-black/60 flex items-center justify-center font-sans"

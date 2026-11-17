@@ -91,6 +91,28 @@ Prometheus metrics are served at `/metrics`. Disable with `METRICS_ENABLED=false
 - `icegraph_operation_duration_seconds`: operation durations.
 - `icegraph_graph_computations_total`: graphs computed.
 - `icegraph_cache_reads_total`: server cache hits.
+- `icegraph_assistant_questions_total`: questions submitted to the AI assistant.
+
+### AI Assistant
+
+IceGraph can show an **Ask AI** button on the snapshot selection page and the table pages that answers questions about the table. It is off by default and turns on when both `AI_API_BASE_URL` and `AI_MODEL` are set. Any OpenAI-compatible chat completions API works (OpenAI, Azure OpenAI, vLLM, Ollama, LiteLLM, and others). The API URL, key, and model stay on the server and are never sent to the browser.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `AI_API_BASE_URL` | empty | Base URL of the API, for example `https://api.openai.com/v1` or `http://ollama:11434/v1`. |
+| `AI_MODEL` | empty | Model to request. |
+| `AI_API_KEY` | empty | API key. Leave empty for servers that need no key. |
+| `AI_REQUEST_TIMEOUT_SECONDS` | `120` | Maximum time for one answer. |
+| `AI_MAX_CONCURRENT_REQUESTS` | `5` | Answers generated in parallel. Further questions are rejected until one finishes. |
+| `AI_MAX_CONTEXT_CHARACTERS` | `200000` | Maximum characters of table context and conversation sent per question. Keep it within the context window of the model; for self-hosted servers such as LM Studio or Ollama, that is the context length the model is loaded with. |
+
+```bash
+docker run -e SPARK_REMOTE=sc://<spark-connect-ip>:15002 \
+  -e AI_API_BASE_URL=https://api.openai.com/v1 -e AI_MODEL=<model> -e AI_API_KEY=<key> \
+  -p 5050:5050 yanivzalach/icegraph:latest
+```
+
+The user chooses which parts of the table metadata loaded in the browser are sent with each question. That context can include file paths, table properties, and column lower and upper bounds, which are real data values, so point IceGraph only at a model you are allowed to send them to. IceGraph has no authentication: anyone who can reach it can use the configured model, within the limits above.
 
 ## Start Using Source Code (Contributor to IceGraph)
 

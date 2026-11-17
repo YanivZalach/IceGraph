@@ -1,4 +1,4 @@
 export const isKeyboardInputTarget = (target: EventTarget | null): boolean =>
   target instanceof HTMLElement &&
   (target.isContentEditable ||
-    target.closest("input, textarea, select") !== null);
+    target.closest("input, textarea, select, [data-owns-keyboard]") !== null);

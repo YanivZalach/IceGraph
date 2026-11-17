@@ -10,6 +10,8 @@ from flask import Flask, Response, copy_current_request_context, jsonify, reques
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from pyspark.errors import AnalysisException
 
+from assistant.assistant_jobs import shutdown_assistant_jobs
+from assistant.assistant_routes import assistant_blueprint
 from base_classes.utils import collect_graph_metadata_file, verify_iceberg_table
 from constants import COLLECTION_STAGES, JOB_TOKEN_FIELD, STAGE_BUILD_GRAPH
 from env import Env
@@ -26,6 +28,7 @@ from table_list_catalog.table_list_catalog import TableListCatalog
 
 app = Flask(__name__, static_url_path="/static")
 app.json.sort_keys = False
+app.register_blueprint(assistant_blueprint)
 
 job_lock = threading.Lock()
 jobs: dict[str, dict] = {}
@@ -329,4 +332,5 @@ if __name__ == "__main__":
 
         close_spark_connect_session()
         executor_pool.shutdown(wait=False, cancel_futures=True)
+        shutdown_assistant_jobs()
         logger.info("Compute executor pool shutdown")

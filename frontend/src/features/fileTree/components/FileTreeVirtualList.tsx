@@ -19,6 +19,8 @@ const FileTreeVirtualList = ({ renderRow, rows }: FileTreeVirtualListProps) => {
     getItemKey: (index) => rows[index]?.id ?? index,
     getScrollElement: () => scrollElementRef.current,
     overscan: 10,
+    // Room for the last rows to scroll above the floating AI assistant button.
+    paddingEnd: 80,
   });
 
   return (
