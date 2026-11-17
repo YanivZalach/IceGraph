@@ -1,8 +1,8 @@
 import Chip from "../Chip";
 
 interface ImpactCountProps {
-  added: number;
-  removed: number;
+  added: bigint;
+  removed: bigint;
   unit: "rows" | "files";
 }
 
@@ -12,13 +12,13 @@ const SINGULAR_UNIT = { rows: "row", files: "file" } as const;
 
 const ImpactCount = ({ added, removed, unit }: ImpactCountProps) => (
   <span className="inline-flex items-center gap-1">
-    {added > 0 && (
+    {added > 0n && (
       <Chip text={`+${numberFormatter.format(added)}`} tone="added" />
     )}
-    {removed > 0 && (
+    {removed > 0n && (
       <Chip text={`−${numberFormatter.format(removed)}`} tone="removed" />
     )}
-    {added + removed === 1 ? SINGULAR_UNIT[unit] : unit}
+    {added + removed === 1n ? SINGULAR_UNIT[unit] : unit}
   </span>
 );
 

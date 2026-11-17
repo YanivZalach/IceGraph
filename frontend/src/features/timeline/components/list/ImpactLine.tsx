@@ -3,7 +3,6 @@ import type { ImpactSegment } from "../../lib/impactSegment";
 import { CHIP_BASE_CLASS } from "../Chip";
 import type { BranchAccent } from "../eventColor";
 import ImpactCount from "./ImpactCount";
-import ImpactSize from "./ImpactSize";
 
 const TAG_CHIP_CLASS = "bg-slate-500/15 text-slate-300";
 
@@ -15,9 +14,6 @@ interface ImpactLineProps {
 const segmentKey = (segment: ImpactSegment): string => {
   if (segment.kind === "text") {
     return segment.text;
-  }
-  if (segment.kind === "size") {
-    return "size";
   }
   if (segment.kind === "ref") {
     return `${segment.name} ${segment.action}`;
@@ -48,8 +44,6 @@ const ImpactLine = ({ segments, branchAccents }: ImpactLineProps) => {
               </span>
               {segment.action}
             </span>
-          ) : segment.kind === "size" ? (
-            <ImpactSize netBytes={segment.netBytes} />
           ) : (
             <ImpactCount
               added={segment.added}
