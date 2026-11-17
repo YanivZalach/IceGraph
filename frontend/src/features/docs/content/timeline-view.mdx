@@ -1,4 +1,12 @@
-A git-log-style list of every commit in your selected range, newest first. Each row shows what happened in plain language (**Data added**, **Files compacted**, **Schema changed**, ...), the rows and files it added or removed as +/− chips, the snapshot it produced, and when.
+A git-log-style list of every commit in your selected range, newest first. Each row shows what happened in plain language (**Data added**, **Data overwritten**, **Files compacted**, **Schema changed**, ...), the rows it added or removed as +/− chips, the snapshot it produced, and when. A compaction changes no rows, so its chips count files instead. File counts and sizes for every other commit live in the details panel.
+
+### Terms
+
+- **Commit** — one metadata file: a single change to the table's data or its definition. Not every commit writes data.
+- **Snapshot** — the table's data as produced by a commit that wrote data. Commits that only change the definition, branches or settings produce none.
+- **Not published** — a snapshot that was written but that no branch or tag ever pointed at (Iceberg calls this _staged_, as in write-audit-publish). If a later commit points at it, the row says so.
+- **Re-point** — a commit that moves the table's current snapshot to one that already exists instead of writing a new one: a rollback, a branch fast-forward, or a plain switch.
+- **Loaded range** — the snapshots picked in snapshot selection. Everything on this page is scoped to it; the list never claims anything it would need older commits to prove.
 
 ### Reading the rail
 
@@ -14,12 +22,12 @@ The toolbar above the list shows how many commits are loaded and holds two filte
 
 ### Keyboard
 
-**↑** / **↓** move the selection through commits (starting from the newest); **Esc** closes the details panel. After **Esc**, the next arrow key reopens the commit you were on rather than starting over.
+**↑** / **↓** move the selection through commits (starting from the newest); **Enter** or **Space** opens a focused row; **Esc** closes the details panel. After **Esc**, the next arrow key reopens the commit you were on rather than starting over.
 
 ### Details panel
 
-Click a commit (or press **↓**) to open its details in a resizable panel: what this change did (added/removed counts), the table state before and after it, engine info, the metadata file, refs, properties, and a raw metadata diff against the previous commit. Values that matter as ids carry a clipboard icon. Backend read errors and warnings for the commit appear as banners at the top.
+Click a commit (or press **↓**) to open its details in a resizable panel: what this change did (added/removed counts, files and sizes included), the table state before and after it, engine info, the metadata file, refs, properties, and a raw metadata diff against the previous commit. Values that matter as ids carry a clipboard icon. Backend read errors and warnings for the commit appear as banners at the top.
 
 When the commit's snapshot points at the job that wrote it, an **`action_link`** row links out to it, opening in a new tab.
 
-The list is honest about its edges: a muted **N earlier commits not loaded** link at the bottom jumps to snapshot selection when the range is truncated, and commits the backend could not read are counted in an amber notice instead of silently disappearing. The bottom row is **Start of history** — the table's first surviving metadata file — when the full history is loaded and that file wrote no snapshot; when older commits exist beyond the cutoff, it is an italic _start of loaded range_ marker instead.
+The list is honest about its edges: a muted **N earlier commits not loaded** link below the table jumps to snapshot selection when the range is truncated, and commits the backend could not read are counted in an amber notice instead of silently disappearing. The bottom row is **Start of history** — the table's first surviving metadata file — when the full history is loaded and that file wrote no snapshot; when older commits exist beyond the cutoff, the bottom row is the oldest loaded file, shown without a description because its change cannot be seen.
