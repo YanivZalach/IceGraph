@@ -12,7 +12,8 @@ interface BeforeAfterSectionProps {
 const CELL_CLASS = "py-2 pl-3 text-right font-mono text-xs whitespace-nowrap";
 
 const BeforeAfterSection = ({ title, rows }: BeforeAfterSectionProps) => {
-  const isBeforeUnknown = rows.every((row) => row.before === null);
+  const isBeforeUnknown =
+    rows.length > 0 && rows.every((row) => row.before === null);
 
   return (
     <details>

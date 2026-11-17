@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { icebergIntegerSchema } from "../../table/api/metadataSchemas";
 import { icebergStructFieldSchema } from "./icebergTypeSchemas";
 import { optionalSnapshotIdSchema } from "./snapshotIdSchemas";
 import { snapshotReferenceSchema } from "./snapshotReferenceSchema";
@@ -15,7 +16,7 @@ export const tableMetadataSchema = z.object({
   "last-updated-ms": z.number().nullish(),
   "last-column-id": z.number().nullish(),
   "last-partition-id": z.number().nullish(),
-  "last-sequence-number": z.number().nullish(),
+  "last-sequence-number": icebergIntegerSchema.nullish(),
   "current-schema-id": z.number().nullish(),
   "current-snapshot-id": optionalSnapshotIdSchema.nullish(),
   "default-spec-id": z.number().nullish(),
@@ -38,7 +39,8 @@ export const tableMetadataSchema = z.object({
           z.object({
             name: z.string(),
             transform: z.string(),
-            "source-id": z.number(),
+            "source-id": z.number().nullish(),
+            "source-ids": z.array(z.number()).nullish(),
             "field-id": z.number().nullish(),
           }),
         ),
@@ -52,7 +54,8 @@ export const tableMetadataSchema = z.object({
         fields: z.array(
           z.object({
             transform: z.string(),
-            "source-id": z.number(),
+            "source-id": z.number().nullish(),
+            "source-ids": z.array(z.number()).nullish(),
             direction: z.string().nullish(),
             "null-order": z.string().nullish(),
           }),

@@ -31,12 +31,18 @@ const TimelineTableRow = ({
     <tr
       tabIndex={0}
       data-file-path={row.original.filePath}
-      aria-selected={isSelected}
+      aria-current={isSelected ? "true" : undefined}
       onClick={() => {
         onSelect(row.original.filePath);
       }}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onSelect(row.original.filePath);
+        }
+      }}
       className={cn(
-        "cursor-pointer transition-colors focus-visible:outline-none",
+        "cursor-pointer transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent",
         isSelected ? "bg-surface" : "hover:bg-surface/60",
       )}
     >

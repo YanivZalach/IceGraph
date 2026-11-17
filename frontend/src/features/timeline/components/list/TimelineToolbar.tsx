@@ -6,6 +6,7 @@ interface TimelineToolbarProps {
   commitCount: number;
   shownCommitCount: number;
   unreadableCommitCount: number;
+  isTableMetadataUnreadable: boolean;
   kindFilter: CommitKindFilter;
   onKindFilterChange: (kind: CommitKindFilter) => void;
   branchOptions: string[];
@@ -17,6 +18,7 @@ const TimelineToolbar = ({
   commitCount,
   shownCommitCount,
   unreadableCommitCount,
+  isTableMetadataUnreadable,
   kindFilter,
   onKindFilterChange,
   branchOptions,
@@ -37,6 +39,13 @@ const TimelineToolbar = ({
           {unreadableCommitCount > 0 && (
             <span className="text-amber-400">
               {` · ${unreadableCommitCount.toString()} could not be read`}
+            </span>
+          )}
+          {isTableMetadataUnreadable && (
+            <span role="status" className="text-amber-400">
+              {
+                " · table metadata could not be read, so schema, partition and sort changes show ids only"
+              }
             </span>
           )}
         </p>
