@@ -1,32 +1,5 @@
 import type { TimelineRow } from "../lib/timelineRow";
 
-const WRITE_COLOR = "#1964B9";
-const METADATA_COLOR = "#6437D2";
-const BRANCH_COLOR = "#0EA5E9";
-
-export const eventColorFor = (row: TimelineRow): string => {
-  if (row.kind === "draft-write") {
-    return BRANCH_COLOR;
-  }
-  if (row.kind === "published-write") {
-    return row.branchName === "main" || row.branchName === null
-      ? WRITE_COLOR
-      : BRANCH_COLOR;
-  }
-  return METADATA_COLOR;
-};
-
-export const eventBorderClassFor = (row: TimelineRow): string => {
-  const color = eventColorFor(row);
-  if (color === WRITE_COLOR) {
-    return "border-l-[#1964B9]";
-  }
-  if (color === BRANCH_COLOR) {
-    return "border-l-[#0EA5E9]";
-  }
-  return "border-l-[#6437D2]";
-};
-
 const BRANCH_ACCENTS = [
   { node: "border-violet-400", chip: "bg-violet-500/15 text-violet-400" },
   { node: "border-teal-400", chip: "bg-teal-500/15 text-teal-400" },
@@ -78,4 +51,56 @@ export const branchAccentsByName = (
     accents.set("main", MAIN_ACCENT);
   }
   return accents;
+};
+
+interface Tone {
+  textClass: string;
+  color: string;
+}
+
+const tone = (textClass: string, color: string): Tone => ({ textClass, color });
+
+const DATA_ADDED_TONE = tone("text-emerald-300", "var(--color-emerald-300)");
+const DATA_REMOVED_TONE = tone("text-rose-300", "var(--color-rose-300)");
+const DATA_REPLACED_TONE = tone("text-amber-300", "var(--color-amber-300)");
+const UNPUBLISHED_TONE = tone("text-sky-300", "var(--color-sky-300)");
+const MAINTENANCE_TONE = tone("text-cyan-300", "var(--color-cyan-300)");
+const DEFINITION_TONE = tone("text-violet-300", "var(--color-violet-300)");
+const REFERENCE_TONE = tone("text-indigo-300", "var(--color-indigo-300)");
+const ROLLBACK_TONE = tone("text-orange-300", "var(--color-orange-300)");
+const QUIET_TONE = tone("text-slate-300", "var(--color-slate-300)");
+const DEFAULT_TONE = tone("text-ink", "var(--color-ink)");
+
+const TITLE_TONES: Record<string, Tone> = {
+  "Data added": DATA_ADDED_TONE,
+  "Data deleted": DATA_REMOVED_TONE,
+  "Data overwritten": DATA_REPLACED_TONE,
+  "Data not published": UNPUBLISHED_TONE,
+  "Files compacted": MAINTENANCE_TONE,
+  "Delete files compacted": MAINTENANCE_TONE,
+  "Manifests rewritten": MAINTENANCE_TONE,
+  "History trimmed": MAINTENANCE_TONE,
+  "Schema changed": DEFINITION_TONE,
+  "Partitioning changed": DEFINITION_TONE,
+  "Sort order changed": DEFINITION_TONE,
+  "Branch changed": REFERENCE_TONE,
+  "Tag changed": REFERENCE_TONE,
+  "Switched snapshots": REFERENCE_TONE,
+  "Rolled back": ROLLBACK_TONE,
+  "Settings changed": QUIET_TONE,
+  "Metadata updated": QUIET_TONE,
+  "Start of history": QUIET_TONE,
+  "Data changed": QUIET_TONE,
+  "No data changed": QUIET_TONE,
+};
+
+/**
+ * Each kind of change reads in its own light tone, bright enough to stay readable on the card.
+ * The list title and the details panel share it, so a row keeps its color when opened.
+ */
+export const eventToneFor = (row: TimelineRow): Tone => {
+  if (row.movedToBranchName !== null) {
+    return REFERENCE_TONE;
+  }
+  return TITLE_TONES[row.title] ?? DEFAULT_TONE;
 };

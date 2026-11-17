@@ -110,11 +110,13 @@ Keep the bounded range loaded in both modes.
 
 ### Timeline
 
-- The commit list renders and the toolbar count matches the number of commit rows.
-- Clicking a commit opens its details panel; Down and Up move the selection; Escape closes the
-  panel, and the next arrow key reopens the commit that was selected.
+- The event table renders with day separator rows and the header count matches the number of event rows.
+- Clicking an event opens its details panel; Down and Up move the selection; Escape closes the
+  panel, and the next arrow key reopens the event that was selected.
 - The Writes and Metadata segments and the branch select narrow the list, and the count changes to
-  `N of M commits`. Clearing the filters restores the full list.
+  `N of M events`. Clearing the filters restores the full list.
+- The details panel is docked beside the list and dragging its colored edge resizes it.
+- Expanding Raw metadata diff lists each changed value; its Raw JSON shows the stored values.
 - The Snapshot and Metadata buttons in the details panel, when present, open Graph in a new tab
   with the intended node selected and locked. Close the extra tab afterward.
 

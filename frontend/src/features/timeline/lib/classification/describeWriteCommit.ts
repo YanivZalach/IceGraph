@@ -3,9 +3,9 @@ import type {
   SnapshotRefs,
   SnapshotSummary,
 } from "../../api/nodeSchemas";
-import { formatShortId } from "../format/formatShortId";
 import {
   impactText,
+  isProvablyUnchangedWrite,
   readRowCounts,
   readSnapshotImpact,
 } from "../impactSegment";
@@ -54,6 +54,9 @@ export const writeTitle = (
   if (removedRows > 0n) {
     return "Data deleted";
   }
+  if (summary !== null && isProvablyUnchangedWrite(summary)) {
+    return "No data changed";
+  }
 
   const operationTitle =
     operationDescription === null
@@ -86,11 +89,13 @@ export const describeWriteCommit = (
   const snapshotRecord = snapshotsById.get(gainedSnapshotId);
   const snapshotImpact =
     snapshotRecord === undefined
-      ? [impactText(`snapshot ${formatShortId(gainedSnapshotId)} unavailable`)]
+      ? [impactText("row counts unknown: snapshot expired or not loaded")]
       : readSnapshotImpact(snapshotRecord.summary, snapshotRecord.operation);
   const impactSegments = [
     ...snapshotImpact,
-    ...definitionChanges.map((change) => impactText(change.impact)),
+    ...definitionChanges.map(
+      (change) => change.impactSegment ?? impactText(change.impact),
+    ),
   ];
   const detailTexts = definitionChanges.map((change) => change.detail);
 
@@ -99,7 +104,10 @@ export const describeWriteCommit = (
     currentFile.refs,
     gainedSnapshotId,
   );
-  const isPublished = isNewCurrent || pointingBranchName !== null;
+  const isReferenced = Object.values(currentFile.refs).some(
+    (ref) => ref["snapshot-id"] === gainedSnapshotId,
+  );
+  const isPublished = isNewCurrent || isReferenced;
 
   if (!isPublished) {
     return {
@@ -123,7 +131,8 @@ export const describeWriteCommit = (
     impactSegments,
     detailTexts,
     snapshotId: gainedSnapshotId,
-    branchName: pointingBranchName,
+    // the current snapshot is main's head, also on v1 tables that have no refs
+    branchName: pointingBranchName ?? (isNewCurrent ? "main" : null),
     repointTargetId: null,
     movedToBranchName: null,
   };

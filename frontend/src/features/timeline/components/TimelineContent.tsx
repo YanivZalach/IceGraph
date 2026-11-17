@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Group, Panel, Separator } from "react-resizable-panels";
 import {
   filterTimelineRows,
   type CommitKindFilter,
@@ -23,8 +22,11 @@ const TimelineContent = ({ timeline, table }: TimelineContentProps) => {
   const [kindFilter, setKindFilter] = useState<CommitKindFilter>("all");
   const [branchFilter, setBranchFilter] = useState<string | null>(null);
   const branchOptions = [...branchAccentsByName(timeline.rows).keys()];
-  // A new snapshot range can drop the filtered branch; the filter must not
-  // outlive its option and hide every row.
+  // A new snapshot range can drop the filtered branch; the filter is cleared
+  // rather than hidden, so it cannot come back when a later range has it.
+  if (branchFilter !== null && !branchOptions.includes(branchFilter)) {
+    setBranchFilter(null);
+  }
   const activeBranchFilter =
     branchFilter !== null && branchOptions.includes(branchFilter)
       ? branchFilter
@@ -48,53 +50,41 @@ const TimelineContent = ({ timeline, table }: TimelineContentProps) => {
   };
 
   return (
-    <div className="h-graph flex-1 overflow-hidden bg-canvas">
-      <Group orientation="horizontal">
-        <Panel id="timeline-list" minSize="40%" className="flex flex-col">
-          {commitCount > 0 && (
-            <TimelineToolbar
-              commitCount={commitCount}
-              shownCommitCount={countEventRows(shownRows)}
-              unreadableCommitCount={timeline.unreadableCommitCount}
-              isTableMetadataUnreadable={timeline.isTableMetadataUnreadable}
-              kindFilter={kindFilter}
-              onKindFilterChange={setKindFilter}
-              branchOptions={branchOptions}
-              branchFilter={activeBranchFilter}
-              onBranchFilterChange={setBranchFilter}
-            />
-          )}
-          <div className="min-h-0 flex-1 overflow-y-auto py-3 [scrollbar-gutter:stable]">
-            <TimelineList
-              timeline={timeline}
-              rows={shownRows}
-              table={table}
-              isFiltering={isFiltering}
-              onClearFilters={handleClearFilters}
-              selectedFilePath={selectedFilePath}
-              onSelect={handleSelect}
-            />
-          </div>
-        </Panel>
-
-        {selectedRow !== null && (
-          <>
-            <Separator className="w-1 shrink-0 cursor-ew-resize bg-edge transition-colors hover:bg-accent" />
-            <Panel
-              id="timeline-details"
-              defaultSize="40%"
-              minSize="20%"
-              maxSize="80%"
-            >
-              <EventDetailsPanel
-                timeline={timeline}
-                row={selectedRow}
-                onClose={clearSelection}
-              />
-            </Panel>
-          </>
+    <div className="h-graph flex w-full min-h-0 flex-1 flex-col overflow-hidden bg-canvas md:flex-row">
+      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]">
+        {commitCount > 0 && (
+          <TimelineToolbar
+            commitCount={commitCount}
+            shownCommitCount={countEventRows(shownRows)}
+            unreadableCommitCount={timeline.unreadableCommitCount}
+            isTableMetadataUnreadable={timeline.isTableMetadataUnreadable}
+            kindFilter={kindFilter}
+            onKindFilterChange={setKindFilter}
+            branchOptions={branchOptions}
+            branchFilter={activeBranchFilter}
+            onBranchFilterChange={setBranchFilter}
+          />
         )}
-      </Group>
+        <div className="mx-auto max-w-6xl px-3 py-4 sm:px-5">
+          <TimelineList
+            timeline={timeline}
+            rows={shownRows}
+            table={table}
+            isFiltering={isFiltering}
+            onClearFilters={handleClearFilters}
+            selectedFilePath={selectedFilePath}
+            onSelect={handleSelect}
+          />
+        </div>
+      </div>
+
+      {selectedRow !== null && (
+        <EventDetailsPanel
+          timeline={timeline}
+          row={selectedRow}
+          onClose={clearSelection}
+        />
+      )}
     </div>
   );
 };

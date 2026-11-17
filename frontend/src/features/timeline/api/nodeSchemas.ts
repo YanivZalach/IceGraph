@@ -12,6 +12,11 @@ const pointedSnapshotFileSchema = z.object({
   "manifest-list": z.string().nullish(),
 });
 
+const pointedStatisticsFileSchema = z.object({
+  "snapshot-id": snapshotIdSchema,
+  "statistics-path": z.string(),
+});
+
 const baseNodeFields = {
   file_path: z.string(),
   child_files: z.array(z.string()),
@@ -33,6 +38,13 @@ export const metadataFileNodeSchema = z.object({
   properties: z.record(z.string(), z.string()),
   pointed_snapshots_files: z.array(pointedSnapshotFileSchema).nullable(),
   pointed_metadata_log_count: z.number().nullable(),
+  format_version: z.number().nullish(),
+  pointed_table_statistics_files: z
+    .array(pointedStatisticsFileSchema)
+    .nullish(),
+  pointed_partition_statistics_files: z
+    .array(pointedStatisticsFileSchema)
+    .nullish(),
 });
 
 export const snapshotNodeSchema = z.object({
@@ -45,6 +57,8 @@ export const snapshotNodeSchema = z.object({
   operation_description: z.string().nullable(),
   action_link: z.string().nullish(),
   summary: z.record(z.string(), z.string()),
+  first_row_id: icebergIntegerSchema.nullish(),
+  added_rows: icebergIntegerSchema.nullish(),
 });
 
 export const nodeTypeSchema = z.object({ type: z.string() });

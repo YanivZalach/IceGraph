@@ -1,33 +1,39 @@
-A git-log-style list of every commit in your selected range, newest first. Each row shows what happened in plain language (**Data added**, **Data overwritten**, **Files compacted**, **Schema changed**, ...), the rows it added or removed as +/− chips, the snapshot it produced, and when. A compaction changes no rows, so its chips count files instead. File counts and sizes for every other commit live in the details panel.
+A git-log-style table of every event in your selected range, newest first, with a separator row for each day. Each row shows what happened in plain language (**Data added**, **Data overwritten**, **Files compacted**, **Schema changed**, ...), the rows it added or removed as +/− chips, the snapshot it produced, and when. A compaction changes no rows, so its chips count files instead, and a write that provably changed nothing is titled **No data changed** with **no rows changed** beside it. Property and ref names are shown exactly as stored. File counts and sizes for every other event live in the details panel. When a write's snapshot has expired or is outside the loaded range, its counts cannot be read, and the row says **row counts unknown: snapshot expired or not loaded**.
 
 ### Terms
 
-- **Commit** — one metadata file: a single change to the table's data or its definition. Not every commit writes data.
-- **Snapshot** — the table's data as produced by a commit that wrote data. Commits that only change the definition, branches or settings produce none.
-- **Not published** — a snapshot that was written but that no branch or tag ever pointed at (Iceberg calls this _staged_, as in write-audit-publish). If a later commit points at it, the row says so.
-- **Re-point** — a commit that moves the table's current snapshot to one that already exists instead of writing a new one: a rollback, a branch fast-forward, or a plain switch.
-- **Loaded range** — the snapshots picked in snapshot selection. Everything on this page is scoped to it; the list never claims anything it would need older commits to prove.
+- **Event**: one metadata file, a single change to the table's data or its definition. Not every event writes data; an event that does is a **commit**.
+- **Snapshot**: the table's data as produced by a commit. Events that only change the definition, branches or settings produce none.
+- **Not published**: a snapshot this event wrote that neither the current snapshot nor any branch or tag pointed at once the event landed (Iceberg calls this _staged_, as in write-audit-publish). If a later loaded event points at it, or publishes a copy of it, the details say so.
+- **Re-point**: an event that moves the table's current snapshot without writing a new one in that event: a rollback, a branch fast-forward, or a plain switch. It is called a rollback only when the loaded snapshots prove the target is an ancestor of the previous current snapshot.
+- **Loaded range**: the snapshots picked in snapshot selection. Everything on this page is scoped to it, and the oldest loaded event is shown without a description when older events are cut off.
 
 ### Reading the rail
 
-The line on the left is the commit rail: a **circle** marks a commit that produced a snapshot (a write), a **tick** marks a metadata-only change (schema, settings, branch and tag bookkeeping).
+Each row's title is colored by what happened: green when data was added, red when it was deleted, amber when it was overwritten, blue when it was not published, cyan for maintenance such as compaction, violet for schema, partitioning and sort order changes, indigo for branch and tag moves, orange for rollbacks, and gray for settings and bookkeeping.
+
+The line on the left is the event rail: a **circle** marks an event that produced a snapshot (a write), a **dashed circle** marks a write that was not published, and a **tick** marks a metadata-only change (schema, settings, branch and tag bookkeeping). The time shows how long ago an event happened today, and the clock time on earlier days, whose date is in the separator row above them.
 
 ### Branches
 
-When the range contains branches, every write carries a colored chip naming the branch it landed on — **main** included. A branch merge or fast-forward renders as **main moved to branch** with both names as chips. Single-branch tables stay chip-free.
+When the range contains branches, every write carries a colored chip naming the branch it landed on, **main** included. A branch merge or fast-forward renders as **main moved to branch** with both names as chips. Single-branch tables stay chip-free.
 
 ### Filtering
 
-The toolbar above the list shows how many commits are loaded and holds two filters: an **All / Writes / Metadata** switch, and on multi-branch tables a branch picker. Filtering by a branch shows its whole story — its writes, its creation and deletion, and the moves that landed it on main. While filtering, the count reads **9 of 19 commits** so you always know rows are hidden.
+The header above the list shows how many events are loaded and holds two filters: an **All / Writes / Metadata** switch, and on multi-branch tables a branch picker. Filtering by a branch shows its whole story: its writes, its creation and deletion, and the moves that landed it on main. While filtering, the count reads **9 of 19 events** so you always know rows are hidden. A branch filter is cleared when a new range no longer contains that branch.
 
 ### Keyboard
 
-**↑** / **↓** move the selection through commits (starting from the newest); **Enter** or **Space** opens a focused row; **Esc** closes the details panel. After **Esc**, the next arrow key reopens the commit you were on rather than starting over.
+**↑** / **↓** move the selection through events (starting from the newest); **Enter** or **Space** opens a focused row; **Esc** closes the details panel. After **Esc**, the next arrow key reopens the event you were on rather than starting over.
 
 ### Details panel
 
-Click a commit (or press **↓**) to open its details in a resizable panel: what this change did (added/removed counts, files and sizes included), the table state before and after it, engine info, the metadata file, refs, properties, and a raw metadata diff against the previous commit. Values that matter as ids carry a clipboard icon. Backend read errors and warnings for the commit appear as banners at the top.
+Click an event (or press **↓**) to open its details in a panel docked beside the list; drag its colored left edge to resize it. It shows what this change did (added/removed counts, files and sizes included), the table state before and after it, engine info, the metadata file, refs, properties, and the metadata diff against the previous event. Snapshot ids and hashes are shown in full everywhere except the Snapshot column, which keeps a short form; values that matter as ids carry a clipboard icon. The snapshot details include its manifest list path (and on v3 tables its first row id and added rows), the metadata file section adds the format version, the previous metadata file and any table or partition statistics files, and Refs lists each ref's retention settings. Backend read errors and warnings for the event appear as banners at the top.
 
-When the commit's snapshot points at the job that wrote it, an **`action_link`** row links out to it, opening in a new tab.
+When present, **Change summary** stays visible in the event details.
 
-The list is honest about its edges: a muted **N earlier commits not loaded** link below the table jumps to snapshot selection when the range is truncated, and commits the backend could not read are counted in an amber notice instead of silently disappearing. The bottom row is **Start of history** — the table's first surviving metadata file — when the full history is loaded and that file wrote no snapshot; when older commits exist beyond the cutoff, the bottom row is the oldest loaded file, shown without a description because its change cannot be seen.
+The **Raw metadata diff** lists every changed value of the tracked metadata fields (current snapshot, sequence number, schema, partition spec and sort order ids, branches and tags, table properties, and the snapshot list) one by one, marked added (+), removed (−) or changed (~), with the old value struck through above the new one. Values that did not change are one click away behind **N unchanged values**, and **Raw JSON** shows each field exactly as stored, before and after.
+
+The **View in graph** buttons at the top open the event's **Snapshot** or **Metadata** file in the Graph, in a new tab, selected and locked. A write that was never published in the loaded range says so in its **Published** row. When the event's snapshot points at the job that wrote it, an **`action_link`** row links out to it, opening in a new tab.
+
+The list is honest about its edges: a muted **N earlier events not loaded** link below the list jumps to snapshot selection when the range is truncated, and events the backend could not read are counted in an amber notice instead of silently disappearing. Where unreadable events sit between two readable ones, an amber **N events could not be read** marker appears in the list, and the next event's details warn that its changes are compared with the last readable event and may include theirs, naming each unreadable file and the backend's reason. Hover the marker to see the file paths. The bottom row is **Start of history**, the table's first surviving metadata file, when the full history is loaded and that file wrote no snapshot. When older events exist beyond the cutoff, the bottom row is the oldest loaded file, marked _start of loaded range_ and shown without a description because its change cannot be seen.

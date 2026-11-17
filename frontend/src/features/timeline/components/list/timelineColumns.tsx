@@ -1,10 +1,10 @@
 import { createColumnHelper, tableFeatures } from "@tanstack/react-table";
 import type { DisplayColumnDef } from "@tanstack/react-table";
 import type { TimelineRow } from "../../lib/timelineRow";
-import { displayBranchNameFor } from "../../lib/displayBranchName";
 import type { BranchAccent } from "../eventColor";
 import CommitCell from "./CommitCell";
-import EventRail from "./EventRail";
+import EventRail, { type RailMarker } from "./EventRail";
+import { impactPlainText } from "../../lib/impactSegment";
 import ImpactLine from "./ImpactLine";
 import TimeCell from "./TimeCell";
 
@@ -19,17 +19,19 @@ const railNodeClassFor = (
   row: TimelineRow,
   branchAccents: ReadonlyMap<string, BranchAccent>,
 ): string | undefined => {
-  const branchName = displayBranchNameFor(row);
-  return branchName === null ? undefined : branchAccents.get(branchName)?.node;
+  return row.branchName === null
+    ? undefined
+    : branchAccents.get(row.branchName)?.node;
 };
 
-const railMarker = (row: TimelineRow): "node" | "tick" | "none" => {
+const railMarker = (row: TimelineRow): RailMarker => {
   if (row.kind === "boundary") {
     return "none";
   }
-  const isSnapshotWrite =
-    row.kind === "published-write" || row.kind === "draft-write";
-  return isSnapshotWrite ? "node" : "tick";
+  if (row.kind === "draft-write") {
+    return "draft";
+  }
+  return row.kind === "published-write" ? "node" : "tick";
 };
 
 export const buildTimelineColumns = (
@@ -48,7 +50,7 @@ export const buildTimelineColumns = (
   }),
   columnHelper.display({
     id: "commit",
-    header: "Commit",
+    header: "Event",
     cell: ({ row }) => (
       <CommitCell row={row.original} branchAccents={branchAccents} />
     ),
@@ -58,10 +60,12 @@ export const buildTimelineColumns = (
     header: "Changes",
     cell: ({ row }) =>
       row.original.kind === "boundary" ? null : (
-        <ImpactLine
-          segments={row.original.impact}
-          branchAccents={branchAccents}
-        />
+        <span title={impactPlainText(row.original.impact)}>
+          <ImpactLine
+            segments={row.original.impact}
+            branchAccents={branchAccents}
+          />
+        </span>
       ),
   }),
   columnHelper.display({

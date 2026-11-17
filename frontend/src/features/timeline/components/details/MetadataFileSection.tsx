@@ -14,13 +14,19 @@ const MetadataFileSection = ({ data }: MetadataFileSectionProps) => (
       Metadata file
     </summary>
     <div className="flex flex-col gap-3">
-      <div>
-        <span className={cn(UI_FIELD_LABEL_CLASS, "normal-case")}>Path</span>
-        <span className="mt-1 flex items-center gap-1.5 rounded bg-canvas px-2 py-0.5 font-mono text-xs break-all text-slate-200">
-          {data.path}
-          <CopyIconButton text={data.path} />
-        </span>
-      </div>
+      {[{ label: "Path", value: data.path }, ...data.linkedPaths].map(
+        (linkedPath) => (
+          <div key={linkedPath.label}>
+            <span className={cn(UI_FIELD_LABEL_CLASS, "normal-case")}>
+              {linkedPath.label}
+            </span>
+            <span className="mt-1 flex items-center gap-1.5 rounded bg-canvas px-2 py-0.5 font-mono text-xs break-all text-slate-200">
+              {linkedPath.value}
+              <CopyIconButton text={linkedPath.value} />
+            </span>
+          </div>
+        ),
+      )}
       <div className="grid grid-cols-2 gap-x-6">
         {data.stats.map((stat) => (
           <div

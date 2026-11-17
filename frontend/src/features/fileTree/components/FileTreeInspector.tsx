@@ -1,10 +1,10 @@
-import { useState } from "react";
 import type { CSSProperties, MouseEvent } from "react";
 import { fileTypeLabel } from "../../../graphConstants.js";
 import { PanelHeader } from "../../../components/PanelContent";
 import SidePanelFrame, {
   SidePanelResizeHandle,
 } from "../../../components/SidePanelFrame";
+import { useDockedPanelWidth } from "../../../components/useDockedPanelWidth";
 import type { InspectedFileTreeItem } from "../types";
 import FileTreeInspectorContent from "./FileTreeInspectorContent";
 
@@ -21,13 +21,17 @@ interface FileTreeInspectorStyle extends CSSProperties {
 
 const PANEL_ACCENT = "#2e86c1";
 const PANEL_MIN_WIDTH_PX = 320;
+const PANEL_MAX_CONTAINER_SHARE = 0.7;
 
 const FileTreeInspector = ({
   inspectedItem,
   onClose,
   onViewInGraph,
 }: FileTreeInspectorProps) => {
-  const [panelWidthPx, setPanelWidthPx] = useState<number | null>(null);
+  const { panelWidthPx, startResize } = useDockedPanelWidth(
+    PANEL_MIN_WIDTH_PX,
+    PANEL_MAX_CONTAINER_SHARE,
+  );
   const title =
     inspectedItem.kind === "file"
       ? fileTypeLabel(inspectedItem.file.type)
@@ -44,39 +48,6 @@ const FileTreeInspector = ({
     "--file-tree-inspector-width":
       panelWidthPx === null ? "38%" : `${String(panelWidthPx)}px`,
     "--panel-accent": PANEL_ACCENT,
-  };
-
-  const startResize = (event: MouseEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    const panel = event.currentTarget.parentElement;
-    if (panel === null) return;
-    const container = panel.parentElement;
-    if (container === null) return;
-
-    const startX = event.clientX;
-    const startWidth = panel.getBoundingClientRect().width;
-    const maximumWidth = Math.max(
-      PANEL_MIN_WIDTH_PX,
-      container.getBoundingClientRect().width * 0.7,
-    );
-    const handleMove = (moveEvent: globalThis.MouseEvent) => {
-      const nextWidth = Math.min(
-        maximumWidth,
-        Math.max(PANEL_MIN_WIDTH_PX, startWidth + startX - moveEvent.clientX),
-      );
-      setPanelWidthPx(nextWidth);
-    };
-    const handleUp = () => {
-      document.removeEventListener("mousemove", handleMove);
-      document.removeEventListener("mouseup", handleUp);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-    };
-
-    document.body.style.cursor = "ew-resize";
-    document.body.style.userSelect = "none";
-    document.addEventListener("mousemove", handleMove);
-    document.addEventListener("mouseup", handleUp);
   };
 
   return (
@@ -98,7 +69,8 @@ const FileTreeInspector = ({
       leading={
         <SidePanelResizeHandle
           accentColor={PANEL_ACCENT}
-          className="hidden rounded-none md:block"
+          className="hidden md:block"
+          isEdgeOnly
           onMouseDown={startResize}
           title="Drag left or right to resize"
         />

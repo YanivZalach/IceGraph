@@ -1,4 +1,3 @@
-import { displayBranchNameFor } from "./displayBranchName";
 import type { TimelineRow } from "./timelineRow";
 
 export type CommitKindFilter = "all" | "writes" | "metadata";
@@ -15,7 +14,7 @@ const mentionsBranch = (row: TimelineRow, branchName: string): boolean => {
   const isMainsOwnMove = row.kind === "re-point" && branchName === "main";
   return (
     isMainsOwnMove ||
-    displayBranchNameFor(row) === branchName ||
+    row.branchName === branchName ||
     row.movedToBranchName === branchName ||
     row.impact.some(
       (segment) =>

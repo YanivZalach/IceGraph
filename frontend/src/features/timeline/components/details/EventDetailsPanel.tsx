@@ -1,8 +1,12 @@
+import type { CSSProperties } from "react";
 import { PanelHeader } from "../../../../components/PanelContent";
+import SidePanelFrame, {
+  SidePanelResizeHandle,
+} from "../../../../components/SidePanelFrame";
+import { useDockedPanelWidth } from "../../../../components/useDockedPanelWidth";
 import { formatAbsoluteTimestamp } from "../../lib/format/formatTimelineTime";
 import type { TimelineData, TimelineRow } from "../../lib/timelineRow";
-import { cn } from "../../../../shared/lib/cn";
-import { eventBorderClassFor, eventColorFor } from "../eventColor";
+import { eventToneFor } from "../eventColor";
 import EventDetails from "./EventDetails";
 
 interface EventDetailsPanelProps {
@@ -11,37 +15,61 @@ interface EventDetailsPanelProps {
   onClose: () => void;
 }
 
+interface EventDetailsPanelStyle extends CSSProperties {
+  "--timeline-details-width": string;
+  "--panel-accent": string;
+}
+
+const PANEL_MIN_WIDTH_PX = 320;
+const PANEL_MAX_CONTAINER_SHARE = 0.7;
+
 const EventDetailsPanel = ({
   timeline,
   row,
   onClose,
-}: EventDetailsPanelProps) => (
-  <aside
-    className={cn(
-      "flex h-full flex-col border-l-4 bg-surface",
-      eventBorderClassFor(row),
-    )}
-  >
-    <div className="flex shrink-0 items-start justify-between gap-2 border-b border-edge px-5 py-4">
-      <PanelHeader
-        title={row.title}
-        titleColor={eventColorFor(row)}
-        subtitle={row.filePath}
-        meta={formatAbsoluteTimestamp(row.timestampMs)}
-      />
-      <button
-        type="button"
-        aria-label="Close details"
-        onClick={onClose}
-        className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full bg-edge text-slate-400 transition hover:bg-edge-hover hover:text-slate-200 focus-visible:ring-1 focus-visible:ring-slate-300/70 focus-visible:outline-none"
-      >
-        ✕
-      </button>
-    </div>
-    <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+}: EventDetailsPanelProps) => {
+  const { panelWidthPx, startResize } = useDockedPanelWidth(
+    PANEL_MIN_WIDTH_PX,
+    PANEL_MAX_CONTAINER_SHARE,
+  );
+  const accentColor = eventToneFor(row).color;
+  const panelStyle: EventDetailsPanelStyle = {
+    "--timeline-details-width":
+      panelWidthPx === null ? "35%" : `${String(panelWidthPx)}px`,
+    "--panel-accent": accentColor,
+  };
+
+  return (
+    <SidePanelFrame
+      variant="docked"
+      ariaLabel="Commit details"
+      closeLabel="Close details"
+      className="h-[55%] min-h-0 w-full shrink-0 border-t border-edge md:h-auto md:w-[var(--timeline-details-width)] md:min-w-[20rem] md:max-w-[70%] md:border-t-0"
+      contentClassName="gap-4 overscroll-contain"
+      header={
+        <PanelHeader
+          title={row.title}
+          titleColor={accentColor}
+          subtitle={row.filePath}
+          meta={formatAbsoluteTimestamp(row.timestampMs)}
+          preserveSubtitleEnd
+        />
+      }
+      leading={
+        <SidePanelResizeHandle
+          accentColor={accentColor}
+          className="hidden md:block"
+          isEdgeOnly
+          onMouseDown={startResize}
+          title="Drag left or right to resize"
+        />
+      }
+      onClose={onClose}
+      style={panelStyle}
+    >
       <EventDetails timeline={timeline} row={row} />
-    </div>
-  </aside>
-);
+    </SidePanelFrame>
+  );
+};
 
 export default EventDetailsPanel;
