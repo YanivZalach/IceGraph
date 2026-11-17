@@ -148,17 +148,21 @@ const nodeNotices = (
   file: MetadataFileNode,
   snapshot: SnapshotNode | undefined,
 ): DetailNotice[] => {
+  const noticesOf = (
+    kind: DetailNotice["kind"],
+    texts: string[],
+  ): DetailNotice[] => texts.map((text) => ({ kind, text }));
   const candidates = [
-    { kind: "error", text: file.error },
-    { kind: "error", text: snapshot?.error },
-    { kind: "warning", text: file.warning },
-    { kind: "warning", text: snapshot?.warning },
-  ] as const;
+    ...noticesOf("error", file.errors),
+    ...noticesOf("error", snapshot?.errors ?? []),
+    ...noticesOf("warning", file.warnings),
+    ...noticesOf("warning", snapshot?.warnings ?? []),
+  ];
 
   const seenTexts = new Set<string>();
   const notices: DetailNotice[] = [];
   for (const { kind, text } of candidates) {
-    if (text != null && text !== "" && !seenTexts.has(text)) {
+    if (text !== "" && !seenTexts.has(text)) {
       seenTexts.add(text);
       notices.push({ kind, text });
     }
