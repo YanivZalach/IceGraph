@@ -2,6 +2,9 @@ import type { MDXComponents } from "mdx/types";
 import type { ComponentType } from "react";
 import { APP_VERSION } from "../../appConstants";
 import { PIP_INSTALL_COMMAND } from "./docsContentValues";
+import AiAssistantContent, {
+  searchText as aiAssistantText,
+} from "./content/ai-assistant.mdx";
 import ClientCliContent, {
   searchText as clientCliText,
 } from "./content/client-cli.mdx";
@@ -121,6 +124,12 @@ export const DOC_SECTIONS: DocsSection[] = [
     "Issues Panel",
     IssuesPanelContent,
     issuesPanelText,
+  ),
+  createSection(
+    "ai-assistant",
+    "AI Assistant",
+    AiAssistantContent,
+    aiAssistantText,
   ),
   createSection(
     "keyboard-shortcuts",

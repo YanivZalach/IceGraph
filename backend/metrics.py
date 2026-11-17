@@ -14,6 +14,11 @@ graph_computations_total = Counter(
     "Graph computations submitted to Spark.",
 )
 
+assistant_questions_total = Counter(
+    "icegraph_assistant_questions_total",
+    "Questions submitted to the AI assistant.",
+)
+
 cache_reads_total = Counter(
     "icegraph_cache_reads_total",
     "Requests served from a server-side cache.",

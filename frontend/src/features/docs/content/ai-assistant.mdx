@@ -1,0 +1,20 @@
+The **Ask AI** button in the bottom left corner opens a chat about the current table. It appears on the snapshot selection page and on every table view, when the server has an AI model configured.
+
+### What is sent
+
+The chips above the question box choose what the AI sees. Only selected chips are sent, along with the table name and the selected snapshot range.
+
+- **Table metadata**, **Issues**, **Snapshots** - selected by default
+- **Manifests**, **Data files**, **Delete files**, and the other file chips - add more detail
+- **Data file statistics** - per-column statistics of data files. They can be large, so they are separate from **Data files**
+- **History** - earlier questions and answers, so follow-ups work. Turn it off to ask a question on its own
+
+The counter shows how much you are sending. Above the limit, select fewer chips or turn off **History**.
+
+Data file statistics include real values from your data, and everything selected goes to the AI model on the server.
+
+### Conversation
+
+The conversation is saved in your browser. **Clear** deletes it, and **Undo** brings it back for 5 seconds.
+
+The assistant only explains and suggests. It never changes the table.

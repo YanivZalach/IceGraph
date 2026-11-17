@@ -17,7 +17,7 @@ class Env:
     # Maximum number of snapshots processed per graph.
     MAX_SNAPSHOTS_TO_COMPUTE: int = int(os.getenv("MAX_SNAPSHOTS_TO_COMPUTE", "50"))
 
-    # Delay before a completed graph is removed from memory.
+    # Delay before a completed graph or AI assistant answer is removed from memory.
     COMPUTE_CLEANUP_TIME_SECONDS: int = int(os.getenv("COMPUTE_CLEANUP_TIME_SECONDS", "15"))
 
     # Maximum number of data files collected per graph.
@@ -61,3 +61,21 @@ class Env:
 
     # Number of request threads used by Waitress.
     WSGI_THREADS: int = int(os.getenv("WSGI_THREADS", "20"))
+
+    # Base URL of the OpenAI-compatible API used by the AI assistant. The assistant is disabled when empty.
+    AI_API_BASE_URL: str = os.getenv("AI_API_BASE_URL", "")
+
+    # API key sent to the AI API. May stay empty for servers that need no key.
+    AI_API_KEY: str = os.getenv("AI_API_KEY", "")
+
+    # Model the AI assistant requests. The assistant is disabled when empty.
+    AI_MODEL: str = os.getenv("AI_MODEL", "")
+
+    # Maximum time allowed for one AI assistant answer.
+    AI_REQUEST_TIMEOUT_SECONDS: int = int(os.getenv("AI_REQUEST_TIMEOUT_SECONDS", "120"))
+
+    # Maximum number of AI assistant answers generated in parallel.
+    AI_MAX_CONCURRENT_REQUESTS: int = int(os.getenv("AI_MAX_CONCURRENT_REQUESTS", "5"))
+
+    # Maximum number of characters of table context and conversation sent to the AI model per question.
+    AI_MAX_CONTEXT_CHARACTERS: int = int(os.getenv("AI_MAX_CONTEXT_CHARACTERS", "200000"))

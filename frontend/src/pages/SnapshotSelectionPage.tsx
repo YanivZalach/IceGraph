@@ -22,6 +22,7 @@ import { tableMetadataQueryOptions } from "../features/table/api/tableMetadataQu
 import type { GraphRequestParameters } from "../features/table/api/graphCache";
 import LatestMetadataSection from "../features/metadata/components/LatestMetadataSection";
 import SpecDetailsOverlay from "../features/specs/components/SpecDetailsOverlay";
+import SnapshotSelectionAssistant from "../features/assistant/components/SnapshotSelectionAssistant";
 import LoadingIndicator from "../components/LoadingIndicator";
 import { isKeyboardInputTarget } from "../shared/lib/keyboard";
 
@@ -174,6 +175,7 @@ const SnapshotSelectionPage = () => {
         />
       </main>
       <SpecDetailsOverlay />
+      <SnapshotSelectionAssistant tableName={tableName} range={range} />
     </div>
   );
 };
