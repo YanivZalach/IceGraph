@@ -42,7 +42,12 @@ const TimelineList = ({
 
   const hasEventRows = timeline.rows.some((row) => row.kind !== "boundary");
   if (!hasEventRows) {
-    return <TimelineEmptyState tableName={table} />;
+    return (
+      <TimelineEmptyState
+        tableName={table}
+        unreadableCommitCount={timeline.unreadableCommitCount}
+      />
+    );
   }
 
   const hasMatches = rows.length > 0;
