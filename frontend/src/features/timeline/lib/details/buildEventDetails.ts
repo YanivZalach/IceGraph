@@ -36,6 +36,7 @@ export interface DetailNotice {
 export interface EventDetailData {
   notices: DetailNotice[];
   actionLink: string | null;
+  schemaChange: { before: number; after: number } | null;
   snapshotFilePath: string | null;
   topRows: DetailRowData[];
   thisChange: ChangeCounts;
@@ -319,6 +320,13 @@ export const buildEventDetails = (
   const previousFile =
     rowBelow === undefined ? undefined : filesByPath.get(rowBelow.filePath);
 
+  const predecessor =
+    file.previous_file === null
+      ? undefined
+      : filesByPath.get(file.previous_file);
+  const beforeSchema = predecessor?.current_schema_id;
+  const afterSchema = file.current_schema_id;
+
   const branchRows: DetailRowData[] =
     row.branchName === null
       ? []
@@ -330,6 +338,12 @@ export const buildEventDetails = (
       ...nodeNotices(file, snapshot),
     ],
     actionLink: actionLink === "" ? null : actionLink,
+    schemaChange:
+      beforeSchema != null &&
+      afterSchema !== null &&
+      beforeSchema !== afterSchema
+        ? { before: beforeSchema, after: afterSchema }
+        : null,
     snapshotFilePath: snapshot?.file_path ?? null,
     topRows: [
       ...branchRows,

@@ -55,12 +55,20 @@ export const useTimelineSelection = (
     stopPropagation: false,
     preventDefault: false,
   });
-  useHotkey("ArrowDown", () => {
-    handleArrowKey("ArrowDown");
-  });
-  useHotkey("ArrowUp", () => {
-    handleArrowKey("ArrowUp");
-  });
+  useHotkey(
+    "ArrowDown",
+    () => {
+      handleArrowKey("ArrowDown");
+    },
+    { enabled: !detailsOpen },
+  );
+  useHotkey(
+    "ArrowUp",
+    () => {
+      handleArrowKey("ArrowUp");
+    },
+    { enabled: !detailsOpen },
+  );
 
   return { selectedFilePath, handleSelect, clearSelection };
 };
