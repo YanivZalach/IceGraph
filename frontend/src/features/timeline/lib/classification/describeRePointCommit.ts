@@ -35,33 +35,14 @@ const searchAncestry = (
   return "lineage-broken";
 };
 
-/** Rollback is decided by ancestry, not age; timestamps only when expired parents break the lineage. */
+/** Rollback is decided by ancestry alone; a broken lineage gets the neutral description. */
 const isRolledBack = (
   previousCurrentId: string | null,
   targetId: string,
   snapshotsById: SnapshotsById,
-): boolean => {
-  if (previousCurrentId === null) {
-    return false;
-  }
-
-  const ancestry = searchAncestry(targetId, previousCurrentId, snapshotsById);
-  if (ancestry === "ancestor") {
-    return true;
-  }
-  if (ancestry === "not-ancestor") {
-    return false;
-  }
-
-  const targetRecord = snapshotsById.get(targetId);
-  const previousRecord = snapshotsById.get(previousCurrentId);
-
-  return (
-    targetRecord !== undefined &&
-    previousRecord !== undefined &&
-    targetRecord.timestamp < previousRecord.timestamp
-  );
-};
+): boolean =>
+  previousCurrentId !== null &&
+  searchAncestry(targetId, previousCurrentId, snapshotsById) === "ancestor";
 
 const findBranchHeadName = (
   previousRefs: SnapshotRefs,

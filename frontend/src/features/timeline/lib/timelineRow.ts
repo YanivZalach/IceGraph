@@ -32,6 +32,7 @@ export interface TimelineRow {
 export interface TimelineData {
   rows: TimelineRow[];
   unreadableCommitCount: number;
+  isTableMetadataUnreadable: boolean;
   olderCommitCount: number;
   snapshotsById: ReadonlyMap<string, SnapshotNode>;
   filesByPath: ReadonlyMap<string, MetadataFileNode>;

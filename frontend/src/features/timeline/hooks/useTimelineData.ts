@@ -2,6 +2,7 @@ import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useSearch } from "@tanstack/react-router";
 import { graphQueryOptions } from "../../table/api/graphQueries";
 import { graphDataPayloadSchema } from "../api/graphDataPayloadSchema";
+import { tableMetadataSchema } from "../api/tableMetadataSchema";
 import { buildTimeline } from "../lib/buildTimeline";
 import type { TimelineData } from "../lib/timelineRow";
 
@@ -23,5 +24,11 @@ export const useTimelineData = (): TimelineData => {
     ),
   );
   const payload = graphDataPayloadSchema.parse(graphQuery.data);
-  return buildTimeline(payload.nodes, payload.metadata);
+  // Nodes are validated one at a time by buildTimeline; the table metadata
+  // degrades to id-only descriptions instead of failing the page.
+  const tableMetadata = tableMetadataSchema.safeParse(payload.metadata);
+  return buildTimeline(
+    payload.nodes,
+    tableMetadata.success ? tableMetadata.data : null,
+  );
 };

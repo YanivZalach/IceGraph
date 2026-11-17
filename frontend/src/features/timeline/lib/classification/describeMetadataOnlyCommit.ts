@@ -31,7 +31,7 @@ const isTagChange = (
   const changedEntry =
     Object.entries(currentRefs).find(
       ([name, ref]) =>
-        previousRefs[name]?.["snapshot-id"] !== ref["snapshot-id"],
+        JSON.stringify(previousRefs[name]) !== JSON.stringify(ref),
     ) ??
     Object.entries(previousRefs).find(
       ([name]) => currentRefs[name] === undefined,

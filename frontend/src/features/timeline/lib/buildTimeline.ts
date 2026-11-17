@@ -34,10 +34,12 @@ const buildOldestRow = (
 ): TimelineRow => {
   const ownSnapshot =
     file.snapshot_id === null ? undefined : snapshotsById.get(file.snapshot_id);
+  // With older commits cut off, the snapshot may have been written before the
+  // loaded range, so the oldest file cannot be shown as a write.
+  const isHistoryCutOff = (file.pointed_metadata_log_count ?? 0) > 0;
 
-  if (ownSnapshot === undefined) {
+  if (ownSnapshot === undefined || isHistoryCutOff) {
     const hasUnknowableSnapshot = file.snapshot_id !== null;
-    const isHistoryCutOff = (file.pointed_metadata_log_count ?? 0) > 0;
     if (hasUnknowableSnapshot || isHistoryCutOff) {
       return boundaryRow(file);
     }
@@ -51,7 +53,7 @@ const buildOldestRow = (
   return {
     ...boundaryRow(file),
     kind: "published-write",
-    title: writeTitle(ownSnapshot.operation_description),
+    title: writeTitle(ownSnapshot.operation_description, ownSnapshot.summary),
     impact: readSnapshotImpact(ownSnapshot.summary, ownSnapshot.operation),
     shortId: formatShortId(ownSnapshot.snapshot_id),
     snapshotId: ownSnapshot.snapshot_id,
@@ -109,7 +111,7 @@ const attachDraftPublication = (
 
 export const buildTimeline = (
   nodes: unknown[],
-  tableMetadata: TableMetadata,
+  tableMetadata: TableMetadata | null,
 ): TimelineData => {
   const { metadataFiles, snapshotsById, unreadableCommitCount } =
     parseTimelineNodes(nodes);
@@ -129,7 +131,12 @@ export const buildTimeline = (
 
     let commit = DEGRADED_COMMIT;
     try {
-      commit = describeCommit(previousFile, file, snapshotsById, tableMetadata);
+      commit = describeCommit(
+        previousFile,
+        file,
+        snapshotsById,
+        tableMetadata ?? {},
+      );
     } catch {
       // the row still renders, titled by the fallback
     }
@@ -148,6 +155,7 @@ export const buildTimeline = (
   return {
     rows: rowsNewestFirst,
     unreadableCommitCount,
+    isTableMetadataUnreadable: tableMetadata === null,
     // previous_file is nulled at the load cutoff; the metadata log count survives it
     olderCommitCount: filesOldestFirst[0]?.pointed_metadata_log_count ?? 0,
     snapshotsById,

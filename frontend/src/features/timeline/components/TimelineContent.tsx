@@ -22,14 +22,25 @@ const countEventRows = (rows: TimelineData["rows"]): number =>
 const TimelineContent = ({ timeline, table }: TimelineContentProps) => {
   const [kindFilter, setKindFilter] = useState<CommitKindFilter>("all");
   const [branchFilter, setBranchFilter] = useState<string | null>(null);
-  const shownRows = filterTimelineRows(timeline.rows, kindFilter, branchFilter);
+  const branchOptions = [...branchAccentsByName(timeline.rows).keys()];
+  // A new snapshot range can drop the filtered branch; the filter must not
+  // outlive its option and hide every row.
+  const activeBranchFilter =
+    branchFilter !== null && branchOptions.includes(branchFilter)
+      ? branchFilter
+      : null;
+  const shownRows = filterTimelineRows(
+    timeline.rows,
+    kindFilter,
+    activeBranchFilter,
+  );
   const { selectedFilePath, handleSelect, clearSelection } =
     useTimelineSelection(shownRows);
   const selectedRow =
     shownRows.find((row) => row.filePath === selectedFilePath) ?? null;
 
   const commitCount = countEventRows(timeline.rows);
-  const isFiltering = kindFilter !== "all" || branchFilter !== null;
+  const isFiltering = kindFilter !== "all" || activeBranchFilter !== null;
 
   const handleClearFilters = () => {
     setKindFilter("all");
@@ -45,10 +56,11 @@ const TimelineContent = ({ timeline, table }: TimelineContentProps) => {
               commitCount={commitCount}
               shownCommitCount={countEventRows(shownRows)}
               unreadableCommitCount={timeline.unreadableCommitCount}
+              isTableMetadataUnreadable={timeline.isTableMetadataUnreadable}
               kindFilter={kindFilter}
               onKindFilterChange={setKindFilter}
-              branchOptions={[...branchAccentsByName(timeline.rows).keys()]}
-              branchFilter={branchFilter}
+              branchOptions={branchOptions}
+              branchFilter={activeBranchFilter}
               onBranchFilterChange={setBranchFilter}
             />
           )}

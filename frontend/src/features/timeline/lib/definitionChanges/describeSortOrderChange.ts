@@ -18,17 +18,26 @@ const findColumnName = (
     .flatMap((schema) => schema.fields)
     .find((field) => field.id === columnId)?.name;
 
+// v3 multi-argument transforms list their columns in `source-ids`.
+const sourceColumnIds = (field: SortOrderField): number[] =>
+  field["source-ids"] ??
+  (field["source-id"] == null ? [] : [field["source-id"]]);
+
 const describeSortField = (
   field: SortOrderField,
   tableMetadata: TableMetadata,
 ): string => {
-  const columnName =
-    findColumnName(tableMetadata, field["source-id"]) ??
-    `field ${field["source-id"].toString()}`;
+  const columnNames = sourceColumnIds(field)
+    .map(
+      (columnId) =>
+        findColumnName(tableMetadata, columnId) ??
+        `field ${columnId.toString()}`,
+    )
+    .join(", ");
   const sortedExpression =
     field.transform === "identity"
-      ? columnName
-      : `${field.transform}(${columnName})`;
+      ? columnNames
+      : `${field.transform}(${columnNames})`;
   const direction = field.direction ?? null;
 
   return direction === null

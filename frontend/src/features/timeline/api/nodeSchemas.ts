@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { icebergIntegerSchema } from "../../table/api/metadataSchemas";
 import {
   optionalSnapshotIdSchema,
   snapshotIdSchema,
@@ -24,7 +25,7 @@ export const metadataFileNodeSchema = z.object({
   timestamp: utcTimestampSchema,
   snapshot_id: optionalSnapshotIdSchema,
   previous_file: z.string().nullable(),
-  last_sequence_number: z.number().nullable(),
+  last_sequence_number: icebergIntegerSchema.nullable(),
   partition_spec_id: z.number().nullable(),
   current_schema_id: z.number().nullable(),
   sort_order_id: z.number().nullable(),

@@ -131,18 +131,24 @@ const eventRows = (
   return rows;
 };
 
-const fileStats = (file: MetadataFileNode): DetailRowData[] => [
-  { label: "Schema ID", value: file.current_schema_id?.toString() ?? "" },
-  {
-    label: "Partition Spec ID",
-    value: file.partition_spec_id?.toString() ?? "",
-  },
-  { label: "Sort Order ID", value: file.sort_order_id?.toString() ?? "" },
-  {
-    label: "Last Sequence Number",
-    value: file.last_sequence_number?.toString() ?? "",
-  },
-];
+const fileStats = (file: MetadataFileNode): DetailRowData[] => {
+  const stats: DetailRowData[] = [
+    { label: "Schema ID", value: file.current_schema_id?.toString() ?? "" },
+    {
+      label: "Partition Spec ID",
+      value: file.partition_spec_id?.toString() ?? "",
+    },
+    { label: "Sort Order ID", value: file.sort_order_id?.toString() ?? "" },
+  ];
+  // v1 tables have no sequence numbers; the row is omitted rather than dashed.
+  if (file.last_sequence_number !== null) {
+    stats.push({
+      label: "Last Sequence Number",
+      value: String(file.last_sequence_number),
+    });
+  }
+  return stats;
+};
 
 const nodeNotices = (
   file: MetadataFileNode,
