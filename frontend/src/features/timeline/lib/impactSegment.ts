@@ -1,9 +1,7 @@
 import type { SnapshotSummary } from "../api/nodeSchemas";
-import { parseBackendSizeToBytes } from "./format/backendSize";
 
 export type ImpactSegment =
-  | { kind: "count"; added: number; removed: number; unit: "rows" | "files" }
-  | { kind: "size"; netBytes: number }
+  | { kind: "count"; added: bigint; removed: bigint; unit: "rows" | "files" }
   | { kind: "ref"; refType: "branch" | "tag"; name: string; action: string }
   | { kind: "text"; text: string };
 
@@ -12,24 +10,44 @@ export const impactText = (text: string): ImpactSegment => ({
   text,
 });
 
+const DECIMAL_INTEGER_PATTERN = /^\d+$/;
+
 /**
  * Iceberg's snapshot summary is an open string map — engines add arbitrary keys
  * (https://iceberg.apache.org/spec/#snapshots) — so a missing or non-numeric value counts as zero.
  */
-const readSummaryCount = (summary: SnapshotSummary, key: string): number =>
-  Number(summary[key]) || 0;
+const readSummaryCount = (summary: SnapshotSummary, key: string): bigint => {
+  const value = summary[key];
+  return value !== undefined && DECIMAL_INTEGER_PATTERN.test(value)
+    ? BigInt(value)
+    : 0n;
+};
+
+export interface RowCounts {
+  addedRows: bigint;
+  removedRows: bigint;
+}
+
+export const readRowCounts = (summary: SnapshotSummary): RowCounts => ({
+  addedRows: readSummaryCount(summary, "added-records"),
+  removedRows: readSummaryCount(summary, "deleted-records"),
+});
 
 export const readSnapshotImpact = (
   summary: SnapshotSummary,
   operation: string | null,
 ): ImpactSegment[] => {
-  const addedRows = readSummaryCount(summary, "added-records");
-  const removedRows = readSummaryCount(summary, "deleted-records");
-  // A replace rewrites files without logically changing data
-  // (https://iceberg.apache.org/spec/#snapshots), so its row churn is
-  // bookkeeping, not information.
-  const isLogicalRowChange = operation !== "replace";
+  const { addedRows, removedRows } = readRowCounts(summary);
+  const isRewrite = operation === "replace";
 
+  if (!isRewrite && (addedRows > 0n || removedRows > 0n)) {
+    return [
+      { kind: "count", added: addedRows, removed: removedRows, unit: "rows" },
+    ];
+  }
+
+  // A rewrite changes no rows (https://iceberg.apache.org/spec/#snapshots);
+  // the number of files is its only visible effect.
   const addedFiles =
     readSummaryCount(summary, "added-data-files") +
     readSummaryCount(summary, "added-delete-files");
@@ -37,38 +55,16 @@ export const readSnapshotImpact = (
     readSummaryCount(summary, "deleted-data-files") +
     readSummaryCount(summary, "removed-delete-files");
 
-  const addedBytes = parseBackendSizeToBytes(summary["added-files-size"]) ?? 0;
-  const removedBytes =
-    parseBackendSizeToBytes(summary["removed-files-size"]) ?? 0;
-  const netBytes = addedBytes - removedBytes;
-
-  const hasRowChange = isLogicalRowChange && (addedRows > 0 || removedRows > 0);
-  const hasFileChange = addedFiles > 0 || removedFiles > 0;
-  const hasSizeChange = netBytes !== 0;
-
-  const segments: ImpactSegment[] = [];
-
-  if (hasRowChange) {
-    segments.push({
-      kind: "count",
-      added: addedRows,
-      removed: removedRows,
-      unit: "rows",
-    });
+  if (isRewrite && (addedFiles > 0n || removedFiles > 0n)) {
+    return [
+      {
+        kind: "count",
+        added: addedFiles,
+        removed: removedFiles,
+        unit: "files",
+      },
+    ];
   }
 
-  if (hasFileChange) {
-    segments.push({
-      kind: "count",
-      added: addedFiles,
-      removed: removedFiles,
-      unit: "files",
-    });
-  }
-
-  if (hasSizeChange) {
-    segments.push({ kind: "size", netBytes });
-  }
-
-  return segments;
+  return [];
 };
