@@ -212,6 +212,14 @@ particular table in focus.
 - Graph parameters stay in the URL while the user works in the Graph view, so a URL the user
   copies from it reproduces their view. Node ids that are not in the loaded graph are removed.
 
+### Timeline links
+
+The optional parameters on `/table/timeline` restore the selected event and filters:
+
+- `timeline_event=<uri-encoded metadata file path>` opens the event details for a selectable row in the loaded range.
+- `timeline_kind=writes|metadata` filters by event type. Omit it or use `all` for all events.
+- `timeline_branch=<uri-encoded branch name>` filters by branch. Omit it for all branches.
+
 ### FileTree links
 
 When linking to `/table/filetree`, the following optional parameters reproduce the user's

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect } from "react";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import {
   filterTimelineRows,
   type CommitKindFilter,
@@ -19,34 +20,88 @@ const countEventRows = (rows: TimelineData["rows"]): number =>
   rows.filter((row) => row.kind !== "boundary").length;
 
 const TimelineContent = ({ timeline, table }: TimelineContentProps) => {
-  const [kindFilter, setKindFilter] = useState<CommitKindFilter>("all");
-  const [branchFilter, setBranchFilter] = useState<string | null>(null);
+  const navigate = useNavigate({ from: "/table/timeline" });
+  const search = useSearch({ from: "/table/timeline" });
+  const kindFilter = search.timeline_kind ?? "all";
+  const branchFilter = search.timeline_branch;
+  const requestedEvent = search.timeline_event;
   const branchOptions = [...branchAccentsByName(timeline.rows).keys()];
-  // A new snapshot range can drop the filtered branch; the filter is cleared
-  // rather than hidden, so it cannot come back when a later range has it.
-  if (branchFilter !== null && !branchOptions.includes(branchFilter)) {
-    setBranchFilter(null);
-  }
-  const activeBranchFilter =
-    branchFilter !== null && branchOptions.includes(branchFilter)
-      ? branchFilter
-      : null;
+  const hasStaleBranch =
+    branchFilter !== undefined && !branchOptions.includes(branchFilter);
+  const hasStaleEvent =
+    requestedEvent !== undefined &&
+    !timeline.rows.some(
+      (row) => row.kind !== "boundary" && row.filePath === requestedEvent,
+    );
+  const activeBranchFilter = hasStaleBranch ? null : (branchFilter ?? null);
+
+  useEffect(() => {
+    if (!hasStaleBranch && !hasStaleEvent) return;
+    void navigate({
+      replace: true,
+      state: (previous) => previous,
+      search: (previous) => ({
+        ...previous,
+        timeline_branch:
+          hasStaleBranch && previous.timeline_branch === branchFilter
+            ? undefined
+            : previous.timeline_branch,
+        timeline_event:
+          hasStaleEvent && previous.timeline_event === requestedEvent
+            ? undefined
+            : previous.timeline_event,
+      }),
+    });
+  }, [branchFilter, hasStaleBranch, hasStaleEvent, navigate, requestedEvent]);
   const shownRows = filterTimelineRows(
     timeline.rows,
     kindFilter,
     activeBranchFilter,
   );
-  const { selectedFilePath, handleSelect, clearSelection } =
-    useTimelineSelection(shownRows);
   const selectedRow =
-    shownRows.find((row) => row.filePath === selectedFilePath) ?? null;
+    shownRows.find(
+      (row) => row.kind !== "boundary" && row.filePath === requestedEvent,
+    ) ?? null;
+  const selectedFilePath = selectedRow?.filePath ?? null;
+  const { handleSelect, clearSelection } = useTimelineSelection(
+    shownRows,
+    selectedFilePath,
+    (filePath) => {
+      void navigate({
+        search: (previous) => ({ ...previous, timeline_event: filePath }),
+      });
+    },
+  );
 
   const commitCount = countEventRows(timeline.rows);
   const isFiltering = kindFilter !== "all" || activeBranchFilter !== null;
 
+  const setKindFilter = (kind: CommitKindFilter) => {
+    void navigate({
+      search: (previous) => ({
+        ...previous,
+        timeline_kind: kind === "all" ? undefined : kind,
+      }),
+    });
+  };
+
+  const setBranchFilter = (branch: string | null) => {
+    void navigate({
+      search: (previous) => ({
+        ...previous,
+        timeline_branch: branch ?? undefined,
+      }),
+    });
+  };
+
   const handleClearFilters = () => {
-    setKindFilter("all");
-    setBranchFilter(null);
+    void navigate({
+      search: (previous) => ({
+        ...previous,
+        timeline_kind: undefined,
+        timeline_branch: undefined,
+      }),
+    });
   };
 
   return (
