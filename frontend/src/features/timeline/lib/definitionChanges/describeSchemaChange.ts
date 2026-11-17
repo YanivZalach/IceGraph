@@ -52,9 +52,15 @@ const diffSchemaFields = (
     }
 
     if (!isSameType(previousField.type, field.type)) {
+      const previousTypeName = formatTypeName(previousField.type);
+      const currentTypeName = formatTypeName(field.type);
+      const impact = `column ${field.name} type changed`;
       changes.push({
-        impact: `column ${field.name} type changed`,
-        detail: `column ${field.name} type changed (${formatTypeName(previousField.type)} → ${formatTypeName(field.type)})`,
+        impact,
+        detail:
+          previousTypeName === currentTypeName
+            ? impact
+            : `${impact} (${previousTypeName} → ${currentTypeName})`,
       });
     }
 
