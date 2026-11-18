@@ -31,6 +31,8 @@ export interface CommitRow {
   shortId: string;
   snapshotId: string | null;
   filePath: string;
+  /** The readable file this one was compared with; null when there is none or it is unknown. */
+  previousFilePath: string | null;
   timestampMs: number;
   badges: RefBadge[];
   branchName: string | null;
@@ -75,6 +77,7 @@ export const boundaryRow = (file: MetadataFileNode): CommitRow => ({
   shortId: "",
   snapshotId: null,
   filePath: file.file_path,
+  previousFilePath: null,
   timestampMs: file.timestamp,
   badges: [],
   branchName: null,

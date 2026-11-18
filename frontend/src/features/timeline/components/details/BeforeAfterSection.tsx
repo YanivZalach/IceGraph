@@ -2,6 +2,7 @@ import { cn } from "../../../../shared/lib/cn";
 import { UI_FIELD_LABEL_CLASS } from "../../../../uiTypography";
 import type { BeforeAfterRow } from "../../lib/details/summaryTables";
 import { humanizeLabel, humanizeValue } from "../../lib/format/humanizeSummary";
+import { SNAPSHOT_UNAVAILABLE } from "../../lib/format/snapshotUnavailable";
 import { SECTION_TITLE_CLASS } from "./sectionTitleClass";
 
 interface BeforeAfterSectionProps {
@@ -22,7 +23,7 @@ const BeforeAfterSection = ({ title, rows }: BeforeAfterSectionProps) => {
       </summary>
       {isBeforeUnknown && (
         <p className="mb-1 text-xs text-slate-500">
-          Previous snapshot expired or not loaded
+          Previous snapshot {SNAPSHOT_UNAVAILABLE}
         </p>
       )}
       <table className="w-full table-fixed">

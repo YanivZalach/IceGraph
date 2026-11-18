@@ -2,6 +2,7 @@ import { formatDurationMs } from "../format/formatDuration";
 import type { MetadataFileNode, SnapshotNode } from "../../api/nodeSchemas";
 import { diffMetadataFiles, type FieldDiff } from "./diffMetadataFiles";
 import { formatDayMonthYearAndClock } from "../format/formatTimelineTime";
+import { SNAPSHOT_UNAVAILABLE } from "../format/snapshotUnavailable";
 import {
   groupSnapshotSummary,
   type SummaryEntry,
@@ -56,7 +57,7 @@ const movedToText = (
   target: SnapshotNode | undefined,
 ): string => {
   if (target === undefined) {
-    return `snapshot ${targetId} (expired or not loaded)`;
+    return `snapshot ${targetId} (${SNAPSHOT_UNAVAILABLE})`;
   }
   const operation = target.operation ?? "unknown";
   return `snapshot ${target.snapshot_id} from ${formatDayMonthYearAndClock(target.timestamp)} (${operation})`;
@@ -71,7 +72,7 @@ const snapshotRows = (
       ? []
       : [
           {
-            label: "Snapshot ID (expired or not loaded)",
+            label: `Snapshot ID (${SNAPSHOT_UNAVAILABLE})`,
             value: row.snapshotId,
             isCopyable: true,
           },
@@ -262,7 +263,7 @@ export const buildEventDetails = (
   timeline: TimelineData,
   row: CommitRow,
 ): EventDetailData => {
-  const { rows, snapshotsById, filesByPath } = timeline;
+  const { snapshotsById, filesByPath } = timeline;
 
   const file = filesByPath.get(row.filePath);
   if (file === undefined) {
@@ -287,18 +288,11 @@ export const buildEventDetails = (
 
   const actionLink = snapshot?.action_link ?? null;
 
-  const rowIndex = rows.findIndex(
-    (candidate) => candidate.filePath === row.filePath,
-  );
-  const rowBelow = rowIndex === -1 ? undefined : rows[rowIndex + 1];
   const previousFile =
-    rowBelow === undefined ? undefined : filesByPath.get(rowBelow.filePath);
-
-  const predecessor =
-    file.previous_file === null
+    row.previousFilePath === null
       ? undefined
-      : filesByPath.get(file.previous_file);
-  const beforeSchema = predecessor?.current_schema_id;
+      : filesByPath.get(row.previousFilePath);
+  const beforeSchema = previousFile?.current_schema_id;
   const afterSchema = file.current_schema_id;
 
   const branchRows: DetailRowData[] =
@@ -325,7 +319,6 @@ export const buildEventDetails = (
     ],
     actionLink: actionLink === "" ? null : actionLink,
     schemaChange:
-      !isChangeUnknown &&
       beforeSchema != null &&
       afterSchema !== null &&
       beforeSchema !== afterSchema
@@ -352,8 +345,6 @@ export const buildEventDetails = (
     refs: refRows(file),
     properties: toRows(Object.entries(file.properties)),
     rawDiff:
-      previousFile === undefined || isChangeUnknown
-        ? []
-        : diffMetadataFiles(previousFile, file),
+      previousFile === undefined ? [] : diffMetadataFiles(previousFile, file),
   };
 };

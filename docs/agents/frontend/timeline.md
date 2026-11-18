@@ -45,7 +45,8 @@ keyboard handling live in `hooks/`.
 10. Every zod schema lives in `api/`. `lib/` receives parsed, trusted types.
 11. Large Iceberg integers stay strings or `BigInt`. Never pass a snapshot id or a count through
     `Number()`.
-12. User-facing wording that appears in more than one place has one function in `lib/format/`.
+12. User-facing wording that appears in more than one place has one function or constant in
+    `lib/format/`.
 
 ## Before finishing
 

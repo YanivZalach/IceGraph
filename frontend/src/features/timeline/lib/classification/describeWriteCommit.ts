@@ -10,6 +10,7 @@ import {
   readSnapshotImpact,
 } from "../impactSegment";
 import type { DescribedChange } from "../definitionChanges/describedChange";
+import { SNAPSHOT_UNAVAILABLE } from "../format/snapshotUnavailable";
 import type {
   CommitDescription,
   Headline,
@@ -108,7 +109,7 @@ export const describeWriteCommit = (
   const snapshotRecord = snapshotsById.get(gainedSnapshotId);
   const snapshotImpact =
     snapshotRecord === undefined
-      ? [impactText("row counts unknown: snapshot expired or not loaded")]
+      ? [impactText(`row counts unknown: snapshot ${SNAPSHOT_UNAVAILABLE}`)]
       : readSnapshotImpact(snapshotRecord.summary, snapshotRecord.operation);
   const impactSegments = [
     ...snapshotImpact,

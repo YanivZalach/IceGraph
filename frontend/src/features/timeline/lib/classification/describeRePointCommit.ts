@@ -1,6 +1,7 @@
 import type { MetadataFileNode, SnapshotRefs } from "../../api/nodeSchemas";
 import type { CommitDescription, SnapshotsById } from "./commitDescription";
 import { formatShortId } from "../format/formatShortId";
+import { SNAPSHOT_UNAVAILABLE } from "../format/snapshotUnavailable";
 import { formatDayMonthYearAndClock } from "../format/formatTimelineTime";
 import { impactText } from "../impactSegment";
 import type { DescribedChange } from "../definitionChanges/describedChange";
@@ -80,7 +81,7 @@ export const describeRePointCommit = (
       : "Switched snapshots";
   const targetImpact =
     targetRecord === undefined
-      ? `→ snapshot ${formatShortId(targetId)} (expired or not loaded)`
+      ? `→ snapshot ${formatShortId(targetId)} (${SNAPSHOT_UNAVAILABLE})`
       : `→ snapshot ${formatShortId(targetId)} · ${formatDayMonthYearAndClock(targetRecord.timestamp)}`;
 
   return {

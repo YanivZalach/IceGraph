@@ -167,11 +167,14 @@ const toCommitRow = (
     // the row still renders, titled by the fallback
   }
 
-  return attachDraftPublication(
-    attachRefBadges(toTimelineRow(file, commit), newestRefs),
-    laterFiles,
-    snapshotsById,
-  );
+  return {
+    ...attachDraftPublication(
+      attachRefBadges(toTimelineRow(file, commit), newestRefs),
+      laterFiles,
+      snapshotsById,
+    ),
+    previousFilePath: predecessor.file.file_path,
+  };
 };
 
 /** Past a gap, which file published a draft cannot be told, so the search stops there. */
