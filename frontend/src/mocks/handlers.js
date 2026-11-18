@@ -1919,6 +1919,58 @@ const METADATA_NODE_TYPES = new Set(["main_metadata", "metadata"]);
 const REACHABLE_NODE_TYPES = new Set(["snapshot", "manifest"]);
 const graphJobs = new Map();
 
+const MOCK_ASSISTANT_MAX_CONTEXT_CHARACTERS = 200000;
+const MOCK_ASSISTANT_WORDS_PER_POLL = 6;
+const MOCK_ASSISTANT_TOKEN = "mock-assistant-token";
+const MOCK_ASSISTANT_MAX_JOBS = 20;
+const assistantJobs = new Map();
+let nextAssistantJobId = 0;
+
+const describeAssistantContext = (context) => {
+  let parsedContext;
+  try {
+    parsedContext = JSON.parse(context);
+  } catch {
+    return [];
+  }
+  if (typeof parsedContext !== "object" || parsedContext === null) return [];
+  const parts = [];
+  if (parsedContext.metadata) parts.push("table metadata");
+  if (parsedContext.errors || parsedContext.warnings) parts.push("issues");
+  if (
+    typeof parsedContext.snapshots === "object" &&
+    parsedContext.snapshots !== null
+  ) {
+    parts.push(`${Object.keys(parsedContext.snapshots).length} snapshots`);
+  }
+  if (Array.isArray(parsedContext.nodes)) {
+    parts.push(`${parsedContext.nodes.length} graph nodes`);
+  }
+  return parts;
+};
+
+const buildMockAssistantAnswer = ({ context, messages }, characters) => {
+  const question = messages.at(-1).content;
+  const contextParts = describeAssistantContext(context);
+  const historyCount = messages.length - 1;
+  const sentContext =
+    contextParts.length > 0 ? contextParts.join(", ") : "no table context";
+  const sentHistory =
+    historyCount > 0
+      ? `${historyCount} earlier messages of history`
+      : "no history";
+
+  return [
+    "This is a demo answer, no AI model is connected.",
+    "",
+    `You asked: "${question}"`,
+    "",
+    `Sent with this question: ${sentContext}, and ${sentHistory} (${characters.toLocaleString("en-US")} ${characters === 1 ? "character" : "characters"}).`,
+    "",
+    "With a model configured on the server, the answer would explain the table using this context.",
+  ].join("\n");
+};
+
 const tableStatisticsForMetadata = (metadataPath) => {
   const metadataNode = mockResponse.nodes.find(
     (node) => node.file_path === metadataPath,
@@ -2163,7 +2215,70 @@ export const handlers = [
   }),
 
   http.get("/api/v1/assistant", () => {
-    return HttpResponse.json({ enabled: false, max_context_characters: 0 });
+    return HttpResponse.json({
+      enabled: true,
+      max_context_characters: MOCK_ASSISTANT_MAX_CONTEXT_CHARACTERS,
+    });
+  }),
+
+  http.post("/api/v1/assistant/messages", async ({ request }) => {
+    const body = await request.json();
+    const characters =
+      body.context.length +
+      body.messages.reduce(
+        (total, message) => total + message.content.length,
+        0,
+      );
+    if (characters > MOCK_ASSISTANT_MAX_CONTEXT_CHARACTERS) {
+      return HttpResponse.json(
+        {
+          error: `The selected context and conversation are ${characters} characters, above the limit of ${MOCK_ASSISTANT_MAX_CONTEXT_CHARACTERS}. Select fewer context options or clear the conversation.`,
+        },
+        { status: 413 },
+      );
+    }
+
+    if (assistantJobs.size >= MOCK_ASSISTANT_MAX_JOBS) {
+      assistantJobs.delete(assistantJobs.keys().next().value);
+    }
+    nextAssistantJobId += 1;
+    const key = `mock-assistant-${nextAssistantJobId}`;
+    assistantJobs.set(key, {
+      words: buildMockAssistantAnswer(body, characters).split(" "),
+      sentWords: 0,
+    });
+    return HttpResponse.json(
+      {
+        key,
+        status: "processing",
+        "X-IceGraph-Job-Token": MOCK_ASSISTANT_TOKEN,
+      },
+      { status: 202 },
+    );
+  }),
+
+  http.get("/api/v1/assistant/messages/:key", ({ params, request }) => {
+    const job = assistantJobs.get(params.key);
+    if (
+      !job ||
+      request.headers.get("X-IceGraph-Job-Token") !== MOCK_ASSISTANT_TOKEN
+    ) {
+      return HttpResponse.json({ error: "Job not found" }, { status: 404 });
+    }
+    job.sentWords = Math.min(
+      job.sentWords + MOCK_ASSISTANT_WORDS_PER_POLL,
+      job.words.length,
+    );
+    const answer = job.words.slice(0, job.sentWords).join(" ");
+    if (job.sentWords < job.words.length) {
+      return HttpResponse.json(
+        { key: params.key, status: "processing", answer },
+        { status: 202 },
+      );
+    }
+
+    assistantJobs.delete(params.key);
+    return HttpResponse.json({ key: params.key, status: "completed", answer });
   }),
 
   http.post("/api/v1/graph-data", async ({ request }) => {
