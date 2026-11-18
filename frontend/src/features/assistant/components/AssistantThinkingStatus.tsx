@@ -14,7 +14,7 @@ const THINKING_WORDS = [
   "Pruning",
   "Branching",
 ];
-const THINKING_WORD_INTERVAL_MS = 1500;
+const THINKING_WORD_INTERVAL_MS = 3000;
 
 const pickNextWordIndex = (wordIndex: number): number =>
   (wordIndex + 1 + Math.floor(Math.random() * (THINKING_WORDS.length - 1))) %
