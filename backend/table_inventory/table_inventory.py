@@ -43,6 +43,14 @@ class TableInventoryResult:
 
 
 class TableInventory(SparkTableAction):
+    SNAPSHOTS_COLLECTOR = CollectSnapshots
+    METADATA_COLLECTOR = CollectMetadata
+    TABLE_STATISTICS_COLLECTOR = CollectTableStatistics
+    PARTITION_STATISTICS_COLLECTOR = CollectPartitionStatistics
+    MANIFESTS_COLLECTOR = CollectManifests
+    DATA_FILES_COLLECTOR = CollectDataFiles
+    TABLE_METADATA_COLLECTOR = TableMetadataCollector
+
     def __init__(
         self,
         full_table_name: str,
@@ -115,7 +123,7 @@ class TableInventory(SparkTableAction):
         self._warnings.update(self._search_cutoff.warnings)
 
     def _collect_and_set_snapshots(self):
-        snapshot_collection = CollectSnapshots(
+        snapshot_collection = self.SNAPSHOTS_COLLECTOR(
             self._table_name,
             self._search_cutoff.start_snapshot_cutoff,
             self._search_cutoff.end_snapshot_cutoff,
@@ -170,7 +178,7 @@ class TableInventory(SparkTableAction):
     def _threaded_collect_metadata_and_statistics_files(self):
         self._on_stage_start(STAGE_COLLECT_METADATA_FILES)
         try:
-            metadata_collection = CollectMetadata(
+            metadata_collection = self.METADATA_COLLECTOR(
                 self._table_name,
                 self._search_cutoff.start_metadata_cutoff,
                 self._search_cutoff.end_metadata_cutoff,
@@ -181,10 +189,10 @@ class TableInventory(SparkTableAction):
 
         with ThreadPoolExecutor(max_workers=2) as executor:
             table_statistics_future = executor.submit(
-                self._collect_statistics_files, CollectTableStatistics, STAGE_COLLECT_TABLE_STATISTICS, metadata_collection.files
+                self._collect_statistics_files, self.TABLE_STATISTICS_COLLECTOR, STAGE_COLLECT_TABLE_STATISTICS, metadata_collection.files
             )
             partition_statistics_future = executor.submit(
-                self._collect_statistics_files, CollectPartitionStatistics, STAGE_COLLECT_PARTITION_STATISTICS, metadata_collection.files
+                self._collect_statistics_files, self.PARTITION_STATISTICS_COLLECTOR, STAGE_COLLECT_PARTITION_STATISTICS, metadata_collection.files
             )
 
         return metadata_collection, table_statistics_future.result(), partition_statistics_future.result()
@@ -207,7 +215,7 @@ class TableInventory(SparkTableAction):
     def _threaded_collect_manifests_and_data_files(self):
         self._on_stage_start(STAGE_COLLECT_MANIFESTS)
         try:
-            manifests_collection = CollectManifests(
+            manifests_collection = self.MANIFESTS_COLLECTOR(
                 self._table_name,
                 self._snapshots,
                 self._search_cutoff.manifests_to_ignore_df,
@@ -217,7 +225,7 @@ class TableInventory(SparkTableAction):
 
         self._on_stage_start(STAGE_COLLECT_DATA_FILES)
         try:
-            data_files_collection = CollectDataFiles(
+            data_files_collection = self.DATA_FILES_COLLECTOR(
                 self._table_name,
                 manifests_collection.files,
             ).collect()
@@ -304,7 +312,7 @@ class TableInventory(SparkTableAction):
 
     def _set_current_table_specs(self):
         self._current_table_specs = {"table-name": self._table_name}
-        table_metadata_collector = TableMetadataCollector(self._table_name)
+        table_metadata_collector = self.TABLE_METADATA_COLLECTOR(self._table_name)
 
         try:
             current_main_metadata_file = next(metadata_file for metadata_file in self._metadata_files if metadata_file.type == FileType.MAIN_METADATA)

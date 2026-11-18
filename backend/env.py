@@ -61,3 +61,24 @@ class Env:
 
     # Number of request threads used by Waitress.
     WSGI_THREADS: int = int(os.getenv("WSGI_THREADS", "20"))
+
+    # Query engine used to read Iceberg metadata: spark or trino.
+    QUERY_ENGINE: str = os.getenv("QUERY_ENGINE", "spark").lower()
+
+    # Trino coordinator host, used when QUERY_ENGINE is trino.
+    TRINO_HOST: str = os.getenv("TRINO_HOST", "localhost")
+
+    # Trino coordinator port.
+    TRINO_PORT: int = int(os.getenv("TRINO_PORT", "8080"))
+
+    # Trino user that runs IceGraph queries.
+    TRINO_USER: str = os.getenv("TRINO_USER", "icegraph")
+
+    # Trino password for basic authentication over https, left empty to disable authentication.
+    TRINO_PASSWORD: str = os.getenv("TRINO_PASSWORD", "")
+
+    # Protocol used to reach Trino: http or https.
+    TRINO_HTTP_SCHEME: str = os.getenv("TRINO_HTTP_SCHEME", "http")
+
+    # Existing Hive catalog.schema, backed by a file metastore, where IceGraph registers external tables to read raw Iceberg files.
+    TRINO_RAW_FILES_SCHEMA: str = os.getenv("TRINO_RAW_FILES_SCHEMA", "hive.icegraph")

@@ -40,6 +40,8 @@ class SnapshotRowLineage:
 
 
 class TableMetadataCollector:
+    PARTITION_STATISTICS_COLLECTOR = CollectPartitionStatistics
+
     def __init__(self, table_name: str):
         self._table_name = table_name
         self.snapshot_row_lineage_by_id: dict[int, SnapshotRowLineage] = {}
@@ -107,7 +109,7 @@ class TableMetadataCollector:
                 statistics_file = candidate
                 break
         if statistics_file is None:
-            statistics_file = CollectPartitionStatistics(self._table_name, []).collect_file(metadata_path, entry, include_samples=False)
+            statistics_file = self.PARTITION_STATISTICS_COLLECTOR(self._table_name, []).collect_file(metadata_path, entry, include_samples=False)
 
         return statistics_file
 

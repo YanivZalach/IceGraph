@@ -8,23 +8,17 @@ from pathlib import Path
 
 from flask import Flask, Response, copy_current_request_context, jsonify, request, send_from_directory
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
-from pyspark.errors import AnalysisException
 
-from base_classes.utils import collect_graph_metadata_file, verify_iceberg_table
 from constants import COLLECTION_STAGES, JOB_TOKEN_FIELD, STAGE_BUILD_GRAPH
 from env import Env
 from graph_normalizer.graph_normalizer import GraphNormalizer
 from icegraph_logger import logger
+from query_engine import load_query_engine
 from metrics import graph_computations_total, graph_job_cache_reads_total
 from snapshot_analyzer.snapshot_analyzer import SnapshotAnalyzer
-from snapshot_map.snapshot_mapping import collect_snapshot_map
-from spark_connect import close_spark_connect_session
-from table_inventory.table_inventory import TableInventory
-from collectors.collect_table_description import TableDescriptionCollector
-from collectors.collect_table_metadata import TableMetadataCollector
-from table_list_catalog.table_list_catalog import TableListCatalog
 
 app = Flask(__name__, static_url_path="/static")
+query_engine = load_query_engine()
 app.json.sort_keys = False
 
 job_lock = threading.Lock()
@@ -68,7 +62,7 @@ def _compute_graph_background(job_id, table_name, start_snapshot_id, end_snapsho
             stages[stage_name] = status
             _safe_update_job(job_id, stages=dict(stages))
 
-        table_data = TableInventory(table_name, _on_stage, start_snapshot_id, end_snapshot_id).build()
+        table_data = query_engine.table_inventory(table_name, _on_stage, start_snapshot_id, end_snapshot_id).build()
 
         _on_stage(STAGE_BUILD_GRAPH, "in_progress")
         try:
@@ -80,8 +74,8 @@ def _compute_graph_background(job_id, table_name, start_snapshot_id, end_snapsho
         _safe_update_job(job_id, status="completed", result=result)
         logger.info(f"Job {job_id} completed")
 
-    except AnalysisException as e:
-        logger.error(f"Spark Error in job {job_id}: {e}\n{traceback.format_exc()}")
+    except query_engine.analysis_errors as e:
+        logger.error(f"{query_engine.name} Error in job {job_id}: {e}\n{traceback.format_exc()}")
         _safe_update_job(job_id, status="failed", error=str(e))
 
     except Exception as e:
@@ -115,7 +109,7 @@ def serve(path):
 @app.route("/api/v1/tables", methods=["GET"])
 def list_tables():
     try:
-        tables = TableListCatalog().collect()
+        tables = query_engine.table_list_catalog().collect()
 
         return jsonify(
             {
@@ -125,8 +119,8 @@ def list_tables():
             }
         )
 
-    except AnalysisException as e:
-        logger.error(f"Spark Error: {e}\n{traceback.format_exc()}")
+    except query_engine.analysis_errors as e:
+        logger.error(f"{query_engine.name} Error: {e}\n{traceback.format_exc()}")
         return jsonify({"error": str(e)}), 400
 
     except Exception as e:
@@ -139,9 +133,9 @@ def graph_metadata_file(table_name):
     end_snapshot_id = request.args.get("end_snapshot_id")
 
     try:
-        verify_iceberg_table(table_name)
+        query_engine.verify_iceberg_table(table_name)
         parsed_end_snapshot_id = int(end_snapshot_id) if end_snapshot_id else None
-        metadata_file = collect_graph_metadata_file(table_name, parsed_end_snapshot_id)
+        metadata_file = query_engine.collect_graph_metadata_file(table_name, parsed_end_snapshot_id)
         response = jsonify({"metadata_file": metadata_file})
         response.headers["Cache-Control"] = "no-store"
 
@@ -151,8 +145,8 @@ def graph_metadata_file(table_name):
         logger.error(f"Invalid graph metadata request: {e}\n{traceback.format_exc()}")
         return jsonify({"error": str(e)}), 400
 
-    except AnalysisException as e:
-        logger.error(f"Spark Error: {e}\n{traceback.format_exc()}")
+    except query_engine.analysis_errors as e:
+        logger.error(f"{query_engine.name} Error: {e}\n{traceback.format_exc()}")
         return jsonify({"error": str(e)}), 400
 
     except Exception as e:
@@ -163,15 +157,15 @@ def graph_metadata_file(table_name):
 @app.route("/api/v1/table-metadata/<path:table_name>", methods=["GET"])
 def table_metadata(table_name):
     try:
-        verify_iceberg_table(table_name)
-        return jsonify(TableMetadataCollector(table_name).collect_latest())
+        query_engine.verify_iceberg_table(table_name)
+        return jsonify(query_engine.table_metadata_collector(table_name).collect_latest())
 
     except ValueError as e:
         logger.error(f"Invalid table metadata request: {e}\n{traceback.format_exc()}")
         return jsonify({"error": str(e)}), 400
 
-    except AnalysisException as e:
-        logger.error(f"Spark Error: {e}\n{traceback.format_exc()}")
+    except query_engine.analysis_errors as e:
+        logger.error(f"{query_engine.name} Error: {e}\n{traceback.format_exc()}")
         return jsonify({"error": str(e)}), 400
 
     except Exception as e:
@@ -183,10 +177,10 @@ def table_metadata(table_name):
 def table_description():
     table_name = request.args.get("table_name")
     try:
-        return jsonify(TableDescriptionCollector(table_name).collect())
+        return jsonify(query_engine.table_description_collector(table_name).collect())
 
-    except AnalysisException as e:
-        logger.error(f"Spark Error: {e}\n{traceback.format_exc()}")
+    except query_engine.analysis_errors as e:
+        logger.error(f"{query_engine.name} Error: {e}\n{traceback.format_exc()}")
         return jsonify({"error": str(e)}), 400
 
     except Exception as e:
@@ -199,10 +193,10 @@ def snapshot_map(table_name):
     before_snapshot_id = request.args.get("before_snapshot_id")
 
     try:
-        verify_iceberg_table(table_name)
+        query_engine.verify_iceberg_table(table_name)
         parsed_before_snapshot_id = int(before_snapshot_id) if before_snapshot_id else None
 
-        result = collect_snapshot_map(table_name, Env.MAX_SNAPSHOTS_TO_SHOW, parsed_before_snapshot_id)
+        result = query_engine.collect_snapshot_map(table_name, Env.MAX_SNAPSHOTS_TO_SHOW, parsed_before_snapshot_id)
 
         return jsonify(result)
 
@@ -210,8 +204,8 @@ def snapshot_map(table_name):
         logger.error(f"Invalid snapshot map request: {e}\n{traceback.format_exc()}")
         return jsonify({"error": str(e)}), 400
 
-    except AnalysisException as e:
-        logger.error(f"Spark Error: {e}\n{traceback.format_exc()}")
+    except query_engine.analysis_errors as e:
+        logger.error(f"{query_engine.name} Error: {e}\n{traceback.format_exc()}")
         return jsonify({"error": str(e)}), 400
 
     except Exception as e:
@@ -230,9 +224,9 @@ def graph_data():
         end_snapshot_id = int(end_snapshot_id)
 
     try:
-        verify_iceberg_table(table_name)
-    except AnalysisException as e:
-        logger.error(f"Spark Error: {e}\n{traceback.format_exc()}")
+        query_engine.verify_iceberg_table(table_name)
+    except query_engine.analysis_errors as e:
+        logger.error(f"{query_engine.name} Error: {e}\n{traceback.format_exc()}")
         return jsonify({"error": str(e)}), 400
     except Exception as e:
         logger.error(f"Unexpected error: {e}\n{traceback.format_exc()}")
@@ -327,6 +321,6 @@ if __name__ == "__main__":
         watchdog.daemon = True
         watchdog.start()
 
-        close_spark_connect_session()
+        query_engine.close_session()
         executor_pool.shutdown(wait=False, cancel_futures=True)
         logger.info("Compute executor pool shutdown")

@@ -144,30 +144,31 @@ class CollectMetadata(Collector):
                     f"[{self._table_name}] Metadata file read error for {file}",
                     exc_info=True,
                 )
-                self._bad_metadata_files.append(
-                    MetadataFileRecord(
-                        type=FileType.METADATA,
-                        file_path=file,
-                        child_files=[],
-                        errors=[str(e)],
-                        timestamp=timestamp,
-                        snapshot_id=None,
-                        previous_file=self._get_previous_metadata_file(file),
-                        last_sequence_number=None,
-                        format_version=None,
-                        partition_spec_id=None,
-                        current_schema_id=None,
-                        sort_order_id=None,
-                        refs={},
-                        properties={},
-                        pointed_snapshots_files=None,
-                        pointed_table_statistics_files=None,
-                        pointed_partition_statistics_files=None,
-                        pointed_metadata_log_count=None,
-                    )
-                )
+                self._bad_metadata_files.append(self._build_bad_metadata_file(file, timestamp, str(e)))
 
         return metadata_files_df
+
+    def _build_bad_metadata_file(self, file: str, timestamp: str, error: str) -> MetadataFileRecord:
+        return MetadataFileRecord(
+            type=FileType.METADATA,
+            file_path=file,
+            child_files=[],
+            errors=[error],
+            timestamp=timestamp,
+            snapshot_id=None,
+            previous_file=self._get_previous_metadata_file(file),
+            last_sequence_number=None,
+            format_version=None,
+            partition_spec_id=None,
+            current_schema_id=None,
+            sort_order_id=None,
+            refs={},
+            properties={},
+            pointed_snapshots_files=None,
+            pointed_table_statistics_files=None,
+            pointed_partition_statistics_files=None,
+            pointed_metadata_log_count=None,
+        )
 
     @staticmethod
     def _with_pointed_statistics(metadata_files_df: pyspark.sql.DataFrame) -> pyspark.sql.DataFrame:
