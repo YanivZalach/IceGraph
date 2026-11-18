@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { formatUnreadableEvents } from "../lib/format/formatUnreadableEvents";
 
 interface TimelineEmptyStateProps {
   tableName: string | undefined;
@@ -15,9 +16,7 @@ const TimelineEmptyState = ({
         role="status"
         className="rounded-lg border border-amber-800 bg-amber-950/40 px-3 py-2 text-sm text-amber-300"
       >
-        {unreadableCommitCount === 1
-          ? "1 event could not be read."
-          : `${unreadableCommitCount.toString()} events could not be read.`}
+        {formatUnreadableEvents(unreadableCommitCount)}.
       </p>
     )}
     <p className="text-sm text-slate-400">

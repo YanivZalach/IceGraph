@@ -5,9 +5,14 @@ import SidePanelFrame, {
 } from "../../../../components/SidePanelFrame";
 import { useDockedPanelWidth } from "../../../../components/useDockedPanelWidth";
 import { formatAbsoluteTimestamp } from "../../lib/format/formatTimelineTime";
-import type { TimelineData, TimelineRow } from "../../lib/timelineRow";
+import {
+  titleOf,
+  type TimelineData,
+  type TimelineRow,
+} from "../../lib/timelineRow";
 import { eventToneFor } from "../eventColor";
 import EventDetails from "./EventDetails";
+import GapDetails from "./GapDetails";
 
 interface EventDetailsPanelProps {
   timeline: TimelineData;
@@ -48,7 +53,7 @@ const EventDetailsPanel = ({
       contentClassName="gap-4 overscroll-contain"
       header={
         <PanelHeader
-          title={row.title}
+          title={titleOf(row)}
           titleColor={accentColor}
           subtitle={row.filePath}
           meta={formatAbsoluteTimestamp(row.timestampMs)}
@@ -67,7 +72,11 @@ const EventDetailsPanel = ({
       onClose={onClose}
       style={panelStyle}
     >
-      <EventDetails timeline={timeline} row={row} />
+      {row.kind === "gap" ? (
+        <GapDetails row={row} />
+      ) : (
+        <EventDetails timeline={timeline} row={row} />
+      )}
     </SidePanelFrame>
   );
 };

@@ -6,7 +6,7 @@ import {
 } from "../../../specs/tableSpecs";
 import { cn } from "../../../../shared/lib/cn";
 import { buildEventDetails } from "../../lib/details/buildEventDetails";
-import type { TimelineData, TimelineRow } from "../../lib/timelineRow";
+import type { CommitRow, TimelineData } from "../../lib/timelineRow";
 import BeforeAfterSection from "./BeforeAfterSection";
 import DetailValueRow from "./DetailValueRow";
 import ChangeCountsSection from "./ChangeCountsSection";
@@ -17,7 +17,7 @@ import ViewInGraphButtons from "./ViewInGraphButtons";
 
 interface EventDetailsProps {
   timeline: TimelineData;
-  row: TimelineRow;
+  row: CommitRow;
 }
 
 const EventDetails = ({ timeline, row }: EventDetailsProps) => {

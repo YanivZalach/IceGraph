@@ -39,6 +39,9 @@ export const branchAccentsByName = (
   };
 
   for (const row of rows) {
+    if (row.kind === "gap") {
+      continue;
+    }
     assign(row.branchName);
     for (const segment of row.impact) {
       if (segment.kind === "ref" && segment.refType === "branch") {
@@ -73,9 +76,11 @@ const TONE_BY_CATEGORY: Record<CommitCategory, Tone> = {
   quiet: tone("text-slate-300", "var(--color-slate-300)"),
 };
 
+const GAP_TONE = tone("text-amber-300", "var(--color-amber-300)");
+
 /**
  * Each kind of change reads in its own light tone, bright enough to stay readable on the card.
  * The list title and the details panel share it, so a row keeps its color when opened.
  */
 export const eventToneFor = (row: TimelineRow): Tone =>
-  TONE_BY_CATEGORY[row.category];
+  row.kind === "gap" ? GAP_TONE : TONE_BY_CATEGORY[row.category];

@@ -12,7 +12,7 @@ import {
   type BeforeAfterRow,
   type ChangeCounts,
 } from "./summaryTables";
-import type { TimelineData, TimelineRow } from "../timelineRow";
+import type { CommitRow, TimelineData } from "../timelineRow";
 
 export interface DetailRowData {
   /** Set when labels alone may collide, such as user-chosen ref names. */
@@ -63,7 +63,7 @@ const movedToText = (
 };
 
 const snapshotRows = (
-  row: TimelineRow,
+  row: CommitRow,
   snapshot: SnapshotNode | undefined,
 ): DetailRowData[] => {
   if (snapshot === undefined) {
@@ -106,7 +106,7 @@ const snapshotRows = (
 };
 
 const eventRows = (
-  row: TimelineRow,
+  row: CommitRow,
   repointTarget: SnapshotNode | undefined,
 ): DetailRowData[] => {
   const rows: DetailRowData[] = [];
@@ -196,35 +196,9 @@ const nodeNotices = (
   return notices;
 };
 
-const gapNotices = (
-  row: TimelineRow,
-  hasReadablePrevious: boolean,
-): DetailNotice[] => {
-  const count = row.unreadableCommitsBefore;
-  if (count === 0) {
-    return [];
-  }
-  const eventsText =
-    count === 1
-      ? "1 event right before this one"
-      : `${count.toString()} events right before this one`;
-  const consequence = hasReadablePrevious
-    ? "This event is compared with the last readable one, so the changes shown may include theirs."
-    : "No earlier event could be read, so what this event changed cannot be shown.";
-  const fileLines = row.unreadableFilesBefore.map((file) =>
-    file.reasons.length === 0
-      ? file.path
-      : `${file.path}: ${file.reasons.join("; ")}`,
-  );
-  return [
-    {
-      kind: "warning",
-      text: [
-        `${eventsText} could not be read. ${consequence}`,
-        ...fileLines,
-      ].join("\n"),
-    },
-  ];
+const UNKNOWN_CHANGE_NOTICE: DetailNotice = {
+  kind: "warning",
+  text: "The event before this one could not be read, so what this event changed cannot be shown. Everything below is this event's own state.",
 };
 
 const statisticsPaths = (
@@ -286,7 +260,7 @@ const refRows = (file: MetadataFileNode): DetailRowData[] =>
 
 export const buildEventDetails = (
   timeline: TimelineData,
-  row: TimelineRow,
+  row: CommitRow,
 ): EventDetailData => {
   const { rows, snapshotsById, filesByPath } = timeline;
 
@@ -332,13 +306,26 @@ export const buildEventDetails = (
       ? []
       : [{ label: "Branch Name", value: row.branchName }];
 
+  const isChangeUnknown = row.kind === "unknown-change";
+  const currentSnapshotRows: DetailRowData[] =
+    isChangeUnknown && file.snapshot_id !== null
+      ? [
+          {
+            label: "Current Snapshot ID",
+            value: file.snapshot_id,
+            isCopyable: true,
+          },
+        ]
+      : [];
+
   return {
     notices: [
-      ...gapNotices(row, previousFile !== undefined),
+      ...(isChangeUnknown ? [UNKNOWN_CHANGE_NOTICE] : []),
       ...nodeNotices(file, snapshot),
     ],
     actionLink: actionLink === "" ? null : actionLink,
     schemaChange:
+      !isChangeUnknown &&
       beforeSchema != null &&
       afterSchema !== null &&
       beforeSchema !== afterSchema
@@ -347,6 +334,7 @@ export const buildEventDetails = (
     snapshotFilePath: snapshot?.file_path ?? null,
     topRows: [
       ...branchRows,
+      ...currentSnapshotRows,
       ...snapshotRows(row, snapshot),
       ...eventRows(row, repointTarget),
     ],
@@ -364,6 +352,8 @@ export const buildEventDetails = (
     refs: refRows(file),
     properties: toRows(Object.entries(file.properties)),
     rawDiff:
-      previousFile === undefined ? [] : diffMetadataFiles(previousFile, file),
+      previousFile === undefined || isChangeUnknown
+        ? []
+        : diffMetadataFiles(previousFile, file),
   };
 };

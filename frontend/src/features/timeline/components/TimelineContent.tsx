@@ -17,7 +17,7 @@ interface TimelineContentProps {
 }
 
 const countEventRows = (rows: TimelineData["rows"]): number =>
-  rows.filter((row) => row.kind !== "boundary").length;
+  rows.filter((row) => row.kind !== "boundary" && row.kind !== "gap").length;
 
 const TimelineContent = ({ timeline, table }: TimelineContentProps) => {
   const navigate = useNavigate({ from: "/table/timeline" });

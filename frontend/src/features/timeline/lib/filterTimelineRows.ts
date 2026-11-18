@@ -1,8 +1,8 @@
-import type { TimelineRow } from "./timelineRow";
+import type { CommitRow, TimelineRow } from "./timelineRow";
 
 export type CommitKindFilter = "all" | "writes" | "metadata";
 
-const matchesKind = (row: TimelineRow, kind: CommitKindFilter): boolean => {
+const matchesKind = (row: CommitRow, kind: CommitKindFilter): boolean => {
   if (kind === "all") {
     return true;
   }
@@ -10,7 +10,7 @@ const matchesKind = (row: TimelineRow, kind: CommitKindFilter): boolean => {
   return kind === "writes" ? isWrite : !isWrite;
 };
 
-const mentionsBranch = (row: TimelineRow, branchName: string): boolean => {
+const mentionsBranch = (row: CommitRow, branchName: string): boolean => {
   const isMainsOwnMove = row.kind === "re-point" && branchName === "main";
   return (
     isMainsOwnMove ||
@@ -36,6 +36,7 @@ export const filterTimelineRows = (
   return rows.filter(
     (row) =>
       row.kind !== "boundary" &&
+      row.kind !== "gap" &&
       matchesKind(row, kind) &&
       (branchName === null || mentionsBranch(row, branchName)),
   );

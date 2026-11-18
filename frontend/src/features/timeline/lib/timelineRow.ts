@@ -1,5 +1,6 @@
 import type { MetadataFileNode, SnapshotNode } from "../api/nodeSchemas";
 import type { CommitCategory } from "./classification/commitDescription";
+import { formatUnreadableEvents } from "./format/formatUnreadableEvents";
 import type { ImpactSegment } from "./impactSegment";
 
 export interface RefBadge {
@@ -9,15 +10,18 @@ export interface RefBadge {
 
 export interface UnreadableFileSummary {
   path: string;
+  timestampMs: number;
   reasons: string[];
 }
 
-export interface TimelineRow {
+export interface CommitRow {
   kind:
     | "published-write"
     | "draft-write"
     | "re-point"
     | "metadata-only"
+    /** Its predecessor could not be read, so nothing is claimed about what it changed. */
+    | "unknown-change"
     | "boundary";
   title: string;
   category: CommitCategory;
@@ -34,9 +38,23 @@ export interface TimelineRow {
   isDraftPublishedLater: boolean;
   publishedAsSnapshotId: string | null;
   publishedAtMs: number | null;
-  unreadableCommitsBefore: number;
-  unreadableFilesBefore: UnreadableFileSummary[];
 }
+
+/** A run of events that could not be read. `filePath` and `timestampMs` are its newest file's. */
+export interface GapRow {
+  kind: "gap";
+  filePath: string;
+  timestampMs: number;
+  /** Newest first. */
+  unreadableFiles: UnreadableFileSummary[];
+}
+
+export type TimelineRow = CommitRow | GapRow;
+
+export const titleOf = (row: TimelineRow): string =>
+  row.kind === "gap"
+    ? formatUnreadableEvents(row.unreadableFiles.length)
+    : row.title;
 
 export interface TimelineData {
   rows: TimelineRow[];
@@ -47,7 +65,7 @@ export interface TimelineData {
   filesByPath: ReadonlyMap<string, MetadataFileNode>;
 }
 
-export const boundaryRow = (file: MetadataFileNode): TimelineRow => ({
+export const boundaryRow = (file: MetadataFileNode): CommitRow => ({
   kind: "boundary",
   title: "",
   category: "quiet",
@@ -64,6 +82,4 @@ export const boundaryRow = (file: MetadataFileNode): TimelineRow => ({
   isDraftPublishedLater: false,
   publishedAsSnapshotId: null,
   publishedAtMs: null,
-  unreadableCommitsBefore: 0,
-  unreadableFilesBefore: [],
 });

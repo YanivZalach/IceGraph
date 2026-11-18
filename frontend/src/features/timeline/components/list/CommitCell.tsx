@@ -1,5 +1,5 @@
 import { cn } from "../../../../shared/lib/cn";
-import type { TimelineRow } from "../../lib/timelineRow";
+import { titleOf, type TimelineRow } from "../../lib/timelineRow";
 import { CHIP_BASE_CLASS } from "../Chip";
 import { eventToneFor, type BranchAccent } from "../eventColor";
 
@@ -13,6 +13,14 @@ const CommitCell = ({ row, branchAccents }: CommitCellProps) => {
     return (
       <span className="text-xs text-slate-500 italic">
         start of loaded range
+      </span>
+    );
+  }
+
+  if (row.kind === "gap") {
+    return (
+      <span className={cn("text-sm font-medium", eventToneFor(row).textClass)}>
+        {titleOf(row)}
       </span>
     );
   }
