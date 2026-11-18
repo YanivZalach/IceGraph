@@ -12,7 +12,7 @@ interface AssistantMessagesProps {
 
 const FOLLOW_BOTTOM_THRESHOLD_PX = 48;
 const LOAD_EARLIER_THRESHOLD_PX = 48;
-// Three questions with their answers. Even, so a question and its answer stay together.
+// Even, so a question and its answer stay together.
 const MESSAGES_PER_STEP = 6;
 
 const Question = ({ content }: { content: string }) => (
@@ -45,7 +45,6 @@ const MessageList = ({
     }
   }, [messages, pendingExchange, errorMessage]);
 
-  // Keep the messages in view still when earlier ones are added above them.
   useLayoutEffect(() => {
     const list = listRef.current;
     const scrollHeightBeforeReveal = scrollHeightBeforeRevealRef.current;

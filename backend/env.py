@@ -75,7 +75,7 @@ class Env:
     AI_REQUEST_TIMEOUT_SECONDS: int = int(os.getenv("AI_REQUEST_TIMEOUT_SECONDS", "120"))
 
     # Maximum number of AI assistant answers generated in parallel.
-    AI_MAX_CONCURRENT_REQUESTS: int = int(os.getenv("AI_MAX_CONCURRENT_REQUESTS", "5"))
+    AI_MAX_CONCURRENT_REQUESTS: int = int(os.getenv("AI_MAX_CONCURRENT_REQUESTS", "20"))
 
     # Maximum number of characters of table context and conversation sent to the AI model per question.
     AI_MAX_CONTEXT_CHARACTERS: int = int(os.getenv("AI_MAX_CONTEXT_CHARACTERS", "200000"))

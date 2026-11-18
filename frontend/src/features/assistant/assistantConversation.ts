@@ -11,7 +11,6 @@ const MAX_SENT_MESSAGES = 12;
 
 const conversationSchema = z.array(assistantMessageSchema);
 
-// Same identity as the browser graph cache: table plus snapshot range.
 export const getConversationKey = (
   parameters: GraphRequestParameters,
 ): string =>
@@ -22,7 +21,7 @@ export const getConversationKey = (
   ])}`;
 
 // The selected range changes while the user picks it, so this page keeps one
-// conversation per table. Two elements cannot collide with the key above.
+// conversation per table. Its 2-item array never equals the 3-item key above.
 export const getSnapshotSelectionConversationKey = (
   tableName: string,
 ): string =>

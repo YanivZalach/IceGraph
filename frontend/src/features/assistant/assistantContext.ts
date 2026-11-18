@@ -84,7 +84,6 @@ interface SnapshotMapPage {
 
 type GraphNode = GraphData["nodes"][number];
 
-// Nothing selected sends no context at all, so the counter shows zero.
 const serializeContext = (context: Record<string, unknown>): string =>
   Object.keys(context).length === 0 ? "" : JSON.stringify(context);
 
@@ -106,8 +105,6 @@ const withoutDataFileStatistics = (node: GraphNode): Record<string, unknown> =>
     Object.entries(node).filter(([key]) => key !== DATA_FILE_STATISTICS_FIELD),
   );
 
-// Per-column statistics can be much larger than the rest of a data file, so
-// they are a separate option. Alone, they are sent with the file path only.
 const selectDataFileContext = (
   node: GraphNode,
   selectedOptionIds: readonly string[],
@@ -153,8 +150,6 @@ const listGraphContextOptions = (
   ).filter((option) => option.itemCount > 0),
 ];
 
-// The context is a subset of the backend graph response, sent back unchanged
-// so the model reads the same values IceGraph displays.
 const buildGraphContext = (
   graphData: GraphData,
   selectedOptionIds: readonly string[],
@@ -202,8 +197,6 @@ const countSnapshots = (snapshotPages: readonly SnapshotMapPage[]): number =>
     0,
   );
 
-// Before a graph is loaded the page holds only the table metadata and the
-// snapshot list, so those are the only parts that can be offered.
 export const createSnapshotSelectionContextSource = (
   metadata: TableMetadata | undefined,
   snapshotPages: readonly SnapshotMapPage[] | undefined,
