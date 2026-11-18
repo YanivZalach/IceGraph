@@ -18,7 +18,7 @@ export interface DescribedFieldDiff {
   rawAfter: string;
 }
 
-const FIELD_TITLES: Record<string, string> = {
+export const FIELD_TITLES: Record<string, string> = {
   snapshot_id: "Current snapshot",
   last_sequence_number: "Last sequence number",
   current_schema_id: "Current schema ID",
@@ -27,6 +27,9 @@ const FIELD_TITLES: Record<string, string> = {
   refs: "Branches and tags",
   properties: "Table properties",
   pointed_snapshots_files: "Snapshots",
+  format_version: "Format version",
+  pointed_table_statistics_files: "Table statistics files",
+  pointed_partition_statistics_files: "Partition statistics files",
 };
 
 const LABEL_SEPARATOR = " · ";

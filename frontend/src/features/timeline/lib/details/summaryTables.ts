@@ -63,6 +63,13 @@ const changeValueRow = ([label, value]: SummaryEntry): ChangeValueRow => ({
   isEmphasized: value !== "" && !isZeroValue(value),
 });
 
+const metricRank = (metric: string): number => {
+  if (metric === "records") {
+    return 0;
+  }
+  return metric.startsWith("files-size") ? 2 : 1;
+};
+
 // Iceberg spells the negative side either `deleted-` or `removed-`.
 export const buildChangeCounts = (entries: SummaryEntry[]): ChangeCounts => {
   const sidesByMetric = new Map<
@@ -89,11 +96,15 @@ export const buildChangeCounts = (entries: SummaryEntry[]): ChangeCounts => {
   }
 
   return {
-    counts: [...sidesByMetric].map(([metric, sides]) => ({
-      metric,
-      added: countCell(sides.added, "added"),
-      removed: countCell(sides.removed, "removed"),
-    })),
+    counts: [...sidesByMetric]
+      .map(([metric, sides]) => ({
+        metric,
+        added: countCell(sides.added, "added"),
+        removed: countCell(sides.removed, "removed"),
+      }))
+      .sort(
+        (first, second) => metricRank(first.metric) - metricRank(second.metric),
+      ),
     rest: rest.map(changeValueRow),
   };
 };
@@ -108,8 +119,12 @@ export const buildBeforeAfterRows = (
   totalEntries: SummaryEntry[],
   parentSummary: SnapshotSummary | null,
 ): BeforeAfterRow[] =>
-  totalEntries.map(([key, value]) => ({
-    metric: key.startsWith("total-") ? key.slice("total-".length) : key,
-    before: parentSummary?.[key] ?? null,
-    after: value,
-  }));
+  totalEntries
+    .map(([key, value]) => ({
+      metric: key.startsWith("total-") ? key.slice("total-".length) : key,
+      before: parentSummary?.[key] ?? null,
+      after: value,
+    }))
+    .sort(
+      (first, second) => metricRank(first.metric) - metricRank(second.metric),
+    );

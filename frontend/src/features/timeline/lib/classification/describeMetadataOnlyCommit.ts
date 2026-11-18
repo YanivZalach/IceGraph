@@ -6,6 +6,11 @@ import {
   sameTextChange,
   type DescribedChange,
 } from "../definitionChanges/describedChange";
+import {
+  describeFormatVersionChange,
+  describeRawFieldChanges,
+  describeStatisticsChanges,
+} from "../definitionChanges/describeBookkeepingChanges";
 import { describePartitionSpecChange } from "../definitionChanges/describePartitionSpecChange";
 import {
   describeIgnoredPropertyChanges,
@@ -104,14 +109,32 @@ export const describeMetadataOnlyCommit = (
     ...refChanges,
     ...propertyChanges,
     ...expiryChanges,
+    ...describeFormatVersionChange(
+      previousFile.format_version,
+      currentFile.format_version,
+    ),
+    ...describeStatisticsChanges(
+      "table",
+      previousFile.pointed_table_statistics_files,
+      currentFile.pointed_table_statistics_files,
+    ),
+    ...describeStatisticsChanges(
+      "partition",
+      previousFile.pointed_partition_statistics_files,
+      currentFile.pointed_partition_statistics_files,
+    ),
   ];
+  const describeUnrecognisedChanges = (): DescribedChange[] => {
+    const ignoredPropertyChanges = describeIgnoredPropertyChanges(
+      previousFile.properties,
+      currentFile.properties,
+    );
+    return ignoredPropertyChanges.length > 0
+      ? ignoredPropertyChanges
+      : describeRawFieldChanges(previousFile, currentFile);
+  };
   const shownChanges =
-    changes.length > 0
-      ? changes
-      : describeIgnoredPropertyChanges(
-          previousFile.properties,
-          currentFile.properties,
-        );
+    changes.length > 0 ? changes : describeUnrecognisedChanges();
 
   return {
     kind: "metadata-only",
