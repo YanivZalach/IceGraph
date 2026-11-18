@@ -6,7 +6,7 @@ import type {
   SnapshotsById,
 } from "./classification/commitDescription";
 import { describeCommit } from "./classification/describeCommit";
-import { writeTitle } from "./classification/describeWriteCommit";
+import { writeHeadline } from "./classification/describeWriteCommit";
 import { findDraftPublication } from "./findDraftPublication";
 import { formatShortId } from "./format/formatShortId";
 import { orderMetadataFilesOldestFirst } from "./orderMetadataFiles";
@@ -22,6 +22,7 @@ import {
 const DEGRADED_COMMIT: CommitDescription = {
   kind: "metadata-only",
   title: "Metadata updated",
+  category: "quiet",
   impactSegments: [],
   detailTexts: [],
   snapshotId: null,
@@ -56,7 +57,7 @@ const buildOldestRow = (
     ...boundaryRow(file),
     kind: "published-write",
     branchName: "main",
-    title: writeTitle(ownSnapshot.operation_description, ownSnapshot.summary),
+    ...writeHeadline(ownSnapshot.operation_description, ownSnapshot.summary),
     impact: readSnapshotImpact(ownSnapshot.summary, ownSnapshot.operation),
     shortId: formatShortId(ownSnapshot.snapshot_id),
     snapshotId: ownSnapshot.snapshot_id,
@@ -70,6 +71,7 @@ const toTimelineRow = (
   ...boundaryRow(file),
   kind: commit.kind,
   title: commit.title,
+  category: commit.category,
   impact: commit.impactSegments,
   details: commit.detailTexts,
   repointTargetId: commit.repointTargetId,

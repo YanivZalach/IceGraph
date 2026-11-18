@@ -1,4 +1,5 @@
 import type { MetadataFileNode, SnapshotNode } from "../api/nodeSchemas";
+import type { CommitCategory } from "./classification/commitDescription";
 import type { ImpactSegment } from "./impactSegment";
 
 export interface RefBadge {
@@ -19,6 +20,7 @@ export interface TimelineRow {
     | "metadata-only"
     | "boundary";
   title: string;
+  category: CommitCategory;
   impact: ImpactSegment[];
   details: string[];
   repointTargetId: string | null;
@@ -48,6 +50,7 @@ export interface TimelineData {
 export const boundaryRow = (file: MetadataFileNode): TimelineRow => ({
   kind: "boundary",
   title: "",
+  category: "quiet",
   impact: [],
   details: [],
   repointTargetId: null,

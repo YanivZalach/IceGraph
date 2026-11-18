@@ -86,6 +86,7 @@ export const describeRePointCommit = (
   return {
     kind: "re-point",
     title,
+    category: rolledBack ? "rollback" : "reference",
     impactSegments: [
       impactText(targetImpact),
       ...definitionChanges.map((change) => impactText(change.impact)),

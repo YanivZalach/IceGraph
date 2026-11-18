@@ -1,6 +1,6 @@
 import type { MetadataFileNode, SnapshotRefs } from "../../api/nodeSchemas";
 import type { TableMetadata } from "../../api/tableMetadataSchema";
-import type { CommitDescription } from "./commitDescription";
+import type { CommitDescription, Headline } from "./commitDescription";
 import { impactText } from "../impactSegment";
 import {
   sameTextChange,
@@ -73,28 +73,31 @@ export const describeMetadataOnlyCommit = (
   );
   const expiryChanges = describeExpiredSnapshots(expiredSnapshotCount);
 
-  const pickTitle = (): string => {
+  const pickHeadline = (): Headline => {
     if (schemaChanges.length > 0) {
-      return "Schema changed";
+      return { title: "Schema changed", category: "definition" };
     }
     if (partitioningChanges.length > 0) {
-      return "Partitioning changed";
+      return { title: "Partitioning changed", category: "definition" };
     }
     if (sortOrderChanges.length > 0) {
-      return "Sort order changed";
+      return { title: "Sort order changed", category: "definition" };
     }
     if (refChanges.length > 0) {
-      return isTagChange(previousFile.refs, currentFile.refs)
-        ? "Tag changed"
-        : "Branch changed";
+      return {
+        title: isTagChange(previousFile.refs, currentFile.refs)
+          ? "Tag changed"
+          : "Branch changed",
+        category: "reference",
+      };
     }
     if (propertyChanges.length > 0) {
-      return "Settings changed";
+      return { title: "Settings changed", category: "quiet" };
     }
     if (expiryChanges.length > 0) {
-      return "History trimmed";
+      return { title: "History trimmed", category: "maintenance" };
     }
-    return "Metadata updated";
+    return { title: "Metadata updated", category: "quiet" };
   };
 
   const changes = [
@@ -115,7 +118,7 @@ export const describeMetadataOnlyCommit = (
 
   return {
     kind: "metadata-only",
-    title: pickTitle(),
+    ...pickHeadline(),
     impactSegments: shownChanges.map(
       (change) => change.impactSegment ?? impactText(change.impact),
     ),

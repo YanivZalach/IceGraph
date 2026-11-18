@@ -10,35 +10,54 @@ import {
   readSnapshotImpact,
 } from "../impactSegment";
 import type { DescribedChange } from "../definitionChanges/describedChange";
-import type { CommitDescription, SnapshotsById } from "./commitDescription";
+import type {
+  CommitDescription,
+  Headline,
+  SnapshotsById,
+} from "./commitDescription";
 
-const REWRITE_TITLES: Record<string, string> = {
-  "rewrite data files": "Files compacted",
-  "rewrite delete files": "Delete files compacted",
-  "rewrite manifests": "Manifests rewritten",
-  replace: "Files compacted",
+const DATA_ADDED: Headline = { title: "Data added", category: "data-added" };
+const DATA_DELETED: Headline = {
+  title: "Data deleted",
+  category: "data-removed",
+};
+const DATA_OVERWRITTEN: Headline = {
+  title: "Data overwritten",
+  category: "data-replaced",
 };
 
-const OPERATION_TITLES: Record<string, string> = {
-  append: "Data added",
-  delete: "Data deleted",
-  overwrite: "Data overwritten",
+const maintenance = (title: string): Headline => ({
+  title,
+  category: "maintenance",
+});
+
+const REWRITE_HEADLINES: Record<string, Headline> = {
+  "rewrite data files": maintenance("Files compacted"),
+  "rewrite delete files": maintenance("Delete files compacted"),
+  "rewrite manifests": maintenance("Manifests rewritten"),
+  replace: maintenance("Files compacted"),
+};
+
+const OPERATION_HEADLINES: Record<string, Headline> = {
+  append: DATA_ADDED,
+  delete: DATA_DELETED,
+  overwrite: DATA_OVERWRITTEN,
 };
 
 /**
  * Engines name the same row change differently (an UPDATE is an `overwrite` in Spark, a `delete`
  * plus `append` elsewhere), so the title follows the row counts; `operation` only names rewrites.
  */
-export const writeTitle = (
+export const writeHeadline = (
   operationDescription: string | null,
   summary: SnapshotSummary | null,
-): string => {
-  const rewriteTitle =
+): Headline => {
+  const rewriteHeadline =
     operationDescription === null
       ? undefined
-      : REWRITE_TITLES[operationDescription];
-  if (rewriteTitle !== undefined) {
-    return rewriteTitle;
+      : REWRITE_HEADLINES[operationDescription];
+  if (rewriteHeadline !== undefined) {
+    return rewriteHeadline;
   }
 
   const { addedRows, removedRows } =
@@ -46,23 +65,23 @@ export const writeTitle = (
       ? { addedRows: 0n, removedRows: 0n }
       : readRowCounts(summary);
   if (addedRows > 0n && removedRows > 0n) {
-    return "Data overwritten";
+    return DATA_OVERWRITTEN;
   }
   if (addedRows > 0n) {
-    return "Data added";
+    return DATA_ADDED;
   }
   if (removedRows > 0n) {
-    return "Data deleted";
+    return DATA_DELETED;
   }
   if (summary !== null && isProvablyUnchangedWrite(summary)) {
-    return "No data changed";
+    return { title: "No data changed", category: "quiet" };
   }
 
-  const operationTitle =
+  const operationHeadline =
     operationDescription === null
       ? undefined
-      : OPERATION_TITLES[operationDescription];
-  return operationTitle ?? "Data changed";
+      : OPERATION_HEADLINES[operationDescription];
+  return operationHeadline ?? { title: "Data changed", category: "quiet" };
 };
 
 const findBranchNamePointingAt = (
@@ -113,6 +132,7 @@ export const describeWriteCommit = (
     return {
       kind: "draft-write",
       title: "Data not published",
+      category: "unpublished",
       impactSegments,
       detailTexts,
       snapshotId: gainedSnapshotId,
@@ -124,7 +144,7 @@ export const describeWriteCommit = (
 
   return {
     kind: "published-write",
-    title: writeTitle(
+    ...writeHeadline(
       snapshotRecord?.operation_description ?? null,
       snapshotRecord?.summary ?? null,
     ),
