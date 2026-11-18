@@ -1,27 +1,20 @@
 import os
-import re
-import secrets
 import threading
 import traceback
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from flask import Flask, Response, copy_current_request_context, jsonify, request, send_from_directory
+from flask import Flask, Response, jsonify, request, send_from_directory
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from pyspark.errors import AnalysisException
 
-from assistant.assistant_jobs import shutdown_assistant_jobs
-from assistant.assistant_routes import assistant_blueprint
+from assistant.assistant_routes import assistant_blueprint, assistant_jobs
 from base_classes.utils import collect_graph_metadata_file, verify_iceberg_table
-from constants import COLLECTION_STAGES, JOB_TOKEN_FIELD, STAGE_BUILD_GRAPH
+from constants import JOB_TOKEN_FIELD
 from env import Env
-from graph_normalizer.graph_normalizer import GraphNormalizer
+from graph_jobs.graph_jobs import GraphJobs
 from icegraph_logger import logger
-from metrics import graph_computations_total, graph_job_cache_reads_total
-from snapshot_analyzer.snapshot_analyzer import SnapshotAnalyzer
 from snapshot_map.snapshot_mapping import collect_snapshot_map
 from spark_connect import close_spark_connect_session
-from table_inventory.table_inventory import TableInventory
 from collectors.collect_table_description import TableDescriptionCollector
 from collectors.collect_table_metadata import TableMetadataCollector
 from table_list_catalog.table_list_catalog import TableListCatalog
@@ -30,69 +23,7 @@ app = Flask(__name__, static_url_path="/static")
 app.json.sort_keys = False
 app.register_blueprint(assistant_blueprint)
 
-job_lock = threading.Lock()
-jobs: dict[str, dict] = {}
-
-executor_pool = ThreadPoolExecutor(max_workers=Env.MAX_NUMBER_OF_GRAPHS_TO_COMPUTE)
-
-
-def _safe_update_job(job_id, **fields):
-    with job_lock:
-        if job_id in jobs:
-            jobs[job_id].update(fields)
-
-
-def _cleanup_job(job_id):
-    with job_lock:
-        jobs.pop(job_id, None)
-    logger.info(f"Removed job {job_id}")
-
-
-def _schedule_cleanup(job_id, is_in_lock_block=False):
-    timer = threading.Timer(
-        Env.COMPUTE_CLEANUP_TIME_SECONDS,
-        lambda job_id=job_id: _cleanup_job(job_id),
-    )
-    timer.daemon = True
-
-    if is_in_lock_block:
-        jobs[job_id]["timer"] = timer
-    else:
-        _safe_update_job(job_id, timer=timer)
-
-    timer.start()
-
-
-def _compute_graph_background(job_id, table_name, start_snapshot_id, end_snapshot_id):
-    try:
-        stages = {stage_name: "pending" for stage_name in COLLECTION_STAGES}
-
-        def _on_stage(stage_name, status):
-            stages[stage_name] = status
-            _safe_update_job(job_id, stages=dict(stages))
-
-        table_data = TableInventory(table_name, _on_stage, start_snapshot_id, end_snapshot_id).build()
-
-        _on_stage(STAGE_BUILD_GRAPH, "in_progress")
-        try:
-            table_data = SnapshotAnalyzer(table_data).analyze()
-            result = GraphNormalizer(table_data).normalize()
-        finally:
-            _on_stage(STAGE_BUILD_GRAPH, "done")
-
-        _safe_update_job(job_id, status="completed", result=result)
-        logger.info(f"Job {job_id} completed")
-
-    except AnalysisException as e:
-        logger.error(f"Spark Error in job {job_id}: {e}\n{traceback.format_exc()}")
-        _safe_update_job(job_id, status="failed", error=str(e))
-
-    except Exception as e:
-        logger.error(f"Unexpected error in job {job_id}: {e}\n{traceback.format_exc()}")
-        _safe_update_job(job_id, status="failed", error=str(e))
-
-    finally:
-        _schedule_cleanup(job_id)
+graph_jobs = GraphJobs()
 
 
 @app.route("/metrics", methods=["GET"])
@@ -241,44 +172,8 @@ def graph_data():
         logger.error(f"Unexpected error: {e}\n{traceback.format_exc()}")
         return jsonify({"error": str(e)}), 500
 
-    key_table_name = table_name.replace(".", "_")
-    job_id = re.sub(
-        r"[^a-zA-Z0-9_]",
-        "",
-        f"{key_table_name}_{start_snapshot_id}_{end_snapshot_id}",
-    )
+    response = graph_jobs.submit(table_name, start_snapshot_id, end_snapshot_id)
 
-    response = {"key": job_id, "status": "processing"}
-
-    with job_lock:
-        job = jobs.get(job_id)
-        if job:
-            if job["status"] == "completed":
-                graph_job_cache_reads_total.inc()
-                job["timer"].cancel()
-                _schedule_cleanup(job_id, is_in_lock_block=True)
-                logger.info(f"Job {job_id} completed, extended cleanup timer")
-
-            else:
-                logger.info(f"Duplicate request for {job_id}")
-
-            response[JOB_TOKEN_FIELD] = job[JOB_TOKEN_FIELD]
-            return jsonify(response), 202
-
-        token = secrets.token_urlsafe(32)
-        response[JOB_TOKEN_FIELD] = token
-        jobs[job_id] = response
-
-    executor_pool.submit(
-        copy_current_request_context(_compute_graph_background),
-        job_id,
-        table_name,
-        start_snapshot_id,
-        end_snapshot_id,
-    )
-
-    graph_computations_total.inc()
-    logger.info(f"Submitted job {job_id}")
     return jsonify(response), 202
 
 
@@ -286,12 +181,9 @@ def graph_data():
 def get_job_status(job_id):
     token = request.headers.get(JOB_TOKEN_FIELD, "")
 
-    with job_lock:
-        job = jobs.get(job_id)
-        if not job or not token or not secrets.compare_digest(token, job[JOB_TOKEN_FIELD]):
-            return jsonify({"error": "Job not found"}), 404
-
-        job = job.copy()
+    job = graph_jobs.read(job_id, token)
+    if job is None:
+        return jsonify({"error": "Job not found"}), 404
 
     status = job["status"]
 
@@ -331,6 +223,6 @@ if __name__ == "__main__":
         watchdog.start()
 
         close_spark_connect_session()
-        executor_pool.shutdown(wait=False, cancel_futures=True)
-        shutdown_assistant_jobs()
+        graph_jobs.shutdown()
+        assistant_jobs.shutdown()
         logger.info("Compute executor pool shutdown")
