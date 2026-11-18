@@ -31,9 +31,11 @@ export interface AssistantConversation {
   historyCharacters: number;
   historyExchangeCount: number;
   canUndoClear: boolean;
+  announcement: string;
   ask: (assistantAsk: AssistantAsk) => void;
   clear: () => void;
   undoClear: () => void;
+  load: () => void;
 }
 
 const countCharacters = (messages: AssistantMessage[]): number =>
@@ -46,9 +48,11 @@ export const useAssistantConversation = (
   conversationKey: string,
   parameters: GraphRequestParameters,
 ): AssistantConversation => {
-  const [messages, setMessages] = useState(() =>
-    readConversation(conversationKey),
-  );
+  // Read on the first open, so pages where the panel stays closed never parse it.
+  const [messages, setMessages] = useState<AssistantMessage[]>([]);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  // What screen readers hear: the start of an answer, then the whole answer or the error.
+  const [announcement, setAnnouncement] = useState("");
   const [pendingExchange, setPendingExchange] =
     useState<AssistantExchange | null>(null);
   const [clearedMessages, setClearedMessages] = useState<
@@ -111,6 +115,11 @@ export const useAssistantConversation = (
       setMessages(answeredMessages);
       saveConversation(conversationKey, answeredMessages);
       setPendingExchange(null);
+      setAnnouncement(answer);
+    },
+    onError: (error) => {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      setAnnouncement(error.message);
     },
   });
 
@@ -118,6 +127,7 @@ export const useAssistantConversation = (
     if (answerMutation.isPending) return;
     cancelUndoClear();
     setPendingExchange({ question: assistantAsk.question, answer: "" });
+    setAnnouncement("Answering");
     answerMutation.mutate(assistantAsk);
   };
 
@@ -125,6 +135,7 @@ export const useAssistantConversation = (
     abortControllerRef.current?.abort();
     answerMutation.reset();
     setPendingExchange(null);
+    setAnnouncement("");
     cancelUndoClear();
     if (messages.length > 0) {
       setClearedMessages(messages);
@@ -144,6 +155,12 @@ export const useAssistantConversation = (
     cancelUndoClear();
   };
 
+  const load = (): void => {
+    if (hasLoaded) return;
+    setMessages(readConversation(conversationKey));
+    setHasLoaded(true);
+  };
+
   return {
     messages,
     pendingExchange,
@@ -152,8 +169,10 @@ export const useAssistantConversation = (
     historyCharacters: countCharacters(historyMessages),
     historyExchangeCount: historyMessages.length / 2,
     canUndoClear: clearedMessages !== null,
+    announcement,
     ask,
     clear,
     undoClear,
+    load,
   };
 };

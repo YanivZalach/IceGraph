@@ -108,6 +108,7 @@ const AssistantChat = ({
         aria-expanded={isOpen}
         data-owns-keyboard={isOpen ? "" : undefined}
         onClick={() => {
+          if (!isOpen) conversation.load();
           setIsOpen(!isOpen);
         }}
       >

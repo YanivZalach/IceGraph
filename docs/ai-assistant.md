@@ -25,7 +25,7 @@ One question is one background job:
 
 `AI_REQUEST_TIMEOUT_SECONDS` limits the whole answer, not only the connection. Model errors, including errors sent in the middle of a stream, become readable messages (502).
 
-The conversation is stored in `localStorage`, at most 50 messages, keyed by table and snapshot range on table views and by table on the snapshot selection page. Clear can be undone for 5 seconds.
+The conversation is stored in `localStorage`, at most 50 messages, keyed by table and snapshot range on table views and by table on the snapshot selection page. It is read when the panel first opens, not when the page loads. The panel shows the latest 3 questions with their answers, and earlier ones appear 3 at a time when the user scrolls up or selects Show earlier messages. Clear can be undone for 5 seconds.
 
 History is what the browser sends besides the new question. The backend keeps none of it between requests, so the browser sends it again with every question.
 
