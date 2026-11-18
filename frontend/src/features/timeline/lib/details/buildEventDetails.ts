@@ -1,6 +1,16 @@
-import { formatDurationMs } from "../format/formatDuration";
-import type { MetadataFileNode, SnapshotNode } from "../../api/nodeSchemas";
-import { diffMetadataFiles, type FieldDiff } from "./diffMetadataFiles";
+import type { SnapshotNode } from "../../api/nodeSchemas";
+import {
+  describeFieldDiff,
+  type DescribedFieldDiff,
+} from "./describeFieldDiff";
+import type { DetailRowData } from "./detailRowData";
+import { diffMetadataFiles } from "./diffMetadataFiles";
+import { buildEventNotices, type DetailNotice } from "./eventNotices";
+import {
+  buildMetadataFileData,
+  refRows,
+  type MetadataFileData,
+} from "./metadataFileDetails";
 import { formatDayMonthYearAndClock } from "../format/formatTimelineTime";
 import { SNAPSHOT_UNAVAILABLE } from "../format/snapshotUnavailable";
 import {
@@ -15,25 +25,6 @@ import {
 } from "./summaryTables";
 import type { CommitRow, TimelineData } from "../timelineRow";
 
-export interface DetailRowData {
-  /** Set when labels alone may collide, such as user-chosen ref names. */
-  id?: string;
-  label: string;
-  value: string;
-  isCopyable?: boolean;
-}
-
-export interface MetadataFileData {
-  path: string;
-  linkedPaths: DetailRowData[];
-  stats: DetailRowData[];
-}
-
-export interface DetailNotice {
-  kind: "error" | "warning";
-  text: string;
-}
-
 export interface EventDetailData {
   notices: DetailNotice[];
   actionLink: string | null;
@@ -46,7 +37,7 @@ export interface EventDetailData {
   metadataFile: MetadataFileData;
   refs: DetailRowData[];
   properties: DetailRowData[];
-  rawDiff: FieldDiff[];
+  rawDiff: DescribedFieldDiff[];
 }
 
 const toRows = (entries: SummaryEntry[]): DetailRowData[] =>
@@ -149,116 +140,6 @@ const eventRows = (
   return rows;
 };
 
-const fileStats = (file: MetadataFileNode): DetailRowData[] => {
-  const stats: DetailRowData[] = [
-    ...(file.format_version == null
-      ? []
-      : [{ label: "Format Version", value: String(file.format_version) }]),
-    { label: "Schema ID", value: file.current_schema_id?.toString() ?? "" },
-    {
-      label: "Partition Spec ID",
-      value: file.partition_spec_id?.toString() ?? "",
-    },
-    { label: "Sort Order ID", value: file.sort_order_id?.toString() ?? "" },
-  ];
-  // v1 tables have no sequence numbers; the row is omitted rather than dashed.
-  if (file.last_sequence_number !== null) {
-    stats.push({
-      label: "Last Sequence Number",
-      value: String(file.last_sequence_number),
-    });
-  }
-  return stats;
-};
-
-const nodeNotices = (
-  file: MetadataFileNode,
-  snapshot: SnapshotNode | undefined,
-): DetailNotice[] => {
-  const noticesOf = (
-    kind: DetailNotice["kind"],
-    texts: string[],
-  ): DetailNotice[] => texts.map((text) => ({ kind, text }));
-  const candidates = [
-    ...noticesOf("error", file.errors),
-    ...noticesOf("error", snapshot?.errors ?? []),
-    ...noticesOf("warning", file.warnings),
-    ...noticesOf("warning", snapshot?.warnings ?? []),
-  ];
-
-  const seenTexts = new Set<string>();
-  const notices: DetailNotice[] = [];
-  for (const { kind, text } of candidates) {
-    if (text !== "" && !seenTexts.has(text)) {
-      seenTexts.add(text);
-      notices.push({ kind, text });
-    }
-  }
-  return notices;
-};
-
-const UNKNOWN_CHANGE_NOTICE: DetailNotice = {
-  kind: "warning",
-  text: "The event before this one could not be read, so what this event changed cannot be shown. Everything below is this event's own state.",
-};
-
-const statisticsPaths = (
-  kind: string,
-  files: MetadataFileNode["pointed_table_statistics_files"],
-): DetailRowData[] =>
-  (files ?? []).map((statisticsFile) => ({
-    label: `${kind} statistics, snapshot ${statisticsFile["snapshot-id"]}`,
-    value: statisticsFile["statistics-path"],
-    isCopyable: true,
-  }));
-
-const linkedPaths = (file: MetadataFileNode): DetailRowData[] => [
-  ...(file.previous_file === null
-    ? []
-    : [
-        {
-          label: "Previous metadata file",
-          value: file.previous_file,
-          isCopyable: true,
-        },
-      ]),
-  ...statisticsPaths("Table", file.pointed_table_statistics_files),
-  ...statisticsPaths("Partition", file.pointed_partition_statistics_files),
-];
-
-const REF_RETENTION_FIELDS = [
-  { key: "min-snapshots-to-keep", label: "min snapshots to keep" },
-  { key: "max-snapshot-age-ms", label: "max snapshot age" },
-  { key: "max-ref-age-ms", label: "max ref age" },
-] as const;
-
-const refRows = (file: MetadataFileNode): DetailRowData[] =>
-  Object.entries(file.refs).flatMap(([name, ref]) => [
-    {
-      id: JSON.stringify([ref.type, name]),
-      label: `${ref.type} ${name}`,
-      value: ref["snapshot-id"],
-      isCopyable: true,
-    },
-    ...REF_RETENTION_FIELDS.flatMap(({ key, label }) => {
-      const value = ref[key];
-      if (value == null) {
-        return [];
-      }
-      const text = String(value);
-      return [
-        {
-          id: JSON.stringify([ref.type, name, key]),
-          label: `${ref.type} ${name} ${label}`,
-          value:
-            key === "min-snapshots-to-keep"
-              ? text
-              : `${formatDurationMs(text)} (${text} ms)`,
-        },
-      ];
-    }),
-  ]);
-
 export const buildEventDetails = (
   timeline: TimelineData,
   row: CommitRow,
@@ -313,10 +194,7 @@ export const buildEventDetails = (
       : [];
 
   return {
-    notices: [
-      ...(isChangeUnknown ? [UNKNOWN_CHANGE_NOTICE] : []),
-      ...nodeNotices(file, snapshot),
-    ],
+    notices: buildEventNotices(row, file, snapshot),
     actionLink: actionLink === "" ? null : actionLink,
     schemaChange:
       beforeSchema != null &&
@@ -337,14 +215,12 @@ export const buildEventDetails = (
       parentSnapshot?.summary ?? null,
     ),
     engine: toRows(summary?.engine ?? []),
-    metadataFile: {
-      path: file.file_path,
-      linkedPaths: linkedPaths(file),
-      stats: fileStats(file),
-    },
+    metadataFile: buildMetadataFileData(file),
     refs: refRows(file),
     properties: toRows(Object.entries(file.properties)),
     rawDiff:
-      previousFile === undefined ? [] : diffMetadataFiles(previousFile, file),
+      previousFile === undefined
+        ? []
+        : diffMetadataFiles(previousFile, file).map(describeFieldDiff),
   };
 };

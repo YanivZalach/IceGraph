@@ -1,10 +1,9 @@
-import { describeFieldDiff } from "../../lib/details/describeFieldDiff";
-import type { FieldDiff } from "../../lib/details/diffMetadataFiles";
+import type { DescribedFieldDiff } from "../../lib/details/describeFieldDiff";
 import { SECTION_TITLE_CLASS } from "./sectionTitleClass";
 import FieldDiffBlock from "./FieldDiffBlock";
 
 interface RawDiffSectionProps {
-  diffs: FieldDiff[];
+  diffs: DescribedFieldDiff[];
 }
 
 const countText = (count: number, word: string): string =>
@@ -25,7 +24,7 @@ const RawDiffSection = ({ diffs }: RawDiffSectionProps) => {
       </summary>
       <div className="flex flex-col">
         {diffs.map((diff) => (
-          <FieldDiffBlock key={diff.key} field={describeFieldDiff(diff)} />
+          <FieldDiffBlock key={diff.key} field={diff} />
         ))}
       </div>
     </details>

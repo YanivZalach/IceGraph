@@ -1,7 +1,7 @@
 import CopyIconButton from "../../../../components/CopyIconButton";
 import { cn } from "../../../../shared/lib/cn";
 import { UI_FIELD_LABEL_CLASS } from "../../../../uiTypography";
-import type { MetadataFileData } from "../../lib/details/buildEventDetails";
+import type { MetadataFileData } from "../../lib/details/metadataFileDetails";
 import { SECTION_TITLE_CLASS } from "./sectionTitleClass";
 
 interface MetadataFileSectionProps {
