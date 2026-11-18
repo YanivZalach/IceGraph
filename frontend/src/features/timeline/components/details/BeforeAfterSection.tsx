@@ -1,5 +1,5 @@
 import { cn } from "../../../../shared/lib/cn";
-import { UI_FIELD_LABEL_CLASS } from "../../../../uiTypography";
+import { PANEL_FIELD_LABEL_CLASS } from "../../../../components/PanelContent";
 import type { BeforeAfterRow } from "../../lib/details/summaryTables";
 import { humanizeLabel, humanizeValue } from "../../lib/format/humanizeSummary";
 import { SECTION_TITLE_CLASS } from "./sectionTitleClass";
@@ -9,7 +9,7 @@ interface BeforeAfterSectionProps {
   rows: BeforeAfterRow[];
 }
 
-const CELL_CLASS = "py-2 pl-3 text-right font-mono text-xs whitespace-nowrap";
+const CELL_CLASS = "py-2 pl-3 text-right font-mono text-sm whitespace-nowrap";
 
 const BeforeAfterSection = ({ title, rows }: BeforeAfterSectionProps) => {
   const isBeforeUnknown =
@@ -21,7 +21,7 @@ const BeforeAfterSection = ({ title, rows }: BeforeAfterSectionProps) => {
         {title}
       </summary>
       {isBeforeUnknown && (
-        <p className="mb-1 text-xs text-slate-500">
+        <p className="mb-1 text-sm text-slate-300">
           Previous snapshot expired or not loaded
         </p>
       )}
@@ -34,10 +34,10 @@ const BeforeAfterSection = ({ title, rows }: BeforeAfterSectionProps) => {
         <thead>
           <tr>
             <td />
-            <th className={cn(UI_FIELD_LABEL_CLASS, "pl-3 text-right")}>
+            <th className={cn(PANEL_FIELD_LABEL_CLASS, "pl-3 text-right")}>
               before
             </th>
-            <th className={cn(UI_FIELD_LABEL_CLASS, "pl-3 text-right")}>
+            <th className={cn(PANEL_FIELD_LABEL_CLASS, "pl-3 text-right")}>
               after
             </th>
           </tr>
@@ -52,13 +52,13 @@ const BeforeAfterSection = ({ title, rows }: BeforeAfterSectionProps) => {
               >
                 <td
                   className={cn(
-                    UI_FIELD_LABEL_CLASS,
-                    "py-2 normal-case break-words",
+                    PANEL_FIELD_LABEL_CLASS,
+                    "py-2 text-slate-400 normal-case break-words",
                   )}
                 >
                   {humanizeLabel(row.metric)}
                 </td>
-                <td className={cn(CELL_CLASS, "text-slate-400")}>
+                <td className={cn(CELL_CLASS, "text-slate-200")}>
                   {row.before === null ? "—" : humanizeValue(row.before, false)}
                 </td>
                 <td
@@ -66,7 +66,7 @@ const BeforeAfterSection = ({ title, rows }: BeforeAfterSectionProps) => {
                     CELL_CLASS,
                     hasChanged
                       ? "font-semibold text-slate-100"
-                      : "text-slate-400",
+                      : "text-slate-200",
                   )}
                 >
                   {humanizeValue(row.after, false)}

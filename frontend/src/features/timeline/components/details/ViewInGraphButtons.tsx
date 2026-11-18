@@ -14,7 +14,7 @@ const ViewInGraphButtons = ({
 
   return (
     <div className="flex flex-col items-center gap-2 border-b border-edge pb-4">
-      <span className="text-xs text-slate-400">View in graph</span>
+      <span className="text-xs text-slate-300">View in graph</span>
       <div className="flex items-center justify-center gap-2">
         {snapshotFilePath !== null && (
           <GraphLinkButton

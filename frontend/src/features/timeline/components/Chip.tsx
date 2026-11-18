@@ -1,7 +1,7 @@
 import { cn } from "../../../shared/lib/cn";
 
 export const CHIP_BASE_CLASS =
-  "inline-block rounded-md px-2 py-px font-mono text-xs whitespace-nowrap";
+  "inline-block rounded px-2 py-0.5 font-mono text-base whitespace-nowrap";
 
 export type ChipTone = "added" | "removed";
 
@@ -13,10 +13,15 @@ const TONE_CLASS: Record<ChipTone, string> = {
 interface ChipProps {
   text: string;
   tone: ChipTone;
+  isCompact?: boolean;
 }
 
-const Chip = ({ text, tone }: ChipProps) => (
-  <span className={cn(CHIP_BASE_CLASS, TONE_CLASS[tone])}>{text}</span>
+const Chip = ({ text, tone, isCompact = false }: ChipProps) => (
+  <span
+    className={cn(CHIP_BASE_CLASS, isCompact && "text-sm", TONE_CLASS[tone])}
+  >
+    {text}
+  </span>
 );
 
 export default Chip;

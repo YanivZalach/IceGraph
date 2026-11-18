@@ -2,12 +2,13 @@ import { FlexRender } from "@tanstack/react-table";
 import type { Row } from "@tanstack/react-table";
 import { cn } from "../../../../shared/lib/cn";
 import type { TimelineRow } from "../../lib/timelineRow";
-import { CELL_CLASS_BY_COLUMN } from "./columnClasses";
+import {
+  CELL_CLASS_BY_COLUMN,
+  COLUMN_COUNT,
+  RAIL_CELL_CLASS,
+} from "./columnClasses";
 import EventRail from "./EventRail";
 import type { timelineTableFeatures } from "./timelineColumns";
-
-const COLUMN_COUNT = 5;
-const ROW_DIVIDER_CLASS = "border-t border-edge/60";
 
 interface TimelineTableRowProps {
   row: Row<typeof timelineTableFeatures, TimelineRow>;
@@ -29,13 +30,13 @@ const TimelineTableRow = ({
 
   const gapCount = row.original.unreadableCommitsBefore;
   const gapRow = gapCount > 0 && (
-    <tr className="border-t border-edge/60 bg-amber-500/5">
-      <td className="relative w-10 min-w-10">
+    <tr>
+      <td className={RAIL_CELL_CLASS}>
         <EventRail marker="gap" />
       </td>
       <td
         colSpan={COLUMN_COUNT - 1}
-        className="py-2.5 text-xs text-amber-300"
+        className="py-4 text-lg text-amber-400"
         title={row.original.unreadableFilesBefore
           .map((file) => file.path)
           .join("\n")}
@@ -50,7 +51,7 @@ const TimelineTableRow = ({
   if (isBoundary) {
     return (
       <>
-        <tr className={ROW_DIVIDER_CLASS}>{cells}</tr>
+        <tr>{cells}</tr>
         {gapRow}
       </>
     );
@@ -72,11 +73,8 @@ const TimelineTableRow = ({
           }
         }}
         className={cn(
-          ROW_DIVIDER_CLASS,
           "cursor-pointer transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent",
-          isSelected
-            ? "bg-accent-muted/50 shadow-[inset_3px_0_0_var(--color-accent)]"
-            : "hover:bg-surface-hover",
+          isSelected ? "bg-accent-muted/60" : "hover:bg-surface-hover",
         )}
       >
         {cells}

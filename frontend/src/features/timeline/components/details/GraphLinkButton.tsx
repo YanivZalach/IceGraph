@@ -10,10 +10,10 @@ const GraphLinkButton = ({ label, onOpen }: GraphLinkButtonProps) => (
     type="button"
     onClick={onOpen}
     title={`Open ${label.toLowerCase()} in a new tab, selected in the graph`}
-    className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-accent/40 px-2.5 py-1.5 text-xs font-bold tracking-wide text-accent uppercase transition-colors hover:border-accent hover:bg-accent-muted"
+    className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-accent px-2.5 py-1.5 text-sm font-bold tracking-wide text-accent uppercase transition-colors hover:bg-accent-muted"
   >
     <svg
-      className="h-3.5 w-3.5 shrink-0"
+      className="size-4 shrink-0"
       viewBox="0 0 16 16"
       fill="none"
       stroke="currentColor"

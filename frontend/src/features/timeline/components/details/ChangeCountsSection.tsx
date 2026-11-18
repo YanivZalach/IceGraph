@@ -1,6 +1,5 @@
-import { PANEL_FIELD_LABEL_CLASS } from "../../../../components/PanelContent";
 import { cn } from "../../../../shared/lib/cn";
-import { UI_FIELD_LABEL_CLASS } from "../../../../uiTypography";
+import { PANEL_FIELD_LABEL_CLASS } from "../../../../components/PanelContent";
 import Chip from "../Chip";
 import type {
   ChangeCountCell,
@@ -8,6 +7,7 @@ import type {
   ChangeValueRow,
 } from "../../lib/details/summaryTables";
 import { humanizeLabel } from "../../lib/format/humanizeSummary";
+import { SECTION_TITLE_CLASS } from "./sectionTitleClass";
 
 interface ChangeCountsSectionProps {
   title: string;
@@ -26,26 +26,28 @@ const CountValue = ({ cell }: CountValueProps) => {
   if (cell.emphasis === null) {
     return <>{cell.text}</>;
   }
-  return <Chip text={cell.text} tone={cell.emphasis} />;
+  return <Chip text={cell.text} tone={cell.emphasis} isCompact />;
 };
 
 const CELL_CLASS = cn(
-  "py-2 pl-3 text-right font-mono text-xs whitespace-nowrap",
-  "text-slate-400",
+  "py-2 pl-3 text-right font-mono text-sm whitespace-nowrap",
+  "text-slate-200",
 );
 const LABEL_CELL_CLASS = cn(
-  UI_FIELD_LABEL_CLASS,
-  "py-2 normal-case break-words",
+  PANEL_FIELD_LABEL_CLASS,
+  "py-2 text-slate-400 normal-case break-words",
 );
-const HEADER_CELL_CLASS = cn(UI_FIELD_LABEL_CLASS, "pl-3 text-right");
+const HEADER_CELL_CLASS = cn(PANEL_FIELD_LABEL_CLASS, "pl-3 text-right");
 
 const ChangeCountsSection = ({
   title,
   counts,
   rows,
 }: ChangeCountsSectionProps) => (
-  <section>
-    <h3 className={`mb-1 ${PANEL_FIELD_LABEL_CLASS}`}>{title}</h3>
+  <details open>
+    <summary className={`${SECTION_TITLE_CLASS} cursor-pointer`}>
+      {title}
+    </summary>
     <table className="w-full table-fixed">
       <colgroup>
         <col className="w-1/2" />
@@ -79,10 +81,10 @@ const ChangeCountsSection = ({
             <td
               colSpan={2}
               className={cn(
-                "py-2 pl-3 text-right font-mono text-xs break-words",
+                "py-2 pl-3 text-right font-mono text-sm break-words",
                 row.isEmphasized
                   ? "font-semibold text-slate-100"
-                  : "text-slate-400",
+                  : "text-slate-200",
               )}
             >
               {row.text ?? "—"}
@@ -91,7 +93,7 @@ const ChangeCountsSection = ({
         ))}
       </tbody>
     </table>
-  </section>
+  </details>
 );
 
 export default ChangeCountsSection;

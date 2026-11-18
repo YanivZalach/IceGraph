@@ -14,7 +14,7 @@ const DetailValueRow = ({ label, value }: DetailValueRowProps) => (
       {value !== "" && (
         <CopyIconButton text={value} className="absolute top-1 right-2 z-10" />
       )}
-      <span className="block rounded-lg bg-canvas py-2 pr-9 pl-3 font-mono text-xs break-all whitespace-pre-wrap text-slate-200">
+      <span className="block rounded-lg bg-canvas py-2 pr-9 pl-3 font-mono text-sm break-all whitespace-pre-wrap text-slate-200">
         {value === "" ? "-" : value}
       </span>
     </div>
