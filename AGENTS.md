@@ -185,6 +185,7 @@ the session. Leave the servers running at handoff and say how to stop the sessio
 - Backend Spark conventions, read before writing Spark code:
   [`docs/agents/skills/spark-backend/SKILL.md`](docs/agents/skills/spark-backend/SKILL.md)
 - Browser graph-cache contract: [`docs/browser-graph-cache.md`](docs/browser-graph-cache.md)
+- AI assistant mechanism: [`docs/ai-assistant.md`](docs/ai-assistant.md)
 
 `CLAUDE.md` loads this file. `.claude/skills/frontend-smoke-test/SKILL.md` and
 `.claude/skills/spark-backend/SKILL.md` are symlinks to the skills above; Claude Code only discovers

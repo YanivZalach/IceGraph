@@ -2,78 +2,84 @@ import secrets
 import threading
 import traceback
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass, replace
 
 from flask import copy_current_request_context
 
-from assistant.assistant_chat import answer_question, describe_assistant_error
+from assistant.assistant_chat import AssistantChat
 from assistant.constants import STATUS_COMPLETED, STATUS_FAILED, STATUS_PROCESSING
-from constants import JOB_TOKEN_FIELD
 from env import Env
 from icegraph_logger import logger
 
-job_lock = threading.Lock()
-jobs: dict[str, dict] = {}
 
-executor_pool = ThreadPoolExecutor(max_workers=Env.AI_MAX_CONCURRENT_REQUESTS)
-
-
-def _cleanup_job(job_id):
-    with job_lock:
-        jobs.pop(job_id, None)
-    logger.info(f"Removed assistant job {job_id}")
+@dataclass
+class AssistantJob:
+    job_id: str
+    token: str
+    status: str = STATUS_PROCESSING
+    answer: str = ""
+    error: str = ""
 
 
-def _schedule_cleanup(job_id):
-    timer = threading.Timer(Env.COMPUTE_CLEANUP_TIME_SECONDS, _cleanup_job, args=(job_id,))
-    timer.daemon = True
-    timer.start()
+class AssistantJobs:
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._jobs: dict[str, AssistantJob] = {}
+        self._executor_pool = ThreadPoolExecutor(max_workers=Env.AI_MAX_CONCURRENT_REQUESTS)
 
+    def submit(self, chat: AssistantChat) -> AssistantJob | None:
+        job = AssistantJob(job_id=secrets.token_urlsafe(16), token=secrets.token_urlsafe(32))
 
-def _answer_in_background(job_id, chat_messages):
-    def _append_answer(answer_part):
-        with job_lock:
-            jobs[job_id]["answer"] += answer_part
+        with self._lock:
+            processing_jobs = sum(1 for existing_job in self._jobs.values() if existing_job.status == STATUS_PROCESSING)
+            if processing_jobs >= Env.AI_MAX_CONCURRENT_REQUESTS:
+                return None
 
-    try:
-        answer_question(chat_messages, _append_answer)
+            self._jobs[job.job_id] = job
+            submitted_job = replace(job)
 
-        with job_lock:
-            jobs[job_id]["status"] = STATUS_COMPLETED
-        logger.info(f"Assistant job {job_id} completed")
+        self._executor_pool.submit(copy_current_request_context(self._answer_in_background), job.job_id, chat)
 
-    except Exception as e:
-        logger.error(f"Assistant job {job_id} failed: {e}\n{traceback.format_exc()}")
-        with job_lock:
-            jobs[job_id].update(status=STATUS_FAILED, error=describe_assistant_error(e))
+        return submitted_job
 
-    finally:
-        _schedule_cleanup(job_id)
+    def read(self, job_id: str, token: str) -> AssistantJob | None:
+        with self._lock:
+            job = self._jobs.get(job_id)
+            if not job or not secrets.compare_digest(token.encode(), job.token.encode()):
+                return None
 
+            return replace(job)
 
-def submit_assistant_job(chat_messages: list[dict]) -> dict | None:
-    job_id = secrets.token_urlsafe(16)
-    token = secrets.token_urlsafe(32)
+    def shutdown(self):
+        self._executor_pool.shutdown(wait=False, cancel_futures=True)
 
-    with job_lock:
-        processing_jobs = sum(1 for job in jobs.values() if job["status"] == STATUS_PROCESSING)
-        if processing_jobs >= Env.AI_MAX_CONCURRENT_REQUESTS:
-            return None
+    def _answer_in_background(self, job_id: str, chat: AssistantChat):
+        def _append_answer(answer_part):
+            with self._lock:
+                self._jobs[job_id].answer += answer_part
 
-        jobs[job_id] = {"status": STATUS_PROCESSING, "answer": "", JOB_TOKEN_FIELD: token}
+        try:
+            chat.answer(_append_answer)
 
-    executor_pool.submit(copy_current_request_context(_answer_in_background), job_id, chat_messages)
+            with self._lock:
+                self._jobs[job_id].status = STATUS_COMPLETED
+            logger.info(f"Assistant job {job_id} completed")
 
-    return {"key": job_id, "status": STATUS_PROCESSING, JOB_TOKEN_FIELD: token}
+        except Exception as e:
+            logger.error(f"Assistant job {job_id} failed: {e}\n{traceback.format_exc()}")
+            with self._lock:
+                self._jobs[job_id].status = STATUS_FAILED
+                self._jobs[job_id].error = AssistantChat.describe_error(e)
 
+        finally:
+            self._schedule_cleanup(job_id)
 
-def read_assistant_job(job_id: str, token: str) -> dict | None:
-    with job_lock:
-        job = jobs.get(job_id)
-        if not job or not secrets.compare_digest(token.encode(), job[JOB_TOKEN_FIELD].encode()):
-            return None
+    def _schedule_cleanup(self, job_id: str):
+        timer = threading.Timer(Env.COMPUTE_CLEANUP_TIME_SECONDS, self._cleanup_job, args=(job_id,))
+        timer.daemon = True
+        timer.start()
 
-        return job.copy()
-
-
-def shutdown_assistant_jobs():
-    executor_pool.shutdown(wait=False, cancel_futures=True)
+    def _cleanup_job(self, job_id: str):
+        with self._lock:
+            self._jobs.pop(job_id, None)
+        logger.info(f"Removed assistant job {job_id}")
