@@ -9,7 +9,7 @@ import {
   tableMetadataSchema,
 } from "../table/api/metadataSchemas";
 
-const readableMetricsSchema = z.record(
+export const readableMetricsSchema = z.record(
   z.string(),
   z.looseObject({ field_type: z.string() }),
 );
@@ -26,7 +26,7 @@ export const graphNodeDetailsSchema = z.looseObject({
   partitions_count: icebergIntegerSchema.nullish(),
   partition_distribution: partitionDistributionSchema.nullish(),
   sampled_partitions: z.array(partitionStatisticsRowSchema).nullish(),
-  readable_metrics: readableMetricsSchema.nullish(),
+  readable_metrics: z.unknown().optional(),
 });
 
 const graphFileNodeSchema = z.object({

@@ -3,7 +3,6 @@ import type {
   ReadableMetrics,
 } from "../../../utils/readableMetrics";
 import { compareNumericBoundValues } from "../../../utils/readableMetricsStatistics";
-import type { DataFileNode } from "../types";
 
 const NUMERIC_BOUND_FIELD_TYPES = new Set(["int", "long", "float", "double"]);
 const STRING_BOUND_FIELD_TYPES = new Set([
@@ -182,13 +181,11 @@ const accumulateColumnMetrics = (
 };
 
 export const aggregateReadableMetrics = (
-  files: DataFileNode[],
+  fileMetrics: ReadableMetrics[],
 ): ReadableMetrics => {
   const aggregatesByColumnName = new Map<string, MutableColumnMetrics>();
-  for (const file of files) {
-    for (const [columnName, metrics] of Object.entries(
-      file.details.readable_metrics ?? {},
-    )) {
+  for (const readableMetrics of fileMetrics) {
+    for (const [columnName, metrics] of Object.entries(readableMetrics)) {
       const aggregate =
         aggregatesByColumnName.get(columnName) ?? createColumnMetrics(metrics);
       accumulateColumnMetrics(aggregate, metrics);
