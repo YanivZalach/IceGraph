@@ -5,13 +5,12 @@ import {
 } from "./orderMetadataFiles";
 import type { UnreadableFile } from "./parseTimelineNodes";
 
-/** What comes right before a readable file, which decides what may be said about its change. */
 export type Predecessor =
   | { kind: "file"; file: MetadataFileNode }
   | { kind: "unreadable" }
   | { kind: "none" };
 
-/** A run of unreadable files, newest first, so it always has a newest one to stand for it. */
+/** Newest first. */
 export type UnreadableRun = [UnreadableFile, ...UnreadableFile[]];
 
 export type SequenceItem =
@@ -54,10 +53,6 @@ const predecessorOf = (
     : { kind: "file", file: previousItem.file };
 };
 
-/**
- * Oldest first. The only place that knows about gaps: every readable file leaves here already
- * knowing whether its change can be worked out, and every run of unreadable files is one item.
- */
 export const sequenceTimelineFiles = (
   readableFiles: MetadataFileNode[],
   unreadableFiles: UnreadableFile[],

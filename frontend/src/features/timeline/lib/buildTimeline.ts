@@ -177,7 +177,6 @@ const toCommitRow = (
   };
 };
 
-/** Past a gap, which file published a draft cannot be told, so the search stops there. */
 const readableFilesUntilNextGap = (
   laterItems: SequenceItem[],
 ): MetadataFileNode[] => {
@@ -191,7 +190,6 @@ const readableFilesUntilNextGap = (
   return files;
 };
 
-/** Parse, sequence (which orders), then turn each sequenced item into a row. */
 export const buildTimeline = (
   nodes: unknown[],
   tableMetadata: TableMetadata | null,

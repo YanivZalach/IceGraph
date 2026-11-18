@@ -16,10 +16,8 @@ export interface UnreadableFile extends ChainedFile {
 
 export interface ParsedTimelineNodes {
   readableFiles: MetadataFileNode[];
-  /** Unreadable, but still placeable in the chain by path, predecessor and time. */
   unreadableFiles: UnreadableFile[];
   snapshotsById: Map<string, SnapshotNode>;
-  /** Every metadata node that could not be read, placeable or not. */
   unreadableCommitCount: number;
 }
 

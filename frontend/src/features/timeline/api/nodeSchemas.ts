@@ -63,7 +63,6 @@ export const snapshotNodeSchema = z.object({
 
 export const nodeTypeSchema = z.object({ type: z.string() });
 
-/** The few fields that still place a metadata file in the chain when the rest cannot be read. */
 export const unreadableMetadataFileSchema = z.object({
   file_path: z.string(),
   previous_file: z.string().nullish(),

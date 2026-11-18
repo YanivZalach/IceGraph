@@ -20,7 +20,6 @@ export interface CommitRow {
     | "draft-write"
     | "re-point"
     | "metadata-only"
-    /** Its predecessor could not be read, so nothing is claimed about what it changed. */
     | "unknown-change"
     | "boundary";
   title: string;
@@ -31,7 +30,6 @@ export interface CommitRow {
   shortId: string;
   snapshotId: string | null;
   filePath: string;
-  /** The readable file this one was compared with; null when there is none or it is unknown. */
   previousFilePath: string | null;
   timestampMs: number;
   badges: RefBadge[];
@@ -42,12 +40,11 @@ export interface CommitRow {
   publishedAtMs: number | null;
 }
 
-/** A run of events that could not be read. `filePath` and `timestampMs` are its newest file's. */
+/** `filePath` and `timestampMs` are its newest file's. */
 export interface GapRow {
   kind: "gap";
   filePath: string;
   timestampMs: number;
-  /** Newest first. */
   unreadableFiles: UnreadableFileSummary[];
 }
 
