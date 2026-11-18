@@ -30,11 +30,12 @@ const FileTreeInspector = ({
       : inspectedItem.kind === "partition-path"
         ? inspectedItem.partitionPathNode.path
         : inspectedItem.partition.name;
+
   return (
     <SidePanelFrame
       variant="docked"
       ariaLabel="File tree inspector"
-      className="h-full min-h-0 w-full bg-surface"
+      className="h-full min-h-0 w-full"
       contentClassName="gap-5 overscroll-contain px-4 sm:px-5"
       contentTestId="file-tree-inspector-scroll"
       enableScrollHotkeys

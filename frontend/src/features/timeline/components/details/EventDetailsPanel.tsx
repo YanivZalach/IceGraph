@@ -17,6 +17,7 @@ const EventDetailsPanel = ({
   onClose,
 }: EventDetailsPanelProps) => {
   const accentColor = eventToneFor(row).color;
+
   return (
     <SidePanelFrame
       variant="docked"

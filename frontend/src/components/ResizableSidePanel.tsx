@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useRef, useState } from "react";
-import type { CSSProperties, MouseEvent, ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
 import {
   PANEL_GUTTER_REM,
   PANEL_WIDTH_DEFAULT_REM,
@@ -8,6 +8,7 @@ import {
   remToPx,
 } from "../layoutConstants";
 import SidePanelFrame, { SidePanelResizeHandle } from "./SidePanelFrame";
+import type { PanelAccentStyle } from "./SidePanelFrame";
 import { isKeyboardInputTarget } from "../shared/lib/keyboard";
 
 export interface ResizableSidePanelLayout {
@@ -22,10 +23,6 @@ interface ResizableSidePanelProps {
   onClose: () => void;
   onLayoutChange?: (layout: ResizableSidePanelLayout) => void;
   maxContainerWidth?: number;
-}
-
-interface ResizableSidePanelStyle extends CSSProperties {
-  "--panel-accent": string;
 }
 
 const FullscreenToggleIcon = ({ isCompress }: { isCompress: boolean }) => (
@@ -139,7 +136,7 @@ const ResizableSidePanel = forwardRef<HTMLDivElement, ResizableSidePanelProps>(
       };
     }, [isFullscreen]);
 
-    const panelStyle: ResizableSidePanelStyle = {
+    const panelStyle: PanelAccentStyle = {
       borderLeftColor: isFullscreen ? accentColor : undefined,
       width: isFullscreen ? undefined : `${String(panelWidthRem)}rem`,
       "--panel-accent": accentColor,

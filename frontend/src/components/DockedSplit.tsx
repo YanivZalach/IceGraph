@@ -1,10 +1,15 @@
 import { useSyncExternalStore } from "react";
-import type { ReactNode } from "react";
+import type { KeyboardEvent, ReactNode } from "react";
 import { Group, Panel, Separator } from "react-resizable-panels";
-import { PANEL_ACCENT_BORDER_REM } from "../layoutConstants";
+import { PANEL_WIDTH_MIN_REM } from "../layoutConstants";
+import type { PanelAccentStyle } from "./SidePanelFrame";
 
-/** Below Tailwind's `md` breakpoint the side panel stacks under the main content. */
 const NARROW_SCREEN_QUERY = "(max-width: 767px)";
+const MAIN_MIN_SIZE = "30%";
+const PANEL_MAX_SIZE = "70%";
+const SIDE_PANEL_MIN_SIZE = `${String(PANEL_WIDTH_MIN_REM)}rem`;
+const STACKED_PANEL_DEFAULT_SIZE = "55%";
+const STACKED_PANEL_MIN_SIZE = "20%";
 
 const subscribeToNarrowScreen = (onChange: () => void): (() => void) => {
   const query = window.matchMedia(NARROW_SCREEN_QUERY);
@@ -36,13 +41,19 @@ const DockedSplit = ({
     subscribeToNarrowScreen,
     isNarrowScreen,
   );
-  const dividerThickness = `${String(PANEL_ACCENT_BORDER_REM)}rem`;
+  const orientation = isStacked ? "vertical" : "horizontal";
+  const style: PanelAccentStyle = { "--panel-accent": accentColor };
+
+  const handleSeparatorKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (isStacked && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
+      event.stopPropagation();
+    }
+  };
 
   return (
-    // The Group sizes itself to 100% of its parent, so this element owns the size.
-    <div className={className}>
-      <Group orientation={isStacked ? "vertical" : "horizontal"}>
-        <Panel id="docked-split-main" minSize="30%">
+    <div className={className} style={style}>
+      <Group orientation={orientation}>
+        <Panel id="docked-split-main" minSize={MAIN_MIN_SIZE}>
           {main}
         </Panel>
         {sidePanel !== null && (
@@ -50,29 +61,17 @@ const DockedSplit = ({
             <Separator
               aria-label="Resize panel"
               title="Drag or use the arrow keys to resize"
-              // The divider owns the arrow keys while focused; page-level
-              // arrow shortcuts must not also act on the same key press.
-              onKeyDown={(event) => {
-                if (event.key.startsWith("Arrow")) {
-                  event.stopPropagation();
-                }
-              }}
-              className="shrink-0 transition-[filter] hover:brightness-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-200"
-              style={{
-                backgroundColor: accentColor,
-                ...(isStacked
-                  ? { height: dividerThickness }
-                  : { width: dividerThickness }),
-              }}
+              onKeyDown={handleSeparatorKeyDown}
+              className="bg-(--panel-accent) transition-[filter] aria-[orientation=horizontal]:h-panel-accent aria-[orientation=vertical]:w-panel-accent data-[separator=active]:brightness-150 data-[separator=focus]:hover:brightness-150 data-[separator=hover]:brightness-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-200"
             />
             <Panel
-              // A size measured for one direction is meaningless in the other,
-              // so each direction is its own panel with its own default.
-              key={isStacked ? "stacked" : "side-by-side"}
-              id={isStacked ? "docked-split-stacked" : "docked-split-side"}
-              defaultSize={isStacked ? "55%" : panelDefaultSize}
-              minSize={isStacked ? "20%" : "20rem"}
-              maxSize="70%"
+              key={orientation}
+              id={`docked-split-${orientation}`}
+              defaultSize={
+                isStacked ? STACKED_PANEL_DEFAULT_SIZE : panelDefaultSize
+              }
+              minSize={isStacked ? STACKED_PANEL_MIN_SIZE : SIDE_PANEL_MIN_SIZE}
+              maxSize={PANEL_MAX_SIZE}
             >
               {sidePanel}
             </Panel>

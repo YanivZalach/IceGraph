@@ -4,6 +4,10 @@ import { useHotkey } from "@tanstack/react-hotkeys";
 import { PANEL_ACCENT_BORDER_REM } from "../layoutConstants";
 import { cn } from "../shared/lib/cn";
 
+export interface PanelAccentStyle extends CSSProperties {
+  "--panel-accent": string;
+}
+
 type SidePanelVariant = "docked" | "floating";
 
 interface SidePanelFrameProps {
@@ -25,23 +29,18 @@ interface SidePanelFrameProps {
 
 interface SidePanelResizeHandleProps {
   accentColor: string;
-  className?: string;
   onMouseDown: MouseEventHandler<HTMLDivElement>;
   title?: string;
 }
 
 export const SidePanelResizeHandle = ({
   accentColor,
-  className,
   onMouseDown,
   title = "Drag to resize",
 }: SidePanelResizeHandleProps) => (
   <div
     onMouseDown={onMouseDown}
-    className={cn(
-      "relative z-10 w-7 shrink-0 cursor-ew-resize self-stretch rounded-l-xl group",
-      className,
-    )}
+    className="group relative z-10 w-7 shrink-0 cursor-ew-resize self-stretch rounded-l-xl"
     style={{
       borderLeft: `${String(PANEL_ACCENT_BORDER_REM)}rem solid ${accentColor}`,
     }}
