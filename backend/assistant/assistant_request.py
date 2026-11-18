@@ -17,6 +17,48 @@ def _count_characters(text: str) -> int:
     return len(text.encode("utf-16-le")) // 2
 
 
+def _find_fields_problem(body: dict) -> str | None:
+    if not isinstance(body.get("table_name"), str) or not body["table_name"]:
+        return "table_name is required."
+
+    if not isinstance(body.get("page"), str) or body["page"] not in PAGE_DESCRIPTIONS:
+        return f"page must be one of {', '.join(PAGE_DESCRIPTIONS)}."
+
+    for field in ("start_snapshot_id", "end_snapshot_id", "context"):
+        if not isinstance(body.get(field, ""), str):
+            return f"{field} must be a string."
+
+    return None
+
+
+def _find_messages_problem(body: dict) -> str | None:
+    messages = body.get("messages")
+    if not isinstance(messages, list) or not messages:
+        return "messages must be a non-empty list."
+
+    for message in messages:
+        if not isinstance(message, dict) or message.get("role") not in (USER_ROLE, ASSISTANT_ROLE):
+            return "every message needs a user or assistant role."
+
+        if not isinstance(message.get("content"), str) or not message["content"]:
+            return "every message needs non-empty content."
+
+    if messages[-1]["role"] != USER_ROLE:
+        return "the last message must be from the user."
+
+    return None
+
+
+def _find_text_problem(body: dict) -> str | None:
+    texts = [body["table_name"], body.get("start_snapshot_id", ""), body.get("end_snapshot_id", ""), body.get("context", "")]
+    texts.extend(message["content"] for message in body["messages"])
+    for text in texts:
+        if not _is_valid_text(text):
+            return "text must be valid Unicode."
+
+    return None
+
+
 @dataclass
 class AssistantRequest:
     table_name: str
@@ -31,35 +73,10 @@ class AssistantRequest:
         if not isinstance(body, dict):
             return "the body must be a JSON object."
 
-        if not isinstance(body.get("table_name"), str) or not body["table_name"]:
-            return "table_name is required."
-
-        if not isinstance(body.get("page"), str) or body["page"] not in PAGE_DESCRIPTIONS:
-            return f"page must be one of {', '.join(PAGE_DESCRIPTIONS)}."
-
-        for field in ("start_snapshot_id", "end_snapshot_id", "context"):
-            if not isinstance(body.get(field, ""), str):
-                return f"{field} must be a string."
-
-        messages = body.get("messages")
-        if not isinstance(messages, list) or not messages:
-            return "messages must be a non-empty list."
-
-        for message in messages:
-            if not isinstance(message, dict) or message.get("role") not in (USER_ROLE, ASSISTANT_ROLE):
-                return "every message needs a user or assistant role."
-
-            if not isinstance(message.get("content"), str) or not message["content"]:
-                return "every message needs non-empty content."
-
-        if messages[-1]["role"] != USER_ROLE:
-            return "the last message must be from the user."
-
-        texts = [body["table_name"], body.get("start_snapshot_id", ""), body.get("end_snapshot_id", ""), body.get("context", "")]
-        texts.extend(message["content"] for message in messages)
-        for text in texts:
-            if not _is_valid_text(text):
-                return "text must be valid Unicode."
+        for find_section_problem in (_find_fields_problem, _find_messages_problem, _find_text_problem):
+            problem = find_section_problem(body)
+            if problem:
+                return problem
 
         return None
 

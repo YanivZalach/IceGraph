@@ -1,10 +1,24 @@
-import { Suspense, lazy, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { cn } from "../../../shared/lib/cn";
 import type { GraphRequestParameters } from "../../table/api/graphCache";
 import type { AssistantContextSource } from "../assistantContext";
 import { useAssistantConversation } from "../useAssistantConversation";
+import type AssistantPanelComponent from "./AssistantPanel";
 
-const AssistantPanel = lazy(() => import("./AssistantPanel"));
+// React holds back a lazy component that suspended for about 300 ms, so the
+// preloaded panel renders directly instead of through lazy.
+let loadedAssistantPanel: typeof AssistantPanelComponent | null = null;
+const loadAssistantPanel = () =>
+  import("./AssistantPanel").then((panelModule) => {
+    loadedAssistantPanel = panelModule.default;
+    return panelModule;
+  });
+const LazyAssistantPanel = lazy(loadAssistantPanel);
+const PANEL_PRELOAD_FALLBACK_DELAY_MS = 1000;
+
+const preloadAssistantPanel = (): void => {
+  loadAssistantPanel().catch(() => undefined);
+};
 
 interface AssistantChatProps {
   conversationKey: string;
@@ -48,6 +62,23 @@ const AssistantChat = ({
   );
   const [shouldSendHistory, setShouldSendHistory] = useState(true);
   const conversation = useAssistantConversation(conversationKey, parameters);
+
+  useEffect(() => {
+    if (typeof window.requestIdleCallback === "function") {
+      const idleCallbackId = window.requestIdleCallback(preloadAssistantPanel);
+      return () => {
+        window.cancelIdleCallback(idleCallbackId);
+      };
+    }
+    const timeoutId = window.setTimeout(
+      preloadAssistantPanel,
+      PANEL_PRELOAD_FALLBACK_DELAY_MS,
+    );
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, []);
+  const AssistantPanel = loadedAssistantPanel ?? LazyAssistantPanel;
   const contextOptions = contextSource.options;
   const context = contextSource.buildContext(selectedOptionIds);
 
