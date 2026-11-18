@@ -1,7 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import {
-  findPreviousSpec,
-  resolveSpecSelection,
+  isSchemaDirectlyAfter,
+  schemaDiffSearch,
+  SPECS_OVERLAY_STATE,
   useTableSpecs,
 } from "../../../specs/tableSpecs";
 import { buildEventDetails } from "../../lib/details/buildEventDetails";
@@ -24,13 +25,13 @@ const EventDetails = ({ timeline, row }: EventDetailsProps) => {
   const details = buildEventDetails(timeline, row);
   const { specsMetadata } = useTableSpecs();
   const schemaChange = details.schemaChange;
-  const schema =
-    schemaChange === null
-      ? null
-      : resolveSpecSelection(specsMetadata, {
-          kind: "schema",
-          id: schemaChange.after,
-        });
+  const canLinkSchemaDiff =
+    schemaChange !== null &&
+    isSchemaDirectlyAfter(
+      specsMetadata,
+      schemaChange.before,
+      schemaChange.after,
+    );
   const hasThisChange =
     details.thisChange.counts.length > 0 || details.thisChange.rest.length > 0;
 
@@ -63,27 +64,19 @@ const EventDetails = ({ timeline, row }: EventDetailsProps) => {
           value={rowData.value}
         />
       ))}
-      {schemaChange !== null &&
-        schema?.type === "schema" &&
-        String(
-          findPreviousSpec(specsMetadata?.schemas ?? [], schema.data)?.[
-            "schema-id"
-          ],
-        ) === String(schemaChange.before) && (
-          <Link
-            to="."
-            search={(previous: Record<string, unknown>) => ({
-              ...previous,
-              spec_kind: "schema",
-              spec_id: String(schemaChange.after),
-              spec_view: "diff",
-            })}
-            state={(previous) => ({ ...previous, specsOverlay: true })}
-            className="block font-mono text-xs break-all text-accent hover:text-accent-dark"
-          >
-            View schema {schemaChange.after}
-          </Link>
-        )}
+      {schemaChange !== null && canLinkSchemaDiff && (
+        <Link
+          to="."
+          search={(previous: Record<string, unknown>) => ({
+            ...previous,
+            ...schemaDiffSearch(schemaChange.after),
+          })}
+          state={(previous) => ({ ...previous, ...SPECS_OVERLAY_STATE })}
+          className="block font-mono text-xs break-all text-accent hover:text-accent-dark"
+        >
+          View schema {schemaChange.after}
+        </Link>
+      )}
       {hasThisChange && (
         <ChangeCountsSection
           title="Change summary"

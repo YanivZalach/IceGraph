@@ -135,6 +135,31 @@ export const hasPreviousSpec = (
   );
 };
 
+export const isSchemaDirectlyAfter = (
+  metadata: TableMetadata | undefined,
+  beforeId: IcebergInteger,
+  afterId: IcebergInteger,
+): boolean => {
+  const detail = resolveSpecSelection(metadata, {
+    kind: "schema",
+    id: afterId,
+  });
+  if (detail?.type !== "schema") return false;
+  const previous = findPreviousSpec(metadata?.schemas ?? [], detail.data);
+  return (
+    previous !== null && String(previous["schema-id"]) === String(beforeId)
+  );
+};
+
+export const schemaDiffSearch = (schemaId: IcebergInteger) =>
+  ({
+    spec_kind: "schema",
+    spec_id: String(schemaId),
+    spec_view: "diff",
+  }) as const;
+
+export const SPECS_OVERLAY_STATE = { specsOverlay: true } as const;
+
 export interface TableSpecsState {
   detailsOpen: boolean;
   setDetailsOpen: (isOpen: boolean) => void;
