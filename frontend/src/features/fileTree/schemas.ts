@@ -43,7 +43,10 @@ const readableColumnMetricsSchema = z
   })
   .catchall(z.unknown());
 
-const readableMetricsSchema = z.record(z.string(), readableColumnMetricsSchema);
+export const readableMetricsSchema = z.record(
+  z.string(),
+  readableColumnMetricsSchema,
+);
 
 const referenceSchema = z
   .object({
@@ -70,7 +73,7 @@ export const fileDetailsSchema = z
     file_path: z.string().optional(),
     file_size_in_bytes: optionalStringValueSchema,
     content_size_in_bytes: optionalNumericValueSchema,
-    readable_metrics: readableMetricsSchema.optional(),
+    readable_metrics: z.unknown().optional(),
     row_count: icebergIntegerSchema
       .nullish()
       .transform((value) => value ?? undefined)

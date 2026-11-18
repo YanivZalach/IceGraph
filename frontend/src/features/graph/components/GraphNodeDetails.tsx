@@ -1,5 +1,6 @@
 import DataFileReadableMetricsTable from "../../../components/DataFileReadableMetricsTable";
 import { PanelDetailRow } from "../../../components/PanelContent";
+import PanelIssueNotice from "../../../components/PanelIssueNotice";
 import ReadableMetricsSummary from "../../../components/ReadableMetricsSummary";
 import { FileType } from "../../../graphConstants";
 import { isEmptyValue } from "../../../shared/lib/isEmptyValue";
@@ -8,7 +9,10 @@ import PartitionStatisticsTable from "../../table/components/PartitionStatistics
 import PartitionValues, {
   type ManifestPartitionFilter,
 } from "../../table/components/PartitionValues";
-import type { GraphNodeDetails as Details } from "../graphViewSchemas";
+import {
+  readableMetricsSchema,
+  type GraphNodeDetails as Details,
+} from "../graphViewSchemas";
 
 const HIDDEN_DETAIL_KEYS = new Set([
   "type",
@@ -105,15 +109,26 @@ const PartitionStatistics = ({ details }: { details: Details }) => {
 };
 
 const ReadableMetrics = ({ details }: { details: Details }) => {
-  const readableMetrics = details.readable_metrics;
   if (
     details.type === undefined ||
     !READABLE_METRICS_FILE_TYPES.has(details.type) ||
-    !readableMetrics ||
-    Object.keys(readableMetrics).length === 0
+    details.readable_metrics === undefined ||
+    details.readable_metrics === null
   ) {
     return null;
   }
+  const parsedMetrics = readableMetricsSchema.safeParse(
+    details.readable_metrics,
+  );
+  if (!parsedMetrics.success) {
+    return (
+      <PanelIssueNotice type="error">
+        Readable metrics are invalid.
+      </PanelIssueNotice>
+    );
+  }
+  const readableMetrics = parsedMetrics.data;
+  if (Object.keys(readableMetrics).length === 0) return null;
   const totalFileSizeBytes = parseFileSizeBytes(details);
 
   return (
