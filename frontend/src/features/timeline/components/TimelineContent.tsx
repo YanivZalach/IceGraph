@@ -1,10 +1,6 @@
-import { useEffect } from "react";
-import { useNavigate, useSearch } from "@tanstack/react-router";
-import {
-  filterTimelineRows,
-  type CommitKindFilter,
-} from "../lib/filterTimelineRows";
+import { filterTimelineRows } from "../lib/filterTimelineRows";
 import type { TimelineData } from "../lib/timelineRow";
+import { useTimelineSearchState } from "../hooks/useTimelineSearchState";
 import { useTimelineSelection } from "../hooks/useTimelineSelection";
 import EventDetailsPanel from "./details/EventDetailsPanel";
 import { branchAccentsByName } from "./eventColor";
@@ -20,39 +16,22 @@ const countEventRows = (rows: TimelineData["rows"]): number =>
   rows.filter((row) => row.kind !== "boundary" && row.kind !== "gap").length;
 
 const TimelineContent = ({ timeline, table }: TimelineContentProps) => {
-  const navigate = useNavigate({ from: "/table/timeline" });
-  const search = useSearch({ from: "/table/timeline" });
-  const kindFilter = search.timeline_kind ?? "all";
-  const branchFilter = search.timeline_branch;
-  const requestedEvent = search.timeline_event;
   const branchOptions = [...branchAccentsByName(timeline.rows).keys()];
-  const hasStaleBranch =
-    branchFilter !== undefined && !branchOptions.includes(branchFilter);
-  const hasStaleEvent =
-    requestedEvent !== undefined &&
-    !timeline.rows.some(
-      (row) => row.kind !== "boundary" && row.filePath === requestedEvent,
-    );
-  const activeBranchFilter = hasStaleBranch ? null : (branchFilter ?? null);
-
-  useEffect(() => {
-    if (!hasStaleBranch && !hasStaleEvent) return;
-    void navigate({
-      replace: true,
-      state: (previous) => previous,
-      search: (previous) => ({
-        ...previous,
-        timeline_branch:
-          hasStaleBranch && previous.timeline_branch === branchFilter
-            ? undefined
-            : previous.timeline_branch,
-        timeline_event:
-          hasStaleEvent && previous.timeline_event === requestedEvent
-            ? undefined
-            : previous.timeline_event,
-      }),
-    });
-  }, [branchFilter, hasStaleBranch, hasStaleEvent, navigate, requestedEvent]);
+  const {
+    kindFilter,
+    branchFilter: activeBranchFilter,
+    requestedEvent,
+    setKindFilter,
+    setBranchFilter,
+    clearFilters: handleClearFilters,
+    setEvent,
+  } = useTimelineSearchState({
+    isKnownBranch: (branchName) => branchOptions.includes(branchName),
+    isSelectableEvent: (filePath) =>
+      timeline.rows.some(
+        (row) => row.kind !== "boundary" && row.filePath === filePath,
+      ),
+  });
   const shownRows = filterTimelineRows(
     timeline.rows,
     kindFilter,
@@ -66,43 +45,11 @@ const TimelineContent = ({ timeline, table }: TimelineContentProps) => {
   const { handleSelect, clearSelection } = useTimelineSelection(
     shownRows,
     selectedFilePath,
-    (filePath) => {
-      void navigate({
-        search: (previous) => ({ ...previous, timeline_event: filePath }),
-      });
-    },
+    setEvent,
   );
 
   const commitCount = countEventRows(timeline.rows);
   const isFiltering = kindFilter !== "all" || activeBranchFilter !== null;
-
-  const setKindFilter = (kind: CommitKindFilter) => {
-    void navigate({
-      search: (previous) => ({
-        ...previous,
-        timeline_kind: kind === "all" ? undefined : kind,
-      }),
-    });
-  };
-
-  const setBranchFilter = (branch: string | null) => {
-    void navigate({
-      search: (previous) => ({
-        ...previous,
-        timeline_branch: branch ?? undefined,
-      }),
-    });
-  };
-
-  const handleClearFilters = () => {
-    void navigate({
-      search: (previous) => ({
-        ...previous,
-        timeline_kind: undefined,
-        timeline_branch: undefined,
-      }),
-    });
-  };
 
   return (
     <div className="h-graph flex w-full min-h-0 flex-1 flex-col overflow-hidden bg-canvas md:flex-row">
