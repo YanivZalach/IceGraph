@@ -1,5 +1,5 @@
 import { filterTimelineRows } from "../lib/filterTimelineRows";
-import type { TimelineData } from "../lib/timelineRow";
+import { isSelectableRow, type TimelineData } from "../lib/timelineRow";
 import { useTimelineSearchState } from "../hooks/useTimelineSearchState";
 import { useTimelineSelection } from "../hooks/useTimelineSelection";
 import EventDetailsPanel from "./details/EventDetailsPanel";
@@ -29,7 +29,7 @@ const TimelineContent = ({ timeline, table }: TimelineContentProps) => {
     isKnownBranch: (branchName) => branchOptions.includes(branchName),
     isSelectableEvent: (filePath) =>
       timeline.rows.some(
-        (row) => row.kind !== "boundary" && row.filePath === filePath,
+        (row) => isSelectableRow(row) && row.filePath === filePath,
       ),
   });
   const shownRows = filterTimelineRows(
@@ -38,9 +38,9 @@ const TimelineContent = ({ timeline, table }: TimelineContentProps) => {
     activeBranchFilter,
   );
   const selectedRow =
-    shownRows.find(
-      (row) => row.kind !== "boundary" && row.filePath === requestedEvent,
-    ) ?? null;
+    shownRows
+      .filter(isSelectableRow)
+      .find((row) => row.filePath === requestedEvent) ?? null;
   const selectedFilePath = selectedRow?.filePath ?? null;
   const { handleSelect, clearSelection } = useTimelineSelection(
     shownRows,

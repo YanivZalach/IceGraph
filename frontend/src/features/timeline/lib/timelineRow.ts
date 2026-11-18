@@ -20,8 +20,7 @@ export interface CommitRow {
     | "draft-write"
     | "re-point"
     | "metadata-only"
-    | "unknown-change"
-    | "boundary";
+    | "unknown-change";
   title: string;
   category: CommitCategory;
   impact: ImpactSegment[];
@@ -48,9 +47,21 @@ export interface GapRow {
   unreadableFiles: UnreadableFileSummary[];
 }
 
-export type TimelineRow = CommitRow | GapRow;
+/** The oldest loaded file when older events exist: its change cannot be seen. */
+export interface BoundaryRow {
+  kind: "boundary";
+  filePath: string;
+  timestampMs: number;
+}
 
-export const titleOf = (row: TimelineRow): string =>
+export type SelectableRow = CommitRow | GapRow;
+
+export type TimelineRow = SelectableRow | BoundaryRow;
+
+export const isSelectableRow = (row: TimelineRow): row is SelectableRow =>
+  row.kind !== "boundary";
+
+export const titleOf = (row: SelectableRow): string =>
   row.kind === "gap"
     ? formatUnreadableEvents(row.unreadableFiles.length)
     : row.title;
@@ -64,10 +75,15 @@ export interface TimelineData {
   filesByPath: ReadonlyMap<string, MetadataFileNode>;
 }
 
-export const boundaryRow = (file: MetadataFileNode): CommitRow => ({
+export const toBoundaryRow = (file: MetadataFileNode): BoundaryRow => ({
   kind: "boundary",
-  title: "",
-  category: "quiet",
+  filePath: file.file_path,
+  timestampMs: file.timestamp,
+});
+
+export const commitRowDefaults = (
+  file: MetadataFileNode,
+): Omit<CommitRow, "kind" | "title" | "category"> => ({
   impact: [],
   details: [],
   repointTargetId: null,

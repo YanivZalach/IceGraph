@@ -19,7 +19,9 @@ const railNodeClassFor = (
   row: TimelineRow,
   branchAccents: ReadonlyMap<string, BranchAccent>,
 ): string | undefined => {
-  return row.kind === "gap" || row.branchName === null
+  return row.kind === "gap" ||
+    row.kind === "boundary" ||
+    row.branchName === null
     ? undefined
     : branchAccents.get(row.branchName)?.node;
 };
@@ -75,7 +77,9 @@ export const buildTimelineColumns = (
     id: "snapshot",
     header: "Snapshot",
     cell: ({ row }) =>
-      row.original.kind === "gap" ? "" : row.original.shortId,
+      row.original.kind === "gap" || row.original.kind === "boundary"
+        ? ""
+        : row.original.shortId,
   }),
   columnHelper.display({
     id: "time",

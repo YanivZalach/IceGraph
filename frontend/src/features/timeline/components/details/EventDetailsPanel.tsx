@@ -8,7 +8,7 @@ import { formatAbsoluteTimestamp } from "../../lib/format/formatTimelineTime";
 import {
   titleOf,
   type TimelineData,
-  type TimelineRow,
+  type SelectableRow,
 } from "../../lib/timelineRow";
 import { eventToneFor } from "../eventColor";
 import EventDetails from "./EventDetails";
@@ -16,7 +16,7 @@ import GapDetails from "./GapDetails";
 
 interface EventDetailsPanelProps {
   timeline: TimelineData;
-  row: TimelineRow;
+  row: SelectableRow;
   onClose: () => void;
 }
 

@@ -17,7 +17,9 @@ import {
   type UnreadableRun,
 } from "./sequenceTimelineFiles";
 import {
-  boundaryRow,
+  commitRowDefaults,
+  toBoundaryRow,
+  type BoundaryRow,
   type CommitRow,
   type GapRow,
   type RefBadge,
@@ -40,7 +42,7 @@ const DEGRADED_COMMIT: CommitDescription = {
 const buildOldestRow = (
   file: MetadataFileNode,
   snapshotsById: SnapshotsById,
-): CommitRow => {
+): CommitRow | BoundaryRow => {
   const ownSnapshot =
     file.snapshot_id === null ? undefined : snapshotsById.get(file.snapshot_id);
   // With older commits cut off, the snapshot may have been written before the
@@ -50,10 +52,10 @@ const buildOldestRow = (
   if (ownSnapshot === undefined || isHistoryCutOff) {
     const hasUnknowableSnapshot = file.snapshot_id !== null;
     if (hasUnknowableSnapshot || isHistoryCutOff) {
-      return boundaryRow(file);
+      return toBoundaryRow(file);
     }
     return {
-      ...boundaryRow(file),
+      ...commitRowDefaults(file),
       kind: "metadata-only",
       title: "Start of history",
       category: "quiet",
@@ -61,7 +63,7 @@ const buildOldestRow = (
   }
 
   return {
-    ...boundaryRow(file),
+    ...commitRowDefaults(file),
     kind: "published-write",
     branchName: "main",
     ...writeHeadline(ownSnapshot.operation_description, ownSnapshot.summary),
@@ -75,7 +77,7 @@ const toTimelineRow = (
   file: MetadataFileNode,
   commit: CommitDescription,
 ): CommitRow => ({
-  ...boundaryRow(file),
+  ...commitRowDefaults(file),
   kind: commit.kind,
   title: commit.title,
   category: commit.category,
@@ -142,13 +144,16 @@ const toCommitRow = (
   { file, predecessor }: Extract<SequenceItem, { kind: "commit" }>,
   laterFiles: MetadataFileNode[],
   { snapshotsById, tableMetadata, newestRefs }: DescribeContext,
-): CommitRow => {
+): CommitRow | BoundaryRow => {
   if (predecessor.kind === "none") {
-    return attachRefBadges(buildOldestRow(file, snapshotsById), newestRefs);
+    const oldestRow = buildOldestRow(file, snapshotsById);
+    return oldestRow.kind === "boundary"
+      ? oldestRow
+      : attachRefBadges(oldestRow, newestRefs);
   }
   if (predecessor.kind === "unreadable") {
     return {
-      ...boundaryRow(file),
+      ...commitRowDefaults(file),
       kind: "unknown-change",
       title: "Change unknown",
       category: "quiet",
