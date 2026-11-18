@@ -1,3 +1,4 @@
+// Read docs/agents/frontend/timeline.md before changing this file or anything it calls.
 import type { MetadataFileNode, SnapshotRefs } from "../api/nodeSchemas";
 import type { TableMetadata } from "../api/tableMetadataSchema";
 import { readSnapshotImpact } from "./impactSegment";
