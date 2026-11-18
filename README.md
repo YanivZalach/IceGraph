@@ -29,25 +29,6 @@ Look at Live Demo! [https://yanivzalach.github.io/IceGraph/](https://yanivzalach
 > **Recommended**: In production, use a user with read-only permissions for the Spark Connect server, for extra peace of mind.
 
 
-## Mock Data Example Using Docker
-
-Clone the repo, and in it, go to:
-```
-cd docker_demo
-```
-
-Run the docker compose:
-```
-docker compose up -d
-```
-
-Go to `http://localhost:5050` and explore table `default.events` and table `default.logging`.
-
-To rebuild only the IceGraph image after local code changes (without restarting Spark or other services):
-```bash
-docker compose up -d --build icegraph
-```
-
 ## Quick Start Using Docker
 
 The easiest way to run IceGraph is via [DockerHub](https://hub.docker.com/r/yanivzalach/icegraph)

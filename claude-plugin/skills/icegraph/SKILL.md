@@ -29,7 +29,7 @@ it to "db" or guess at a shortened form. Use the exact name the user gives you, 
 IceGraph servers almost never run on the same machine as this session. Unless the user has already
 told you a `--base-url` / `$ICEGRAPH_BASE_URL` this conversation, **ask for it** — don't guess
 `localhost` and don't try to auto-start anything. The only exception is when you're clearly doing
-IceGraph *development* work inside this repo itself (e.g. `docker_demo` is running) — only then is
+IceGraph *development* work inside this repo itself (e.g. a local dev backend is running) — only then is
 suggesting a local URL reasonable.
 
 Once you have it, reuse it for the rest of the task instead of re-asking per command.
