@@ -1,4 +1,5 @@
 import type { MouseEvent } from "react";
+import DockedSplit from "../../components/DockedSplit";
 import PanelIssueNotice from "../../components/PanelIssueNotice";
 import { useViewInGraph } from "../../hooks/useViewInGraph";
 import FileTreeContent from "./components/FileTreeContent";
@@ -128,59 +129,61 @@ const FileTreeView = ({ graphData }: FileTreeViewProps) => {
         snapshots={displayedSnapshots}
         viewMode={pageState.viewMode}
       />
-      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
-        <main
-          className={`flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-3 py-3 sm:px-8 sm:py-4 ${
-            pageState.inspectedItem === null ? "" : "basis-[45%] md:basis-auto"
-          }`}
-        >
-          {snapshotFileResult.errors.length > 0 && (
-            <div className="mb-3">
-              <PanelIssueNotice type="error">
-                {snapshotFileResult.errors}
-              </PanelIssueNotice>
-            </div>
-          )}
-          {snapshotWarnings.length > 0 && (
-            <div className="mb-3">
-              <PanelIssueNotice type="warning">
-                {snapshotWarnings}
-              </PanelIssueNotice>
-            </div>
-          )}
-          {currentSnapshot === undefined ? (
-            <NoBranchSnapshotsNotice branchName={selectedBranchName} />
-          ) : (
-            <FileTreeContent
-              checkedFileIds={pageState.checkedFileIds}
-              expandedItemIds={pageState.expandedItemIds}
-              inspectedFileId={inspectedFileId}
-              inspectedPartitionPathNodeId={inspectedPartitionPathNodeId}
-              inspectedPartitionId={inspectedPartitionId}
-              onCollapseMany={pageState.collapseMany}
-              onExpandMany={pageState.expandItems}
-              onInspectFile={pageState.inspectFile}
-              onInspectPartitionPathNode={pageState.inspectPartitionPathNode}
-              onInspectPartition={pageState.inspectPartition}
-              onToggleExpanded={pageState.toggleExpanded}
-              onToggleChecked={pageState.toggleChecked}
-              onToggleFiles={pageState.toggleFiles}
+      <DockedSplit
+        className="min-h-0 flex-1"
+        panelDefaultSize="38%"
+        main={
+          <main className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden px-3 py-3 sm:px-8 sm:py-4">
+            {snapshotFileResult.errors.length > 0 && (
+              <div className="mb-3">
+                <PanelIssueNotice type="error">
+                  {snapshotFileResult.errors}
+                </PanelIssueNotice>
+              </div>
+            )}
+            {snapshotWarnings.length > 0 && (
+              <div className="mb-3">
+                <PanelIssueNotice type="warning">
+                  {snapshotWarnings}
+                </PanelIssueNotice>
+              </div>
+            )}
+            {currentSnapshot === undefined ? (
+              <NoBranchSnapshotsNotice branchName={selectedBranchName} />
+            ) : (
+              <FileTreeContent
+                checkedFileIds={pageState.checkedFileIds}
+                expandedItemIds={pageState.expandedItemIds}
+                inspectedFileId={inspectedFileId}
+                inspectedPartitionPathNodeId={inspectedPartitionPathNodeId}
+                inspectedPartitionId={inspectedPartitionId}
+                onCollapseMany={pageState.collapseMany}
+                onExpandMany={pageState.expandItems}
+                onInspectFile={pageState.inspectFile}
+                onInspectPartitionPathNode={pageState.inspectPartitionPathNode}
+                onInspectPartition={pageState.inspectPartition}
+                onToggleExpanded={pageState.toggleExpanded}
+                onToggleChecked={pageState.toggleChecked}
+                onToggleFiles={pageState.toggleFiles}
+                onViewInGraph={handleViewInGraph}
+                partitions={partitions}
+                partitionPathNodes={partitionPathNodes}
+                search={pageState.search}
+                viewMode={pageState.viewMode}
+              />
+            )}
+          </main>
+        }
+        sidePanel={
+          pageState.inspectedItem === null ? null : (
+            <FileTreeInspector
+              inspectedItem={pageState.inspectedItem}
+              onClose={pageState.closeInspector}
               onViewInGraph={handleViewInGraph}
-              partitions={partitions}
-              partitionPathNodes={partitionPathNodes}
-              search={pageState.search}
-              viewMode={pageState.viewMode}
             />
-          )}
-        </main>
-        {pageState.inspectedItem !== null && (
-          <FileTreeInspector
-            inspectedItem={pageState.inspectedItem}
-            onClose={pageState.closeInspector}
-            onViewInGraph={handleViewInGraph}
-          />
-        )}
-      </div>
+          )
+        }
+      />
     </div>
   );
 };

@@ -115,7 +115,8 @@ Keep the bounded range loaded in both modes.
   panel, and the next arrow key reopens the event that was selected.
 - The Writes and Metadata segments and the branch select narrow the list, and the count changes to
   `N of M events`. Clearing the filters restores the full list.
-- The details panel is docked beside the list and dragging its colored edge resizes it.
+- The details panel is docked beside the list. Dragging the colored divider resizes it, and so do
+  the arrow keys while the divider is focused.
 - Expanding Raw metadata diff lists each changed value; its Raw JSON shows the stored values.
 - The Snapshot and Metadata buttons in the details panel, when present, open Graph in a new tab
   with the intended node selected and locked. Close the extra tab afterward.
