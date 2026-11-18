@@ -48,10 +48,8 @@ export const useAssistantConversation = (
   conversationKey: string,
   parameters: GraphRequestParameters,
 ): AssistantConversation => {
-  // Read on the first open, so pages where the panel stays closed never parse it.
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [hasLoaded, setHasLoaded] = useState(false);
-  // What screen readers hear: the start of an answer, then the whole answer or the error.
   const [announcement, setAnnouncement] = useState("");
   const [pendingExchange, setPendingExchange] =
     useState<AssistantExchange | null>(null);

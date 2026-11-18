@@ -16,7 +16,6 @@ const THINKING_WORDS = [
 ];
 const THINKING_WORD_INTERVAL_MS = 1500;
 
-// Any other word, so the same word never shows twice in a row.
 const pickNextWordIndex = (wordIndex: number): number =>
   (wordIndex + 1 + Math.floor(Math.random() * (THINKING_WORDS.length - 1))) %
   THINKING_WORDS.length;
@@ -36,7 +35,6 @@ const AssistantThinkingStatus = () => {
   }, []);
 
   return (
-    // Visual only: the panel's announcer already tells screen readers an answer is coming.
     <p
       className="text-[13px] text-slate-500 motion-safe:animate-pulse"
       aria-hidden="true"
