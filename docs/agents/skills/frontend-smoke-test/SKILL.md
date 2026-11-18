@@ -1,6 +1,6 @@
 ---
 name: frontend-smoke-test
-description: Runs a deterministic browser smoke test of IceGraph across table selection, snapshot ranges, Timeline, Metadata, FileTree, Graph, Docs, URL cleanup, browser caching, keyboard controls, and console errors. Supports full testing with a real backend or Docker demo and a reduced MSW profile. Use when asked to smoke-test, QA, or check frontend regressions.
+description: Runs a deterministic browser smoke test of IceGraph across table selection, snapshot ranges, Timeline, Metadata, FileTree, Graph, Docs, URL cleanup, browser caching, keyboard controls, and console errors. Supports full testing with a real backend and a reduced MSW profile. Use when asked to smoke-test, QA, or check frontend regressions.
 user-invocable: true
 ---
 
@@ -13,7 +13,7 @@ Test an already running IceGraph frontend. Never start or stop a server.
 Establish and report:
 
 1. Frontend URL and whether it is reachable.
-2. Profile: `full` for a real backend or Docker demo, or `msw` for mock mode.
+2. Profile: `full` for a real backend, or `msw` for mock mode.
 3. Test table. In MSW use `default.events`; in full mode it may be selected through Browse catalog.
 4. Browser capabilities: navigation, keyboard input, page inspection, tabs, screenshots, and console
    inspection.

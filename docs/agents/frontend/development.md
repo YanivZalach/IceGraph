@@ -4,7 +4,7 @@ Read [`philosophy.md`](philosophy.md) before changing `frontend/`. This file def
 the philosophy defines technical conventions. Paths are relative to the repository root.
 
 The product invariants in `AGENTS.md` apply. In addition, the frontend must not recreate backend
-domain rules and must support remote backends, the Docker demo, and MSW mock mode.
+domain rules and must support remote backends and MSW mock mode.
 
 ## Before planning
 
