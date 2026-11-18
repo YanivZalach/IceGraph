@@ -61,7 +61,7 @@ export const parseTimelineNodes = (nodes: unknown[]): ParsedTimelineNodes => {
           file_path: placement.data.file_path,
           previous_file: placement.data.previous_file ?? null,
           timestamp: placement.data.timestamp,
-          reasons: [...placement.data.errors, ...schemaIssues],
+          reasons: [...new Set([...placement.data.errors, ...schemaIssues])],
         });
       }
       continue;

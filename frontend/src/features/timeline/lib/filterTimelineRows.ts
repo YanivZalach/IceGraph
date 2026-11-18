@@ -6,6 +6,9 @@ const matchesKind = (row: CommitRow, kind: CommitKindFilter): boolean => {
   if (kind === "all") {
     return true;
   }
+  if (row.kind === "unknown-change") {
+    return false;
+  }
   const isWrite = row.kind === "published-write" || row.kind === "draft-write";
   return kind === "writes" ? isWrite : !isWrite;
 };

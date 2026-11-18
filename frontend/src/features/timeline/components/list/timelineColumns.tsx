@@ -25,7 +25,7 @@ const railNodeClassFor = (
 };
 
 const railMarker = (row: TimelineRow): RailMarker => {
-  if (row.kind === "boundary") {
+  if (row.kind === "boundary" || row.kind === "unknown-change") {
     return "none";
   }
   if (row.kind === "gap") {

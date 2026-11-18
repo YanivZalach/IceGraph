@@ -19,7 +19,8 @@ Data moves one way, through pure steps:
    The oldest file, a file after a gap, and a gap are turned into rows by `buildTimeline.ts`
    itself, because none of them compares two files.
 
-Components render the rows. `hooks/` is the only bridge between React and `lib/`.
+Components render the rows and may call pure `lib/` functions. React state, data fetching, and
+keyboard handling live in `hooks/`.
 
 ## Rules
 
@@ -30,19 +31,21 @@ Components render the rows. `hooks/` is the only bridge between React and `lib/`
    compare two files with anything unreadable or missing between them.
 3. A row never claims a change it cannot prove. When the predecessor is unknown, the row is an
    `unknown-change` row: no title that names a change, no chips, no snapshot id, no branch, no
-   diff. Its details may show the file's own state.
-4. A gap is a row of its own (`GapRow`). Never record a gap as fields on a neighbouring row.
-5. Only the sequence step decides where gaps are. The classifiers never see a gap: they always
+   diff, and neither a write nor a metadata marker or filter. Its details may show the file's own
+   state.
+4. Nothing is read across a gap: not a comparison, not a draft's publication, not ref badges.
+5. A gap is a row of its own (`GapRow`). Never record a gap as fields on a neighbouring row.
+6. Only the sequence step decides where gaps are. The classifiers never see a gap: they always
    receive two readable files.
-6. `TimelineRow` is a union. Narrow on `kind` before reading commit fields. Do not add a field to
+7. `TimelineRow` is a union. Narrow on `kind` before reading commit fields. Do not add a field to
    one member that only has meaning for another.
-7. Whatever picks a row's title sets its `category` in the same place. Components choose colors,
+8. Whatever picks a row's title sets its `category` in the same place. Components choose colors,
    icons, and filters from `kind` and `category`, never by matching `title` text.
-8. `lib/` and `api/` import no React, router, DOM, or component code. `lib/` functions are pure.
-9. Every zod schema lives in `api/`. `lib/` receives parsed, trusted types.
-10. Large Iceberg integers stay strings or `BigInt`. Never pass a snapshot id or a count through
+9. `lib/` and `api/` import no React, router, DOM, or component code. `lib/` functions are pure.
+10. Every zod schema lives in `api/`. `lib/` receives parsed, trusted types.
+11. Large Iceberg integers stay strings or `BigInt`. Never pass a snapshot id or a count through
     `Number()`.
-11. User-facing wording that appears in more than one place has one function in `lib/format/`.
+12. User-facing wording that appears in more than one place has one function in `lib/format/`.
 
 ## Before finishing
 

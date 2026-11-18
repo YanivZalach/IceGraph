@@ -1,5 +1,6 @@
 import { formatAbsoluteTimestamp } from "../../lib/format/formatTimelineTime";
 import type { GapRow } from "../../lib/timelineRow";
+import DetailNoticeBox from "./DetailNoticeBox";
 
 interface GapDetailsProps {
   row: GapRow;
@@ -7,10 +8,11 @@ interface GapDetailsProps {
 
 const GapDetails = ({ row }: GapDetailsProps) => (
   <div className="flex flex-col gap-4">
-    <p className="rounded border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
-      These events could not be read. An event right after them shows no
-      description, because what it changed cannot be worked out.
-    </p>
+    <DetailNoticeBox kind="warning">
+      {row.unreadableFiles.length === 1
+        ? "This event could not be read. The event right after it shows no description, because what it changed cannot be worked out."
+        : "These events could not be read. The event right after them shows no description, because what it changed cannot be worked out."}
+    </DetailNoticeBox>
     <ul className="flex flex-col gap-3">
       {row.unreadableFiles.map((file) => (
         <li

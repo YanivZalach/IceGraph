@@ -19,6 +19,6 @@ Click a row, or focus it and press **Enter** or **Space**. Use **↑** and **↓
 
 ### Understand gaps
 
-**Earlier events not loaded** takes you back to snapshot selection. Events that could not be read appear as one amber row where they belong in the history, including at the very top. Select it to see each file and why it could not be read. These rows are not counted as events and are hidden while a filter is active. The event right after such a row reads **Change unknown**: its change cannot be worked out, so the list claims nothing and its details show only the event's own state.
+**Earlier events not loaded** takes you back to snapshot selection. Events that could not be read appear as one amber row where they belong in the history, including at the very top. Select it to see each file and why it could not be read. These rows are not counted as events and are hidden while a filter is active. The event right after such a row reads **Change unknown**: its change cannot be worked out, so the list claims nothing, marks it as neither a write nor a metadata change, and its details show only the event's own state. Like the unreadable row, it is hidden while a filter is active.
 
 **Start of history** marks the first surviving metadata file when the full history is loaded and that file wrote no snapshot. A truncated range instead marks its oldest row **start of loaded range** and omits its change description.

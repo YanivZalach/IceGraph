@@ -174,6 +174,20 @@ const toCommitRow = (
   );
 };
 
+/** Past a gap, which file published a draft cannot be told, so the search stops there. */
+const readableFilesUntilNextGap = (
+  laterItems: SequenceItem[],
+): MetadataFileNode[] => {
+  const files: MetadataFileNode[] = [];
+  for (const item of laterItems) {
+    if (item.kind === "gap") {
+      break;
+    }
+    files.push(item.file);
+  }
+  return files;
+};
+
 /** Parse, sequence (which orders), then turn each sequenced item into a row. */
 export const buildTimeline = (
   nodes: unknown[],
@@ -189,24 +203,23 @@ export const buildTimeline = (
   const filesOldestFirst = sequence.flatMap((item) =>
     item.kind === "commit" ? [item.file] : [],
   );
+  const newestItem = sequence.at(-1);
   const context: DescribeContext = {
     snapshotsById,
     tableMetadata,
-    newestRefs: filesOldestFirst.at(-1)?.refs ?? {},
+    // Unreadable newer events may have moved the refs, so no row is badged as their target.
+    newestRefs: newestItem?.kind === "commit" ? newestItem.file.refs : {},
   };
 
-  const rowsOldestFirst: TimelineRow[] = [];
-  let describedFileCount = 0;
-  for (const item of sequence) {
-    if (item.kind === "gap") {
-      rowsOldestFirst.push(toGapRow(item.files));
-      continue;
-    }
-    describedFileCount += 1;
-    rowsOldestFirst.push(
-      toCommitRow(item, filesOldestFirst.slice(describedFileCount), context),
-    );
-  }
+  const rowsOldestFirst = sequence.map((item, index): TimelineRow =>
+    item.kind === "gap"
+      ? toGapRow(item.files)
+      : toCommitRow(
+          item,
+          readableFilesUntilNextGap(sequence.slice(index + 1)),
+          context,
+        ),
+  );
 
   const oldestItem = sequence[0];
   const loadedButUnreadableOlderCount =

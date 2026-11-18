@@ -4,10 +4,10 @@ import {
   resolveSpecSelection,
   useTableSpecs,
 } from "../../../specs/tableSpecs";
-import { cn } from "../../../../shared/lib/cn";
 import { buildEventDetails } from "../../lib/details/buildEventDetails";
 import type { CommitRow, TimelineData } from "../../lib/timelineRow";
 import BeforeAfterSection from "./BeforeAfterSection";
+import DetailNoticeBox from "./DetailNoticeBox";
 import DetailValueRow from "./DetailValueRow";
 import ChangeCountsSection from "./ChangeCountsSection";
 import CollapsibleTableSection from "./CollapsibleTableSection";
@@ -37,17 +37,9 @@ const EventDetails = ({ timeline, row }: EventDetailsProps) => {
   return (
     <div className="flex flex-col gap-4">
       {details.notices.map((notice) => (
-        <p
-          key={notice.text}
-          className={cn(
-            "rounded border px-3 py-2 text-xs break-words whitespace-pre-line",
-            notice.kind === "error"
-              ? "border-red-500/40 bg-red-500/10 text-red-300"
-              : "border-amber-500/40 bg-amber-500/10 text-amber-300",
-          )}
-        >
+        <DetailNoticeBox key={notice.text} kind={notice.kind}>
           {notice.text}
-        </p>
+        </DetailNoticeBox>
       ))}
       <ViewInGraphButtons
         snapshotFilePath={details.snapshotFilePath}
