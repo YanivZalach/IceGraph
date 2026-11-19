@@ -14,6 +14,14 @@ import {
 import { describeRefChanges } from "../definitionChanges/describeRefChanges";
 import { describeSchemaChange } from "../definitionChanges/describeSchemaChange";
 import { describeSortOrderChange } from "../definitionChanges/describeSortOrderChange";
+import {
+  describeStatisticsChanges,
+  type StatisticsChange,
+} from "../definitionChanges/describeStatisticsChanges";
+import { FIELD_TITLES } from "../details/describeFieldDiff";
+import { diffMetadataFiles } from "../details/diffMetadataFiles";
+
+export const UNRECOGNIZED_METADATA_TITLE = "Metadata updated";
 
 const describeExpiredSnapshots = (count: number): DescribedChange[] => {
   if (count === 0) {
@@ -38,6 +46,40 @@ const isTagChange = (
     );
 
   return changedEntry?.[1].type === "tag";
+};
+
+const statisticsHeadline = (changes: StatisticsChange[]): Headline => {
+  if (changes.every((change) => change.action === "added")) {
+    return { title: "Statistics added", category: "maintenance" };
+  }
+  if (changes.every((change) => change.action === "removed")) {
+    return { title: "Statistics removed", category: "maintenance" };
+  }
+  return { title: "Statistics updated", category: "maintenance" };
+};
+
+// With no recognized change, any property difference comes from the ignored keys, which describe it.
+const describeUnrecognizedChanges = (
+  previousFile: MetadataFileNode,
+  currentFile: MetadataFileNode,
+): DescribedChange[] => {
+  const ignoredPropertyChanges = describeIgnoredPropertyChanges(
+    previousFile.properties,
+    currentFile.properties,
+  );
+  const fieldTitles = diffMetadataFiles(previousFile, currentFile)
+    .filter((diff) => diff.key !== "properties")
+    .map((diff) => FIELD_TITLES[diff.key] ?? diff.key);
+  const changedFields =
+    fieldTitles.length === 0
+      ? []
+      : [sameTextChange(`Changed: ${fieldTitles.join(", ")}`)];
+  const changes = [...ignoredPropertyChanges, ...changedFields];
+  if (changes.length === 0) {
+    return [sameTextChange("No change in the fields IceGraph reads")];
+  }
+
+  return changes;
 };
 
 export const describeMetadataOnlyCommit = (
@@ -71,6 +113,10 @@ export const describeMetadataOnlyCommit = (
     currentFile.properties,
     previousFile.sort_order_id !== currentFile.sort_order_id,
   );
+  const statisticsChanges = describeStatisticsChanges(
+    previousFile,
+    currentFile,
+  );
   const expiryChanges = describeExpiredSnapshots(expiredSnapshotCount);
 
   const pickHeadline = (): Headline => {
@@ -94,10 +140,13 @@ export const describeMetadataOnlyCommit = (
     if (propertyChanges.length > 0) {
       return { title: "Settings changed", category: "quiet" };
     }
+    if (statisticsChanges.length > 0) {
+      return statisticsHeadline(statisticsChanges);
+    }
     if (expiryChanges.length > 0) {
       return { title: "History trimmed", category: "maintenance" };
     }
-    return { title: "Metadata updated", category: "quiet" };
+    return { title: UNRECOGNIZED_METADATA_TITLE, category: "quiet" };
   };
 
   const changes = [
@@ -106,15 +155,13 @@ export const describeMetadataOnlyCommit = (
     ...sortOrderChanges,
     ...refChanges,
     ...propertyChanges,
+    ...statisticsChanges,
     ...expiryChanges,
   ];
   const shownChanges =
     changes.length > 0
       ? changes
-      : describeIgnoredPropertyChanges(
-          previousFile.properties,
-          currentFile.properties,
-        );
+      : describeUnrecognizedChanges(previousFile, currentFile);
 
   return {
     kind: "metadata-only",

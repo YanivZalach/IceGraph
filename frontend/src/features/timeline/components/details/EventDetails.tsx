@@ -101,7 +101,13 @@ const EventDetails = ({ timeline, row }: EventDetailsProps) => {
           isVerbatim
         />
       )}
-      {details.rawDiff.length > 0 && <RawDiffSection diffs={details.rawDiff} />}
+      {details.rawDiff.length > 0 && (
+        <RawDiffSection
+          key={row.filePath}
+          diffs={details.rawDiff}
+          isOpenByDefault={details.isRawDiffOpenByDefault}
+        />
+      )}
     </div>
   );
 };

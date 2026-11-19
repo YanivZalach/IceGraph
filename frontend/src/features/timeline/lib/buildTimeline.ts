@@ -7,6 +7,7 @@ import type {
   SnapshotsById,
 } from "./classification/commitDescription";
 import { describeCommit } from "./classification/describeCommit";
+import { UNRECOGNIZED_METADATA_TITLE } from "./classification/describeMetadataOnlyCommit";
 import { writeHeadline } from "./classification/describeWriteCommit";
 import { findDraftPublication } from "./findDraftPublication";
 import { formatShortId } from "./format/formatShortId";
@@ -29,7 +30,7 @@ import {
 
 const DEGRADED_COMMIT: CommitDescription = {
   kind: "metadata-only",
-  title: "Metadata updated",
+  title: UNRECOGNIZED_METADATA_TITLE,
   category: "quiet",
   impactSegments: [],
   detailTexts: [],
