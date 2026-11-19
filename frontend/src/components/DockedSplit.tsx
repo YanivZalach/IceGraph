@@ -2,7 +2,7 @@ import { useSyncExternalStore } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
 import { Group, Panel, Separator } from "react-resizable-panels";
 import { PANEL_WIDTH_MIN_REM } from "../layoutConstants";
-import type { PanelAccentStyle } from "./SidePanelFrame";
+import { cn } from "../shared/lib/cn";
 
 const NARROW_SCREEN_QUERY = "(max-width: 767px)";
 const MAIN_MIN_SIZE = "30%";
@@ -23,7 +23,7 @@ const isNarrowScreen = (): boolean =>
   window.matchMedia(NARROW_SCREEN_QUERY).matches;
 
 interface DockedSplitProps {
-  accentColor?: string | undefined;
+  accentClassName?: string | undefined;
   className?: string;
   main: ReactNode;
   panelDefaultSize: string;
@@ -31,7 +31,7 @@ interface DockedSplitProps {
 }
 
 const DockedSplit = ({
-  accentColor = "var(--color-accent)",
+  accentClassName = "bg-accent",
   className,
   main,
   panelDefaultSize,
@@ -42,7 +42,6 @@ const DockedSplit = ({
     isNarrowScreen,
   );
   const orientation = isStacked ? "vertical" : "horizontal";
-  const style: PanelAccentStyle = { "--panel-accent": accentColor };
 
   const handleSeparatorKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (isStacked && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
@@ -51,7 +50,7 @@ const DockedSplit = ({
   };
 
   return (
-    <div className={className} style={style}>
+    <div className={className}>
       <Group orientation={orientation}>
         <Panel id="docked-split-main" minSize={MAIN_MIN_SIZE}>
           {main}
@@ -62,7 +61,10 @@ const DockedSplit = ({
               aria-label="Resize panel"
               title="Drag or use the arrow keys to resize"
               onKeyDown={handleSeparatorKeyDown}
-              className="bg-(--panel-accent) transition-[filter] aria-[orientation=horizontal]:h-panel-accent aria-[orientation=vertical]:w-panel-accent data-[separator=active]:brightness-150 data-[separator=focus]:hover:brightness-150 data-[separator=hover]:brightness-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-200"
+              className={cn(
+                "transition-[filter] aria-[orientation=horizontal]:h-panel-accent aria-[orientation=vertical]:w-panel-accent data-[separator=active]:brightness-150 data-[separator=focus]:hover:brightness-150 data-[separator=hover]:brightness-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-200",
+                accentClassName,
+              )}
             />
             <Panel
               key={orientation}

@@ -4,10 +4,6 @@ import { useHotkey } from "@tanstack/react-hotkeys";
 import { PANEL_ACCENT_BORDER_REM } from "../layoutConstants";
 import { cn } from "../shared/lib/cn";
 
-export interface PanelAccentStyle extends CSSProperties {
-  "--panel-accent": string;
-}
-
 type SidePanelVariant = "docked" | "floating";
 
 interface SidePanelFrameProps {

@@ -109,8 +109,10 @@ const TimelineContent = ({ timeline, table }: TimelineContentProps) => {
     <DockedSplit
       className="h-graph w-full min-h-0 flex-1 overflow-hidden bg-canvas"
       panelDefaultSize="35%"
-      accentColor={
-        selectedRow === null ? undefined : eventToneFor(selectedRow).color
+      accentClassName={
+        selectedRow === null
+          ? undefined
+          : eventToneFor(selectedRow).backgroundClass
       }
       main={
         <div className="h-full min-h-0 min-w-0 overflow-y-auto [scrollbar-gutter:stable]">
