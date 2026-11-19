@@ -1,6 +1,7 @@
 // Read docs/agents/frontend/timeline.md before changing this file or anything it calls.
 import type { MetadataFileNode, SnapshotRefs } from "../api/nodeSchemas";
 import type { TableMetadata } from "../api/tableMetadataSchema";
+import { buildBranchLanes } from "./buildBranchLanes";
 import { readSnapshotImpact } from "./impactSegment";
 import type {
   CommitDescription,
@@ -228,6 +229,11 @@ export const buildTimeline = (
         ),
   );
 
+  const branchGraph = buildBranchLanes(
+    sequence,
+    rowsOldestFirst,
+    snapshotsById,
+  );
   const oldestItem = sequence[0];
   const loadedButUnreadableOlderCount =
     oldestItem?.kind === "gap" ? oldestItem.files.length : 0;
@@ -246,5 +252,6 @@ export const buildTimeline = (
     filesByPath: new Map(
       filesOldestFirst.map((file) => [file.file_path, file]),
     ),
+    branchGraph,
   };
 };

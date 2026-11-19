@@ -1,3 +1,12 @@
+export const FIRST_LANE_X = 20;
+export const LANE_SPACING = 14;
+
+export const laneX = (lane: number): number =>
+  FIRST_LANE_X + lane * LANE_SPACING;
+
+export const railWidthFor = (laneCount: number): number =>
+  laneX(laneCount - 1) + FIRST_LANE_X;
+
 export const CELL_CLASS_BY_COLUMN: Record<string, string> = {
   rail: "relative w-10 min-w-10",
   commit: "w-px py-3.5 pr-6 whitespace-nowrap",

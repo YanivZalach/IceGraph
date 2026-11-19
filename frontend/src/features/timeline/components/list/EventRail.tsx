@@ -24,8 +24,8 @@ const EventRail = ({ marker, nodeClassName }: EventRailProps) => (
       <span
         className={cn(
           MARKER_POSITION_CLASS,
-          "size-2.5 rounded-full border-2 bg-surface",
-          marker === "draft" && "border-dashed",
+          "size-2.5 rounded-full border-2",
+          marker === "draft" ? "bg-white" : "bg-surface",
           nodeClassName ?? "border-accent",
         )}
       />
