@@ -16,7 +16,7 @@ Click a row, or focus it and press **Enter** or **Space**. Use **↑** and **↓
 
 - **Change summary** shows added and removed rows, files, and data sizes when available. **Table state** shows the before-and-after totals.
 - A link such as **View schema 3** opens Specs in Diff mode when it can compare the event’s before-and-after schemas. Use the diff to inspect nested changes within a column. Closing Specs returns to the selected event.
-- **Raw metadata diff** shows what changed. Expand **Raw JSON** for the stored values or **unchanged values** for entries that stayed the same.
+- **Raw metadata diff** shows each changed metadata field as a line diff: **-** lines hold the old values and **+** lines the new ones. Long fields show only the changed lines and their neighbors; select **All N lines** to see the whole field.
 - **View in graph** opens the event’s snapshot or metadata file in a new tab with the node selected and locked. A Spark job link appears when the snapshot includes one.
 
 ### Understand gaps

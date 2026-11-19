@@ -38,19 +38,6 @@ export const PANEL_STATUS_BADGE_CLASS =
 
 export const PANEL_EMPTY_MESSAGE_CLASS = UI_BODY_MUTED_ITALIC_CLASS;
 
-export const PANEL_DIFF_COMPARE_LABEL_CLASS = "text-xs font-semibold mb-0.5";
-
-export const PANEL_DIFF_BEFORE_LABEL_CLASS = `${PANEL_DIFF_COMPARE_LABEL_CLASS} text-red-400/90`;
-
-export const PANEL_DIFF_AFTER_LABEL_CLASS = `${PANEL_DIFF_COMPARE_LABEL_CLASS} text-green-400/90`;
-
-export const PANEL_DIFF_VALUE_BASE_CLASS =
-  "text-xs rounded p-2 pr-9 overflow-x-auto whitespace-pre-wrap break-all min-h-8";
-
-export const PANEL_DIFF_BEFORE_VALUE_CLASS = `${PANEL_DIFF_VALUE_BASE_CLASS} bg-red-950/30 border border-red-900/40 text-red-300`;
-
-export const PANEL_DIFF_AFTER_VALUE_CLASS = `${PANEL_DIFF_VALUE_BASE_CLASS} bg-green-950/30 border border-green-900/40 text-green-300`;
-
 export const DEFAULT_COLLAPSE_LINES = 15;
 
 interface PanelHeaderProps {

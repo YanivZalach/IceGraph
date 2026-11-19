@@ -62,6 +62,7 @@ const EventDetails = ({ timeline, row }: EventDetailsProps) => {
           key={rowData.label}
           label={rowData.label}
           value={rowData.value}
+          items={rowData.items}
         />
       ))}
       {schemaChange !== null && canLinkSchemaDiff && (
@@ -74,7 +75,7 @@ const EventDetails = ({ timeline, row }: EventDetailsProps) => {
           state={(previous) => ({ ...previous, ...SPECS_OVERLAY_STATE })}
           className="block font-mono text-xs break-all text-accent hover:text-accent-dark"
         >
-          View schema {schemaChange.after}
+          View schema {schemaChange.after} ↗
         </Link>
       )}
       {hasThisChange && (

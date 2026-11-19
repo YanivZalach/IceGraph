@@ -1,21 +1,17 @@
 import type { FieldDiff } from "./diffMetadataFiles";
 
-export type DiffEntryStatus = "added" | "removed" | "changed" | "unchanged";
+export type DiffLineTone = "removed" | "added" | "same";
 
-export interface DiffEntry {
-  label: string;
-  status: DiffEntryStatus;
-  before: string | null;
-  after: string | null;
+export interface DiffLine {
+  tone: DiffLineTone;
+  text: string;
 }
 
 export interface DescribedFieldDiff {
   key: string;
-  title: string;
-  changedEntries: DiffEntry[];
-  unchangedEntries: DiffEntry[];
-  rawBefore: string;
-  rawAfter: string;
+  openBracket: string | null;
+  closeBracket: string | null;
+  lines: DiffLine[];
 }
 
 export const FIELD_TITLES: Record<string, string> = {
@@ -31,153 +27,131 @@ export const FIELD_TITLES: Record<string, string> = {
   pointed_partition_statistics_files: "Partition statistics",
 };
 
-const LABEL_SEPARATOR = " · ";
-const EMPTY_RAW_VALUE = "–";
-
-const joinLabel = (prefix: string, part: string): string =>
-  prefix === "" ? part : `${prefix}${LABEL_SEPARATOR}${part}`;
-
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
-const leafText = (value: unknown): string => {
-  if (typeof value === "string") {
-    return value;
-  }
-  if (
-    typeof value === "number" ||
-    typeof value === "bigint" ||
-    typeof value === "boolean"
-  ) {
-    return value.toString();
-  }
-  return JSON.stringify(value);
-};
+const isMissing = (value: unknown): boolean =>
+  value === null || value === undefined;
 
-const arrayItemLabel = (item: unknown, index: number): string => {
-  if (isRecord(item) && typeof item["snapshot-id"] === "string") {
-    return `snapshot ${item["snapshot-id"]}`;
-  }
-  return `#${index.toString()}`;
-};
+const valueText = (value: unknown): string =>
+  isMissing(value)
+    ? "null"
+    : typeof value === "string"
+      ? value
+      : JSON.stringify(value);
 
-/** Every leaf keeps its exact text, so the readable view carries the same facts as the JSON. */
-const flattenLeaves = (
-  value: unknown,
-  prefix: string,
-  leaves: Map<string, string>,
-): void => {
-  if (value === null || value === undefined) {
-    if (prefix !== "") {
-      leaves.set(prefix, "null");
+const listLines = (before: unknown[], after: unknown[]): DiffLine[] => {
+  const beforeKeys = before.map((item) => JSON.stringify(item));
+  const afterKeys = after.map((item) => JSON.stringify(item));
+  const n = beforeKeys.length;
+  const m = afterKeys.length;
+  const width = m + 1;
+  // common[i * width + j] is the longest common run of beforeKeys[i:] and afterKeys[j:].
+  const common = new Array<number>((n + 1) * width).fill(0);
+  const commonAt = (i: number, j: number): number => common[i * width + j] ?? 0;
+  for (let i = n - 1; i >= 0; i--) {
+    for (let j = m - 1; j >= 0; j--) {
+      common[i * width + j] =
+        beforeKeys[i] === afterKeys[j]
+          ? commonAt(i + 1, j + 1) + 1
+          : Math.max(commonAt(i + 1, j), commonAt(i, j + 1));
     }
-    return;
   }
-  if (Array.isArray(value)) {
-    const usedLabels = new Set<string>();
-    value.forEach((item, index) => {
-      const itemLabel = arrayItemLabel(item, index);
-      const uniqueLabel = usedLabels.has(itemLabel)
-        ? `${itemLabel} #${index.toString()}`
-        : itemLabel;
-      usedLabels.add(uniqueLabel);
-      flattenLeaves(item, joinLabel(prefix, uniqueLabel), leaves);
-    });
-    return;
-  }
-  if (isRecord(value)) {
-    for (const [key, child] of Object.entries(value)) {
-      flattenLeaves(child, joinLabel(prefix, key), leaves);
+
+  const lines: DiffLine[] = [];
+  let i = 0;
+  let j = 0;
+  while (i < n || j < m) {
+    const beforeKey = beforeKeys[i];
+    const afterKey = afterKeys[j];
+    if (beforeKey !== undefined && beforeKey === afterKey) {
+      lines.push({ tone: "same", text: beforeKey });
+      i++;
+      j++;
+    } else if (
+      beforeKey !== undefined &&
+      (afterKey === undefined || commonAt(i + 1, j) >= commonAt(i, j + 1))
+    ) {
+      lines.push({ tone: "removed", text: beforeKey });
+      i++;
+    } else if (afterKey !== undefined) {
+      lines.push({ tone: "added", text: afterKey });
+      j++;
     }
-    return;
   }
-  leaves.set(prefix, leafText(value));
+
+  return lines;
 };
 
-const leavesOf = (value: unknown): Map<string, string> => {
-  const leaves = new Map<string, string>();
-  const isScalar =
-    value === null || value === undefined || typeof value !== "object";
-  if (isScalar) {
-    if (value !== null && value !== undefined) {
-      leaves.set("", leafText(value));
+const objectLines = (
+  before: Record<string, unknown>,
+  after: Record<string, unknown>,
+): DiffLine[] => {
+  const keys = [
+    ...new Set([...Object.keys(before), ...Object.keys(after)]),
+  ].sort();
+  const lines: DiffLine[] = [];
+  for (const key of keys) {
+    const beforeText = key in before ? JSON.stringify(before[key]) : null;
+    const afterText = key in after ? JSON.stringify(after[key]) : null;
+    if (beforeText === afterText) {
+      lines.push({ tone: "same", text: `"${key}": ${beforeText ?? ""}` });
+      continue;
     }
-    return leaves;
+    if (beforeText !== null) {
+      lines.push({ tone: "removed", text: `"${key}": ${beforeText}` });
+    }
+    if (afterText !== null) {
+      lines.push({ tone: "added", text: `"${key}": ${afterText}` });
+    }
   }
-  flattenLeaves(value, "", leaves);
-  return leaves;
+
+  return lines;
 };
 
-export const formatRawValue = (value: unknown): string => {
-  if (value === null || value === undefined) {
-    return EMPTY_RAW_VALUE;
-  }
-  if (typeof value === "string") {
-    return value;
-  }
-  if (typeof value === "number" || typeof value === "boolean") {
-    return value.toString();
-  }
-  return JSON.stringify(value, null, 2);
-};
+const scalarLines = (before: unknown, after: unknown): DiffLine[] => [
+  { tone: "removed", text: valueText(before) },
+  { tone: "added", text: valueText(after) },
+];
 
-const statusOf = (
-  before: string | undefined,
-  after: string | undefined,
-): DiffEntryStatus => {
-  if (before === undefined) {
-    return "added";
-  }
-  if (after === undefined) {
-    return "removed";
-  }
-  return before === after ? "unchanged" : "changed";
-};
+const hasChange = (lines: DiffLine[]): boolean =>
+  lines.some((line) => line.tone !== "same");
 
+// A missing list or object compares as an empty one, unless that hides the change (null to []).
 export const describeFieldDiff = (diff: FieldDiff): DescribedFieldDiff => {
-  const beforeLeaves = leavesOf(diff.before);
-  const afterLeaves = leavesOf(diff.after);
-  const labels = [
-    ...afterLeaves.keys(),
-    ...[...beforeLeaves.keys()].filter((label) => !afterLeaves.has(label)),
-  ];
-
-  const changedEntries: DiffEntry[] = [];
-  const unchangedEntries: DiffEntry[] = [];
-  for (const label of labels) {
-    const before = beforeLeaves.get(label);
-    const after = afterLeaves.get(label);
-    const entry: DiffEntry = {
-      label,
-      status: statusOf(before, after),
-      before: before ?? null,
-      after: after ?? null,
-    };
-    if (entry.status === "unchanged") {
-      unchangedEntries.push(entry);
-    } else {
-      changedEntries.push(entry);
+  const { key, before, after } = diff;
+  const isList =
+    (Array.isArray(before) || isMissing(before)) &&
+    (Array.isArray(after) || isMissing(after)) &&
+    !(isMissing(before) && isMissing(after));
+  if (isList) {
+    const lines = listLines(
+      Array.isArray(before) ? before : [],
+      Array.isArray(after) ? after : [],
+    );
+    if (hasChange(lines)) {
+      return { key, openBracket: "[", closeBracket: "]", lines };
     }
   }
 
-  const rawBefore = formatRawValue(diff.before);
-  const rawAfter = formatRawValue(diff.after);
-  // An empty value replaced by another empty one ({} to null) has no leaves to compare.
-  if (changedEntries.length === 0) {
-    changedEntries.push({
-      label: "",
-      status: "changed",
-      before: rawBefore,
-      after: rawAfter,
-    });
+  const isObject =
+    (isRecord(before) || isMissing(before)) &&
+    (isRecord(after) || isMissing(after)) &&
+    !(isMissing(before) && isMissing(after));
+  if (isObject) {
+    const lines = objectLines(
+      isRecord(before) ? before : {},
+      isRecord(after) ? after : {},
+    );
+    if (hasChange(lines)) {
+      return { key, openBracket: "{", closeBracket: "}", lines };
+    }
   }
 
   return {
-    key: diff.key,
-    title: FIELD_TITLES[diff.key] ?? diff.key,
-    changedEntries,
-    unchangedEntries,
-    rawBefore,
-    rawAfter,
+    key,
+    openBracket: null,
+    closeBracket: null,
+    lines: scalarLines(before, after),
   };
 };

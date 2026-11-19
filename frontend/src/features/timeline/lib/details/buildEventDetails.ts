@@ -113,7 +113,11 @@ const eventRows = (
   }
 
   if (row.details.length > 0) {
-    rows.push({ label: "Changes", value: row.details.join("\n") });
+    rows.push({
+      label: "Changes",
+      value: "",
+      items: row.details,
+    });
   }
 
   if (row.isDraftPublishedLater && row.publishedAtMs !== null) {
