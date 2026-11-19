@@ -1,7 +1,7 @@
 import CopyIconButton from "../../../../components/CopyIconButton";
 import { cn } from "../../../../shared/lib/cn";
 import { UI_FIELD_LABEL_CLASS } from "../../../../uiTypography";
-import type { DetailRowData } from "../../lib/details/buildEventDetails";
+import type { DetailRowData } from "../../lib/details/detailRowData";
 import { humanizeLabel, humanizeValue } from "../../lib/format/humanizeSummary";
 import { SECTION_TITLE_CLASS } from "./sectionTitleClass";
 

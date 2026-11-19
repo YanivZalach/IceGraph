@@ -1,4 +1,6 @@
 import type { MetadataFileNode, SnapshotNode } from "../api/nodeSchemas";
+import type { CommitCategory } from "./classification/commitDescription";
+import { formatUnreadableEvents } from "./format/formatUnreadableEvents";
 import type { ImpactSegment } from "./impactSegment";
 
 export interface RefBadge {
@@ -8,23 +10,26 @@ export interface RefBadge {
 
 export interface UnreadableFileSummary {
   path: string;
+  timestampMs: number;
   reasons: string[];
 }
 
-export interface TimelineRow {
+export interface CommitRow {
   kind:
     | "published-write"
     | "draft-write"
     | "re-point"
     | "metadata-only"
-    | "boundary";
+    | "unknown-change";
   title: string;
+  category: CommitCategory;
   impact: ImpactSegment[];
   details: string[];
   repointTargetId: string | null;
   shortId: string;
   snapshotId: string | null;
   filePath: string;
+  previousFilePath: string | null;
   timestampMs: number;
   badges: RefBadge[];
   branchName: string | null;
@@ -32,9 +37,34 @@ export interface TimelineRow {
   isDraftPublishedLater: boolean;
   publishedAsSnapshotId: string | null;
   publishedAtMs: number | null;
-  unreadableCommitsBefore: number;
-  unreadableFilesBefore: UnreadableFileSummary[];
 }
+
+/** `filePath` and `timestampMs` are its newest file's. */
+export interface GapRow {
+  kind: "gap";
+  filePath: string;
+  timestampMs: number;
+  unreadableFiles: UnreadableFileSummary[];
+}
+
+/** The oldest loaded file when older events exist: its change cannot be seen. */
+export interface BoundaryRow {
+  kind: "boundary";
+  filePath: string;
+  timestampMs: number;
+}
+
+export type SelectableRow = CommitRow | GapRow;
+
+export type TimelineRow = SelectableRow | BoundaryRow;
+
+export const isSelectableRow = (row: TimelineRow): row is SelectableRow =>
+  row.kind !== "boundary";
+
+export const titleOf = (row: SelectableRow): string =>
+  row.kind === "gap"
+    ? formatUnreadableEvents(row.unreadableFiles.length)
+    : row.title;
 
 export interface TimelineData {
   rows: TimelineRow[];
@@ -45,15 +75,22 @@ export interface TimelineData {
   filesByPath: ReadonlyMap<string, MetadataFileNode>;
 }
 
-export const boundaryRow = (file: MetadataFileNode): TimelineRow => ({
+export const toBoundaryRow = (file: MetadataFileNode): BoundaryRow => ({
   kind: "boundary",
-  title: "",
+  filePath: file.file_path,
+  timestampMs: file.timestamp,
+});
+
+export const commitRowDefaults = (
+  file: MetadataFileNode,
+): Omit<CommitRow, "kind" | "title" | "category"> => ({
   impact: [],
   details: [],
   repointTargetId: null,
   shortId: "",
   snapshotId: null,
   filePath: file.file_path,
+  previousFilePath: null,
   timestampMs: file.timestamp,
   badges: [],
   branchName: null,
@@ -61,6 +98,4 @@ export const boundaryRow = (file: MetadataFileNode): TimelineRow => ({
   isDraftPublishedLater: false,
   publishedAsSnapshotId: null,
   publishedAtMs: null,
-  unreadableCommitsBefore: 0,
-  unreadableFilesBefore: [],
 });
