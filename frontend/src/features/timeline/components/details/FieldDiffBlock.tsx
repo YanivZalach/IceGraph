@@ -27,7 +27,6 @@ type VisibleItem =
   | { kind: "line"; index: number; line: DiffLine }
   | { kind: "gap"; index: number; count: number };
 
-/** Keeps changed lines and a little context around them, like a git hunk. */
 const changesWithContext = (lines: DiffLine[]): VisibleItem[] => {
   const isShown = lines.map(() => false);
   lines.forEach((line, index) => {

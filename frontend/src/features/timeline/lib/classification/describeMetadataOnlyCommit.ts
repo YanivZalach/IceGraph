@@ -58,7 +58,6 @@ const statisticsHeadline = (changes: StatisticsChange[]): Headline => {
   return { title: "Statistics updated", category: "maintenance" };
 };
 
-// With no recognized change, any property difference comes from the ignored keys, which describe it.
 const describeUnrecognizedChanges = (
   previousFile: MetadataFileNode,
   currentFile: MetadataFileNode,

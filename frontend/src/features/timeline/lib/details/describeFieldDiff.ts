@@ -40,13 +40,12 @@ const valueText = (value: unknown): string =>
       ? value
       : JSON.stringify(value);
 
-const listLines = (before: unknown[], after: unknown[]): DiffLine[] => {
-  const beforeKeys = before.map((item) => JSON.stringify(item));
-  const afterKeys = after.map((item) => JSON.stringify(item));
+const MAX_LCS_CELLS = 250_000;
+
+const lcsLines = (beforeKeys: string[], afterKeys: string[]): DiffLine[] => {
   const n = beforeKeys.length;
   const m = afterKeys.length;
   const width = m + 1;
-  // common[i * width + j] is the longest common run of beforeKeys[i:] and afterKeys[j:].
   const common = new Array<number>((n + 1) * width).fill(0);
   const commonAt = (i: number, j: number): number => common[i * width + j] ?? 0;
   for (let i = n - 1; i >= 0; i--) {
@@ -81,6 +80,79 @@ const listLines = (before: unknown[], after: unknown[]): DiffLine[] => {
   }
 
   return lines;
+};
+
+// Too large for an exact diff: a linear pass that still lists every item once.
+const linearLines = (beforeKeys: string[], afterKeys: string[]): DiffLine[] => {
+  const beforeSet = new Set(beforeKeys);
+  const afterSet = new Set(afterKeys);
+  const lines: DiffLine[] = [];
+  let i = 0;
+  let j = 0;
+  while (i < beforeKeys.length || j < afterKeys.length) {
+    const beforeKey = beforeKeys[i];
+    const afterKey = afterKeys[j];
+    if (beforeKey !== undefined && beforeKey === afterKey) {
+      lines.push({ tone: "same", text: beforeKey });
+      i++;
+      j++;
+    } else if (
+      beforeKey !== undefined &&
+      (afterKey === undefined || !afterSet.has(beforeKey))
+    ) {
+      lines.push({ tone: "removed", text: beforeKey });
+      i++;
+    } else if (
+      afterKey !== undefined &&
+      (beforeKey === undefined || !beforeSet.has(afterKey))
+    ) {
+      lines.push({ tone: "added", text: afterKey });
+      j++;
+    } else if (beforeKey !== undefined && afterKey !== undefined) {
+      lines.push({ tone: "removed", text: beforeKey });
+      lines.push({ tone: "added", text: afterKey });
+      i++;
+      j++;
+    }
+  }
+
+  return lines;
+};
+
+const listLines = (before: unknown[], after: unknown[]): DiffLine[] => {
+  const beforeKeys = before.map((item) => JSON.stringify(item));
+  const afterKeys = after.map((item) => JSON.stringify(item));
+  let start = 0;
+  while (
+    start < beforeKeys.length &&
+    start < afterKeys.length &&
+    beforeKeys[start] === afterKeys[start]
+  ) {
+    start++;
+  }
+  let end = 0;
+  while (
+    end < beforeKeys.length - start &&
+    end < afterKeys.length - start &&
+    beforeKeys[beforeKeys.length - 1 - end] ===
+      afterKeys[afterKeys.length - 1 - end]
+  ) {
+    end++;
+  }
+
+  const middleBefore = beforeKeys.slice(start, beforeKeys.length - end);
+  const middleAfter = afterKeys.slice(start, afterKeys.length - end);
+  const middle =
+    (middleBefore.length + 1) * (middleAfter.length + 1) > MAX_LCS_CELLS
+      ? linearLines(middleBefore, middleAfter)
+      : lcsLines(middleBefore, middleAfter);
+  const same = (text: string): DiffLine => ({ tone: "same", text });
+
+  return [
+    ...beforeKeys.slice(0, start).map(same),
+    ...middle,
+    ...beforeKeys.slice(beforeKeys.length - end).map(same),
+  ];
 };
 
 const objectLines = (
