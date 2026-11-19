@@ -1,7 +1,7 @@
 import { cn } from "../../../../shared/lib/cn";
 import type { TimelineRow } from "../../lib/timelineRow";
 import { CHIP_BASE_CLASS } from "../Chip";
-import { eventToneFor, type BranchAccent } from "../eventColor";
+import type { BranchAccent } from "../eventColor";
 
 interface CommitCellProps {
   row: TimelineRow;
@@ -11,7 +11,7 @@ interface CommitCellProps {
 const CommitCell = ({ row, branchAccents }: CommitCellProps) => {
   if (row.kind === "boundary") {
     return (
-      <span className="text-xs text-slate-500 italic">
+      <span className="text-base text-slate-300 italic">
         start of loaded range
       </span>
     );
@@ -23,11 +23,7 @@ const CommitCell = ({ row, branchAccents }: CommitCellProps) => {
         <span className={cn(CHIP_BASE_CLASS, branchAccents.get("main")?.chip)}>
           main
         </span>
-        <span
-          className={cn("text-sm font-medium", eventToneFor(row).textClass)}
-        >
-          moved to
-        </span>
+        <span className="text-xl text-ink">moved to</span>
         <span
           className={cn(
             CHIP_BASE_CLASS,
@@ -46,12 +42,7 @@ const CommitCell = ({ row, branchAccents }: CommitCellProps) => {
 
   return (
     <span className="flex items-center gap-2">
-      <span
-        className={cn(
-          "max-w-72 truncate text-sm font-medium",
-          eventToneFor(row).textClass,
-        )}
-      >
+      <span className="max-w-[28rem] truncate text-xl font-medium text-ink">
         {row.title}
       </span>
       {accent !== undefined && (

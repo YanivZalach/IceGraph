@@ -54,22 +54,21 @@ export const branchAccentsByName = (
 };
 
 interface Tone {
-  textClass: string;
   color: string;
 }
 
-const tone = (textClass: string, color: string): Tone => ({ textClass, color });
+const tone = (color: string): Tone => ({ color });
 
-const DATA_ADDED_TONE = tone("text-emerald-300", "var(--color-emerald-300)");
-const DATA_REMOVED_TONE = tone("text-rose-300", "var(--color-rose-300)");
-const DATA_REPLACED_TONE = tone("text-amber-300", "var(--color-amber-300)");
-const UNPUBLISHED_TONE = tone("text-sky-300", "var(--color-sky-300)");
-const MAINTENANCE_TONE = tone("text-cyan-300", "var(--color-cyan-300)");
-const DEFINITION_TONE = tone("text-violet-300", "var(--color-violet-300)");
-const REFERENCE_TONE = tone("text-indigo-300", "var(--color-indigo-300)");
-const ROLLBACK_TONE = tone("text-orange-300", "var(--color-orange-300)");
-const QUIET_TONE = tone("text-slate-300", "var(--color-slate-300)");
-const DEFAULT_TONE = tone("text-ink", "var(--color-ink)");
+const DATA_ADDED_TONE = tone("var(--color-emerald-300)");
+const DATA_REMOVED_TONE = tone("var(--color-rose-300)");
+const DATA_REPLACED_TONE = tone("var(--color-amber-300)");
+const UNPUBLISHED_TONE = tone("var(--color-sky-300)");
+const MAINTENANCE_TONE = tone("var(--color-cyan-300)");
+const DEFINITION_TONE = tone("var(--color-violet-300)");
+const REFERENCE_TONE = tone("var(--color-indigo-300)");
+const ROLLBACK_TONE = tone("var(--color-orange-300)");
+const QUIET_TONE = tone("var(--color-slate-300)");
+const DEFAULT_TONE = tone("var(--color-ink)");
 
 const TITLE_TONES: Record<string, Tone> = {
   "Data added": DATA_ADDED_TONE,
@@ -94,10 +93,6 @@ const TITLE_TONES: Record<string, Tone> = {
   "No data changed": QUIET_TONE,
 };
 
-/**
- * Each kind of change reads in its own light tone, bright enough to stay readable on the card.
- * The list title and the details panel share it, so a row keeps its color when opened.
- */
 export const eventToneFor = (row: TimelineRow): Tone => {
   if (row.movedToBranchName !== null) {
     return REFERENCE_TONE;

@@ -4,7 +4,7 @@ import {
   resolveSpecSelection,
   useTableSpecs,
 } from "../../../specs/tableSpecs";
-import { cn } from "../../../../shared/lib/cn";
+import PanelIssueNotice from "../../../../components/PanelIssueNotice";
 import { buildEventDetails } from "../../lib/details/buildEventDetails";
 import type { TimelineData, TimelineRow } from "../../lib/timelineRow";
 import BeforeAfterSection from "./BeforeAfterSection";
@@ -31,24 +31,19 @@ const EventDetails = ({ timeline, row }: EventDetailsProps) => {
           kind: "schema",
           id: schemaChange.after,
         });
+  const noticeTexts = (kind: "error" | "warning"): string[] =>
+    details.notices
+      .filter((notice) => notice.kind === kind)
+      .map((notice) => notice.text);
   const hasThisChange =
     details.thisChange.counts.length > 0 || details.thisChange.rest.length > 0;
 
   return (
     <div className="flex flex-col gap-4">
-      {details.notices.map((notice) => (
-        <p
-          key={notice.text}
-          className={cn(
-            "rounded border px-3 py-2 text-xs break-words whitespace-pre-line",
-            notice.kind === "error"
-              ? "border-red-500/40 bg-red-500/10 text-red-300"
-              : "border-amber-500/40 bg-amber-500/10 text-amber-300",
-          )}
-        >
-          {notice.text}
-        </p>
-      ))}
+      <PanelIssueNotice type="error">{noticeTexts("error")}</PanelIssueNotice>
+      <PanelIssueNotice type="warning">
+        {noticeTexts("warning")}
+      </PanelIssueNotice>
       <ViewInGraphButtons
         snapshotFilePath={details.snapshotFilePath}
         metadataFilePath={details.metadataFile.path}
@@ -59,7 +54,7 @@ const EventDetails = ({ timeline, row }: EventDetailsProps) => {
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Open the Spark job page in a new tab"
-          className="block font-mono text-xs break-all text-accent hover:text-accent-dark"
+          className="block font-mono text-xs break-all text-accent-text hover:underline"
         >
           {details.actionLink} ↗
         </a>
@@ -87,7 +82,7 @@ const EventDetails = ({ timeline, row }: EventDetailsProps) => {
               spec_view: "diff",
             })}
             state={(previous) => ({ ...previous, specsOverlay: true })}
-            className="block font-mono text-xs break-all text-accent hover:text-accent-dark"
+            className="block font-mono text-sm break-all text-accent-text hover:underline"
           >
             View schema {schemaChange.after}
           </Link>

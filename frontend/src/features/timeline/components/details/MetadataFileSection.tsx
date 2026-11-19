@@ -1,6 +1,6 @@
 import CopyIconButton from "../../../../components/CopyIconButton";
 import { cn } from "../../../../shared/lib/cn";
-import { UI_FIELD_LABEL_CLASS } from "../../../../uiTypography";
+import { PANEL_FIELD_LABEL_CLASS } from "../../../../components/PanelContent";
 import type { MetadataFileData } from "../../lib/details/buildEventDetails";
 import { SECTION_TITLE_CLASS } from "./sectionTitleClass";
 
@@ -17,10 +17,15 @@ const MetadataFileSection = ({ data }: MetadataFileSectionProps) => (
       {[{ label: "Path", value: data.path }, ...data.linkedPaths].map(
         (linkedPath) => (
           <div key={linkedPath.label}>
-            <span className={cn(UI_FIELD_LABEL_CLASS, "normal-case")}>
+            <span
+              className={cn(
+                PANEL_FIELD_LABEL_CLASS,
+                "text-slate-400 normal-case",
+              )}
+            >
               {linkedPath.label}
             </span>
-            <span className="mt-1 flex items-center gap-1.5 rounded bg-canvas px-2 py-0.5 font-mono text-xs break-all text-slate-200">
+            <span className="mt-1 flex items-center gap-1.5 rounded bg-canvas px-2 py-0.5 font-mono text-sm break-all text-slate-200">
               {linkedPath.value}
               <CopyIconButton text={linkedPath.value} />
             </span>
@@ -31,12 +36,17 @@ const MetadataFileSection = ({ data }: MetadataFileSectionProps) => (
         {data.stats.map((stat) => (
           <div
             key={stat.label}
-            className="flex items-center justify-between gap-x-3 border-b border-edge/50 py-1.5 nth-last-[-n+2]:border-0"
+            className="flex items-center justify-between gap-x-3 border-b border-edge py-1.5 nth-last-[-n+2]:border-0"
           >
-            <span className={cn(UI_FIELD_LABEL_CLASS, "normal-case")}>
+            <span
+              className={cn(
+                PANEL_FIELD_LABEL_CLASS,
+                "text-slate-400 normal-case",
+              )}
+            >
               {stat.label}
             </span>
-            <span className="rounded bg-canvas px-2 py-0.5 font-mono text-xs text-slate-200">
+            <span className="rounded bg-canvas px-2 py-0.5 font-mono text-sm text-slate-200">
               {stat.value === "" ? "—" : stat.value}
             </span>
           </div>

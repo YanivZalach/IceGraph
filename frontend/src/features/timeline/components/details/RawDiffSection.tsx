@@ -19,7 +19,7 @@ const RawDiffSection = ({ diffs }: RawDiffSectionProps) => {
     <details>
       <summary className={`${SECTION_TITLE_CLASS} cursor-pointer`}>
         Raw metadata diff
-        <span className="ml-2 text-xs font-normal tracking-normal text-slate-500 normal-case">
+        <span className="ml-2 text-sm font-normal tracking-normal text-slate-300 normal-case">
           {countText(diffs.length, "field")} changed
         </span>
       </summary>

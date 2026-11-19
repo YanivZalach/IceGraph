@@ -19,7 +19,7 @@ const KindFilterSegments = ({
   <div
     role="group"
     aria-label="Filter by event kind"
-    className="flex rounded-lg border border-edge bg-surface p-0.5"
+    className="flex overflow-hidden rounded-lg border border-edge"
   >
     {KIND_FILTER_OPTIONS.map((option) => (
       <button
@@ -30,10 +30,10 @@ const KindFilterSegments = ({
           onKindFilterChange(option.value);
         }}
         className={cn(
-          "cursor-pointer rounded-md px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-accent",
+          "cursor-pointer border-edge px-4 py-2 text-lg transition-colors not-first:border-l focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent",
           kindFilter === option.value
-            ? "bg-accent-muted text-ink"
-            : "text-slate-400 hover:bg-surface-hover hover:text-slate-200",
+            ? "bg-accent text-white focus-visible:outline-white"
+            : "bg-canvas text-slate-400 hover:text-ink",
         )}
       >
         {option.label}

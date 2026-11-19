@@ -4,7 +4,7 @@ import { CHIP_BASE_CLASS } from "../Chip";
 import type { BranchAccent } from "../eventColor";
 import ImpactCount from "./ImpactCount";
 
-const TAG_CHIP_CLASS = "bg-slate-500/15 text-slate-300";
+const TAG_CHIP_CLASS = "bg-edge text-slate-300";
 
 interface ImpactLineProps {
   segments: ImpactSegment[];

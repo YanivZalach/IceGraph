@@ -6,10 +6,10 @@ interface DiffEntryRowProps {
 }
 
 const VALUE_CLASS =
-  "min-w-0 rounded px-1.5 py-0.5 font-mono text-xs break-all whitespace-pre-wrap";
+  "min-w-0 rounded px-1.5 py-0.5 font-mono text-sm break-all whitespace-pre-wrap";
 const BEFORE_CLASS = "bg-red-500/10 text-red-300";
 const AFTER_CLASS = "bg-green-500/10 text-green-300";
-const UNCHANGED_CLASS = "bg-canvas text-slate-300";
+const UNCHANGED_CLASS = "bg-canvas text-slate-200";
 
 const STATUS_MARK = {
   added: "+",
@@ -23,7 +23,7 @@ const DiffEntryRow = ({ entry }: DiffEntryRowProps) => (
     <span
       aria-label={entry.status}
       className={cn(
-        "pt-0.5 text-center font-mono text-xs",
+        "pt-0.5 text-center font-mono text-sm",
         entry.status === "added" && "text-green-400",
         entry.status === "removed" && "text-red-400",
         entry.status === "changed" && "text-amber-300",
@@ -34,7 +34,7 @@ const DiffEntryRow = ({ entry }: DiffEntryRowProps) => (
     </span>
     <div className="flex min-w-0 flex-col gap-1">
       {entry.label !== "" && (
-        <span className="font-mono text-xs break-all text-slate-400">
+        <span className="font-mono text-sm break-all text-slate-200">
           {entry.label}
         </span>
       )}
