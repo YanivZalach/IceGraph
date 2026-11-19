@@ -1,4 +1,4 @@
-import type { TimelineRow } from "./timelineRow";
+import { isSelectableRow, type TimelineRow } from "./timelineRow";
 
 const STEP_BY_KEY = { ArrowDown: 1, ArrowUp: -1 } as const;
 
@@ -8,7 +8,7 @@ export const selectionAfterArrowKey = (
   rememberedFilePath: string | null,
   key: "ArrowDown" | "ArrowUp",
 ): string | null => {
-  const selectableRows = rows.filter((row) => row.kind !== "boundary");
+  const selectableRows = rows.filter(isSelectableRow);
 
   const newestRow = selectableRows[0];
   const isTimelineEmpty = newestRow === undefined;

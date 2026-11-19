@@ -63,6 +63,13 @@ export const snapshotNodeSchema = z.object({
 
 export const nodeTypeSchema = z.object({ type: z.string() });
 
+export const unreadableMetadataFileSchema = z.object({
+  file_path: z.string(),
+  previous_file: z.string().nullish(),
+  timestamp: utcTimestampSchema,
+  errors: z.array(z.string()).catch([]),
+});
+
 export type MetadataFileNode = z.infer<typeof metadataFileNodeSchema>;
 export type SnapshotNode = z.infer<typeof snapshotNodeSchema>;
 export type SnapshotSummary = SnapshotNode["summary"];

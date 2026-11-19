@@ -2,6 +2,7 @@ import type { SnapshotReference } from "../../api/snapshotReferenceSchema";
 import type { SnapshotRefs } from "../../api/nodeSchemas";
 import { sameTextChange, type DescribedChange } from "./describedChange";
 import { formatDurationMs } from "../format/formatDuration";
+import { formatShortId } from "../format/formatShortId";
 
 const refChange = (
   refType: "branch" | "tag",
@@ -76,13 +77,15 @@ export const describeRefChanges = (
       currentRef.type === "branch" &&
       currentRef["snapshot-id"] === rowSnapshotId;
     if (hasMoved && !isTheRowsOwnBranchMove) {
-      changes.push(
-        refChange(
+      const targetId = currentRef["snapshot-id"];
+      changes.push({
+        ...refChange(
           currentRef.type,
           name,
-          `moved to snapshot ${currentRef["snapshot-id"]}`,
+          `moved to snapshot ${formatShortId(targetId)}`,
         ),
-      );
+        detail: `${currentRef.type} ${name} moved to snapshot ${targetId}`,
+      });
     }
 
     const retentionChange = describeRetentionChange(

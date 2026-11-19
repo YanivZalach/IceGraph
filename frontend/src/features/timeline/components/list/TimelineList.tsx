@@ -46,14 +46,18 @@ const TimelineList = ({
     getRowId: (row) => row.filePath,
   });
 
-  const hasEventRows = timeline.rows.some((row) => row.kind !== "boundary");
-  if (!hasEventRows) {
-    return (
-      <TimelineEmptyState
-        tableName={table}
-        unreadableCommitCount={timeline.unreadableCommitCount}
-      />
-    );
+  const hasReadableEvents = timeline.rows.some(
+    (row) => row.kind !== "boundary" && row.kind !== "gap",
+  );
+  const emptyState = !hasReadableEvents && (
+    <TimelineEmptyState
+      tableName={table}
+      unreadableCommitCount={timeline.unreadableCommitCount}
+    />
+  );
+  const hasGapRows = timeline.rows.some((row) => row.kind === "gap");
+  if (!hasReadableEvents && !hasGapRows) {
+    return emptyState;
   }
 
   const hasMatches = rows.length > 0;
@@ -77,6 +81,7 @@ const TimelineList = ({
 
   return (
     <div className="flex flex-col gap-3">
+      {emptyState}
       <div className="overflow-hidden rounded-xl border border-edge bg-surface">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[36rem]">

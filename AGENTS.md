@@ -51,6 +51,8 @@ Instructions for coding agents working in IceGraph.
 - Before frontend work, read
   [`docs/agents/frontend/development.md`](docs/agents/frontend/development.md) and
   [`docs/agents/frontend/philosophy.md`](docs/agents/frontend/philosophy.md).
+- Before changing `frontend/src/features/timeline/`, also read
+  [`docs/agents/frontend/timeline.md`](docs/agents/frontend/timeline.md).
 - User-visible frontend behavior changes require the relevant Docs page content to be updated.
 - Frontend route, path parameter, query parameter, or deep-link changes require
   `claude-plugin/skills/icegraph/SKILL.md` to be updated.

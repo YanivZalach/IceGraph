@@ -1,3 +1,4 @@
+// Read docs/agents/frontend/timeline.md before changing this file or anything it calls.
 import type { MetadataFileNode, SnapshotRefs } from "../api/nodeSchemas";
 import type { TableMetadata } from "../api/tableMetadataSchema";
 import { readSnapshotImpact } from "./impactSegment";
@@ -6,22 +7,30 @@ import type {
   SnapshotsById,
 } from "./classification/commitDescription";
 import { describeCommit } from "./classification/describeCommit";
-import { writeTitle } from "./classification/describeWriteCommit";
+import { writeHeadline } from "./classification/describeWriteCommit";
 import { findDraftPublication } from "./findDraftPublication";
 import { formatShortId } from "./format/formatShortId";
-import { orderMetadataFilesOldestFirst } from "./orderMetadataFiles";
 import { parseTimelineNodes } from "./parseTimelineNodes";
 import {
-  boundaryRow,
+  sequenceTimelineFiles,
+  type SequenceItem,
+  type UnreadableRun,
+} from "./sequenceTimelineFiles";
+import {
+  commitRowDefaults,
+  toBoundaryRow,
+  type BoundaryRow,
+  type CommitRow,
+  type GapRow,
   type RefBadge,
   type TimelineData,
   type TimelineRow,
-  type UnreadableFileSummary,
 } from "./timelineRow";
 
 const DEGRADED_COMMIT: CommitDescription = {
   kind: "metadata-only",
   title: "Metadata updated",
+  category: "quiet",
   impactSegments: [],
   detailTexts: [],
   snapshotId: null,
@@ -33,7 +42,7 @@ const DEGRADED_COMMIT: CommitDescription = {
 const buildOldestRow = (
   file: MetadataFileNode,
   snapshotsById: SnapshotsById,
-): TimelineRow => {
+): CommitRow | BoundaryRow => {
   const ownSnapshot =
     file.snapshot_id === null ? undefined : snapshotsById.get(file.snapshot_id);
   // With older commits cut off, the snapshot may have been written before the
@@ -43,20 +52,21 @@ const buildOldestRow = (
   if (ownSnapshot === undefined || isHistoryCutOff) {
     const hasUnknowableSnapshot = file.snapshot_id !== null;
     if (hasUnknowableSnapshot || isHistoryCutOff) {
-      return boundaryRow(file);
+      return toBoundaryRow(file);
     }
     return {
-      ...boundaryRow(file),
+      ...commitRowDefaults(file),
       kind: "metadata-only",
       title: "Start of history",
+      category: "quiet",
     };
   }
 
   return {
-    ...boundaryRow(file),
+    ...commitRowDefaults(file),
     kind: "published-write",
     branchName: "main",
-    title: writeTitle(ownSnapshot.operation_description, ownSnapshot.summary),
+    ...writeHeadline(ownSnapshot.operation_description, ownSnapshot.summary),
     impact: readSnapshotImpact(ownSnapshot.summary, ownSnapshot.operation),
     shortId: formatShortId(ownSnapshot.snapshot_id),
     snapshotId: ownSnapshot.snapshot_id,
@@ -66,10 +76,11 @@ const buildOldestRow = (
 const toTimelineRow = (
   file: MetadataFileNode,
   commit: CommitDescription,
-): TimelineRow => ({
-  ...boundaryRow(file),
+): CommitRow => ({
+  ...commitRowDefaults(file),
   kind: commit.kind,
   title: commit.title,
+  category: commit.category,
   impact: commit.impactSegments,
   details: commit.detailTexts,
   repointTargetId: commit.repointTargetId,
@@ -80,9 +91,9 @@ const toTimelineRow = (
 });
 
 const attachRefBadges = (
-  row: TimelineRow,
+  row: CommitRow,
   newestRefs: SnapshotRefs,
-): TimelineRow => {
+): CommitRow => {
   if (row.snapshotId === null) {
     return row;
   }
@@ -98,10 +109,10 @@ const attachRefBadges = (
 };
 
 const attachDraftPublication = (
-  row: TimelineRow,
+  row: CommitRow,
   laterFiles: MetadataFileNode[],
   snapshotsById: SnapshotsById,
-): TimelineRow => {
+): CommitRow => {
   if (row.kind !== "draft-write" || row.snapshotId === null) {
     return row;
   }
@@ -112,92 +123,123 @@ const attachDraftPublication = (
   };
 };
 
+const toGapRow = (files: UnreadableRun): GapRow => ({
+  kind: "gap",
+  filePath: files[0].file_path,
+  timestampMs: files[0].timestamp,
+  unreadableFiles: files.map((file) => ({
+    path: file.file_path,
+    timestampMs: file.timestamp,
+    reasons: file.reasons,
+  })),
+});
+
+interface DescribeContext {
+  snapshotsById: SnapshotsById;
+  tableMetadata: TableMetadata | null;
+  newestRefs: SnapshotRefs;
+}
+
+const toCommitRow = (
+  { file, predecessor }: Extract<SequenceItem, { kind: "commit" }>,
+  laterFiles: MetadataFileNode[],
+  { snapshotsById, tableMetadata, newestRefs }: DescribeContext,
+): CommitRow | BoundaryRow => {
+  if (predecessor.kind === "none") {
+    const oldestRow = buildOldestRow(file, snapshotsById);
+    return oldestRow.kind === "boundary"
+      ? oldestRow
+      : attachRefBadges(oldestRow, newestRefs);
+  }
+  if (predecessor.kind === "unreadable") {
+    return {
+      ...commitRowDefaults(file),
+      kind: "unknown-change",
+      title: "Change unknown",
+      category: "quiet",
+    };
+  }
+
+  let commit = DEGRADED_COMMIT;
+  try {
+    commit = describeCommit(
+      predecessor.file,
+      file,
+      snapshotsById,
+      tableMetadata ?? {},
+    );
+  } catch {
+    // the row still renders, titled by the fallback
+  }
+
+  return {
+    ...attachDraftPublication(
+      attachRefBadges(toTimelineRow(file, commit), newestRefs),
+      laterFiles,
+      snapshotsById,
+    ),
+    previousFilePath: predecessor.file.file_path,
+  };
+};
+
+const readableFilesUntilNextGap = (
+  laterItems: SequenceItem[],
+): MetadataFileNode[] => {
+  const files: MetadataFileNode[] = [];
+  for (const item of laterItems) {
+    if (item.kind === "gap") {
+      break;
+    }
+    files.push(item.file);
+  }
+  return files;
+};
+
 export const buildTimeline = (
   nodes: unknown[],
   tableMetadata: TableMetadata | null,
 ): TimelineData => {
   const {
-    metadataFiles,
+    readableFiles,
+    unreadableFiles,
     snapshotsById,
     unreadableCommitCount,
-    unreadableFiles,
   } = parseTimelineNodes(nodes);
-  const readableByPath = new Map(
-    metadataFiles.map((file) => [file.file_path, file]),
+  const sequence = sequenceTimelineFiles(readableFiles, unreadableFiles);
+  const filesOldestFirst = sequence.flatMap((item) =>
+    item.kind === "commit" ? [item.file] : [],
   );
-  const filesOldestFirst: MetadataFileNode[] = [];
-  const unreadableBefore: UnreadableFileSummary[][] = [];
-  let pendingUnreadable: UnreadableFileSummary[] = [];
-  for (const placedFile of orderMetadataFilesOldestFirst([
-    ...metadataFiles,
-    ...unreadableFiles,
-  ])) {
-    const readableFile = readableByPath.get(placedFile.file_path);
-    if (readableFile === undefined) {
-      pendingUnreadable.push({
-        path: placedFile.file_path,
-        reasons: "reasons" in placedFile ? placedFile.reasons : [],
-      });
-      continue;
-    }
-    filesOldestFirst.push(readableFile);
-    unreadableBefore.push(pendingUnreadable);
-    pendingUnreadable = [];
-  }
-  const newestRefs = filesOldestFirst.at(-1)?.refs ?? {};
+  const newestItem = sequence.at(-1);
+  const context: DescribeContext = {
+    snapshotsById,
+    tableMetadata,
+    // Unreadable newer events may have moved the refs, so no row is badged as their target.
+    newestRefs: newestItem?.kind === "commit" ? newestItem.file.refs : {},
+  };
 
-  const rowsOldestFirst = filesOldestFirst.map((file, index): TimelineRow => {
-    const previousFile = filesOldestFirst[index - 1];
+  const rowsOldestFirst = sequence.map((item, index): TimelineRow =>
+    item.kind === "gap"
+      ? toGapRow(item.files)
+      : toCommitRow(
+          item,
+          readableFilesUntilNextGap(sequence.slice(index + 1)),
+          context,
+        ),
+  );
 
-    if (previousFile === undefined) {
-      return {
-        ...attachRefBadges(buildOldestRow(file, snapshotsById), newestRefs),
-        unreadableCommitsBefore: unreadableBefore[index]?.length ?? 0,
-        unreadableFilesBefore: unreadableBefore[index] ?? [],
-      };
-    }
-
-    let commit = DEGRADED_COMMIT;
-    try {
-      commit = describeCommit(
-        previousFile,
-        file,
-        snapshotsById,
-        tableMetadata ?? {},
-      );
-    } catch {
-      // the row still renders, titled by the fallback
-    }
-
-    const isPreviousFileMissing =
-      file.previous_file !== null && !readableByPath.has(file.previous_file);
-    const row = {
-      ...attachRefBadges(toTimelineRow(file, commit), newestRefs),
-      unreadableCommitsBefore: Math.max(
-        unreadableBefore[index]?.length ?? 0,
-        isPreviousFileMissing ? 1 : 0,
-      ),
-      unreadableFilesBefore: unreadableBefore[index] ?? [],
-    };
-
-    return attachDraftPublication(
-      row,
-      filesOldestFirst.slice(index + 1),
-      snapshotsById,
-    );
-  });
-
-  const rowsNewestFirst = rowsOldestFirst.reverse();
+  const oldestItem = sequence[0];
+  const loadedButUnreadableOlderCount =
+    oldestItem?.kind === "gap" ? oldestItem.files.length : 0;
 
   return {
-    rows: rowsNewestFirst,
+    rows: rowsOldestFirst.reverse(),
     unreadableCommitCount,
     isTableMetadataUnreadable: tableMetadata === null,
     // previous_file is nulled at the load cutoff; the metadata log count survives it
     olderCommitCount: Math.max(
       0,
       (filesOldestFirst[0]?.pointed_metadata_log_count ?? 0) -
-        (unreadableBefore[0]?.length ?? 0),
+        loadedButUnreadableOlderCount,
     ),
     snapshotsById,
     filesByPath: new Map(

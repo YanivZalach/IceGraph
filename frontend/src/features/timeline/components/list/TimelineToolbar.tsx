@@ -1,4 +1,5 @@
 import type { CommitKindFilter } from "../../lib/filterTimelineRows";
+import { formatUnreadableCount } from "../../lib/format/formatUnreadableEvents";
 import BranchFilterSelect from "./BranchFilterSelect";
 import KindFilterSegments from "./KindFilterSegments";
 
@@ -39,7 +40,7 @@ const TimelineToolbar = ({
             {countText}
             {unreadableCommitCount > 0 && (
               <span className="text-amber-400">
-                {` · ${unreadableCommitCount.toString()} could not be read`}
+                {` · ${formatUnreadableCount(unreadableCommitCount)}`}
               </span>
             )}
             {isTableMetadataUnreadable && (
