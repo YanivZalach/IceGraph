@@ -1,8 +1,11 @@
 import { createColumnHelper, tableFeatures } from "@tanstack/react-table";
 import type { DisplayColumnDef } from "@tanstack/react-table";
+import type { BranchGraph } from "../../lib/buildBranchLanes";
 import type { TimelineRow } from "../../lib/timelineRow";
 import type { BranchAccent } from "../eventColor";
+import BranchGraphRail from "./BranchGraphRail";
 import CommitCell from "./CommitCell";
+import { railWidthFor } from "./columnClasses";
 import EventRail, { type RailMarker } from "./EventRail";
 import { impactPlainText } from "../../lib/impactSegment";
 import ImpactLine from "./ImpactLine";
@@ -15,16 +18,8 @@ const columnHelper = createColumnHelper<
   TimelineRow
 >();
 
-const railNodeClassFor = (
-  row: TimelineRow,
-  branchAccents: ReadonlyMap<string, BranchAccent>,
-): string | undefined => {
-  return row.kind === "gap" ||
-    row.kind === "boundary" ||
-    row.branchName === null
-    ? undefined
-    : branchAccents.get(row.branchName)?.node;
-};
+const nodeBranchNameOf = (row: TimelineRow): string | null =>
+  row.kind === "gap" || row.kind === "boundary" ? null : row.branchName;
 
 const railMarker = (row: TimelineRow): RailMarker => {
   if (row.kind === "boundary" || row.kind === "unknown-change") {
@@ -39,19 +34,51 @@ const railMarker = (row: TimelineRow): RailMarker => {
   return row.kind === "published-write" ? "node" : "tick";
 };
 
+/** While filtered the rail is flat, since hidden rows would break the lanes, but keeps its width. */
 export const buildTimelineColumns = (
   nowMs: number,
   branchAccents: ReadonlyMap<string, BranchAccent>,
+  branchGraph: BranchGraph,
+  isFlatRail: boolean,
 ): DisplayColumnDef<typeof timelineTableFeatures, TimelineRow>[] => [
   columnHelper.display({
     id: "rail",
     header: "",
-    cell: ({ row }) => (
-      <EventRail
-        marker={railMarker(row.original)}
-        nodeClassName={railNodeClassFor(row.original, branchAccents)}
-      />
-    ),
+    cell: ({ row }) => {
+      const marker = railMarker(row.original);
+      const nodeBranchName =
+        marker === "draft" ? "main" : nodeBranchNameOf(row.original);
+      const lanes = branchGraph.lanesByFilePath.get(row.original.filePath);
+      if (isFlatRail || lanes === undefined) {
+        return (
+          <>
+            <span
+              className="block"
+              style={{ width: railWidthFor(branchGraph.laneCount) }}
+            />
+            <span className="absolute inset-y-0 left-0 w-10">
+              <EventRail
+                marker={marker}
+                nodeClassName={
+                  nodeBranchName === null
+                    ? undefined
+                    : branchAccents.get(nodeBranchName)?.node
+                }
+              />
+            </span>
+          </>
+        );
+      }
+      return (
+        <BranchGraphRail
+          lanes={lanes}
+          laneCount={branchGraph.laneCount}
+          marker={marker}
+          nodeBranchName={nodeBranchName}
+          branchAccents={branchAccents}
+        />
+      );
+    },
   }),
   columnHelper.display({
     id: "commit",

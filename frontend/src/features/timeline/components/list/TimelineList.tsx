@@ -37,11 +37,19 @@ const TimelineList = ({
 }: TimelineListProps) => {
   const { olderCommitCount } = timeline;
   const [nowMs] = useState(() => Date.now());
-  const branchAccents = branchAccentsByName(timeline.rows);
+  const branchAccents = branchAccentsByName(
+    timeline.rows,
+    timeline.branchGraph.branchNames,
+  );
 
   const timelineTable = useTable({
     features: timelineTableFeatures,
-    columns: buildTimelineColumns(nowMs, branchAccents),
+    columns: buildTimelineColumns(
+      nowMs,
+      branchAccents,
+      timeline.branchGraph,
+      isFiltering,
+    ),
     data: rows,
     getRowId: (row) => row.filePath,
   });

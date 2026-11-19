@@ -11,6 +11,8 @@ Rules for `frontend/src/features/timeline/`. They add to [`development.md`](deve
    and pairs each readable file with what comes right before it.
 3. **Rows** (`lib/buildTimeline.ts`): each item becomes a row. `lib/classification/` describes a
    file against its readable predecessor.
+4. **Lanes** (`lib/buildBranchLanes.ts`): the branch graph drawn in the rail. A lane's life comes
+   from each file's own branch refs; fork and merge edges only between readable neighbors.
 
 ## Rules
 

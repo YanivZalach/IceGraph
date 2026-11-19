@@ -1,4 +1,5 @@
 import type { MetadataFileNode, SnapshotNode } from "../api/nodeSchemas";
+import type { BranchGraph } from "./buildBranchLanes";
 import type { CommitCategory } from "./classification/commitDescription";
 import { formatUnreadableEvents } from "./format/formatUnreadableEvents";
 import type { ImpactSegment } from "./impactSegment";
@@ -73,6 +74,7 @@ export interface TimelineData {
   olderCommitCount: number;
   snapshotsById: ReadonlyMap<string, SnapshotNode>;
   filesByPath: ReadonlyMap<string, MetadataFileNode>;
+  branchGraph: BranchGraph;
 }
 
 export const toBoundaryRow = (file: MetadataFileNode): BoundaryRow => ({
