@@ -12,7 +12,6 @@ export interface LaneLine {
   branchName: string;
 }
 
-/** Drawn from `fromLane` at the row's older edge to `toLane` at its node. */
 export interface LaneEdge {
   kind: "fork" | "merge";
   fromLane: number;
@@ -20,7 +19,6 @@ export interface LaneEdge {
   branchName: string | null;
 }
 
-/** `through` lines span the whole row; `starting` run from the node to the newer edge, `ending` from the older edge to the node. */
 export interface RowLanes {
   through: LaneLine[];
   starting: LaneLine[];
@@ -58,7 +56,6 @@ const isSameRef = (
   first?.["max-snapshot-age-ms"] === second?.["max-snapshot-age-ms"] &&
   first?.["max-ref-age-ms"] === second?.["max-ref-age-ms"];
 
-/** Non-main branches whose ref was created, dropped, moved, or had its retention changed. */
 const findChangedBranches = (
   refs: SnapshotRefs,
   previousRefs: SnapshotRefs,
@@ -75,7 +72,6 @@ const findChangedBranches = (
 const laneOf = (lanes: ReadonlyMap<string, number>, name: string): number =>
   name === MAIN_BRANCH ? MAIN_LANE : (lanes.get(name) ?? MAIN_LANE);
 
-/** The lane of a branch whose earlier head is the snapshot itself or its parent, preferring main. */
 const findSourceLane = (
   snapshotId: string,
   previousHeads: ReadonlyMap<string, string>,
@@ -224,7 +220,6 @@ const advanceLanes = (
   };
 };
 
-/** Lanes come from each readable file's own branch refs; edges only between readable neighbors. */
 export const buildBranchLanes = (
   sequence: SequenceItem[],
   rowsOldestFirst: TimelineRow[],

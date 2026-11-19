@@ -34,7 +34,6 @@ const railMarker = (row: TimelineRow): RailMarker => {
   return row.kind === "published-write" ? "node" : "tick";
 };
 
-/** While filtered the rail is flat, since hidden rows would break the lanes, but keeps its width. */
 export const buildTimelineColumns = (
   nowMs: number,
   branchAccents: ReadonlyMap<string, BranchAccent>,

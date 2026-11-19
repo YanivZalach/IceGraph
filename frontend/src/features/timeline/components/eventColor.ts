@@ -58,10 +58,7 @@ const MAIN_ACCENT: BranchAccent = {
   stroke: "stroke-blue-400",
 };
 
-/**
- * main stays unmarked on single-branch tables and gets a fixed blue once other branches exist.
- * `laneBranchNames` come last so they never shift the colors of branches named by events.
- */
+/** main stays unmarked on single-branch tables and gets a fixed blue once other branches exist. */
 export const branchAccentsByName = (
   rows: TimelineRow[],
   laneBranchNames: string[] = [],
