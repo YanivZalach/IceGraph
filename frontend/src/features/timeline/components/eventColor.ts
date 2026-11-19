@@ -59,24 +59,49 @@ export const branchAccentsByName = (
 
 interface Tone {
   textClass: string;
+  backgroundClass: string;
   color: string;
 }
 
-const tone = (textClass: string, color: string): Tone => ({ textClass, color });
+const tone = (
+  textClass: string,
+  backgroundClass: string,
+  color: string,
+): Tone => ({ textClass, backgroundClass, color });
 
 const TONE_BY_CATEGORY: Record<CommitCategory, Tone> = {
-  "data-added": tone("text-emerald-300", "var(--color-emerald-300)"),
-  "data-removed": tone("text-rose-300", "var(--color-rose-300)"),
-  "data-replaced": tone("text-amber-300", "var(--color-amber-300)"),
-  unpublished: tone("text-sky-300", "var(--color-sky-300)"),
-  maintenance: tone("text-cyan-300", "var(--color-cyan-300)"),
-  definition: tone("text-violet-300", "var(--color-violet-300)"),
-  reference: tone("text-indigo-300", "var(--color-indigo-300)"),
-  rollback: tone("text-orange-300", "var(--color-orange-300)"),
-  quiet: tone("text-slate-300", "var(--color-slate-300)"),
+  "data-added": tone(
+    "text-emerald-300",
+    "bg-emerald-300",
+    "var(--color-emerald-300)",
+  ),
+  "data-removed": tone("text-rose-300", "bg-rose-300", "var(--color-rose-300)"),
+  "data-replaced": tone(
+    "text-amber-300",
+    "bg-amber-300",
+    "var(--color-amber-300)",
+  ),
+  unpublished: tone("text-sky-300", "bg-sky-300", "var(--color-sky-300)"),
+  maintenance: tone("text-cyan-300", "bg-cyan-300", "var(--color-cyan-300)"),
+  definition: tone(
+    "text-violet-300",
+    "bg-violet-300",
+    "var(--color-violet-300)",
+  ),
+  reference: tone(
+    "text-indigo-300",
+    "bg-indigo-300",
+    "var(--color-indigo-300)",
+  ),
+  rollback: tone("text-orange-300", "bg-orange-300", "var(--color-orange-300)"),
+  quiet: tone("text-slate-300", "bg-slate-300", "var(--color-slate-300)"),
 };
 
-const GAP_TONE = tone("text-amber-300", "var(--color-amber-300)");
+const GAP_TONE = tone(
+  "text-amber-300",
+  "bg-amber-300",
+  "var(--color-amber-300)",
+);
 
 /**
  * Each kind of change reads in its own light tone, bright enough to stay readable on the card.

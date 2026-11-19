@@ -15,6 +15,8 @@ This view solves a common source of confusion: if you look at the **raw storage 
 
 - Select a file, partition, or partition-path step to inspect file counts, sizes, data-row and delete counts, and readable per-column metrics, including null and NaN percentages, average bytes per value, column-size share, and inferred metadata size. Click a metric-table heading to sort by its original value. Click it again to reverse the order, then once more to restore schema order. For a partition or directory, bounds are the smallest and largest across its files; geometry, geography, and variant bounds are not combined
 
+- Drag the colored divider to resize the inspector, or focus the divider and use the arrow keys; double-click it to reset the size. On a narrow window the inspector moves below the tree and the divider resizes it vertically
+
 - A file's **Partition** section matches Graph: one row per partition, with full field details on hover, focus, or click.
 
 - **Data rows (before deletes)** counts only records in data files; delete records are shown separately and are not subtracted, because an equality delete can remove many rows or none

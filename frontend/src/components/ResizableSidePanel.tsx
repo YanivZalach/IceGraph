@@ -24,7 +24,7 @@ interface ResizableSidePanelProps {
   maxContainerWidth?: number;
 }
 
-interface ResizableSidePanelStyle extends CSSProperties {
+interface PanelAccentStyle extends CSSProperties {
   "--panel-accent": string;
 }
 
@@ -139,7 +139,7 @@ const ResizableSidePanel = forwardRef<HTMLDivElement, ResizableSidePanelProps>(
       };
     }, [isFullscreen]);
 
-    const panelStyle: ResizableSidePanelStyle = {
+    const panelStyle: PanelAccentStyle = {
       borderLeftColor: isFullscreen ? accentColor : undefined,
       width: isFullscreen ? undefined : `${String(panelWidthRem)}rem`,
       "--panel-accent": accentColor,

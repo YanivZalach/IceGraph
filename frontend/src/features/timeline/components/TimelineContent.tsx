@@ -2,8 +2,9 @@ import { filterTimelineRows } from "../lib/filterTimelineRows";
 import { isSelectableRow, type TimelineData } from "../lib/timelineRow";
 import { useTimelineSearchState } from "../hooks/useTimelineSearchState";
 import { useTimelineSelection } from "../hooks/useTimelineSelection";
+import DockedSplit from "../../../components/DockedSplit";
 import EventDetailsPanel from "./details/EventDetailsPanel";
-import { branchAccentsByName } from "./eventColor";
+import { branchAccentsByName, eventToneFor } from "./eventColor";
 import TimelineList from "./list/TimelineList";
 import TimelineToolbar from "./list/TimelineToolbar";
 
@@ -52,42 +53,52 @@ const TimelineContent = ({ timeline, table }: TimelineContentProps) => {
   const isFiltering = kindFilter !== "all" || activeBranchFilter !== null;
 
   return (
-    <div className="h-graph flex w-full min-h-0 flex-1 flex-col overflow-hidden bg-canvas md:flex-row">
-      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]">
-        {commitCount > 0 && (
-          <TimelineToolbar
-            commitCount={commitCount}
-            shownCommitCount={countEventRows(shownRows)}
-            unreadableCommitCount={timeline.unreadableCommitCount}
-            isTableMetadataUnreadable={timeline.isTableMetadataUnreadable}
-            kindFilter={kindFilter}
-            onKindFilterChange={setKindFilter}
-            branchOptions={branchOptions}
-            branchFilter={activeBranchFilter}
-            onBranchFilterChange={setBranchFilter}
-          />
-        )}
-        <div className="mx-auto max-w-6xl px-3 py-4 sm:px-5">
-          <TimelineList
-            timeline={timeline}
-            rows={shownRows}
-            table={table}
-            isFiltering={isFiltering}
-            onClearFilters={handleClearFilters}
-            selectedFilePath={selectedFilePath}
-            onSelect={handleSelect}
-          />
+    <DockedSplit
+      className="h-graph w-full min-h-0 flex-1 overflow-hidden bg-canvas"
+      panelDefaultSize="35%"
+      accentClassName={
+        selectedRow === null
+          ? undefined
+          : eventToneFor(selectedRow).backgroundClass
+      }
+      main={
+        <div className="h-full min-h-0 min-w-0 overflow-y-auto [scrollbar-gutter:stable]">
+          {commitCount > 0 && (
+            <TimelineToolbar
+              commitCount={commitCount}
+              shownCommitCount={countEventRows(shownRows)}
+              unreadableCommitCount={timeline.unreadableCommitCount}
+              isTableMetadataUnreadable={timeline.isTableMetadataUnreadable}
+              kindFilter={kindFilter}
+              onKindFilterChange={setKindFilter}
+              branchOptions={branchOptions}
+              branchFilter={activeBranchFilter}
+              onBranchFilterChange={setBranchFilter}
+            />
+          )}
+          <div className="mx-auto max-w-6xl px-3 py-4 sm:px-5">
+            <TimelineList
+              timeline={timeline}
+              rows={shownRows}
+              table={table}
+              isFiltering={isFiltering}
+              onClearFilters={handleClearFilters}
+              selectedFilePath={selectedFilePath}
+              onSelect={handleSelect}
+            />
+          </div>
         </div>
-      </div>
-
-      {selectedRow !== null && (
-        <EventDetailsPanel
-          timeline={timeline}
-          row={selectedRow}
-          onClose={clearSelection}
-        />
-      )}
-    </div>
+      }
+      sidePanel={
+        selectedRow === null ? null : (
+          <EventDetailsPanel
+            timeline={timeline}
+            row={selectedRow}
+            onClose={clearSelection}
+          />
+        )
+      }
+    />
   );
 };
 
