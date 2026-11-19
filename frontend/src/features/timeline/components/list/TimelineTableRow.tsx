@@ -5,8 +5,6 @@ import type { TimelineRow } from "../../lib/timelineRow";
 import { CELL_CLASS_BY_COLUMN } from "./columnClasses";
 import type { timelineTableFeatures } from "./timelineColumns";
 
-const ROW_DIVIDER_CLASS = "border-t border-edge/60";
-
 interface TimelineTableRowProps {
   row: Row<typeof timelineTableFeatures, TimelineRow>;
   isSelected: boolean;
@@ -26,7 +24,7 @@ const TimelineTableRow = ({
   ));
 
   if (isBoundary) {
-    return <tr className={ROW_DIVIDER_CLASS}>{cells}</tr>;
+    return <tr>{cells}</tr>;
   }
 
   return (
@@ -44,9 +42,8 @@ const TimelineTableRow = ({
         }
       }}
       className={cn(
-        ROW_DIVIDER_CLASS,
         "cursor-pointer transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent",
-        row.original.kind === "gap" && "bg-amber-500/5",
+        row.original.kind === "gap" && "border-t border-edge/60 bg-amber-500/5",
         isSelected
           ? "bg-accent-muted/50 shadow-[inset_3px_0_0_var(--color-accent)]"
           : "hover:bg-surface-hover",

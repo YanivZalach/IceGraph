@@ -4,18 +4,19 @@ import FieldDiffBlock from "./FieldDiffBlock";
 
 interface RawDiffSectionProps {
   diffs: DescribedFieldDiff[];
+  isOpenByDefault: boolean;
 }
 
 const countText = (count: number, word: string): string =>
   `${count.toString()} ${word}${count === 1 ? "" : "s"}`;
 
-const RawDiffSection = ({ diffs }: RawDiffSectionProps) => {
+const RawDiffSection = ({ diffs, isOpenByDefault }: RawDiffSectionProps) => {
   if (diffs.length === 0) {
     return null;
   }
 
   return (
-    <details>
+    <details open={isOpenByDefault}>
       <summary className={`${SECTION_TITLE_CLASS} cursor-pointer`}>
         Raw metadata diff
         <span className="ml-2 text-xs font-normal tracking-normal text-slate-500 normal-case">

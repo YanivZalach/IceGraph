@@ -4,4 +4,5 @@ export interface DetailRowData {
   label: string;
   value: string;
   isCopyable?: boolean;
+  items?: string[];
 }

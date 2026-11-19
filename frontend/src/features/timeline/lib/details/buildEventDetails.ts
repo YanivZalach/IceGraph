@@ -1,3 +1,4 @@
+import { UNRECOGNIZED_METADATA_TITLE } from "../classification/describeMetadataOnlyCommit";
 import type { SnapshotNode } from "../../api/nodeSchemas";
 import {
   describeFieldDiff,
@@ -38,6 +39,7 @@ export interface EventDetailData {
   refs: DetailRowData[];
   properties: DetailRowData[];
   rawDiff: DescribedFieldDiff[];
+  isRawDiffOpenByDefault: boolean;
 }
 
 const toRows = (entries: SummaryEntry[]): DetailRowData[] =>
@@ -111,7 +113,11 @@ const eventRows = (
   }
 
   if (row.details.length > 0) {
-    rows.push({ label: "Changes", value: row.details.join("\n") });
+    rows.push({
+      label: "Changes",
+      value: "",
+      items: row.details,
+    });
   }
 
   if (row.isDraftPublishedLater && row.publishedAtMs !== null) {
@@ -222,5 +228,7 @@ export const buildEventDetails = (
       previousFile === undefined
         ? []
         : diffMetadataFiles(previousFile, file).map(describeFieldDiff),
+    isRawDiffOpenByDefault:
+      row.kind === "metadata-only" && row.title === UNRECOGNIZED_METADATA_TITLE,
   };
 };
