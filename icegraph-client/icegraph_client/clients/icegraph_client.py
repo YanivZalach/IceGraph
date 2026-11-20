@@ -54,16 +54,8 @@ class IceGraphClient:
         return self._graph_client.get_graph(table, start_snapshot_id, end_snapshot_id, poll_interval_seconds)
 
     def get_partition_files(self, table: str, filters: dict[str, str], snapshot_id: str = None, poll_interval_seconds: float = 1.0):
+        result = self._partition_files_client.get_partition_files(table, snapshot_id, filters, poll_interval_seconds)
         if snapshot_id is None:
-            snapshots = self.get_snapshot_map(table).snapshots
-            if not snapshots:
-                raise ValueError(f"Table {table} has no snapshots, so it has no partition files")
+            print(f"No snapshot given, used the latest snapshot {result.summary['snapshot_id']}", file=sys.stderr)
 
-            latest_snapshot = max(snapshots, key=lambda snapshot: snapshot.timestamp)
-            print(
-                f"No snapshot given, selected the latest snapshot {latest_snapshot.snapshot_id} at {latest_snapshot.timestamp.humanize()}",
-                file=sys.stderr,
-            )
-            snapshot_id = latest_snapshot.snapshot_id
-
-        return self._partition_files_client.get_partition_files(table, snapshot_id, filters, poll_interval_seconds)
+        return result

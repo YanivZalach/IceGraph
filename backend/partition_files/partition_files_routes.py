@@ -18,8 +18,8 @@ partition_files_jobs = PartitionFilesJobs()
 def partition_files():
     table_name = request.form.get("table_name")
     snapshot_id = request.form.get("snapshot_id", "")
-    if not table_name or not snapshot_id.lstrip("-").isdigit():
-        return jsonify({"error": "table_name and a numeric snapshot_id are required."}), 400
+    if not table_name or (snapshot_id and not snapshot_id.lstrip("-").isdigit()):
+        return jsonify({"error": "table_name is required, and snapshot_id must be numeric when given."}), 400
 
     try:
         filters = json.loads(request.form.get("filters") or "{}")
@@ -46,7 +46,7 @@ def partition_files():
 
         return jsonify({"error": str(e)}), 500
 
-    return jsonify(partition_files_jobs.submit(table_name, int(snapshot_id), filters)), 202
+    return jsonify(partition_files_jobs.submit(table_name, int(snapshot_id) if snapshot_id else None, filters)), 202
 
 
 @partition_files_blueprint.route("/api/v1/partition-files/<job_id>", methods=["GET"])

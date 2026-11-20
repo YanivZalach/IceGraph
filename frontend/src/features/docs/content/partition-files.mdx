@@ -2,7 +2,7 @@ Lists every data and delete file of one partition at one snapshot, together with
 
 ### Opening it
 
-On the snapshot selection page, the **Partition Files** card has a snapshot table, laid out like the snapshot range table, where you click the one snapshot to read, and one input per partition field from every partition spec the table has used. Fill in one or more fields and choose **Open Partition Files**. The files are collected inside the card, which shows the progress, and the view opens on the FileTree tab once they are ready. If collection fails, the error appears in the card with a button back to the filter. Opening a partition view link directly shows the progress on its own page instead. Fields you leave empty keep all their values.
+On the snapshot selection page, the **Partition Files** card has a snapshot table, laid out like the snapshot range table, where you click the one snapshot to read, and one input per partition field from every partition spec the table has used. **Latest**, at the top and selected by default, reads whatever snapshot is newest when the files load. Fill in one or more fields and choose **Open Partition Files**. The files are collected inside the card, which shows the progress, and the view opens on the FileTree tab once they are ready. If collection fails, the error appears in the card with a button back to the filter. Opening a partition view link directly shows the progress on its own page instead. Fields you leave empty keep all their values.
 
 - Enter the partition value, the output of the transform: `yyyy` for `year`, `yyyy-MM` for `month`, `yyyy-MM-dd` for `day`, `yyyy-MM-dd-HH` for `hour` (all in UTC), a bucket number for `bucket`, and the truncated or original value for `truncate` and `identity`. Time partitions are shown in the same form in the results
 - Only `=` is supported. Several fields are combined with AND
@@ -20,4 +20,4 @@ A file written under a partition spec that doesn't partition by a filtered field
 
 When a partition has more files than the backend limit (`MAX_PARTITION_FILES_TO_COLLECT`, or `MAX_MANIFESTS_TO_COLLECT` for manifests to read), IceGraph doesn't show a partial result. It shows an error with a Spark SQL query you can run in your own Spark session to list every file of the partition from the `files` metadata table at that snapshot.
 
-Table, snapshot, filter, group-by, and search are stored in the URL, so a partition view can be refreshed or shared. Select the table name in the top bar to return to the snapshot selection page.
+Table, snapshot, filter, group-by, and search are stored in the URL, so a partition view can be refreshed or shared. With **Latest**, the URL has no snapshot, so a refreshed or shared link reads the newest snapshot at that time. Select the table name in the top bar to return to the snapshot selection page.

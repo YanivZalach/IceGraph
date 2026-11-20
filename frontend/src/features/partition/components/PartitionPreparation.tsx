@@ -9,6 +9,7 @@ import {
 } from "../api/partitionFilesQueries";
 import {
   formatPartitionFilters,
+  formatPartitionSnapshot,
   partitionFilterSearch,
 } from "../partitionFilters";
 import PartitionFilesError from "./PartitionFilesError";
@@ -34,7 +35,7 @@ const PartitionPreparation = ({
         to="/partition/filetree"
         search={{
           table: request.tableName,
-          snapshot: request.snapshotId,
+          snapshot: request.snapshotId ?? undefined,
           ...partitionFilterSearch(request.filters),
         }}
       />
@@ -55,7 +56,7 @@ const PartitionPreparation = ({
         Collecting partition files
       </p>
       <p className={`${UI_BODY_MUTED_CLASS} mt-1 break-all`}>
-        {request.tableName} · snapshot {request.snapshotId}
+        {request.tableName} · {formatPartitionSnapshot(request.snapshotId)}
       </p>
       <p className={`${UI_BODY_MUTED_CLASS} mt-1 mb-6 break-all font-mono`}>
         {formatPartitionFilters(request.filters)}

@@ -266,7 +266,8 @@ snapshot, manifests, and files). This reads the whole table at that snapshot, so
 <base_url>/partition/filetree?table=<uri-encoded database.table>&snapshot=<snapshot id>&p.<partition field name>=<uri-encoded value>
 ```
 
-- `snapshot=<snapshot id>` is required. Take it from a `snapshots` or `graph` CLI call.
+- `snapshot=<snapshot id>` is optional. Omit it to read the table's latest snapshot when the page
+  loads; pass an ID from a `snapshots` or `graph` CLI call to pin one.
 - `p.<partition field name>=<value>` filters one partition field by equality. Repeat it for more
   fields; they are combined with AND. At least one is required. Use the partition field name from
   the table's partition specs (`partition-specs[].fields[].name`), not the source column name.
@@ -284,7 +285,7 @@ snapshot, manifests, and files). This reads the whole table at that snapshot, so
   run instead.
 - To open the form that builds these links, use
   `<base_url>/snapshots-selection?table=<uri-encoded database.table>&partition_snapshot=<snapshot id>&p.<field>=<value>`;
-  the form starts with those values.
+  the form starts with those values, and with **Latest** selected when `partition_snapshot` is omitted.
 
 **Two hard rules:**
 

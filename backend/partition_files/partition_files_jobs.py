@@ -21,7 +21,7 @@ class PartitionFilesJobs:
         self._jobs: dict[str, dict] = {}
         self._executor_pool = ThreadPoolExecutor(max_workers=Env.MAX_NUMBER_OF_GRAPHS_TO_COMPUTE)
 
-    def submit(self, table_name: str, snapshot_id: int, filters: dict[str, str]) -> dict:
+    def submit(self, table_name: str, snapshot_id: int | None, filters: dict[str, str]) -> dict:
         job_id = self._build_job_id(table_name, snapshot_id, filters)
         response = {"key": job_id, "status": "processing"}
 
@@ -55,7 +55,7 @@ class PartitionFilesJobs:
         self._executor_pool.shutdown(wait=False, cancel_futures=True)
 
     @staticmethod
-    def _build_job_id(table_name: str, snapshot_id: int, filters: dict[str, str]) -> str:
+    def _build_job_id(table_name: str, snapshot_id: int | None, filters: dict[str, str]) -> str:
         request_key = json.dumps([table_name, str(snapshot_id), sorted(filters.items())])
 
         return f"partition_{hashlib.sha256(request_key.encode('utf-8')).hexdigest()}"
@@ -78,7 +78,7 @@ class PartitionFilesJobs:
             self._safe_update_job(job_id, timer=timer)
         timer.start()
 
-    def _compute_in_background(self, job_id: str, table_name: str, snapshot_id: int, filters: dict[str, str]):
+    def _compute_in_background(self, job_id: str, table_name: str, snapshot_id: int | None, filters: dict[str, str]):
         stages = {stage_name: "pending" for stage_name in PARTITION_FILES_STAGES}
 
         def _on_stage(stage_name: str, status: str):

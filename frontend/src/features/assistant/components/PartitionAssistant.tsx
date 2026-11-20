@@ -22,9 +22,10 @@ const PartitionAssistant = ({
 
   if (statusQuery.data?.enabled !== true) return null;
 
+  const snapshotId = String(partitionFiles.summary.snapshot_id);
   const conversationKey = getPartitionConversationKey(
     request.tableName,
-    request.snapshotId,
+    snapshotId,
     request.filters,
   );
 
@@ -37,7 +38,7 @@ const PartitionAssistant = ({
       parameters={{
         tableName: request.tableName,
         startSnapshotId: "",
-        endSnapshotId: request.snapshotId,
+        endSnapshotId: snapshotId,
       }}
     />
   );

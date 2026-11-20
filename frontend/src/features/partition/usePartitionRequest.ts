@@ -15,7 +15,7 @@ export const usePartitionRequest = (): PartitionRequestState => {
   const navigate = useNavigate();
   const request = {
     tableName: search.table ?? "",
-    snapshotId: search.snapshot ?? "",
+    snapshotId: search.snapshot ?? null,
     filters: readPartitionFilters(search),
   };
 
@@ -26,7 +26,7 @@ export const usePartitionRequest = (): PartitionRequestState => {
         to: "/snapshots-selection",
         search: {
           table: request.tableName,
-          partition_snapshot: request.snapshotId,
+          partition_snapshot: request.snapshotId ?? undefined,
           ...partitionFilterSearch(request.filters),
         },
       });

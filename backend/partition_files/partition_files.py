@@ -29,7 +29,7 @@ class PartitionFilesLimitError(ValueError):
 
 
 class PartitionFiles:
-    def __init__(self, table_name: str, snapshot_id: int, raw_filters: dict[str, str], on_stage: Callable[[str, str], None]):
+    def __init__(self, table_name: str, snapshot_id: Optional[int], raw_filters: dict[str, str], on_stage: Callable[[str, str], None]):
         self._table_name = table_name
         self._snapshot_id = snapshot_id
         self._raw_filters = raw_filters
@@ -74,6 +74,7 @@ class PartitionFiles:
 
     def _read_metadata_and_filter(self) -> None:
         self._metadata = PartitionTableMetadataReader(self._table_name, self._snapshot_id).read()
+        self._snapshot_id = self._metadata.snapshot["snapshot-id"]
         self._partition_filter = PartitionFilterResolver(self._metadata).resolve(self._raw_filters)
 
     def _prune_manifests(self) -> None:
