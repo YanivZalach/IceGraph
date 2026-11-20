@@ -29,6 +29,9 @@ import LoadingTableContent, {
 import MetadataViewContent, {
   searchText as metadataViewText,
 } from "./content/metadata-view.mdx";
+import PartitionFilesContent, {
+  searchText as partitionFilesText,
+} from "./content/partition-files.mdx";
 import OverviewContent, {
   searchText as overviewText,
 } from "./content/overview.mdx";
@@ -113,6 +116,12 @@ export const DOC_SECTIONS: DocsSection[] = [
     fileTreeViewText,
   ),
   createSection("graph-view", "Graph View", GraphViewContent, graphViewText),
+  createSection(
+    "partition-files",
+    "Partition Files",
+    PartitionFilesContent,
+    partitionFilesText,
+  ),
   createSection(
     "specs-panel",
     "Specs Panel",

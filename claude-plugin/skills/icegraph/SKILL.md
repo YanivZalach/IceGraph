@@ -245,16 +245,47 @@ For example, this opens files added by a specific commit across all branches, gr
 URI-encode branch names and search text as well as table names. Omit FileTree parameters that use
 their defaults unless an explicit value makes the requested view clearer.
 
+### Partition files links
+
+To show every data and delete file of one partition at one snapshot, with the manifests that point
+to them, link to `/partition/filetree` (file list, the default) or `/partition/graph` (graph of
+snapshot, manifests, and files). This reads the whole table at that snapshot, so it takes `snapshot`, not
+`start_snapshot_id`/`end_snapshot_id`:
+
+```
+<base_url>/partition/filetree?table=<uri-encoded database.table>&snapshot=<snapshot id>&p.<partition field name>=<uri-encoded value>
+```
+
+- `snapshot=<snapshot id>` is required. Take it from a `snapshots` or `graph` CLI call.
+- `p.<partition field name>=<value>` filters one partition field by equality. Repeat it for more
+  fields; they are combined with AND. At least one is required. Use the partition field name from
+  the table's partition specs (`partition-specs[].fields[].name`), not the source column name.
+- The value is the partition value, the transform's output: `yyyy` for `year`, `yyyy-MM` for
+  `month`, `yyyy-MM-dd` for `day`, `yyyy-MM-dd-HH` for `hour` (all in UTC), a bucket number for `bucket`,
+  and the truncated or original value for `truncate` and `identity`. Never pass the raw years,
+  months, or hours since 1970 that Spark's `files` table shows; they are rejected. URI-encode it.
+- `/partition/graph` accepts the same `select_node_id`, `lineage_node_id`, `lineage_partition`,
+  `graph_mode`, and `graph_search` parameters as `/table/graph`.
+- `/partition/filetree` accepts `filetree_group_by=<comma-separated partition field names, each URI-encoded>` to group
+  files by those fields in that order (omit it for one flat list), and
+  `filetree_search=<uri-encoded text>` to filter by file path or partition value.
+- Files whose partition spec doesn't partition by a filtered field are shown as undecided, not
+  dropped. If the partition is larger than the server's limit, the page shows a Spark SQL query to
+  run instead.
+- To open the form that builds these links, use
+  `<base_url>/snapshots-selection?table=<uri-encoded database.table>&partition_snapshot=<snapshot id>&p.<field>=<value>`;
+  the form starts with those values.
+
 **Two hard rules:**
 
 1. **Always set both `start_snapshot_id` and `end_snapshot_id` — never emit `end_snapshot_id`
-   alone.** A link with no `start_snapshot_id` opens onto an unbounded range instead of the
+   alone.** (Partition files links are the exception: they take a single `snapshot`.) A link with no `start_snapshot_id` opens onto an unbounded range instead of the
    specific, particular view you're actually pointing at. Resolve a concrete start the same way
    you resolved the data you're describing: if the answer came from a ranged `snapshots`/`graph`
    call, reuse that same range; if it came from a rangeless `graph <table>` call (which auto-selects
    only the latest snapshot), set `start_snapshot_id` equal to that same latest snapshot id, so the
    link reproduces that exact single-snapshot view rather than defaulting to full history.
-2. **`select_node_id`, `lineage_node_id`, `lineage_partition`, `graph_mode`, and `graph_search` only work on `/table/graph`.**
+2. **`select_node_id`, `lineage_node_id`, `lineage_partition`, `graph_mode`, and `graph_search` only work on `/table/graph` and `/partition/graph`.**
    `MetadataPage`, `TimelinePage`, and `FileTreePage` don't read them — they ignore them silently.
    If the user's request maps more naturally to one of those views, link to that page
    (`/table/metadata`, `/table/timeline`, `/table/filetree`, same `table`/snapshot query params)
@@ -270,7 +301,7 @@ browser tab isn't a substitute for giving the user something they can re-open, c
 
 ### Specs panel links
 
-The Specs panel is available on every `/table/*` page and on `/snapshots-selection`, and its
+The Specs panel is available on every `/table/*` and `/partition/*` page and on `/snapshots-selection`, and its
 state is in the URL, so you can link straight to one schema, partition spec, or sort order:
 
 - `specs=open` opens the panel with no definition selected.

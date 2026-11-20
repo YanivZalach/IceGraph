@@ -12,6 +12,7 @@ from base_classes.utils import collect_graph_metadata_file, verify_iceberg_table
 from env import Env
 from graph.graph_routes import graph_blueprint, graph_jobs
 from icegraph_logger import logger
+from partition_files.partition_files_routes import partition_files_blueprint, partition_files_jobs
 from snapshot_map.snapshot_mapping import collect_snapshot_map
 from spark_connect import close_spark_connect_session
 from collectors.collect_table_description import TableDescriptionCollector
@@ -22,6 +23,7 @@ app = Flask(__name__, static_url_path="/static")
 app.json.sort_keys = False
 app.register_blueprint(assistant_blueprint)
 app.register_blueprint(graph_blueprint)
+app.register_blueprint(partition_files_blueprint)
 
 
 @app.route("/metrics", methods=["GET"])
@@ -172,5 +174,6 @@ if __name__ == "__main__":
 
         close_spark_connect_session()
         graph_jobs.shutdown()
+        partition_files_jobs.shutdown()
         assistant_jobs.shutdown()
         logger.info("Compute executor pool shutdown")

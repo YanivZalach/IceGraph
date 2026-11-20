@@ -23,6 +23,7 @@ const HIDDEN_DETAIL_KEYS = new Set([
   "virtual_read",
   "sampled_partitions",
   "partition_distribution",
+  "partition_match",
 ]);
 
 const READABLE_METRICS_FILE_TYPES = new Set<string>([

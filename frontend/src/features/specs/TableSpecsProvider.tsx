@@ -34,7 +34,7 @@ export const TableSpecsProvider = ({ children }: { children: ReactNode }) => {
     select: (state) => state.location.pathname,
   });
   const isTablePage = pathname.startsWith("/table/");
-  const isSnapshotSelectionPage = pathname === "/snapshots-selection";
+  const isLatestPage = /^\/(snapshots-selection$|partition\/)/.test(pathname);
   const isSpecsHistoryEntry = useRouterState({
     select: (state) => isSpecsOverlayState(state.location.state),
   });
@@ -53,11 +53,11 @@ export const TableSpecsProvider = ({ children }: { children: ReactNode }) => {
   });
   const tableMetadataQuery = useQuery({
     ...tableMetadataQueryOptions(graphRequestParameters.tableName),
-    enabled: isSnapshotSelectionPage && graphRequestParameters.tableName !== "",
+    enabled: isLatestPage && graphRequestParameters.tableName !== "",
   });
   const specsMetadata = isTablePage
     ? graphQuery.data?.metadata
-    : isSnapshotSelectionPage
+    : isLatestPage
       ? tableMetadataQuery.data
       : undefined;
   const graphCacheIssueQuery = useQuery(

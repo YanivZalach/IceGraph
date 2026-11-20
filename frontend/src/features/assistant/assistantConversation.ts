@@ -27,6 +27,18 @@ export const getSnapshotSelectionConversationKey = (
 ): string =>
   `${CONVERSATION_KEY_PREFIX}${JSON.stringify([tableName, "snapshot-selection"])}`;
 
+export const getPartitionConversationKey = (
+  tableName: string,
+  snapshotId: string,
+  filters: readonly { name: string; value: string }[],
+): string =>
+  `${CONVERSATION_KEY_PREFIX}${JSON.stringify([
+    tableName,
+    "partition",
+    snapshotId,
+    filters.map(({ name, value }) => [name, value]),
+  ])}`;
+
 export const readConversation = (
   conversationKey: string,
 ): AssistantMessage[] => {

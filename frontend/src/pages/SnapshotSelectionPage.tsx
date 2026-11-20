@@ -24,6 +24,7 @@ import LatestMetadataSection from "../features/metadata/components/LatestMetadat
 import SpecDetailsOverlay from "../features/specs/components/SpecDetailsOverlay";
 import SnapshotSelectionAssistant from "../features/assistant/components/SnapshotSelectionAssistant";
 import LoadingIndicator from "../components/LoadingIndicator";
+import PartitionFilterForm from "../features/partition/components/PartitionFilterForm";
 import { isKeyboardInputTarget } from "../shared/lib/keyboard";
 
 interface TableRangeSelection {
@@ -171,7 +172,18 @@ const SnapshotSelectionPage = () => {
       <main className="mx-auto flex max-w-5xl flex-col gap-7 px-5 py-8 md:px-8">
         <LatestMetadataSection
           tableName={tableName}
-          afterSummary={snapshotSelection}
+          afterSummary={
+            <>
+              {snapshotSelection}
+              {isSnapshotListReady && !isPreparingGraph && (
+                <PartitionFilterForm
+                  tableName={tableName}
+                  entries={entries}
+                  metadata={metadataQuery.data}
+                />
+              )}
+            </>
+          }
         />
       </main>
       <SpecDetailsOverlay />

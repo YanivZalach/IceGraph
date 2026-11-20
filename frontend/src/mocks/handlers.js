@@ -2150,6 +2150,111 @@ const buildRangeGraph = ({ startSnapshotId, endSnapshotId }) => {
   };
 };
 
+const partitionFilesJobs = new Map();
+
+const buildPartitionFiles = ({ snapshotId, filters }) => {
+  const nodesByPath = new Map(
+    mockResponse.nodes.map((node) => [node.node_id ?? node.file_path, node]),
+  );
+  const snapshot = mockResponse.nodes.find(
+    (node) => node.type === "snapshot" && node.snapshot_id === snapshotId,
+  );
+  if (!snapshot) return null;
+  const hourPartitionValue = (hours) =>
+    new Date(hours * 3600000).toISOString().slice(0, 13).replace("T", "-");
+  const withTimePartitionValues = (file) => ({
+    ...file,
+    partition: (file.partition ?? []).map((field) =>
+      field.name === "event_ts_hour"
+        ? { ...field, formatted_value: hourPartitionValue(field.value) }
+        : field,
+    ),
+  });
+  const normalizedFilters = Object.entries(filters).map(([name, value]) => [
+    name,
+    name === "event_ts_hour"
+      ? value.trim().replace(/^(\d{4}-\d{2}-\d{2})[ T]/, "$1-")
+      : value,
+  ]);
+  const matchesFilters = (file) =>
+    normalizedFilters.every(([name, value]) =>
+      file.partition.some(
+        (field) =>
+          field.name === name && String(field.formatted_value) === value,
+      ),
+    );
+  const manifests = [];
+  const files = new Map();
+  for (const manifestPath of snapshot.child_files) {
+    const manifest = nodesByPath.get(manifestPath);
+    if (manifest?.type !== "manifest") continue;
+    const deleted = new Set(manifest.deleted_child_files ?? []);
+    const children = manifest.child_files
+      .filter((childPath) => !deleted.has(childPath))
+      .map((childPath) => nodesByPath.get(childPath))
+      .filter(Boolean)
+      .map(withTimePartitionValues)
+      .filter(matchesFilters);
+    if (children.length === 0) continue;
+    const childIds = children.map((child) => child.node_id ?? child.file_path);
+    const partitions = [
+      ...new Map(
+        children.map((child) => [
+          JSON.stringify(child.partition),
+          child.partition,
+        ]),
+      ).values(),
+    ];
+    manifests.push({
+      ...manifest,
+      partitions,
+      child_files: childIds,
+      existing_child_files: childIds,
+      deleted_child_files: [],
+      partition_spec_id: 0,
+      partition_match: "matched",
+    });
+    children.forEach((child) =>
+      files.set(child.node_id ?? child.file_path, {
+        ...child,
+        partition_spec_id: 0,
+        partition_match: "matched",
+        delete_files: [],
+        applies_to_data_files: [],
+      }),
+    );
+  }
+  const specFields = mockResponse.metadata["partition-specs"][0].fields;
+  return {
+    nodes: [
+      { ...snapshot, child_files: manifests.map((node) => node.file_path) },
+      ...manifests,
+      ...files.values(),
+    ],
+    summary: {
+      table_name: "default.events",
+      snapshot_id: snapshotId,
+      snapshot_timestamp: snapshot.timestamp,
+      format_version: mockResponse.metadata["format-version"],
+      filters: Object.entries(filters).map(([name, value]) => {
+        const field = specFields.find((candidate) => candidate.name === name);
+        return {
+          name,
+          field_id: field?.["field-id"] ?? 0,
+          transform: field?.transform ?? "identity",
+          source_name: null,
+          result_type: field?.transform === "identity" ? "string" : "int",
+          value,
+        };
+      }),
+      undecided_spec_ids: [],
+      undecided_files_count: 0,
+    },
+    errors: {},
+    warnings: {},
+  };
+};
+
 export const handlers = [
   http.get("/api/v1/tables", () => {
     return HttpResponse.json({
@@ -2310,5 +2415,29 @@ export const handlers = [
     }
 
     return HttpResponse.json(buildRangeGraph(job.range));
+  }),
+  http.post("/api/v1/partition-files", async ({ request }) => {
+    const form = new URLSearchParams(await request.text());
+    const key = `partition_${String(partitionFilesJobs.size)}`;
+    partitionFilesJobs.set(key, {
+      snapshotId: form.get("snapshot_id") ?? "",
+      filters: JSON.parse(form.get("filters") ?? "{}"),
+    });
+    return HttpResponse.json(
+      { key, status: "processing", "X-IceGraph-Job-Token": "mock-token" },
+      { status: 202 },
+    );
+  }),
+
+  http.get("/api/v1/partition-files/:key", ({ params }) => {
+    const job = partitionFilesJobs.get(params.key);
+    const result = job ? buildPartitionFiles(job) : null;
+    if (!result) {
+      return HttpResponse.json(
+        { error: "Unknown partition files job or snapshot" },
+        { status: 404 },
+      );
+    }
+    return HttpResponse.json(result);
   }),
 ];

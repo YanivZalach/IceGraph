@@ -16,7 +16,7 @@ The browser builds the context. It sends only data it already loaded (table meta
 
 One question is one background job:
 
-1. The browser posts the question, the selected context, the page, the table name, and the snapshot range.
+1. The browser posts the question, the selected context, the page, the table name, and the snapshot range. On the Partition Files pages the snapshot is sent as the end snapshot, and the context always holds the partition filter.
 2. The backend rejects a body that is too large (413), invalid (400), or over `AI_MAX_CONTEXT_CHARACTERS` (413), counted in UTF-16 characters like the browser counter. It rejects a question when `AI_MAX_CONCURRENT_REQUESTS` answers are already running (429).
 3. Otherwise it starts a job and returns its key and a token (202).
 4. The job streams the answer from the model and appends each part to the job.
@@ -25,7 +25,7 @@ One question is one background job:
 
 `AI_REQUEST_TIMEOUT_SECONDS` limits the whole answer, not only the connection. Model errors, including errors sent in the middle of a stream, become readable messages (502).
 
-The conversation is stored in `localStorage`, at most 50 messages, keyed by table and snapshot range on table views and by table on the snapshot selection page. It is read when the panel first opens, not when the page loads. The panel shows the latest 3 questions with their answers, and earlier ones appear 3 at a time when the user scrolls up or selects Show earlier messages. Clear can be undone for 5 seconds.
+The conversation is stored in `localStorage`, at most 50 messages, keyed by table and snapshot range on table views, by table on the snapshot selection page, and by table, snapshot, and partition filter on the Partition Files pages. It is read when the panel first opens, not when the page loads. The panel shows the latest 3 questions with their answers, and earlier ones appear 3 at a time when the user scrolls up or selects Show earlier messages. Clear can be undone for 5 seconds.
 
 History is what the browser sends besides the new question. The backend keeps none of it between requests, so the browser sends it again with every question.
 
