@@ -2,7 +2,7 @@ Lists every data and delete file of one partition at one snapshot, together with
 
 ### Opening it
 
-On the snapshot selection page, the **Partition Files** card has a snapshot picker and one input per partition field from every partition spec the table has used. Fill in one or more fields and choose **Open Partition Files**; it opens on the FileTree tab. Fields you leave empty keep all their values.
+On the snapshot selection page, the **Partition Files** card has a snapshot table, laid out like the snapshot range table, where you click the one snapshot to read, and one input per partition field from every partition spec the table has used. Fill in one or more fields and choose **Open Partition Files**. The files are collected inside the card, which shows the progress, and the view opens on the FileTree tab once they are ready. If collection fails, the error appears in the card with a button back to the filter. Opening a partition view link directly shows the progress on its own page instead. Fields you leave empty keep all their values.
 
 - Enter the partition value, the output of the transform: `yyyy` for `year`, `yyyy-MM` for `month`, `yyyy-MM-dd` for `day`, `yyyy-MM-dd-HH` for `hour` (all in UTC), a bucket number for `bucket`, and the truncated or original value for `truncate` and `identity`. Time partitions are shown in the same form in the results
 - Only `=` is supported. Several fields are combined with AND

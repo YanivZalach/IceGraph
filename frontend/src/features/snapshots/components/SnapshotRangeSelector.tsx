@@ -12,6 +12,7 @@ interface SnapshotRangeSelectorProps {
   range: SnapshotRange;
   onRangeChange: (range: SnapshotRange) => void;
   onGenerate: () => void;
+  canGenerate: boolean;
   hasOlderSnapshots: boolean;
   isLoadingOlderSnapshots: boolean;
   olderSnapshotsError: string | null;
@@ -24,6 +25,7 @@ const SnapshotRangeSelector = ({
   range,
   onRangeChange,
   onGenerate,
+  canGenerate,
   hasOlderSnapshots,
   isLoadingOlderSnapshots,
   olderSnapshotsError,
@@ -68,7 +70,8 @@ const SnapshotRangeSelector = ({
     <button
       type="button"
       onClick={onGenerate}
-      className="mt-5 w-full cursor-pointer rounded-lg bg-accent py-3 font-bold text-white transition-colors hover:bg-accent-dark"
+      disabled={!canGenerate}
+      className="mt-5 w-full cursor-pointer rounded-lg bg-accent py-3 font-bold text-white transition-colors hover:bg-accent-dark disabled:cursor-not-allowed disabled:bg-edge disabled:text-slate-500"
     >
       Generate Graph
     </button>

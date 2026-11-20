@@ -34,20 +34,35 @@ const PartitionLayout = () => {
     request.filters.length === 0
   ) {
     return (
-      <PartitionFilesError
-        error={
-          new Error(
-            "A table, a snapshot, and at least one partition field value are required.",
-          )
-        }
-        onEditFilter={editFilter}
-      />
+      <div className="flex flex-1 items-center justify-center bg-canvas p-6">
+        <div className="w-full max-w-2xl">
+          <PartitionFilesError
+            error={
+              new Error(
+                "A table, a snapshot, and at least one partition field value are required.",
+              )
+            }
+            actionLabel="Edit filter"
+            onAction={editFilter}
+          />
+        </div>
+      </div>
     );
   }
 
   const error = partitionFilesQuery.error ?? metadataQuery.error;
   if (error !== null) {
-    return <PartitionFilesError error={error} onEditFilter={editFilter} />;
+    return (
+      <div className="flex flex-1 items-center justify-center bg-canvas p-6">
+        <div className="w-full max-w-2xl">
+          <PartitionFilesError
+            error={error}
+            actionLabel="Edit filter"
+            onAction={editFilter}
+          />
+        </div>
+      </div>
+    );
   }
 
   if (
