@@ -1,5 +1,6 @@
 from base_classes.utils import column_to_string_utc
 import json
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from functools import cached_property
 from typing import Any, Dict, List, Optional
@@ -40,6 +41,8 @@ POINTED_STATISTICS_SCHEMAS = {
         )
     ),
 }
+
+METADATA_READ_WORKERS = 8
 
 
 @dataclass
@@ -132,48 +135,61 @@ class CollectMetadata(Collector):
         ]
 
     def _build_metadata_files_df(self) -> Optional[pyspark.sql.DataFrame]:
-        metadata_files_df = None
-        for file, timestamp in self._ordered_metadata_to_timestamp.items():
-            try:
-                df = get_metadata_row_slim_df_from_path(file).withColumn("metadata_timestamp", F.lit(timestamp)).withColumn("file", F.lit(file))
-                df.schema
-                metadata_files_df = df if metadata_files_df is None else metadata_files_df.unionByName(df, allowMissingColumns=True)
+        files = list(self._ordered_metadata_to_timestamp.keys())
+        timestamps = list(self._ordered_metadata_to_timestamp.values())
+        with ThreadPoolExecutor(max_workers=METADATA_READ_WORKERS) as executor:
+            metadata_dfs = list(executor.map(self._read_metadata_file, files, timestamps))
 
-            except Exception as e:
-                logger.error(
-                    f"[{self._table_name}] Metadata file read error for {file}",
-                    exc_info=True,
-                )
-                self._bad_metadata_files.append(
-                    MetadataFileRecord(
-                        type=FileType.METADATA,
-                        file_path=file,
-                        child_files=[],
-                        errors=[str(e)],
-                        timestamp=timestamp,
-                        snapshot_id=None,
-                        previous_file=self._get_previous_metadata_file(file),
-                        last_sequence_number=None,
-                        format_version=None,
-                        partition_spec_id=None,
-                        current_schema_id=None,
-                        sort_order_id=None,
-                        refs={},
-                        properties={},
-                        pointed_snapshots_files=None,
-                        pointed_table_statistics_files=None,
-                        pointed_partition_statistics_files=None,
-                        pointed_metadata_log_count=None,
-                    )
-                )
+        metadata_files_df = None
+        for df in metadata_dfs:
+            if df is None:
+                continue
+
+            metadata_files_df = df if metadata_files_df is None else metadata_files_df.unionByName(df, allowMissingColumns=True)
 
         return metadata_files_df
+
+    def _read_metadata_file(self, file: str, timestamp: str) -> Optional[pyspark.sql.DataFrame]:
+        try:
+            df = get_metadata_row_slim_df_from_path(file).withColumn("metadata_timestamp", F.lit(timestamp)).withColumn("file", F.lit(file))
+            df.schema
+
+            return df
+
+        except Exception as e:
+            logger.error(
+                f"[{self._table_name}] Metadata file read error for {file}",
+                exc_info=True,
+            )
+            self._bad_metadata_files.append(
+                MetadataFileRecord(
+                    type=FileType.METADATA,
+                    file_path=file,
+                    child_files=[],
+                    errors=[str(e)],
+                    timestamp=timestamp,
+                    snapshot_id=None,
+                    previous_file=self._get_previous_metadata_file(file),
+                    last_sequence_number=None,
+                    format_version=None,
+                    partition_spec_id=None,
+                    current_schema_id=None,
+                    sort_order_id=None,
+                    refs={},
+                    properties={},
+                    pointed_snapshots_files=None,
+                    pointed_table_statistics_files=None,
+                    pointed_partition_statistics_files=None,
+                    pointed_metadata_log_count=None,
+                )
+            )
+
+            return None
 
     @staticmethod
     def _with_pointed_statistics(metadata_files_df: pyspark.sql.DataFrame) -> pyspark.sql.DataFrame:
         for column, schema in POINTED_STATISTICS_SCHEMAS.items():
-            pointed_statistics = F.from_json(column, schema) if column in metadata_files_df.columns else F.lit(None)
-            metadata_files_df = metadata_files_df.withColumn(column, pointed_statistics)
+            metadata_files_df = metadata_files_df.withColumn(column, F.from_json(column, schema))
 
         return metadata_files_df
 
