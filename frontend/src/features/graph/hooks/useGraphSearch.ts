@@ -3,8 +3,6 @@ import { useNavigate, useSearch } from "@tanstack/react-router";
 import type { GraphNode } from "../model/graphModel";
 import { findMatchingNodes } from "../model/nodeSearch";
 
-const GRAPH_ROUTE = "/table/graph";
-
 export interface GraphSearch {
   isOpen: boolean;
   query: string;
@@ -18,10 +16,11 @@ export const useGraphSearch = (
   nodes: GraphNode[],
   isVisible: (nodeId: string) => boolean,
 ): GraphSearch => {
-  const navigate = useNavigate({ from: GRAPH_ROUTE });
+  const navigate = useNavigate();
   const searchQuery = useSearch({
-    from: GRAPH_ROUTE,
-    select: (search) => search.graph_search,
+    strict: false,
+    select: (search) =>
+      typeof search.graph_search === "string" ? search.graph_search : undefined,
   });
   const query = searchQuery ?? "";
   const matches = findMatchingNodes(nodes, query, isVisible);
@@ -29,7 +28,10 @@ export const useGraphSearch = (
   const updateQuery = (nextQuery: string | undefined): void => {
     void navigate({
       to: ".",
-      search: (previous) => ({ ...previous, graph_search: nextQuery }),
+      search: (previous: Record<string, unknown>) => ({
+        ...previous,
+        graph_search: nextQuery,
+      }),
       replace: true,
     });
   };

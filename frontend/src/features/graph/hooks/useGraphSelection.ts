@@ -6,7 +6,6 @@ import type { GraphModel, GraphNode } from "../model/graphModel";
 import { getLineage, getManifestPartitionLineage } from "../model/lineage";
 import type { GraphCamera } from "./useGraphCamera";
 
-const GRAPH_ROUTE = "/table/graph";
 const INITIAL_CAMERA_DELAY_MS = 100;
 const CENTER_DURATION_MS = 400;
 
@@ -63,8 +62,8 @@ export const useGraphSelection = (
   model: GraphModel,
   camera: GraphCamera,
 ): GraphSelection => {
-  const navigate = useNavigate({ from: GRAPH_ROUTE });
-  const search = useSearch({ from: GRAPH_ROUTE });
+  const navigate = useNavigate();
+  const search: GraphSelectionSearch = useSearch({ strict: false });
   const [isViewMoved, setIsViewMoved] = useState(false);
   const hasPlacedCameraRef = useRef(false);
 
@@ -98,7 +97,10 @@ export const useGraphSelection = (
   ): void => {
     void navigate({
       to: ".",
-      search: (previous) => ({ ...previous, ...changes }),
+      search: (previous: Record<string, unknown>) => ({
+        ...previous,
+        ...changes,
+      }),
       replace,
     });
   };

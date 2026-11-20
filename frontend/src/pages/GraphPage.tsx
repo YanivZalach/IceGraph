@@ -1,3 +1,4 @@
+import { useSearch } from "@tanstack/react-router";
 import PanelIssueNotice from "../components/PanelIssueNotice";
 import GraphView from "../features/graph/GraphView";
 import { graphViewDataSchema } from "../features/graph/graphViewSchemas";
@@ -5,6 +6,7 @@ import { buildFileGraph } from "../features/graph/model/graphModel";
 import { useTableGraphData } from "../features/table/tableGraphData";
 
 const GraphPage = () => {
+  const tableName = useSearch({ from: "/table/graph" }).table ?? "";
   const rawGraphData: unknown = useTableGraphData();
   const graphDataResult = graphViewDataSchema.safeParse(rawGraphData);
   if (!graphDataResult.success) {
@@ -20,7 +22,12 @@ const GraphPage = () => {
     );
   }
 
-  return <GraphView fileGraph={buildFileGraph(graphDataResult.data)} />;
+  return (
+    <GraphView
+      fileGraph={buildFileGraph(graphDataResult.data)}
+      tableName={tableName}
+    />
+  );
 };
 
 export default GraphPage;

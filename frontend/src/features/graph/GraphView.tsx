@@ -1,6 +1,5 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useSearch } from "@tanstack/react-router";
 import ForceGraph2D from "react-force-graph-2d";
 import { PANEL_GUTTER_REM, remToPx } from "../../layoutConstants";
 import { currentMetadataFileQueryOptions } from "./api/currentMetadataFileQuery";
@@ -32,13 +31,14 @@ import {
 
 interface GraphViewProps {
   fileGraph: FileGraph;
+  tableName: string;
+  notice?: ReactNode;
 }
 
 const NO_FORCE_GRAPH_LINKS: GraphLink[] = [];
 const SEARCH_CENTER_DURATION_MS = 400;
 
-const GraphView = ({ fileGraph }: GraphViewProps) => {
-  const tableName = useSearch({ from: "/table/graph" }).table ?? "";
+const GraphView = ({ fileGraph, tableName, notice = null }: GraphViewProps) => {
   const currentMetadataQuery = useQuery(
     currentMetadataFileQueryOptions(tableName),
   );
@@ -175,7 +175,9 @@ const GraphView = ({ fileGraph }: GraphViewProps) => {
           ) : null
         }
         notice={
-          selection.manifestPartitionView === null ? null : (
+          selection.manifestPartitionView === null ? (
+            notice
+          ) : (
             <GraphPartitionBanner
               view={selection.manifestPartitionView}
               onShowFullManifest={selection.showFullManifest}

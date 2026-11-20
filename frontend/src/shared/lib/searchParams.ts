@@ -44,13 +44,15 @@ export const tableSearchSchema = z.looseObject({
   ...specSearchShape,
 });
 
-export const graphSearchSchema = tableSearchSchema.extend({
+const graphSelectionShape = {
   select_node_id: z.string().optional(),
   lineage_node_id: z.string().optional(),
   lineage_partition: z.string().optional(),
   graph_mode: z.literal("lineage").optional().catch(undefined),
   graph_search: z.string().optional(),
-});
+};
+
+export const graphSearchSchema = tableSearchSchema.extend(graphSelectionShape);
 
 const timelineSearchShape = {
   timeline_event: z.string().optional(),
@@ -76,9 +78,25 @@ export const fileTreeSearchSchema = tableSearchSchema.extend({
 
 export const snapshotSelectionSearchSchema = z.looseObject({
   table: z.string().optional(),
+  partition_snapshot: z.string().optional(),
   ...specSearchShape,
 });
 
 export const docsSearchSchema = z.looseObject({
   section: z.string().optional(),
+});
+
+export const partitionSearchSchema = z.looseObject({
+  table: z.string().optional(),
+  snapshot: z.string().optional(),
+  ...specSearchShape,
+});
+
+export const partitionGraphSearchSchema = partitionSearchSchema.extend({
+  ...graphSelectionShape,
+});
+
+export const partitionFilesSearchSchema = partitionSearchSchema.extend({
+  filetree_group_by: z.string().optional(),
+  filetree_search: z.string().optional(),
 });

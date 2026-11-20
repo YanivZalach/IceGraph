@@ -11,8 +11,12 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DocsRouteImport } from './routes/docs'
+import { Route as PartitionRouteRouteImport } from './routes/partition/route'
 import { Route as SnapshotsSelectionRouteImport } from './routes/snapshots-selection'
 import { Route as TableRouteRouteImport } from './routes/table/route'
+import { Route as PartitionIndexRouteImport } from './routes/partition/index'
+import { Route as PartitionFiletreeRouteImport } from './routes/partition/filetree'
+import { Route as PartitionGraphRouteImport } from './routes/partition/graph'
 import { Route as TableIndexRouteImport } from './routes/table/index'
 import { Route as TableFiletreeRouteImport } from './routes/table/filetree'
 import { Route as TableGraphRouteImport } from './routes/table/graph'
@@ -29,6 +33,11 @@ const DocsRoute = DocsRouteImport.update({
   path: '/docs',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PartitionRouteRoute = PartitionRouteRouteImport.update({
+  id: '/partition',
+  path: '/partition',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SnapshotsSelectionRoute = SnapshotsSelectionRouteImport.update({
   id: '/snapshots-selection',
   path: '/snapshots-selection',
@@ -38,6 +47,21 @@ const TableRouteRoute = TableRouteRouteImport.update({
   id: '/table',
   path: '/table',
   getParentRoute: () => rootRouteImport,
+} as any)
+const PartitionIndexRoute = PartitionIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PartitionRouteRoute,
+} as any)
+const PartitionFiletreeRoute = PartitionFiletreeRouteImport.update({
+  id: '/filetree',
+  path: '/filetree',
+  getParentRoute: () => PartitionRouteRoute,
+} as any)
+const PartitionGraphRoute = PartitionGraphRouteImport.update({
+  id: '/graph',
+  path: '/graph',
+  getParentRoute: () => PartitionRouteRoute,
 } as any)
 const TableIndexRoute = TableIndexRouteImport.update({
   id: '/',
@@ -67,74 +91,97 @@ const TableTimelineRoute = TableTimelineRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/partition': typeof PartitionRouteRouteWithChildren
   '/table': typeof TableRouteRouteWithChildren
   '/docs': typeof DocsRoute
   '/snapshots-selection': typeof SnapshotsSelectionRoute
+  '/partition/filetree': typeof PartitionFiletreeRoute
+  '/partition/graph': typeof PartitionGraphRoute
   '/table/filetree': typeof TableFiletreeRoute
   '/table/graph': typeof TableGraphRoute
   '/table/metadata': typeof TableMetadataRoute
   '/table/timeline': typeof TableTimelineRoute
+  '/partition/': typeof PartitionIndexRoute
   '/table/': typeof TableIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/docs': typeof DocsRoute
   '/snapshots-selection': typeof SnapshotsSelectionRoute
+  '/partition/filetree': typeof PartitionFiletreeRoute
+  '/partition/graph': typeof PartitionGraphRoute
   '/table/filetree': typeof TableFiletreeRoute
   '/table/graph': typeof TableGraphRoute
   '/table/metadata': typeof TableMetadataRoute
   '/table/timeline': typeof TableTimelineRoute
+  '/partition': typeof PartitionIndexRoute
   '/table': typeof TableIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/partition': typeof PartitionRouteRouteWithChildren
   '/table': typeof TableRouteRouteWithChildren
   '/docs': typeof DocsRoute
   '/snapshots-selection': typeof SnapshotsSelectionRoute
+  '/partition/filetree': typeof PartitionFiletreeRoute
+  '/partition/graph': typeof PartitionGraphRoute
   '/table/filetree': typeof TableFiletreeRoute
   '/table/graph': typeof TableGraphRoute
   '/table/metadata': typeof TableMetadataRoute
   '/table/timeline': typeof TableTimelineRoute
+  '/partition/': typeof PartitionIndexRoute
   '/table/': typeof TableIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/partition'
     | '/table'
     | '/docs'
     | '/snapshots-selection'
+    | '/partition/filetree'
+    | '/partition/graph'
     | '/table/filetree'
     | '/table/graph'
     | '/table/metadata'
     | '/table/timeline'
+    | '/partition/'
     | '/table/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/docs'
     | '/snapshots-selection'
+    | '/partition/filetree'
+    | '/partition/graph'
     | '/table/filetree'
     | '/table/graph'
     | '/table/metadata'
     | '/table/timeline'
+    | '/partition'
     | '/table'
   id:
     | '__root__'
     | '/'
+    | '/partition'
     | '/table'
     | '/docs'
     | '/snapshots-selection'
+    | '/partition/filetree'
+    | '/partition/graph'
     | '/table/filetree'
     | '/table/graph'
     | '/table/metadata'
     | '/table/timeline'
+    | '/partition/'
     | '/table/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  PartitionRouteRoute: typeof PartitionRouteRouteWithChildren
   TableRouteRoute: typeof TableRouteRouteWithChildren
   DocsRoute: typeof DocsRoute
   SnapshotsSelectionRoute: typeof SnapshotsSelectionRoute
@@ -156,6 +203,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/partition': {
+      id: '/partition'
+      path: '/partition'
+      fullPath: '/partition'
+      preLoaderRoute: typeof PartitionRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/snapshots-selection': {
       id: '/snapshots-selection'
       path: '/snapshots-selection'
@@ -169,6 +223,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/table'
       preLoaderRoute: typeof TableRouteRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/partition/': {
+      id: '/partition/'
+      path: '/'
+      fullPath: '/partition/'
+      preLoaderRoute: typeof PartitionIndexRouteImport
+      parentRoute: typeof PartitionRouteRoute
+    }
+    '/partition/filetree': {
+      id: '/partition/filetree'
+      path: '/filetree'
+      fullPath: '/partition/filetree'
+      preLoaderRoute: typeof PartitionFiletreeRouteImport
+      parentRoute: typeof PartitionRouteRoute
+    }
+    '/partition/graph': {
+      id: '/partition/graph'
+      path: '/graph'
+      fullPath: '/partition/graph'
+      preLoaderRoute: typeof PartitionGraphRouteImport
+      parentRoute: typeof PartitionRouteRoute
     }
     '/table/': {
       id: '/table/'
@@ -208,6 +283,22 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface PartitionRouteRouteChildren {
+  PartitionFiletreeRoute: typeof PartitionFiletreeRoute
+  PartitionGraphRoute: typeof PartitionGraphRoute
+  PartitionIndexRoute: typeof PartitionIndexRoute
+}
+
+const PartitionRouteRouteChildren: PartitionRouteRouteChildren = {
+  PartitionFiletreeRoute: PartitionFiletreeRoute,
+  PartitionGraphRoute: PartitionGraphRoute,
+  PartitionIndexRoute: PartitionIndexRoute,
+}
+
+const PartitionRouteRouteWithChildren = PartitionRouteRoute._addFileChildren(
+  PartitionRouteRouteChildren,
+)
+
 interface TableRouteRouteChildren {
   TableFiletreeRoute: typeof TableFiletreeRoute
   TableGraphRoute: typeof TableGraphRoute
@@ -230,6 +321,7 @@ const TableRouteRouteWithChildren = TableRouteRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  PartitionRouteRoute: PartitionRouteRouteWithChildren,
   TableRouteRoute: TableRouteRouteWithChildren,
   DocsRoute: DocsRoute,
   SnapshotsSelectionRoute: SnapshotsSelectionRoute,

@@ -26,6 +26,7 @@ const FILE_SUMMARY_KEYS = new Set([
   "format",
   "node_id",
   "partition",
+  "partition_match",
   "readable_metrics",
   "row_count",
   "type",

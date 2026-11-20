@@ -115,6 +115,16 @@ etc.) go to stderr, so stdout is always safe to parse directly.
   When summarizing a `graph` result to the user, lead with `issues.errors`, then `issues.warnings`,
   before general structure/counts — errors are what the Issues panel in the UI leads with too.
 
+- `partition <table> -f <partition field>=<value> [-f ...] [-s SNAPSHOT_ID]` → `{nodes: [...],
+  summary: {...}, issues: {errors: {...}, warnings: {...}}}` with every data and delete file of one
+  partition at one snapshot, plus the snapshot and the manifests that point to them. Filters use the
+  same values as `p.<field>` in partition files links (`yyyy-MM-dd-HH` for `hour`, and so on) and
+  are combined with AND. Without `-s` it uses the latest snapshot (printed to stderr). Each file node
+  has `partition_match`: `matched`, or `undecided` when its partition spec lacks a filtered field,
+  so it can't be ruled out. `summary` holds the resolved filters, `undecided_spec_ids`, and
+  `undecided_files_count`. When the partition has too many files, the command fails and prints a
+  Spark SQL query that lists them all.
+
 For a question about a table that the latest metadata can answer, try `metadata <table>` first.
 This is faster than building a graph. Examples include columns and schemas, partition specs,
 sort orders, table properties, branches and tags, table location, and format version. Use
@@ -245,16 +255,47 @@ For example, this opens files added by a specific commit across all branches, gr
 URI-encode branch names and search text as well as table names. Omit FileTree parameters that use
 their defaults unless an explicit value makes the requested view clearer.
 
+### Partition files links
+
+To show every data and delete file of one partition at one snapshot, with the manifests that point
+to them, link to `/partition/filetree` (file list, the default) or `/partition/graph` (graph of
+snapshot, manifests, and files). This reads the whole table at that snapshot, so it takes `snapshot`, not
+`start_snapshot_id`/`end_snapshot_id`:
+
+```
+<base_url>/partition/filetree?table=<uri-encoded database.table>&snapshot=<snapshot id>&p.<partition field name>=<uri-encoded value>
+```
+
+- `snapshot=<snapshot id>` is required. Take it from a `snapshots` or `graph` CLI call.
+- `p.<partition field name>=<value>` filters one partition field by equality. Repeat it for more
+  fields; they are combined with AND. At least one is required. Use the partition field name from
+  the table's partition specs (`partition-specs[].fields[].name`), not the source column name.
+- The value is the partition value, the transform's output: `yyyy` for `year`, `yyyy-MM` for
+  `month`, `yyyy-MM-dd` for `day`, `yyyy-MM-dd-HH` for `hour` (all in UTC), a bucket number for `bucket`,
+  and the truncated or original value for `truncate` and `identity`. Never pass the raw years,
+  months, or hours since 1970 that Spark's `files` table shows; they are rejected. URI-encode it.
+- `/partition/graph` accepts the same `select_node_id`, `lineage_node_id`, `lineage_partition`,
+  `graph_mode`, and `graph_search` parameters as `/table/graph`.
+- `/partition/filetree` accepts `filetree_group_by=<comma-separated partition field names, each URI-encoded>` to group
+  files by those fields in that order (omit it for one flat list), and
+  `filetree_search=<uri-encoded text>` to filter by file path or partition value.
+- Files whose partition spec doesn't partition by a filtered field are shown as undecided, not
+  dropped. If the partition is larger than the server's limit, the page shows a Spark SQL query to
+  run instead.
+- To open the form that builds these links, use
+  `<base_url>/snapshots-selection?table=<uri-encoded database.table>&partition_snapshot=<snapshot id>&p.<field>=<value>`;
+  the form starts with those values.
+
 **Two hard rules:**
 
 1. **Always set both `start_snapshot_id` and `end_snapshot_id` — never emit `end_snapshot_id`
-   alone.** A link with no `start_snapshot_id` opens onto an unbounded range instead of the
+   alone.** (Partition files links are the exception: they take a single `snapshot`.) A link with no `start_snapshot_id` opens onto an unbounded range instead of the
    specific, particular view you're actually pointing at. Resolve a concrete start the same way
    you resolved the data you're describing: if the answer came from a ranged `snapshots`/`graph`
    call, reuse that same range; if it came from a rangeless `graph <table>` call (which auto-selects
    only the latest snapshot), set `start_snapshot_id` equal to that same latest snapshot id, so the
    link reproduces that exact single-snapshot view rather than defaulting to full history.
-2. **`select_node_id`, `lineage_node_id`, `lineage_partition`, `graph_mode`, and `graph_search` only work on `/table/graph`.**
+2. **`select_node_id`, `lineage_node_id`, `lineage_partition`, `graph_mode`, and `graph_search` only work on `/table/graph` and `/partition/graph`.**
    `MetadataPage`, `TimelinePage`, and `FileTreePage` don't read them — they ignore them silently.
    If the user's request maps more naturally to one of those views, link to that page
    (`/table/metadata`, `/table/timeline`, `/table/filetree`, same `table`/snapshot query params)
@@ -270,7 +311,7 @@ browser tab isn't a substitute for giving the user something they can re-open, c
 
 ### Specs panel links
 
-The Specs panel is available on every `/table/*` page and on `/snapshots-selection`, and its
+The Specs panel is available on every `/table/*` and `/partition/*` page and on `/snapshots-selection`, and its
 state is in the URL, so you can link straight to one schema, partition spec, or sort order:
 
 - `specs=open` opens the panel with no definition selected.
@@ -291,6 +332,17 @@ state is in the URL, so you can link straight to one schema, partition spec, or 
 - These parameters work on any `/table/*` page and on `/snapshots-selection`, where the panel reads
   the table's latest metadata (take `spec_id` from a `metadata` command there). Invalid values are
   ignored. Changing table or snapshot range clears them.
+
+### Docs links
+
+To point the user at an explanation in the in-app documentation, link to
+`<base_url>/docs?section=<section id>`. An unknown or missing `section` opens the Overview. Section
+IDs, by nav group:
+
+- Getting Started: `overview`, `coding-agent`, `loading-a-table`, `tips`
+- Table Views: `timeline-view`, `metadata-view`, `filetree-view`, `graph-view`
+- Partition Files: `partition-files`, `partition-files-filetree`, `partition-files-graph`
+- General: `specs-panel`, `issues-panel`, `ai-assistant`, `keyboard-shortcuts`, `cli`
 
 ## 5. Tracing a snapshot back to the Spark job that wrote it
 

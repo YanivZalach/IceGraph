@@ -2,6 +2,7 @@ import { useHotkey } from "@tanstack/react-hotkeys";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { UI_DOCS_BODY_CLASS, UI_DOCS_NAV_TITLE_CLASS } from "../uiTypography";
+import DocsNav from "../features/docs/components/DocsNav";
 import DocsSearchOverlay from "../features/docs/components/DocsSearchOverlay";
 import MdxContent from "../features/docs/components/MdxContent";
 import { highlightSearchResult } from "../features/docs/docsHighlight";
@@ -10,6 +11,7 @@ import {
   type Highlight,
   OVERVIEW_SECTION,
   type SearchResult,
+  DOC_GROUPS,
   DOC_SECTIONS,
 } from "../features/docs/docs";
 
@@ -116,44 +118,41 @@ const DocsPage = () => {
             </button>
           </div>
 
-          <nav className="flex flex-col gap-0.5">
-            {DOC_SECTIONS.map((section) => (
-              <button
-                key={section.id}
-                onClick={() => {
-                  selectSection(section.id);
-                }}
-                className={`text-left text-sm px-3 py-2 rounded-md transition ${
-                  activeSection.id === section.id
-                    ? "bg-accent-muted text-white font-medium"
-                    : "text-slate-400 hover:text-white hover:bg-surface-hover"
-                }`}
-              >
-                {section.title}
-              </button>
-            ))}
-          </nav>
+          <DocsNav
+            activeSectionId={activeSection.id}
+            onSelectSection={selectSection}
+          />
         </div>
       </aside>
 
       <div className="flex-1 overflow-y-auto" ref={contentRef}>
         <div className="sm:hidden px-4 pt-4 pb-2">
           <select
+            aria-label="Documentation section"
             value={activeSection.id}
             onChange={(e) => {
               selectSection(e.target.value);
             }}
             className="w-full bg-surface-hover text-white text-sm border border-edge rounded-md px-3 py-2"
           >
-            {DOC_SECTIONS.map((section) => (
-              <option key={section.id} value={section.id}>
-                {section.title}
-              </option>
+            {DOC_GROUPS.map((group) => (
+              <optgroup key={group} label={group}>
+                {DOC_SECTIONS.filter((section) => section.group === group).map(
+                  (section) => (
+                    <option key={section.id} value={section.id}>
+                      {section.title}
+                    </option>
+                  ),
+                )}
+              </optgroup>
             ))}
           </select>
         </div>
 
         <div className="max-w-3xl mx-auto px-6 py-8">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">
+            {activeSection.group}
+          </p>
           <h1 className="text-2xl font-bold text-white mb-6">
             {activeSection.title}
           </h1>
@@ -162,6 +161,15 @@ const DocsPage = () => {
               Content={activeSection.Content}
               sectionId={activeSection.id}
             />
+            {activeSection.Shortcuts !== undefined && (
+              <div className="mt-8">
+                <MdxContent
+                  Content={activeSection.Shortcuts}
+                  sectionId={activeSection.id}
+                  isShortcutList
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

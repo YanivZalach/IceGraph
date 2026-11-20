@@ -4,6 +4,8 @@ import { useTableSpecs } from "../specs/tableSpecs";
 import { cn } from "../../shared/lib/cn";
 import TablePicker from "./TablePicker";
 import AnalyzeTabs from "./AnalyzeTabs";
+import PartitionFilterSummary from "./PartitionFilterSummary";
+import PartitionTabs from "./PartitionTabs";
 import { navTabClass } from "./navTabClass";
 
 const actionClass = (isActive = false): string =>
@@ -43,7 +45,9 @@ const NavBar = () => {
     setIssuesOpen,
   } = useTableSpecs();
   const isTablePage = pathname.startsWith("/table/");
-  const isTableContext = isTablePage || pathname === "/snapshots-selection";
+  const isPartitionPage = pathname.startsWith("/partition/");
+  const isTableContext =
+    isTablePage || isPartitionPage || pathname === "/snapshots-selection";
   const tableName = typeof search.table === "string" ? search.table : "";
   const errorCount = Object.keys(errors).length;
   const issueCount = errorCount + Object.keys(warnings).length;
@@ -97,6 +101,12 @@ const NavBar = () => {
                 <AnalyzeTabs />
               </>
             )}
+            {isPartitionPage && (
+              <>
+                <div className="h-4 w-px shrink-0 bg-slate-700" />
+                <PartitionTabs />
+              </>
+            )}
             {isTablePage && issueCount > 0 && (
               <button
                 type="button"
@@ -128,6 +138,7 @@ const NavBar = () => {
                 Specs
               </button>
             )}
+            {isPartitionPage && <PartitionFilterSummary />}
 
             <div className="ml-auto flex shrink-0 items-center gap-3">
               {isTablePage && (

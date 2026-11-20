@@ -1,4 +1,5 @@
 import { FileType } from "../../graphConstants";
+import type { PartitionFiles } from "../partition/api/partitionFilesSchemas";
 import type { SnapshotMap } from "../snapshots/api/snapshotQueries";
 import type { GraphData } from "../table/api/graphSchemas";
 import type { TableMetadata } from "../table/api/metadataSchemas";
@@ -45,6 +46,12 @@ const GRAPH_DEFAULT_OPTION_IDS = [
   SNAPSHOTS_OPTION_ID,
 ];
 
+const PARTITION_DEFAULT_OPTION_IDS = [
+  TABLE_METADATA_OPTION_ID,
+  ISSUES_OPTION_ID,
+  "manifests",
+];
+
 const SNAPSHOT_SELECTION_DEFAULT_OPTION_IDS = [
   TABLE_METADATA_OPTION_ID,
   SNAPSHOTS_OPTION_ID,
@@ -54,6 +61,12 @@ const GRAPH_SUGGESTED_QUESTIONS = [
   "Summarize the state of this table.",
   "Explain what the latest snapshot changed.",
   "Do you see any problems or maintenance this table needs?",
+];
+
+const PARTITION_SUGGESTED_QUESTIONS = [
+  "Summarize the files in this partition.",
+  "Does this partition need compaction or delete cleanup?",
+  "Summarize the delete files in this partition.",
 ];
 
 const SNAPSHOT_SELECTION_SUGGESTED_QUESTIONS = [
@@ -68,7 +81,7 @@ export interface AssistantContextOption {
   itemCount: number | null;
 }
 
-export type AssistantPage = "table" | "snapshot_selection";
+export type AssistantPage = "table" | "snapshot_selection" | "partition";
 
 export interface AssistantContextSource {
   page: AssistantPage;
@@ -153,8 +166,9 @@ const listGraphContextOptions = (
 const buildGraphContext = (
   graphData: GraphData,
   selectedOptionIds: readonly string[],
+  baseContext: Record<string, unknown> = {},
 ): string => {
-  const context: Record<string, unknown> = {};
+  const context: Record<string, unknown> = { ...baseContext };
   if (selectedOptionIds.includes(TABLE_METADATA_OPTION_ID)) {
     context.metadata = graphData.metadata;
   }
@@ -190,6 +204,28 @@ export const createGraphContextSource = (
   buildContext: (selectedOptionIds) =>
     buildGraphContext(graphData, selectedOptionIds),
 });
+
+export const createPartitionContextSource = (
+  partitionFiles: PartitionFiles,
+  metadata: TableMetadata,
+): AssistantContextSource => {
+  const graphData: GraphData = {
+    nodes: partitionFiles.nodes,
+    metadata,
+    errors: partitionFiles.errors,
+    warnings: partitionFiles.warnings,
+  };
+  return {
+    page: "partition",
+    options: listGraphContextOptions(graphData),
+    defaultOptionIds: PARTITION_DEFAULT_OPTION_IDS,
+    suggestedQuestions: PARTITION_SUGGESTED_QUESTIONS,
+    buildContext: (selectedOptionIds) =>
+      buildGraphContext(graphData, selectedOptionIds, {
+        partition: partitionFiles.summary,
+      }),
+  };
+};
 
 const countSnapshots = (snapshotPages: readonly SnapshotMapPage[]): number =>
   snapshotPages.reduce(

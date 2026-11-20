@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 from icegraph_client.clients.tables_client import TablesClient
 from icegraph_client.clients.snapshots_client import SnapshotsClient
 from icegraph_client.clients.graph_client import GraphClient
+from icegraph_client.clients.partition_files_client import PartitionFilesClient
 from icegraph_client.utils.user_id import USER_ID_HEADER, get_user_id
 
 
@@ -21,6 +22,7 @@ class IceGraphClient:
         self._tables_client = TablesClient(self._base_url, **requests_kwargs)
         self._snapshots_client = SnapshotsClient(self._base_url, **requests_kwargs)
         self._graph_client = GraphClient(self._base_url, **requests_kwargs)
+        self._partition_files_client = PartitionFilesClient(self._base_url, **requests_kwargs)
 
     def list_tables(self):
         return self._tables_client.list_tables()
@@ -50,3 +52,18 @@ class IceGraphClient:
                 print(f"Table {table} has no data, both start and end snapshot remain unset", file=sys.stderr)
 
         return self._graph_client.get_graph(table, start_snapshot_id, end_snapshot_id, poll_interval_seconds)
+
+    def get_partition_files(self, table: str, filters: dict[str, str], snapshot_id: str = None, poll_interval_seconds: float = 1.0):
+        if snapshot_id is None:
+            snapshots = self.get_snapshot_map(table).snapshots
+            if not snapshots:
+                raise ValueError(f"Table {table} has no snapshots, so it has no partition files")
+
+            latest_snapshot = max(snapshots, key=lambda snapshot: snapshot.timestamp)
+            print(
+                f"No snapshot given, selected the latest snapshot {latest_snapshot.snapshot_id} at {latest_snapshot.timestamp.humanize()}",
+                file=sys.stderr,
+            )
+            snapshot_id = latest_snapshot.snapshot_id
+
+        return self._partition_files_client.get_partition_files(table, snapshot_id, filters, poll_interval_seconds)

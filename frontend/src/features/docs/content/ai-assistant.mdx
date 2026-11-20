@@ -1,4 +1,4 @@
-The **Ask AI** button in the bottom left corner opens a chat about the current table. It appears on the snapshot selection page and on every table view, when the server has an AI model configured.
+The **Ask AI** button in the bottom left corner opens a chat about the current table. It appears on the snapshot selection page, on every table view, and on the Partition Files pages, when the server has an AI model configured.
 
 In the online demo no model is connected. The assistant still works, but each answer is a fixed demo reply that shows what was sent with the question.
 
@@ -6,7 +6,7 @@ In the online demo no model is connected. The assistant still works, but each an
 
 The chips above the question box choose what the AI sees. Only selected chips are sent, along with the table name and the selected snapshot range.
 
-- **Table metadata**, **Issues**, **Snapshots** - selected by default
+- **Table metadata**, **Issues**, **Snapshots** - selected by default. On the Partition Files pages, **Manifests** is selected instead of **Snapshots**, and the partition filter is always sent
 - **Manifests**, **Data files**, **Delete files**, and the other file chips - add more detail
 - **Data file statistics** - per-column statistics of data files. They can be large, so they are separate from **Data files**
 - **History** - earlier questions and answers, so follow-ups work. Turn it off to ask a question on its own
@@ -17,6 +17,6 @@ Data file statistics include real values from your data, and everything selected
 
 ### Conversation
 
-The conversation is saved in your browser. The panel opens on the latest questions, and earlier ones appear when you scroll up. **Clear** deletes it, and **Undo** brings it back for 5 seconds.
+The conversation is saved in your browser, separately for each table view range, and for each partition and snapshot. The panel opens on the latest questions, and earlier ones appear when you scroll up. **Clear** deletes it, and **Undo** brings it back for 5 seconds.
 
 The assistant only explains and suggests. It never changes the table.
