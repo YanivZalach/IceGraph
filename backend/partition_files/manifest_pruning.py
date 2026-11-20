@@ -8,11 +8,11 @@ from typing import Any, Optional
 from pyspark.sql import Row
 from pyspark.sql.types import ArrayType, BinaryType, BooleanType, IntegerType, LongType, StringType, StructField, StructType
 
+from base_classes.spark_table_action import SparkTableAction
 from base_classes.utils import timed
 from icegraph_logger import logger
 from partition_files.constants import UNKNOWN_PARTITION_SPEC_ERROR
 from partition_files.partition_filter import PartitionFilter, SpecFilter, SpecPredicate
-from spark_connect import open_spark_connect_session
 
 EPOCH_DATE = date(1970, 1, 1)
 
@@ -56,104 +56,108 @@ class ManifestPruningResult:
     errors: list[str]
 
 
-@timed
-def prune_manifests(table_name: str, manifest_list_path: str, partition_filter: PartitionFilter) -> ManifestPruningResult:
-    try:
-        rows = open_spark_connect_session().read.format("avro").schema(MANIFEST_LIST_SCHEMA).load(manifest_list_path).collect()
+class ManifestPruner(SparkTableAction):
+    def __init__(self, table_name: str, manifest_list_path: str, partition_filter: PartitionFilter):
+        super().__init__(table_name)
+        self._manifest_list_path = manifest_list_path
+        self._partition_filter = partition_filter
 
-    except Exception as e:
-        logger.error(f"[{table_name}] Failed to read manifest list {manifest_list_path}", exc_info=True)
+    @timed
+    def prune(self) -> ManifestPruningResult:
+        try:
+            rows = self._spark.read.format("avro").schema(MANIFEST_LIST_SCHEMA).load(self._manifest_list_path).collect()
 
-        return ManifestPruningResult(manifests=[], errors=[str(e)])
+        except Exception as e:
+            logger.error(f"[{self._table_name}] Failed to read manifest list {self._manifest_list_path}", exc_info=True)
 
-    manifests = []
-    for row in rows:
-        spec_filter = partition_filter.spec_filters.get(row.partition_spec_id)
-        if spec_filter is None:
-            raise ValueError(UNKNOWN_PARTITION_SPEC_ERROR.format(manifest_path=row.manifest_path, spec_id=row.partition_spec_id))
+            return ManifestPruningResult(manifests=[], errors=[str(e)])
 
-        if _has_no_live_files(row) or not _can_contain_match(row, spec_filter):
-            continue
+        manifests = []
+        for row in rows:
+            spec_filter = self._partition_filter.spec_filters.get(row.partition_spec_id)
+            if spec_filter is None:
+                raise ValueError(UNKNOWN_PARTITION_SPEC_ERROR.format(manifest_path=row.manifest_path, spec_id=row.partition_spec_id))
 
-        manifests.append(
-            ManifestCandidate(
-                manifest_path=row.manifest_path,
-                spec_filter=spec_filter,
-                content=row.content or 0,
-                sequence_number=row.sequence_number,
-                added_snapshot_id=row.added_snapshot_id,
+            if self._has_no_live_files(row) or not self._can_contain_match(row, spec_filter):
+                continue
+
+            manifests.append(
+                ManifestCandidate(
+                    manifest_path=row.manifest_path,
+                    spec_filter=spec_filter,
+                    content=row.content or 0,
+                    sequence_number=row.sequence_number,
+                    added_snapshot_id=row.added_snapshot_id,
+                )
             )
-        )
 
-    return ManifestPruningResult(manifests=manifests, errors=[])
+        return ManifestPruningResult(manifests=manifests, errors=[])
 
+    @staticmethod
+    def _has_no_live_files(row: Row) -> bool:
+        added_files_count = row.added_files_count if row.added_files_count is not None else row.added_data_files_count
+        existing_files_count = row.existing_files_count if row.existing_files_count is not None else row.existing_data_files_count
 
-def _has_no_live_files(row: Row) -> bool:
-    added_files_count = row.added_files_count if row.added_files_count is not None else row.added_data_files_count
-    existing_files_count = row.existing_files_count if row.existing_files_count is not None else row.existing_data_files_count
+        return added_files_count == 0 and existing_files_count == 0
 
-    return added_files_count == 0 and existing_files_count == 0
+    def _can_contain_match(self, row: Row, spec_filter: SpecFilter) -> bool:
+        summaries = row.partitions
+        if summaries is None:
+            return True
 
+        for predicate in spec_filter.predicates:
+            if predicate.spec_field_position >= len(summaries):
+                continue
 
-def _can_contain_match(row: Row, spec_filter: SpecFilter) -> bool:
-    summaries = row.partitions
-    if summaries is None:
+            if not self._summary_can_contain(summaries[predicate.spec_field_position], predicate):
+                return False
+
         return True
 
-    for predicate in spec_filter.predicates:
-        if predicate.spec_field_position >= len(summaries):
-            continue
+    def _summary_can_contain(self, summary: Row, predicate: SpecPredicate) -> bool:
+        if summary is None:
+            return True
 
-        if not _summary_can_contain(summaries[predicate.spec_field_position], predicate):
+        if summary.lower_bound is None:
             return False
 
-    return True
+        result_type = predicate.filter_field.result_type
+        lower_bound = self._decode_comparable_bound(result_type, summary.lower_bound)
+        upper_bound = self._decode_comparable_bound(result_type, summary.upper_bound) if summary.upper_bound is not None else None
+        value = self._comparable_value(result_type, predicate.filter_field.value)
+        if lower_bound is None or value is None:
+            return True
 
+        if value < lower_bound:
+            return False
 
-def _summary_can_contain(summary: Row, predicate: SpecPredicate) -> bool:
-    if summary is None:
-        return True
+        return upper_bound is None or value <= upper_bound
 
-    if summary.lower_bound is None:
-        return False
+    @staticmethod
+    def _comparable_value(result_type: str, value: Any) -> Any:
+        if result_type == "date":
+            return (value - EPOCH_DATE).days
 
-    result_type = predicate.filter_field.result_type
-    lower_bound = _decode_comparable_bound(result_type, summary.lower_bound)
-    upper_bound = _decode_comparable_bound(result_type, summary.upper_bound) if summary.upper_bound is not None else None
-    value = _comparable_value(result_type, predicate.filter_field.value)
-    if lower_bound is None or value is None:
-        return True
+        return value
 
-    if value < lower_bound:
-        return False
+    @staticmethod
+    def _decode_comparable_bound(result_type: str, encoded_bound: bytes) -> Any:
+        if result_type in {"int", "date"} and len(encoded_bound) == 4:
+            return struct.unpack("<i", encoded_bound)[0]
 
-    return upper_bound is None or value <= upper_bound
+        if result_type == "long":
+            return struct.unpack("<q", encoded_bound)[0] if len(encoded_bound) == 8 else struct.unpack("<i", encoded_bound)[0]
 
+        if result_type == "string":
+            return encoded_bound.decode("utf-8")
 
-def _comparable_value(result_type: str, value: Any) -> Any:
-    if result_type == "date":
-        return (value - EPOCH_DATE).days
+        if result_type == "boolean" and len(encoded_bound) == 1:
+            return encoded_bound[0] != 0
 
-    return value
+        decimal_match = re.fullmatch(r"decimal\(\s*\d+\s*,\s*(\d+)\s*\)", result_type)
+        if decimal_match:
+            unscaled_value = int.from_bytes(encoded_bound, byteorder="big", signed=True)
 
+            return Decimal(f"{unscaled_value}E-{decimal_match.group(1)}")
 
-def _decode_comparable_bound(result_type: str, encoded_bound: bytes) -> Any:
-    if result_type in {"int", "date"} and len(encoded_bound) == 4:
-        return struct.unpack("<i", encoded_bound)[0]
-
-    if result_type == "long":
-        return struct.unpack("<q", encoded_bound)[0] if len(encoded_bound) == 8 else struct.unpack("<i", encoded_bound)[0]
-
-    if result_type == "string":
-        return encoded_bound.decode("utf-8")
-
-    if result_type == "boolean" and len(encoded_bound) == 1:
-        return encoded_bound[0] != 0
-
-    decimal_match = re.fullmatch(r"decimal\(\s*\d+\s*,\s*(\d+)\s*\)", result_type)
-    if decimal_match:
-        unscaled_value = int.from_bytes(encoded_bound, byteorder="big", signed=True)
-
-        return Decimal(f"{unscaled_value}E-{decimal_match.group(1)}")
-
-    return None
+        return None

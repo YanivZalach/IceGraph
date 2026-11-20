@@ -6,14 +6,14 @@ from pyspark.sql import Column
 from pyspark.sql import functions as F
 from pyspark.sql.types import ArrayType, LongType, MapType, StringType, StructField, StructType
 
-from base_classes.utils import collect_graph_metadata_file, epoch_millis_to_arrow_utc, timed
+from base_classes.spark_table_action import SparkTableAction
+from base_classes.utils import collect_graph_metadata_file, timed
 from collectors.utils import normalize_legacy_v1_metadata_dict
-from partition_files.constants import INLINE_MANIFESTS_ERROR, LEGACY_PARTITION_FIELD_ID_START, MISSING_SNAPSHOT_ERROR
-from spark_connect import open_spark_connect_session
+from partition_files.constants import INLINE_MANIFESTS_ERROR, LEGACY_PARTITION_FIELD_ID_START, MISSING_SNAPSHOT_ERROR, VOID_TRANSFORM
+from partition_files.utils import format_epoch_millis
 
 METADATA_SPEC_KEYS = ["format-version", "partition-specs", "partition-spec", "default-spec-id", "schemas", "schema", "current-schema-id"]
 SNAPSHOT_TIMESTAMPS_SCHEMA = ArrayType(StructType([StructField("snapshot-id", LongType()), StructField("timestamp-ms", LongType())]))
-TIMESTAMP_FORMAT = "YYYY-MM-DD HH:mm:ss.SSSSSS"
 
 
 @dataclass(frozen=True)
@@ -29,6 +29,14 @@ class PartitionSpec:
     spec_id: int
     fields: list[PartitionSpecField]
 
+    @property
+    def is_unpartitioned(self) -> bool:
+        for spec_field in self.fields:
+            if spec_field.transform != VOID_TRANSFORM:
+                return False
+
+        return True
+
 
 @dataclass
 class PartitionTableMetadata:
@@ -40,70 +48,68 @@ class PartitionTableMetadata:
     snapshot_timestamps: dict[int, str]
 
 
-def format_epoch_millis(timestamp_ms: Optional[int]) -> Optional[str]:
-    if timestamp_ms is None:
-        return None
+class PartitionTableMetadataReader(SparkTableAction):
+    def __init__(self, table_name: str, snapshot_id: int):
+        super().__init__(table_name)
+        self._snapshot_id = snapshot_id
 
-    return epoch_millis_to_arrow_utc(timestamp_ms).format(TIMESTAMP_FORMAT)
+    @timed
+    def read(self) -> PartitionTableMetadata:
+        metadata_path = collect_graph_metadata_file(self._table_name, None)
+        metadata_row = self._metadata_row_df(metadata_path).first()
 
+        if metadata_row.snapshot is None:
+            raise ValueError(MISSING_SNAPSHOT_ERROR.format(snapshot_id=self._snapshot_id, table_name=self._table_name))
 
-@timed
-def read_partition_table_metadata(table_name: str, snapshot_id: int) -> PartitionTableMetadata:
-    metadata_path = collect_graph_metadata_file(table_name, None)
-    metadata_row = _metadata_row_df(metadata_path, snapshot_id).first()
+        snapshot = json.loads(metadata_row.snapshot)
+        if not snapshot.get("manifest-list"):
+            raise ValueError(INLINE_MANIFESTS_ERROR.format(snapshot_id=self._snapshot_id))
 
-    if metadata_row.snapshot is None:
-        raise ValueError(MISSING_SNAPSHOT_ERROR.format(snapshot_id=snapshot_id, table_name=table_name))
+        metadata = {key: json.loads(value) for key, value in (metadata_row.metadata or {}).items() if value is not None}
+        normalize_legacy_v1_metadata_dict(metadata)
 
-    snapshot = json.loads(metadata_row.snapshot)
-    if not snapshot.get("manifest-list"):
-        raise ValueError(INLINE_MANIFESTS_ERROR.format(snapshot_id=snapshot_id))
-
-    metadata = {key: json.loads(value) for key, value in (metadata_row.metadata or {}).items() if value is not None}
-    normalize_legacy_v1_metadata_dict(metadata)
-
-    return PartitionTableMetadata(
-        format_version=metadata.get("format-version", 1),
-        specs_by_id=_parse_specs(metadata.get("partition-specs") or []),
-        schemas=metadata.get("schemas") or [],
-        current_schema_id=metadata.get("current-schema-id", 0),
-        snapshot=snapshot,
-        snapshot_timestamps={entry["snapshot-id"]: format_epoch_millis(entry["timestamp-ms"]) for entry in metadata_row.snapshot_timestamps or []},
-    )
-
-
-def _metadata_row_df(metadata_path: str, snapshot_id: int):
-    metadata = F.col("metadata")
-    snapshots = F.from_json(metadata.getItem("snapshots"), ArrayType(StringType()))
-
-    return (
-        open_spark_connect_session()
-        .read.text(metadata_path, wholetext=True)
-        .select(F.from_json("value", MapType(StringType(), StringType())).alias("metadata"))
-        .select(
-            F.map_filter(metadata, lambda key, _value: key.isin(METADATA_SPEC_KEYS)).alias("metadata"),
-            F.get(F.filter(snapshots, lambda snapshot: _snapshot_id_of(snapshot) == F.lit(str(snapshot_id))), 0).alias("snapshot"),
-            F.from_json(metadata.getItem("snapshots"), SNAPSHOT_TIMESTAMPS_SCHEMA).alias("snapshot_timestamps"),
+        return PartitionTableMetadata(
+            format_version=metadata.get("format-version", 1),
+            specs_by_id=self._parse_specs(metadata.get("partition-specs") or []),
+            schemas=metadata.get("schemas") or [],
+            current_schema_id=metadata.get("current-schema-id", 0),
+            snapshot=snapshot,
+            snapshot_timestamps={
+                entry["snapshot-id"]: format_epoch_millis(entry["timestamp-ms"]) for entry in metadata_row.snapshot_timestamps or []
+            },
         )
-    )
 
+    def _metadata_row_df(self, metadata_path: str):
+        metadata = F.col("metadata")
+        snapshots = F.from_json(metadata.getItem("snapshots"), ArrayType(StringType()))
 
-def _snapshot_id_of(snapshot: Column) -> Column:
-    return F.get_json_object(snapshot, "$['snapshot-id']")
-
-
-def _parse_specs(raw_specs: list[dict[str, Any]]) -> dict[int, PartitionSpec]:
-    specs_by_id = {}
-    for raw_spec in raw_specs:
-        fields = [
-            PartitionSpecField(
-                field_id=raw_field.get("field-id", LEGACY_PARTITION_FIELD_ID_START + index),
-                name=raw_field["name"],
-                transform=raw_field["transform"],
-                source_id=raw_field.get("source-id"),
+        return (
+            self._spark.read.text(metadata_path, wholetext=True)
+            .select(F.from_json("value", MapType(StringType(), StringType())).alias("metadata"))
+            .select(
+                F.map_filter(metadata, lambda key, _value: key.isin(METADATA_SPEC_KEYS)).alias("metadata"),
+                F.get(F.filter(snapshots, lambda snapshot: self._snapshot_id_of(snapshot) == F.lit(str(self._snapshot_id))), 0).alias("snapshot"),
+                F.from_json(metadata.getItem("snapshots"), SNAPSHOT_TIMESTAMPS_SCHEMA).alias("snapshot_timestamps"),
             )
-            for index, raw_field in enumerate(raw_spec.get("fields") or [])
-        ]
-        specs_by_id[raw_spec["spec-id"]] = PartitionSpec(spec_id=raw_spec["spec-id"], fields=fields)
+        )
 
-    return specs_by_id
+    @staticmethod
+    def _snapshot_id_of(snapshot: Column) -> Column:
+        return F.get_json_object(snapshot, "$['snapshot-id']")
+
+    @staticmethod
+    def _parse_specs(raw_specs: list[dict[str, Any]]) -> dict[int, PartitionSpec]:
+        specs_by_id = {}
+        for raw_spec in raw_specs:
+            fields = [
+                PartitionSpecField(
+                    field_id=raw_field.get("field-id", LEGACY_PARTITION_FIELD_ID_START + index),
+                    name=raw_field["name"],
+                    transform=raw_field["transform"],
+                    source_id=raw_field.get("source-id"),
+                )
+                for index, raw_field in enumerate(raw_spec.get("fields") or [])
+            ]
+            specs_by_id[raw_spec["spec-id"]] = PartitionSpec(spec_id=raw_spec["spec-id"], fields=fields)
+
+        return specs_by_id
