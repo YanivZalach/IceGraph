@@ -16,6 +16,7 @@ import {
   type SpecSearch,
   type SpecView,
 } from "./tableSpecs";
+import { useSpecsMetadataSource } from "./useSpecsMetadataSource";
 import {
   graphCacheIssueQueryOptions,
   graphProgressQueryOptions,
@@ -30,11 +31,7 @@ export const TableSpecsProvider = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const pathname = useRouterState({
-    select: (state) => state.location.pathname,
-  });
-  const isTablePage = pathname.startsWith("/table/");
-  const isLatestPage = /^\/(snapshots-selection$|partition\/)/.test(pathname);
+  const { isTablePage, shouldUseCurrentMetadata } = useSpecsMetadataSource();
   const isSpecsHistoryEntry = useRouterState({
     select: (state) => isSpecsOverlayState(state.location.state),
   });
@@ -53,11 +50,12 @@ export const TableSpecsProvider = ({ children }: { children: ReactNode }) => {
   });
   const tableMetadataQuery = useQuery({
     ...tableMetadataQueryOptions(graphRequestParameters.tableName),
-    enabled: isLatestPage && graphRequestParameters.tableName !== "",
+    enabled:
+      shouldUseCurrentMetadata && graphRequestParameters.tableName !== "",
   });
   const specsMetadata = isTablePage
     ? graphQuery.data?.metadata
-    : isLatestPage
+    : shouldUseCurrentMetadata
       ? tableMetadataQuery.data
       : undefined;
   const graphCacheIssueQuery = useQuery(
