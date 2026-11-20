@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 from base_classes.utils import format_snapshot_summary, timed
 from collectors.collect_snapshots import SnapshotRecord
@@ -14,11 +14,11 @@ from partition_files.constants import (
     STAGE_READ_MANIFEST_ENTRIES,
     STAGE_READ_TABLE_METADATA,
 )
-from partition_files.manifest_pruning import ManifestPruner
-from partition_files.partition_entries import PartitionEntriesCollector
+from partition_files.manifest_pruning import ManifestPruner, ManifestPruningResult
+from partition_files.partition_entries import PartitionEntries, PartitionEntriesCollector
 from partition_files.partition_filter import PartitionFilter, PartitionFilterField, PartitionFilterResolver, SpecPredicate
-from partition_files.partition_nodes import DeleteFileMatcher, PartitionNodeBuilder
-from partition_files.partition_table_metadata import PartitionTableMetadataReader
+from partition_files.partition_nodes import DeleteFileMatcher, PartitionFileRecord, PartitionManifestRecord, PartitionNodeBuilder
+from partition_files.partition_table_metadata import PartitionTableMetadata, PartitionTableMetadataReader
 from partition_files.utils import format_epoch_millis
 
 
@@ -35,52 +35,87 @@ class PartitionFiles:
         self._raw_filters = raw_filters
         self._on_stage = on_stage
 
+        self._metadata: Optional[PartitionTableMetadata] = None
+        self._partition_filter: Optional[PartitionFilter] = None
+        self._pruning: Optional[ManifestPruningResult] = None
+        self._entries: Optional[PartitionEntries] = None
+
+        self._files: list[PartitionFileRecord] = []
+        self._manifests: list[PartitionManifestRecord] = []
+        self._snapshot: Optional[SnapshotRecord] = None
+
     @timed
     def build(self) -> dict[str, Any]:
-        with self._stage(STAGE_READ_TABLE_METADATA):
-            metadata = PartitionTableMetadataReader(self._table_name, self._snapshot_id).read()
-            partition_filter = PartitionFilterResolver(metadata).resolve(self._raw_filters)
+        self._on_stage_start(STAGE_READ_TABLE_METADATA)
+        try:
+            self._read_metadata_and_filter()
+        finally:
+            self._on_stage_end(STAGE_READ_TABLE_METADATA)
 
-        with self._stage(STAGE_PRUNE_MANIFESTS):
-            pruning = ManifestPruner(self._table_name, metadata.snapshot["manifest-list"], partition_filter).prune()
-            if len(pruning.manifests) > Env.MAX_MANIFESTS_TO_COLLECT:
-                self._raise_limit_error(partition_filter, Env.MAX_MANIFESTS_TO_COLLECT, "manifests")
+        self._on_stage_start(STAGE_PRUNE_MANIFESTS)
+        try:
+            self._prune_manifests()
+        finally:
+            self._on_stage_end(STAGE_PRUNE_MANIFESTS)
 
-        with self._stage(STAGE_READ_MANIFEST_ENTRIES):
-            entries = PartitionEntriesCollector(self._table_name, pruning.manifests, Env.MAX_PARTITION_FILES_TO_COLLECT).collect()
-            if len(entries.rows) > Env.MAX_PARTITION_FILES_TO_COLLECT:
-                self._raise_limit_error(partition_filter, Env.MAX_PARTITION_FILES_TO_COLLECT, "files")
+        self._on_stage_start(STAGE_READ_MANIFEST_ENTRIES)
+        try:
+            self._collect_entries()
+        finally:
+            self._on_stage_end(STAGE_READ_MANIFEST_ENTRIES)
 
-        with self._stage(STAGE_MATCH_DELETE_FILES):
-            node_builder = PartitionNodeBuilder(metadata, self._snapshot_id)
-            files = node_builder.build_files(entries.rows)
-            unpartitioned_spec_ids = {spec_id for spec_id, spec in metadata.specs_by_id.items() if spec.is_unpartitioned}
-            DeleteFileMatcher(files, unpartitioned_spec_ids).match()
-            manifests = node_builder.build_manifests(pruning.manifests, files, entries.manifest_errors)
-            snapshot = self._build_snapshot_record(metadata.snapshot, [manifest.file_path for manifest in manifests])
-            snapshot.errors.extend(pruning.errors)
+        self._on_stage_start(STAGE_MATCH_DELETE_FILES)
+        try:
+            self._build_nodes()
+        finally:
+            self._on_stage_end(STAGE_MATCH_DELETE_FILES)
 
-        return to_json_safe(
-            {
-                "nodes": [snapshot.to_dict()] + [manifest.to_dict() for manifest in manifests] + [file.to_dict() for file in files],
-                "summary": {
-                    "table_name": self._table_name,
-                    "snapshot_id": self._snapshot_id,
-                    "snapshot_timestamp": snapshot.timestamp,
-                    "format_version": metadata.format_version,
-                    "filters": [self._describe_filter_field(filter_field) for filter_field in partition_filter.fields],
-                    "undecided_spec_ids": sorted(
-                        spec_id for spec_id, spec_filter in partition_filter.spec_filters.items() if not spec_filter.is_complete
-                    ),
-                    "undecided_files_count": sum(1 for file in files if file.partition_match == PARTITION_MATCH_UNDECIDED),
-                },
-                "errors": {},
-                "warnings": {},
-            }
-        )
+        return to_json_safe({"nodes": self._node_dicts(), "summary": self._summary(), "errors": {}, "warnings": {}})
 
-    def _stage(self, stage_name: str):
-        return _Stage(self._on_stage, stage_name)
+    def _read_metadata_and_filter(self) -> None:
+        self._metadata = PartitionTableMetadataReader(self._table_name, self._snapshot_id).read()
+        self._partition_filter = PartitionFilterResolver(self._metadata).resolve(self._raw_filters)
+
+    def _prune_manifests(self) -> None:
+        self._pruning = ManifestPruner(self._table_name, self._metadata.snapshot["manifest-list"], self._partition_filter).prune()
+        if len(self._pruning.manifests) > Env.MAX_MANIFESTS_TO_COLLECT:
+            self._raise_limit_error(Env.MAX_MANIFESTS_TO_COLLECT, "manifests")
+
+    def _collect_entries(self) -> None:
+        self._entries = PartitionEntriesCollector(self._table_name, self._pruning.manifests, Env.MAX_PARTITION_FILES_TO_COLLECT).collect()
+        if len(self._entries.rows) > Env.MAX_PARTITION_FILES_TO_COLLECT:
+            self._raise_limit_error(Env.MAX_PARTITION_FILES_TO_COLLECT, "files")
+
+    def _build_nodes(self) -> None:
+        node_builder = PartitionNodeBuilder(self._metadata, self._snapshot_id)
+        self._files = node_builder.build_files(self._entries.rows)
+        unpartitioned_spec_ids = {spec_id for spec_id, spec in self._metadata.specs_by_id.items() if spec.is_unpartitioned}
+        DeleteFileMatcher(self._files, unpartitioned_spec_ids).match()
+        self._manifests = node_builder.build_manifests(self._pruning.manifests, self._files, self._entries.manifest_errors)
+        self._snapshot = self._build_snapshot_record(self._metadata.snapshot, [manifest.file_path for manifest in self._manifests])
+        self._snapshot.errors.extend(self._pruning.errors)
+
+    def _node_dicts(self) -> list[dict[str, Any]]:
+        return [self._snapshot.to_dict()] + [manifest.to_dict() for manifest in self._manifests] + [file.to_dict() for file in self._files]
+
+    def _summary(self) -> dict[str, Any]:
+        return {
+            "table_name": self._table_name,
+            "snapshot_id": self._snapshot_id,
+            "snapshot_timestamp": self._snapshot.timestamp,
+            "format_version": self._metadata.format_version,
+            "filters": [self._describe_filter_field(filter_field) for filter_field in self._partition_filter.fields],
+            "undecided_spec_ids": sorted(
+                spec_id for spec_id, spec_filter in self._partition_filter.spec_filters.items() if not spec_filter.is_complete
+            ),
+            "undecided_files_count": sum(1 for file in self._files if file.partition_match == PARTITION_MATCH_UNDECIDED),
+        }
+
+    def _on_stage_start(self, stage_name: str) -> None:
+        self._on_stage(stage_name, "in_progress")
+
+    def _on_stage_end(self, stage_name: str) -> None:
+        self._on_stage(stage_name, "done")
 
     def _build_snapshot_record(self, snapshot: dict[str, Any], manifest_paths: list[str]) -> SnapshotRecord:
         summary = {key: value for key, value in (snapshot.get("summary") or {}).items() if key != "operation"}
@@ -112,10 +147,10 @@ class PartitionFiles:
             "value": filter_field.raw_value,
         }
 
-    def _raise_limit_error(self, partition_filter: PartitionFilter, limit: int, kind: str) -> None:
+    def _raise_limit_error(self, limit: int, kind: str) -> None:
         message = PARTITION_FILES_LIMIT_ERROR.format(limit=limit, kind=kind, snapshot_id=self._snapshot_id)
 
-        raise PartitionFilesLimitError(message, self._build_spark_sql(partition_filter))
+        raise PartitionFilesLimitError(message, self._build_spark_sql(self._partition_filter))
 
     def _build_spark_sql(self, partition_filter: PartitionFilter) -> str:
         conditions = []
@@ -154,15 +189,3 @@ class PartitionFiles:
             return f"'{escaped_value}'"
 
         return str(value)
-
-
-class _Stage:
-    def __init__(self, on_stage: Callable[[str, str], None], stage_name: str):
-        self._on_stage = on_stage
-        self._stage_name = stage_name
-
-    def __enter__(self):
-        self._on_stage(self._stage_name, "in_progress")
-
-    def __exit__(self, *_exc_info):
-        self._on_stage(self._stage_name, "done")
