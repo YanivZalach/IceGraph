@@ -25,6 +25,7 @@ import SpecDetailsOverlay from "../features/specs/components/SpecDetailsOverlay"
 import SnapshotSelectionAssistant from "../features/assistant/components/SnapshotSelectionAssistant";
 import LoadingIndicator from "../components/LoadingIndicator";
 import PartitionFilterForm from "../features/partition/components/PartitionFilterForm";
+import type { PartitionFilesRequest } from "../features/partition/api/partitionFilesQueries";
 import { isKeyboardInputTarget } from "../shared/lib/keyboard";
 
 interface TableRangeSelection {
@@ -58,8 +59,14 @@ const SnapshotSelectionPage = () => {
   const [graphParameters, setGraphParameters] =
     useState<GraphRequestParameters | null>(null);
   const isPreparingGraph = graphParameters?.tableName === tableName;
+  const [partitionRequest, setPartitionRequest] =
+    useState<PartitionFilesRequest | null>(null);
+  const isPreparingPartition = partitionRequest?.tableName === tableName;
   const canGenerate =
-    tableName !== "" && isSnapshotListReady && !isPreparingGraph;
+    tableName !== "" &&
+    isSnapshotListReady &&
+    !isPreparingGraph &&
+    !isPreparingPartition;
   useMetadataKeyboardScroll(detailsOpen);
 
   const handleGenerate = (): void => {
@@ -123,6 +130,7 @@ const SnapshotSelectionPage = () => {
             setSelection({ tableName, range: nextRange });
           }}
           onGenerate={handleGenerate}
+          canGenerate={canGenerate}
           hasOlderSnapshots={snapshotQuery.hasNextPage}
           isLoadingOlderSnapshots={snapshotQuery.isFetchingNextPage}
           olderSnapshotsError={
@@ -175,11 +183,19 @@ const SnapshotSelectionPage = () => {
           afterSummary={
             <>
               {snapshotSelection}
-              {isSnapshotListReady && !isPreparingGraph && (
+              {isSnapshotListReady && (
                 <PartitionFilterForm
                   tableName={tableName}
                   entries={entries}
                   metadata={metadataQuery.data}
+                  preparingRequest={
+                    isPreparingPartition ? partitionRequest : null
+                  }
+                  canRun={!isPreparingGraph}
+                  onRun={setPartitionRequest}
+                  onBack={() => {
+                    setPartitionRequest(null);
+                  }}
                 />
               )}
             </>

@@ -21,7 +21,9 @@ const partitionFilesQueryKey = (request: PartitionFilesRequest) =>
     "partition-files",
     request.tableName,
     request.snapshotId,
-    request.filters.map(({ name, value }) => [name, value]),
+    [...request.filters]
+      .sort((first, second) => first.name.localeCompare(second.name))
+      .map(({ name, value }) => [name, value]),
   ] as const;
 
 const partitionFilesProgressQueryKey = (request: PartitionFilesRequest) =>

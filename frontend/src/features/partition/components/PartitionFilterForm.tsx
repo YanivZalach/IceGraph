@@ -1,24 +1,30 @@
 import { useState, type SubmitEvent } from "react";
-import { useNavigate, useSearch } from "@tanstack/react-router";
+import { useSearch } from "@tanstack/react-router";
 import HelpTerm from "../../../shared/components/HelpTerm";
 import {
   UI_BODY_MUTED_CLASS,
+  UI_FIELD_LABEL_CLASS,
   UI_PAGE_TITLE_CLASS,
 } from "../../../uiTypography";
-import { formatLocaleDateTime, parseUtcDate } from "../../../utils/dateUtils";
+import SnapshotTable from "../../snapshots/components/SnapshotTable";
 import type { SnapshotEntry } from "../../snapshots/snapshotRange";
 import type { TableMetadata } from "../../table/api/metadataSchemas";
+import type { PartitionFilesRequest } from "../api/partitionFilesQueries";
 import {
   listPartitionFields,
-  partitionFilterSearch,
   partitionValuePlaceholder,
   readPartitionFilters,
 } from "../partitionFilters";
+import PartitionPreparation from "./PartitionPreparation";
 
 interface PartitionFilterFormProps {
   tableName: string;
   entries: readonly SnapshotEntry[];
   metadata: TableMetadata | undefined;
+  preparingRequest: PartitionFilesRequest | null;
+  canRun: boolean;
+  onRun: (request: PartitionFilesRequest) => void;
+  onBack: () => void;
 }
 
 const CONTROL_CLASS =
@@ -28,9 +34,12 @@ const PartitionFilterForm = ({
   tableName,
   entries,
   metadata,
+  preparingRequest,
+  canRun,
+  onRun,
+  onBack,
 }: PartitionFilterFormProps) => {
   const search = useSearch({ from: "/snapshots-selection" });
-  const navigate = useNavigate();
   const fields = listPartitionFields(metadata);
   const [chosenSnapshotId, setChosenSnapshotId] = useState<string | null>(null);
   const [values, setValues] = useState<Record<string, string | undefined>>(() =>
@@ -53,21 +62,21 @@ const PartitionFilterForm = ({
     const value = values[name];
     return value === undefined ? [] : [{ name, value }];
   });
-  const canOpen = snapshotId !== "" && filters.length > 0;
+  const canOpen = canRun && snapshotId !== "" && filters.length > 0;
 
   if (fields.length === 0) return null;
+
+  if (preparingRequest !== null)
+    return (
+      <section className="rounded-2xl border border-edge bg-surface p-6 shadow-xl">
+        <PartitionPreparation request={preparingRequest} onBack={onBack} />
+      </section>
+    );
 
   const handleSubmit = (event: SubmitEvent<HTMLFormElement>): void => {
     event.preventDefault();
     if (!canOpen) return;
-    void navigate({
-      to: "/partition/filetree",
-      search: {
-        table: tableName,
-        snapshot: snapshotId,
-        ...partitionFilterSearch(filters),
-      },
-    });
+    onRun({ tableName, snapshotId, filters });
   };
 
   return (
@@ -85,28 +94,20 @@ const PartitionFilterForm = ({
         values.
       </p>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <label className="flex flex-col gap-1.5 text-xs font-bold uppercase tracking-wide text-slate-500">
-          Snapshot
-          <select
-            value={snapshotId}
-            onChange={(event) => {
-              setChosenSnapshotId(event.target.value);
-            }}
-            className={CONTROL_CLASS}
-          >
-            {snapshotOptions.map((entry) => (
-              <option key={entry.snapshotId} value={entry.snapshotId}>
-                {[
-                  formatLocaleDateTime(parseUtcDate(entry.timestamp)),
-                  entry.operation,
-                  entry.snapshotId,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="flex flex-col gap-1.5">
+          <span className={UI_FIELD_LABEL_CLASS}>Snapshot</span>
+          <SnapshotTable
+            ariaLabel="Partition snapshot, newest first"
+            entries={snapshotOptions}
+            markingOf={(entry) => ({
+              isEdge: entry.snapshotId === snapshotId,
+              isInRange: false,
+              isAnchor: false,
+              badges: [],
+            })}
+            onSelect={setChosenSnapshotId}
+          />
+        </div>
         <div className="grid gap-3 sm:grid-cols-2">
           {fields.map((field) => (
             <label
@@ -140,7 +141,7 @@ const PartitionFilterForm = ({
         <button
           type="submit"
           disabled={!canOpen}
-          className="w-full cursor-pointer rounded-lg border-2 border-accent py-3 font-bold text-accent transition-colors hover:bg-accent-muted disabled:cursor-not-allowed disabled:border-edge disabled:text-slate-600"
+          className="w-full cursor-pointer rounded-lg bg-accent py-3 font-bold text-white transition-colors hover:bg-accent-dark disabled:cursor-not-allowed disabled:bg-edge disabled:text-slate-500"
         >
           Open Partition Files
         </button>
