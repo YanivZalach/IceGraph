@@ -60,13 +60,16 @@ class CollectDataFiles(Collector):
 
     @timed
     def collect(self) -> FilesCollection:
-        data_files_rows = DataFilesExtractor(self._table_name, self._manifests).extract_dataframe().collect()
+        newest_data_files_rows = DataFilesExtractor(self._table_name, self._manifests).extract_dataframe().collect()
 
-        self._data_files = [self._process_data_file_row(data_file_row) for data_file_row in data_files_rows if data_file_row.included]
-
-        cutoff = self._find_cutoff(data_files_rows)
+        cutoff = self._find_cutoff(newest_data_files_rows)
         if cutoff is None:
+            self._data_files = [self._process_data_file_row(data_file_row) for data_file_row in newest_data_files_rows]
+
             return FilesCollection(files=self._data_files)
+
+        included_rows = [data_file_row for data_file_row in newest_data_files_rows if self._is_newer_than_cutoff(data_file_row, cutoff)]
+        self._data_files = [self._process_data_file_row(data_file_row) for data_file_row in included_rows]
 
         warnings = {"data_files_cutoff": [self._build_cutoff_warning(cutoff)]}
         return FilesCollection(files=self._data_files, warnings=warnings, data_files_cutoff_reached=True)
@@ -134,15 +137,23 @@ class CollectDataFiles(Collector):
         return FileType.EQUALITY_DELETE
 
     @staticmethod
-    def _find_cutoff(data_files_rows) -> Optional[DataFilesCutoff]:
-        if not data_files_rows:
+    def _find_cutoff(newest_data_files_rows) -> Optional[DataFilesCutoff]:
+        if len(newest_data_files_rows) <= Env.MAX_DATA_FILES_TO_COLLECT:
             return None
 
-        first_row = data_files_rows[0]
-        if not first_row.data_files_cutoff_reached:
-            return None
+        first_excluded_row = newest_data_files_rows[Env.MAX_DATA_FILES_TO_COLLECT]
 
-        return DataFilesCutoff(first_row.cutoff_snapshot_id, first_row.cutoff_snapshot_timestamp)
+        return DataFilesCutoff(first_excluded_row.latest_snapshot_id, first_excluded_row.latest_snapshot_timestamp)
+
+    @staticmethod
+    def _is_newer_than_cutoff(data_file_row, cutoff: DataFilesCutoff) -> bool:
+        if data_file_row.latest_snapshot_timestamp is None:
+            return False
+
+        if cutoff.snapshot_timestamp is None:
+            return True
+
+        return data_file_row.latest_snapshot_timestamp > cutoff.snapshot_timestamp
 
     @staticmethod
     def _build_cutoff_warning(cutoff: DataFilesCutoff) -> str:

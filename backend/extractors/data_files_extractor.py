@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 from typing import List
 
 import pyspark
@@ -50,6 +51,7 @@ DATA_FILE_RECORD_SCHEMA = StructType(
 
 DATA_FILE_CONTENT_DATA = 0
 MANIFEST_ENTRY_STATUS_DELETED = 2
+MANIFEST_READ_WORKERS = 8
 
 
 class DataFilesExtractor(Extractor):
@@ -58,22 +60,17 @@ class DataFilesExtractor(Extractor):
         self._manifest_entries = manifest_entries
 
     def extract_dataframe(self) -> pyspark.sql.DataFrame:
-        data_files_df = self._collect_data_files_from_manifests(self._manifest_entries)
-        data_files_with_latest_ts_df = self._match_data_file_to_latest_snapshot(data_files_df)
+        manifest_entries_df = self._collect_data_files_from_manifests(self._manifest_entries)
+        data_files_df = self._group_entries_by_data_file(manifest_entries_df)
 
-        data_files_by_manifests_df = self._group_data_files_by_manifests(data_files_df)
-
-        data_files_with_manifest_entries_df = self._join_data_file_with_manifest_entries(data_files_with_latest_ts_df, data_files_by_manifests_df)
-        data_files_limited_df = self._limit_and_rank_files_by_snapshot_timestamp(data_files_with_manifest_entries_df)
-
-        cutoff_snapshot_df = self._find_cutoff_snapshot(data_files_limited_df)
-
-        return self._mark_included_data_files(data_files_limited_df, cutoff_snapshot_df)
+        return self._select_newest_data_files(data_files_df)
 
     def _collect_data_files_from_manifests(self, manifest_rows):
+        with ThreadPoolExecutor(max_workers=MANIFEST_READ_WORKERS) as executor:
+            manifest_dfs = list(executor.map(self._read_manifest, manifest_rows))
+
         avro_df = None
-        for manifest_entry in manifest_rows:
-            df = self._read_source(manifest_entry, lambda: self._collect_data_files_from_manifest(manifest_entry))
+        for df in manifest_dfs:
             if df is None:
                 continue
 
@@ -86,6 +83,9 @@ class DataFilesExtractor(Extractor):
             return self._spark.createDataFrame([], DATA_FILE_RECORD_SCHEMA)
 
         return avro_df
+
+    def _read_manifest(self, manifest_entry: ManifestRecord):
+        return self._read_source(manifest_entry, lambda: self._collect_data_files_from_manifest(manifest_entry))
 
     def _collect_data_files_from_manifest(self, manifest_entry: ManifestRecord):
         df = self._spark.read.format("avro").load(manifest_entry.file_path).select("status", "data_file")
@@ -167,105 +167,70 @@ class DataFilesExtractor(Extractor):
         )
 
     @staticmethod
-    def _match_data_file_to_latest_snapshot(avro_df):
-        window_desc = Window.partitionBy("node_id").orderBy(F.desc("added_snapshot_timestamp"))
-        window_asc = Window.partitionBy("node_id").orderBy(F.asc("added_snapshot_timestamp"))
+    def _group_entries_by_data_file(manifest_entries_df):
+        added_snapshot_timestamp = F.col("added_snapshot_timestamp")
+        timestamp_with_nulls_first = F.struct(added_snapshot_timestamp.isNotNull(), added_snapshot_timestamp)
 
-        avro_df = (
-            avro_df.withColumn("row_num", F.row_number().over(window_desc))
-            .withColumn("earliest_snapshot_timestamp", F.first("added_snapshot_timestamp").over(window_asc))
-            .withColumn("earliest_snapshot_id", F.first("added_snapshot_id").over(window_asc))
-        )
-
-        latest_df = avro_df.filter(F.col("row_num") == 1).select(
-            F.col("node_id"),
-            F.col("data_file"),
-            F.col("referenced_data_file"),
-            F.col("content_offset"),
-            F.col("content_size_in_bytes"),
-            F.col("added_snapshot_timestamp").alias("latest_snapshot_timestamp"),
-            F.col("added_snapshot_id").alias("latest_snapshot_id"),
-            F.col("earliest_snapshot_timestamp"),
-            F.col("earliest_snapshot_id"),
-        )
-        return latest_df
-
-    @staticmethod
-    def _group_data_files_by_manifests(avro_df):
-        manifest_entries_df = avro_df.groupBy("node_id").agg(
-            F.collect_list(
-                F.struct(
-                    F.col("manifest_path").alias("path"),
-                    F.col("status").alias("status"),
-                )
-            ).alias("pointing_manifests"),
-            F.collect_list(
-                F.struct(
-                    F.col("manifest_path").alias("path"),
-                    F.col("stored_first_row_id").alias("stored_first_row_id"),
-                    F.col("row_id_offset").alias("row_id_offset"),
-                )
-            ).alias("row_id_entries"),
-        )
-        return manifest_entries_df
-
-    @staticmethod
-    def _join_data_file_with_manifest_entries(latest_df, manifest_entries_df):
-        return manifest_entries_df.join(latest_df, on="node_id", how="inner").select(
-            "node_id",
+        latest_entry = F.struct(
+            "data_file",
             "referenced_data_file",
             "content_offset",
             "content_size_in_bytes",
-            "pointing_manifests",
-            "row_id_entries",
-            "latest_snapshot_id",
-            "latest_snapshot_timestamp",
-            "earliest_snapshot_id",
-            "earliest_snapshot_timestamp",
-            "data_file.file_path",
-            "data_file.content",
-            "data_file.file_format",
-            "data_file.file_size_in_bytes",
-            "data_file.record_count",
-            "data_file.partition",
-            "data_file.sort_order_id",
-            "data_file.split_offsets",
-            "data_file.key_metadata",
-            "data_file.equality_ids",
-            "data_file.column_sizes",
-            "data_file.value_counts",
-            "data_file.null_value_counts",
-            "data_file.nan_value_counts",
-            "data_file.lower_bounds",
-            "data_file.upper_bounds",
+            F.col("added_snapshot_id").alias("snapshot_id"),
+            added_snapshot_timestamp.alias("snapshot_timestamp"),
+        )
+        earliest_entry = F.struct(
+            F.col("added_snapshot_id").alias("snapshot_id"),
+            added_snapshot_timestamp.alias("snapshot_timestamp"),
+        )
+        pointing_manifest = F.struct(
+            F.col("manifest_path").alias("path"),
+            F.col("status").alias("status"),
+        )
+        row_id_entry = F.struct(
+            F.col("manifest_path").alias("path"),
+            F.col("stored_first_row_id").alias("stored_first_row_id"),
+            F.col("row_id_offset").alias("row_id_offset"),
+        )
+
+        return manifest_entries_df.groupBy("node_id").agg(
+            F.max_by(latest_entry, timestamp_with_nulls_first).alias("latest_entry"),
+            F.min_by(earliest_entry, timestamp_with_nulls_first).alias("earliest_entry"),
+            F.collect_list(pointing_manifest).alias("pointing_manifests"),
+            F.collect_list(row_id_entry).alias("row_id_entries"),
         )
 
     @staticmethod
-    def _limit_and_rank_files_by_snapshot_timestamp(df):
-        df = df.orderBy(F.desc("latest_snapshot_timestamp")).limit(Env.MAX_DATA_FILES_TO_COLLECT + 1)
-
-        row_num_window = Window.orderBy(F.desc("latest_snapshot_timestamp"))
-        df = df.withColumn("row_num", F.row_number().over(row_num_window))
-
-        return df
-
-    @staticmethod
-    def _find_cutoff_snapshot(df):
-        return df.filter(F.col("row_num") == Env.MAX_DATA_FILES_TO_COLLECT + 1).agg(
-            (F.count("*") > 0).alias("data_files_cutoff_reached"),
-            F.first("latest_snapshot_id").alias("cutoff_snapshot_id"),
-            F.first("latest_snapshot_timestamp").alias("cutoff_snapshot_timestamp"),
-        )
-
-    @staticmethod
-    def _mark_included_data_files(grouped_files_limited_df, cutoff_snapshot_df):
+    def _select_newest_data_files(data_files_df):
         return (
-            grouped_files_limited_df.join(F.broadcast(cutoff_snapshot_df), how="cross")
-            .withColumn(
-                "included",
-                ~F.col("data_files_cutoff_reached")
-                | (F.col("latest_snapshot_timestamp") > F.coalesce(F.col("cutoff_snapshot_timestamp"), F.lit(0).cast("timestamp"))),
+            data_files_df.select(
+                "node_id",
+                "latest_entry.referenced_data_file",
+                "latest_entry.content_offset",
+                "latest_entry.content_size_in_bytes",
+                "pointing_manifests",
+                "row_id_entries",
+                F.col("latest_entry.snapshot_id").alias("latest_snapshot_id"),
+                F.col("latest_entry.snapshot_timestamp").alias("latest_snapshot_timestamp"),
+                F.col("earliest_entry.snapshot_id").alias("earliest_snapshot_id"),
+                F.col("earliest_entry.snapshot_timestamp").alias("earliest_snapshot_timestamp"),
+                "latest_entry.data_file.file_path",
+                "latest_entry.data_file.content",
+                "latest_entry.data_file.file_format",
+                "latest_entry.data_file.file_size_in_bytes",
+                "latest_entry.data_file.record_count",
+                "latest_entry.data_file.partition",
+                "latest_entry.data_file.sort_order_id",
+                "latest_entry.data_file.split_offsets",
+                "latest_entry.data_file.key_metadata",
+                "latest_entry.data_file.equality_ids",
+                "latest_entry.data_file.column_sizes",
+                "latest_entry.data_file.value_counts",
+                "latest_entry.data_file.null_value_counts",
+                "latest_entry.data_file.nan_value_counts",
+                "latest_entry.data_file.lower_bounds",
+                "latest_entry.data_file.upper_bounds",
             )
-            .filter(F.col("included") | (F.col("row_num") == Env.MAX_DATA_FILES_TO_COLLECT + 1))
-            .drop("row_num", "latest_snapshot_timestamp", "latest_snapshot_id")
+            .orderBy(F.desc("latest_snapshot_timestamp"))
+            .limit(Env.MAX_DATA_FILES_TO_COLLECT + 1)
         )
