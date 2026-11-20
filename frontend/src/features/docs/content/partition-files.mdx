@@ -28,6 +28,4 @@ Shows the same files as a graph, with the snapshot and the manifests that hold t
 
 When a partition has more files than the backend limit (`MAX_PARTITION_FILES_TO_COLLECT`, or `MAX_MANIFESTS_TO_COLLECT` for manifests to read), IceGraph doesn't show a partial result. It shows an error with a Spark SQL query you can run in your own Spark session to list every file of the partition from the `files` metadata table at that snapshot.
 
-**Ask AI** answers questions about the partition, with the partition filter and the chips you select as context.
-
 Table, snapshot, filter, group-by, and search are stored in the URL, so a partition view can be refreshed or shared. Select the table name in the top bar to return to the snapshot selection page.
