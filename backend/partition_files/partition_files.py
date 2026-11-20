@@ -1,9 +1,7 @@
-from datetime import date
 from typing import Any, Callable, Optional
 
-from base_classes.utils import format_snapshot_summary, timed
+from base_classes.utils import timed
 from collectors.collect_snapshots import SnapshotRecord
-from constants import FileType
 from env import Env
 from graph_normalizer.utils import to_json_safe
 from partition_files.constants import (
@@ -16,10 +14,10 @@ from partition_files.constants import (
 )
 from partition_files.manifest_pruning import ManifestPruner, ManifestPruningResult
 from partition_files.partition_entries import PartitionEntries, PartitionEntriesCollector
-from partition_files.partition_filter import PartitionFilter, PartitionFilterField, PartitionFilterResolver, SpecPredicate
+from partition_files.partition_files_sql import PartitionFilesSqlBuilder
+from partition_files.partition_filter import PartitionFilter, PartitionFilterField, PartitionFilterResolver
 from partition_files.partition_nodes import DeleteFileMatcher, PartitionFileRecord, PartitionManifestRecord, PartitionNodeBuilder
 from partition_files.partition_table_metadata import PartitionTableMetadata, PartitionTableMetadataReader
-from partition_files.utils import format_epoch_millis
 
 
 class PartitionFilesLimitError(ValueError):
@@ -92,8 +90,7 @@ class PartitionFiles:
         unpartitioned_spec_ids = {spec_id for spec_id, spec in self._metadata.specs_by_id.items() if spec.is_unpartitioned}
         DeleteFileMatcher(self._files, unpartitioned_spec_ids).match()
         self._manifests = node_builder.build_manifests(self._pruning.manifests, self._files, self._entries.manifest_errors)
-        self._snapshot = self._build_snapshot_record(self._metadata.snapshot, [manifest.file_path for manifest in self._manifests])
-        self._snapshot.errors.extend(self._pruning.errors)
+        self._snapshot = node_builder.build_snapshot(self._manifests, self._pruning.errors)
 
     def _node_dicts(self) -> list[dict[str, Any]]:
         return [self._snapshot.to_dict()] + [manifest.to_dict() for manifest in self._manifests] + [file.to_dict() for file in self._files]
@@ -117,25 +114,6 @@ class PartitionFiles:
     def _on_stage_end(self, stage_name: str) -> None:
         self._on_stage(stage_name, "done")
 
-    def _build_snapshot_record(self, snapshot: dict[str, Any], manifest_paths: list[str]) -> SnapshotRecord:
-        summary = {key: value for key, value in (snapshot.get("summary") or {}).items() if key != "operation"}
-        operation = (snapshot.get("summary") or {}).get("operation")
-
-        return SnapshotRecord(
-            type=FileType.SNAPSHOT,
-            file_path=snapshot["manifest-list"],
-            timestamp=format_epoch_millis(snapshot.get("timestamp-ms")),
-            snapshot_id=snapshot["snapshot-id"],
-            action_link=None,
-            parent_id=snapshot.get("parent-snapshot-id"),
-            operation=operation,
-            operation_description=operation,
-            summary=format_snapshot_summary(summary),
-            first_row_id=snapshot.get("first-row-id"),
-            added_rows=snapshot.get("added-rows"),
-            child_files=manifest_paths,
-        )
-
     @staticmethod
     def _describe_filter_field(filter_field: PartitionFilterField) -> dict[str, Any]:
         return {
@@ -150,42 +128,4 @@ class PartitionFiles:
     def _raise_limit_error(self, limit: int, kind: str) -> None:
         message = PARTITION_FILES_LIMIT_ERROR.format(limit=limit, kind=kind, snapshot_id=self._snapshot_id)
 
-        raise PartitionFilesLimitError(message, self._build_spark_sql(self._partition_filter))
-
-    def _build_spark_sql(self, partition_filter: PartitionFilter) -> str:
-        conditions = []
-        for filter_field in partition_filter.fields:
-            condition = f"partition.`{filter_field.name.replace('`', '``')}` = {self._sql_literal(filter_field.value)}"
-            lacking_spec_ids = sorted(
-                spec_id
-                for spec_id, spec_filter in partition_filter.spec_filters.items()
-                if not self._spec_has_field(spec_filter.predicates, filter_field.field_id)
-            )
-            if lacking_spec_ids:
-                condition = f"({condition} OR spec_id IN ({', '.join(str(spec_id) for spec_id in lacking_spec_ids)}))"
-            conditions.append(condition)
-
-        return f"SELECT * FROM {self._table_name}.files VERSION AS OF {self._snapshot_id}\nWHERE " + "\n  AND ".join(conditions)
-
-    @staticmethod
-    def _spec_has_field(predicates: list[SpecPredicate], field_id: int) -> bool:
-        for predicate in predicates:
-            if predicate.filter_field.field_id == field_id:
-                return True
-
-        return False
-
-    @staticmethod
-    def _sql_literal(value: Any) -> str:
-        if isinstance(value, bool):
-            return "true" if value else "false"
-
-        if isinstance(value, date):
-            return f"DATE '{value.isoformat()}'"
-
-        if isinstance(value, str):
-            escaped_value = value.replace("\\", "\\\\").replace("'", "\\'")
-
-            return f"'{escaped_value}'"
-
-        return str(value)
+        raise PartitionFilesLimitError(message, PartitionFilesSqlBuilder(self._table_name, self._snapshot_id, self._partition_filter).build())

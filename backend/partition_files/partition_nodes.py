@@ -6,8 +6,10 @@ from typing import Optional
 
 from pyspark.sql import Row
 
+from base_classes.utils import format_snapshot_summary
 from collectors.collect_data_files import CollectDataFiles, DataFileRecord, HiddenDataFileMetadata
 from collectors.collect_manifests import HiddenManifestMetadata, ManifestRecord
+from collectors.collect_snapshots import SnapshotRecord
 from collectors.utils import format_partition
 from constants import FileType
 from iceberg_ports.readable_metrics import RawFileMetrics, ReadableMetricsConverter
@@ -22,6 +24,7 @@ from partition_files.constants import (
 from partition_files.manifest_pruning import ManifestCandidate
 from partition_files.partition_table_metadata import PartitionTableMetadata
 from partition_files.time_partition_values import format_time_transform_value
+from partition_files.utils import format_epoch_millis
 
 
 @dataclass
@@ -84,6 +87,28 @@ class PartitionNodeBuilder:
             manifest_records.append(self._build_manifest_record(manifest, children, errors))
 
         return manifest_records
+
+    def build_snapshot(self, manifests: list[PartitionManifestRecord], errors: list[str]) -> SnapshotRecord:
+        snapshot = self._metadata.snapshot
+        summary = {key: value for key, value in (snapshot.get("summary") or {}).items() if key != "operation"}
+        operation = (snapshot.get("summary") or {}).get("operation")
+        snapshot_record = SnapshotRecord(
+            type=FileType.SNAPSHOT,
+            file_path=snapshot["manifest-list"],
+            timestamp=format_epoch_millis(snapshot.get("timestamp-ms")),
+            snapshot_id=snapshot["snapshot-id"],
+            action_link=None,
+            parent_id=snapshot.get("parent-snapshot-id"),
+            operation=operation,
+            operation_description=operation,
+            summary=format_snapshot_summary(summary),
+            first_row_id=snapshot.get("first-row-id"),
+            added_rows=snapshot.get("added-rows"),
+            child_files=[manifest.file_path for manifest in manifests],
+        )
+        snapshot_record.errors.extend(errors)
+
+        return snapshot_record
 
     def _build_manifest_record(self, manifest: ManifestCandidate, children: list[PartitionFileRecord], errors: list[str]) -> PartitionManifestRecord:
         partitions = []
