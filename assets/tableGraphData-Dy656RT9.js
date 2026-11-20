@@ -1,0 +1,1 @@
+import{b as a}from"./index-DGMYSf6k.js";const e=a.createContext(null),o=()=>{const t=a.useContext(e);if(t===null)throw new Error("useTableGraphData must be used under its provider");return t};export{e as T,o as u};
