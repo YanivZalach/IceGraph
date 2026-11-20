@@ -86,7 +86,6 @@ export const docsSearchSchema = z.looseObject({
   section: z.string().optional(),
 });
 
-// Partition filter values are carried as "p.<partition field name>" params.
 export const partitionSearchSchema = z.looseObject({
   table: z.string().optional(),
   snapshot: z.string().optional(),

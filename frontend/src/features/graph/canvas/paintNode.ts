@@ -14,8 +14,6 @@ const NODE_TEXT_OUTLINE_COLOR = "#000000";
 const RING_WIDTH_PX = 3;
 const SEARCH_RING = { color: "#facc15", gapPx: 4, dashPx: [] };
 const PARTIAL_MANIFEST_RING = { color: "#f59e0b", gapPx: 10, dashPx: [8, 5] };
-// Partition files graph: the file's partition spec does not partition by a
-// filtered field, so it can't be excluded by partition values.
 const UNDECIDED_PARTITION_RING = {
   color: "#94a3b8",
   gapPx: 6,
