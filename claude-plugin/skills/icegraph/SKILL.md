@@ -323,6 +323,17 @@ state is in the URL, so you can link straight to one schema, partition spec, or 
   the table's latest metadata (take `spec_id` from a `metadata` command there). Invalid values are
   ignored. Changing table or snapshot range clears them.
 
+### Docs links
+
+To point the user at an explanation in the in-app documentation, link to
+`<base_url>/docs?section=<section id>`. An unknown or missing `section` opens the Overview. Section
+IDs, by nav group:
+
+- Getting Started: `overview`, `coding-agent`, `loading-a-table`, `tips`
+- Table Views: `timeline-view`, `metadata-view`, `filetree-view`, `graph-view`
+- Partition Files: `partition-files`, `partition-files-filetree`, `partition-files-graph`
+- General: `specs-panel`, `issues-panel`, `ai-assistant`, `keyboard-shortcuts`, `cli`
+
 ## 5. Tracing a snapshot back to the Spark job that wrote it
 
 A `graph` node with `type: "snapshot"` may have an `action_link` that points directly to the Spark

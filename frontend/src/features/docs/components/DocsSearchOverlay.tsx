@@ -162,7 +162,7 @@ const DocsSearchOverlay = ({
                     </div>
 
                     <div className="text-accent text-xs mt-1">
-                      Found in: {result.section.title}
+                      Found in: {result.section.group} / {result.section.title}
                       {result.totalInSection > 1 &&
                         ` - match ${String(result.occurrenceIndex + 1)} of ${String(result.totalInSection)}`}
                     </div>

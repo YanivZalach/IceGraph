@@ -16,14 +16,6 @@ IceGraph reads the snapshot's manifests the way Spark does for a partition filte
 
 A file written under a partition spec that doesn't partition by a filtered field can't be excluded by its partition values: its rows may belong to the partition or not. These files are shown as **undecided**, never dropped, so the result is complete. In the Graph tab they have a dashed gray outline; in the FileTree tab they are grouped under their own heading.
 
-### FileTree tab
-
-Lists the matched files. **Group by**, above the list, groups the files by any partition fields that are not part of the filter, in the order you click them; **None** shows one flat list. Search matches file paths and partition values. Select a file or a group to inspect it; a data file lists the delete files that apply to it, and a delete file lists the data files it applies to.
-
-### Graph tab
-
-Shows the same files as a graph, with the snapshot and the manifests that hold them. Delete files link to the data files they apply to with **deletes from** connections. A manifest or manifest list that can't be read is shown with its error, and the rest of the partition still loads. Search, selection, and lineage work as in the Graph view.
-
 ### Large partitions
 
 When a partition has more files than the backend limit (`MAX_PARTITION_FILES_TO_COLLECT`, or `MAX_MANIFESTS_TO_COLLECT` for manifests to read), IceGraph doesn't show a partial result. It shows an error with a Spark SQL query you can run in your own Spark session to list every file of the partition from the `files` metadata table at that snapshot.

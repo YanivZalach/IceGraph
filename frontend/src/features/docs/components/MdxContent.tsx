@@ -5,6 +5,7 @@ import { cn } from "../../../shared/lib/cn";
 interface MdxContentProps {
   Content: ComponentType<{ components?: MDXComponents }>;
   sectionId: string;
+  isShortcutList?: boolean;
 }
 
 interface AnchorProps {
@@ -12,8 +13,13 @@ interface AnchorProps {
   href?: string;
 }
 
-const MdxContent = ({ Content, sectionId }: MdxContentProps) => {
-  const isKeyboardShortcuts = sectionId === "keyboard-shortcuts";
+const MdxContent = ({
+  Content,
+  sectionId,
+  isShortcutList = false,
+}: MdxContentProps) => {
+  const isKeyboardShortcuts =
+    isShortcutList || sectionId === "keyboard-shortcuts";
   const isOverview = sectionId === "overview";
 
   const components: MDXComponents = {
