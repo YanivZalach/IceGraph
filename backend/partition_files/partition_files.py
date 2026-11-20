@@ -12,11 +12,14 @@ from partition_files.constants import (
     STAGE_READ_MANIFEST_ENTRIES,
     STAGE_READ_TABLE_METADATA,
 )
+from partition_files.delete_file_matcher import DeleteFileMatcher
 from partition_files.manifest_pruning import ManifestPruner, ManifestPruningResult
 from partition_files.partition_entries import PartitionEntries, PartitionEntriesCollector
+from partition_files.partition_file_records import PartitionFileRecord, PartitionFileRecordBuilder
 from partition_files.partition_files_sql import PartitionFilesSqlBuilder
 from partition_files.partition_filter import PartitionFilter, PartitionFilterField, PartitionFilterResolver
-from partition_files.partition_nodes import DeleteFileMatcher, PartitionFileRecord, PartitionManifestRecord, PartitionNodeBuilder
+from partition_files.partition_manifest_records import PartitionManifestRecord, PartitionManifestRecordBuilder
+from partition_files.partition_snapshot_record import PartitionSnapshotRecordBuilder
 from partition_files.partition_table_metadata import PartitionTableMetadata, PartitionTableMetadataReader
 
 
@@ -85,12 +88,13 @@ class PartitionFiles:
             self._raise_limit_error(Env.MAX_PARTITION_FILES_TO_COLLECT, "files")
 
     def _build_nodes(self) -> None:
-        node_builder = PartitionNodeBuilder(self._metadata, self._snapshot_id)
-        self._files = node_builder.build_files(self._entries.rows)
+        self._files = PartitionFileRecordBuilder(self._metadata).build(self._entries.rows)
         unpartitioned_spec_ids = {spec_id for spec_id, spec in self._metadata.specs_by_id.items() if spec.is_unpartitioned}
         DeleteFileMatcher(self._files, unpartitioned_spec_ids).match()
-        self._manifests = node_builder.build_manifests(self._pruning.manifests, self._files, self._entries.manifest_errors)
-        self._snapshot = node_builder.build_snapshot(self._manifests, self._pruning.errors)
+        self._manifests = PartitionManifestRecordBuilder(self._metadata, self._snapshot_id).build(
+            self._pruning.manifests, self._files, self._entries.manifest_errors
+        )
+        self._snapshot = PartitionSnapshotRecordBuilder(self._metadata).build(self._manifests, self._pruning.errors)
 
     def _node_dicts(self) -> list[dict[str, Any]]:
         return [self._snapshot.to_dict()] + [manifest.to_dict() for manifest in self._manifests] + [file.to_dict() for file in self._files]

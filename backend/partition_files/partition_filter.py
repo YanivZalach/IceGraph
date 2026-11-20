@@ -12,7 +12,7 @@ from partition_files.constants import (
     VOID_TRANSFORM,
 )
 from partition_files.partition_table_metadata import PartitionSpec, PartitionSpecField, PartitionTableMetadata
-from partition_files.time_partition_values import TIME_TRANSFORM_FORMATS, is_time_transform, parse_time_transform_value
+from partition_files.time_partition_utils import TIME_TRANSFORM_FORMATS, is_time_transform, parse_time_transform_value
 
 INTEGER_RESULT_TRANSFORMS = {"year", "month", "hour"}
 DECIMAL_TYPE_PATTERN = r"decimal\(\s*\d+\s*,\s*\d+\s*\)"
