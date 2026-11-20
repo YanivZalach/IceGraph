@@ -57,12 +57,8 @@ def _parse_filter(text: str) -> PartitionFilter:
 def _partition(client: IceGraphClient, args: argparse.Namespace):
     filters = {partition_filter.name: partition_filter.value for partition_filter in args.filters}
     print(f"Collecting partition files for '{args.table}'...", file=sys.stderr)
-    try:
-        return client.get_partition_files(args.table, filters, args.snapshot_id)
 
-    except ValueError as e:
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
+    return client.get_partition_files(args.table, filters, args.snapshot_id)
 
 
 def build_parser() -> argparse.ArgumentParser:

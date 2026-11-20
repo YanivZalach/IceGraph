@@ -6,10 +6,9 @@ import {
   type SnapshotEntry,
   type SnapshotRange,
 } from "../snapshotRange";
-import SnapshotBadges from "./SnapshotBadges";
+import SnapshotBoundaryRow from "./SnapshotBoundaryRow";
 import SnapshotRail, { type SnapshotRowMarking } from "./SnapshotRail";
 import SnapshotTable, { SNAPSHOT_TABLE_COLUMN_COUNT } from "./SnapshotTable";
-import SnapshotTableRow from "./SnapshotTableRow";
 
 interface SnapshotRangePickerProps {
   entries: readonly SnapshotEntry[];
@@ -21,33 +20,7 @@ interface SnapshotRangePickerProps {
   onLoadOlderSnapshots: () => void;
 }
 
-interface BoundaryRowProps {
-  label: string;
-  detail: string;
-  marking: SnapshotRowMarking;
-  onSelect: () => void;
-}
-
 const CONTENT_COLUMN_SPAN = SNAPSHOT_TABLE_COLUMN_COUNT - 1;
-
-const BoundaryRow = ({
-  label,
-  detail,
-  marking,
-  onSelect,
-}: BoundaryRowProps) => (
-  <SnapshotTableRow label={label} marking={marking} onSelect={onSelect}>
-    <td colSpan={CONTENT_COLUMN_SPAN} className="max-w-0 py-3 pr-5">
-      <span className="flex items-center gap-2">
-        <span className="text-sm font-medium text-slate-200">{label}</span>
-        <SnapshotBadges badges={marking.badges} />
-      </span>
-      <span className="mt-0.5 block truncate text-xs text-slate-500">
-        {detail}
-      </span>
-    </td>
-  </SnapshotTableRow>
-);
 
 const rangeMarking = (
   isStart: boolean,
@@ -88,7 +61,7 @@ const SnapshotRangePicker = ({
         onRangeChange(selectSnapshot(range, entries, snapshotId));
       }}
       leadingRows={
-        <BoundaryRow
+        <SnapshotBoundaryRow
           label="Latest"
           detail="Always ends at the newest snapshot when the graph loads"
           marking={rangeMarking(
@@ -131,7 +104,7 @@ const SnapshotRangePicker = ({
               </td>
             </tr>
           )}
-          <BoundaryRow
+          <SnapshotBoundaryRow
             label="Full history"
             detail="Starts from the table's first snapshot. Not recommended: slow and cluttered on large tables"
             marking={rangeMarking(isFullHistory, false, isFullHistory, false)}

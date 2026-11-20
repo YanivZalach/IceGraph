@@ -46,6 +46,9 @@ export const formatPartitionFilters = (
   filters: PartitionFilterValue[],
 ): string => filters.map(({ name, value }) => `${name} = ${value}`).join(", ");
 
+export const formatPartitionSnapshot = (snapshotId: string | null): string =>
+  snapshotId === null ? "latest snapshot" : `snapshot ${snapshotId}`;
+
 const TIME_TRANSFORM_PLACEHOLDERS: Record<string, string> = {
   year: "yyyy (UTC)",
   month: "yyyy-MM (UTC)",

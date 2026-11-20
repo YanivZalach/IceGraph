@@ -2418,7 +2418,8 @@ export const handlers = [
     const form = new URLSearchParams(await request.text());
     const key = `partition_${String(partitionFilesJobs.size)}`;
     partitionFilesJobs.set(key, {
-      snapshotId: form.get("snapshot_id") ?? "",
+      snapshotId:
+        form.get("snapshot_id") ?? mockResponse.metadata["current-snapshot-id"],
       filters: JSON.parse(form.get("filters") ?? "{}"),
     });
     return HttpResponse.json(

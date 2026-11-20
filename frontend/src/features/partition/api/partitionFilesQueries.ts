@@ -12,7 +12,7 @@ const POLL_INTERVAL_MS = 700;
 
 export interface PartitionFilesRequest {
   tableName: string;
-  snapshotId: string;
+  snapshotId: string | null;
   filters: PartitionFilterValue[];
 }
 
@@ -60,13 +60,14 @@ const loadPartitionFiles = async (
   queryClient.setQueryData(progressKey, null);
   const formBody = new URLSearchParams({
     table_name: request.tableName,
-    snapshot_id: request.snapshotId,
     filters: JSON.stringify(
       Object.fromEntries(
         request.filters.map(({ name, value }) => [name, value]),
       ),
     ),
   });
+  if (request.snapshotId !== null)
+    formBody.set("snapshot_id", request.snapshotId);
   const submittedJob = await fetchFromApi(
     "/partition-files",
     graphJobSubmissionSchema,
@@ -102,10 +103,7 @@ export const partitionFilesQueryOptions = (
   queryOptions({
     queryKey: partitionFilesQueryKey(request),
     queryFn: ({ signal }) => loadPartitionFiles(request, queryClient, signal),
-    enabled:
-      request.tableName !== "" &&
-      request.snapshotId !== "" &&
-      request.filters.length > 0,
+    enabled: request.tableName !== "" && request.filters.length > 0,
     gcTime: 60 * 60 * 1000,
     retry: false,
     staleTime: Number.POSITIVE_INFINITY,

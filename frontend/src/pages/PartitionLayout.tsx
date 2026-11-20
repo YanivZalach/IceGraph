@@ -14,7 +14,10 @@ import {
   PartitionDataContext,
   buildPartitionData,
 } from "../features/partition/partitionData";
-import { formatPartitionFilters } from "../features/partition/partitionFilters";
+import {
+  formatPartitionFilters,
+  formatPartitionSnapshot,
+} from "../features/partition/partitionFilters";
 import { usePartitionRequest } from "../features/partition/usePartitionRequest";
 import { tableMetadataQueryOptions } from "../features/table/api/tableMetadataQueries";
 import { UI_BODY_MUTED_CLASS } from "../uiTypography";
@@ -28,18 +31,14 @@ const PartitionLayout = () => {
   const progressQuery = useQuery(partitionFilesProgressQueryOptions(request));
   const metadataQuery = useQuery(tableMetadataQueryOptions(request.tableName));
 
-  if (
-    request.tableName === "" ||
-    request.snapshotId === "" ||
-    request.filters.length === 0
-  ) {
+  if (request.tableName === "" || request.filters.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center bg-canvas p-6">
         <div className="w-full max-w-2xl">
           <PartitionFilesError
             error={
               new Error(
-                "A table, a snapshot, and at least one partition field value are required.",
+                "A table and at least one partition field value are required.",
               )
             }
             actionLabel="Edit filter"
@@ -80,7 +79,8 @@ const PartitionLayout = () => {
               Collecting partition files
             </p>
             <p className={`${UI_BODY_MUTED_CLASS} mt-1 break-all`}>
-              {request.tableName} · snapshot {request.snapshotId}
+              {request.tableName} ·{" "}
+              {formatPartitionSnapshot(request.snapshotId)}
             </p>
             <p className={`${UI_BODY_MUTED_CLASS} mt-1 break-all font-mono`}>
               {formatPartitionFilters(request.filters)}

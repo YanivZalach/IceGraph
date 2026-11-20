@@ -6,6 +6,8 @@ import {
   UI_FIELD_LABEL_CLASS,
   UI_PAGE_TITLE_CLASS,
 } from "../../../uiTypography";
+import SnapshotBoundaryRow from "../../snapshots/components/SnapshotBoundaryRow";
+import type { SnapshotRowMarking } from "../../snapshots/components/SnapshotRail";
 import SnapshotTable from "../../snapshots/components/SnapshotTable";
 import type { SnapshotEntry } from "../../snapshots/snapshotRange";
 import type { TableMetadata } from "../../table/api/metadataSchemas";
@@ -30,6 +32,13 @@ interface PartitionFilterFormProps {
 const CONTROL_CLASS =
   "w-full rounded-lg border border-edge bg-canvas px-3 py-2 text-sm text-ink placeholder:text-slate-500 focus:border-accent focus:outline-none";
 
+const selectionMarking = (isSelected: boolean): SnapshotRowMarking => ({
+  isEdge: isSelected,
+  isInRange: false,
+  isAnchor: false,
+  badges: [],
+});
+
 const PartitionFilterForm = ({
   tableName,
   entries,
@@ -41,15 +50,19 @@ const PartitionFilterForm = ({
 }: PartitionFilterFormProps) => {
   const search = useSearch({ from: "/snapshots-selection" });
   const fields = listPartitionFields(metadata);
-  const [chosenSnapshotId, setChosenSnapshotId] = useState<string | null>(null);
+  const requestedSnapshotId = search.partition_snapshot;
+  const [chosenSnapshotId, setChosenSnapshotId] = useState<
+    string | null | undefined
+  >(undefined);
+  const snapshotId =
+    chosenSnapshotId === undefined
+      ? (requestedSnapshotId ?? null)
+      : chosenSnapshotId;
   const [values, setValues] = useState<Record<string, string | undefined>>(() =>
     Object.fromEntries(
       readPartitionFilters(search).map(({ name, value }) => [name, value]),
     ),
   );
-  const requestedSnapshotId = search.partition_snapshot;
-  const snapshotId =
-    chosenSnapshotId ?? requestedSnapshotId ?? entries[0]?.snapshotId ?? "";
   const snapshotOptions =
     requestedSnapshotId === undefined ||
     entries.some((entry) => entry.snapshotId === requestedSnapshotId)
@@ -62,7 +75,7 @@ const PartitionFilterForm = ({
     const value = values[name];
     return value === undefined ? [] : [{ name, value }];
   });
-  const canOpen = canRun && snapshotId !== "" && filters.length > 0;
+  const canOpen = canRun && filters.length > 0;
 
   if (fields.length === 0) return null;
 
@@ -99,13 +112,20 @@ const PartitionFilterForm = ({
           <SnapshotTable
             ariaLabel="Partition snapshot, newest first"
             entries={snapshotOptions}
-            markingOf={(entry) => ({
-              isEdge: entry.snapshotId === snapshotId,
-              isInRange: false,
-              isAnchor: false,
-              badges: [],
-            })}
+            markingOf={(entry) =>
+              selectionMarking(entry.snapshotId === snapshotId)
+            }
             onSelect={setChosenSnapshotId}
+            leadingRows={
+              <SnapshotBoundaryRow
+                label="Latest"
+                detail="Always reads the newest snapshot when the files load"
+                marking={selectionMarking(snapshotId === null)}
+                onSelect={() => {
+                  setChosenSnapshotId(null);
+                }}
+              />
+            }
           />
         </div>
         <div className="grid gap-3 sm:grid-cols-2">

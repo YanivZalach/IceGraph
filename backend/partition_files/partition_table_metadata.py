@@ -9,7 +9,12 @@ from pyspark.sql.types import ArrayType, LongType, MapType, StringType, StructFi
 from base_classes.spark_table_action import SparkTableAction
 from base_classes.utils import collect_graph_metadata_file, timed
 from collectors.utils import normalize_legacy_v1_metadata_dict
-from partition_files.constants import INLINE_MANIFESTS_ERROR, LEGACY_PARTITION_FIELD_ID_START, MISSING_SNAPSHOT_ERROR
+from partition_files.constants import (
+    INLINE_MANIFESTS_ERROR,
+    LEGACY_PARTITION_FIELD_ID_START,
+    MISSING_CURRENT_SNAPSHOT_ERROR,
+    MISSING_SNAPSHOT_ERROR,
+)
 from partition_files.utils import format_epoch_millis
 
 METADATA_SPEC_KEYS = ["format-version", "partition-specs", "partition-spec", "default-spec-id", "schemas", "schema", "current-schema-id"]
@@ -41,7 +46,7 @@ class PartitionTableMetadata:
 
 
 class PartitionTableMetadataReader(SparkTableAction):
-    def __init__(self, table_name: str, snapshot_id: int):
+    def __init__(self, table_name: str, snapshot_id: Optional[int]):
         super().__init__(table_name)
         self._snapshot_id = snapshot_id
 
@@ -51,11 +56,13 @@ class PartitionTableMetadataReader(SparkTableAction):
         metadata_row = self._metadata_row_df(metadata_path).first()
 
         if metadata_row.snapshot is None:
+            if self._snapshot_id is None:
+                raise ValueError(MISSING_CURRENT_SNAPSHOT_ERROR.format(table_name=self._table_name))
             raise ValueError(MISSING_SNAPSHOT_ERROR.format(snapshot_id=self._snapshot_id, table_name=self._table_name))
 
         snapshot = json.loads(metadata_row.snapshot)
         if not snapshot.get("manifest-list"):
-            raise ValueError(INLINE_MANIFESTS_ERROR.format(snapshot_id=self._snapshot_id))
+            raise ValueError(INLINE_MANIFESTS_ERROR.format(snapshot_id=snapshot["snapshot-id"]))
 
         metadata = {key: json.loads(value) for key, value in (metadata_row.metadata or {}).items() if value is not None}
         normalize_legacy_v1_metadata_dict(metadata)
@@ -74,13 +81,15 @@ class PartitionTableMetadataReader(SparkTableAction):
     def _metadata_row_df(self, metadata_path: str):
         metadata = F.col("metadata")
         snapshots = F.from_json(metadata.getItem("snapshots"), ArrayType(StringType()))
+        snapshot_id = F.col("current_snapshot_id") if self._snapshot_id is None else F.lit(str(self._snapshot_id))
 
         return (
             self._spark.read.text(metadata_path, wholetext=True)
             .select(F.from_json("value", MapType(StringType(), StringType())).alias("metadata"))
+            .withColumn("current_snapshot_id", metadata.getItem("current-snapshot-id"))
             .select(
                 F.map_filter(metadata, lambda key, _value: key.isin(METADATA_SPEC_KEYS)).alias("metadata"),
-                F.get(F.filter(snapshots, lambda snapshot: self._snapshot_id_of(snapshot) == F.lit(str(self._snapshot_id))), 0).alias("snapshot"),
+                F.get(F.filter(snapshots, lambda snapshot: self._snapshot_id_of(snapshot) == snapshot_id), 0).alias("snapshot"),
                 F.from_json(metadata.getItem("snapshots"), SNAPSHOT_TIMESTAMPS_SCHEMA).alias("snapshot_timestamps"),
             )
         )
