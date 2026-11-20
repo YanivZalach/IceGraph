@@ -7,12 +7,11 @@ from graph_normalizer.utils import to_json_safe
 from partition_files.constants import (
     PARTITION_FILES_LIMIT_ERROR,
     PARTITION_MATCH_UNDECIDED,
-    STAGE_MATCH_DELETE_FILES,
+    STAGE_BUILD_FILE_NODES,
     STAGE_PRUNE_MANIFESTS,
     STAGE_READ_MANIFEST_ENTRIES,
     STAGE_READ_TABLE_METADATA,
 )
-from partition_files.delete_file_matcher import DeleteFileMatcher
 from partition_files.manifest_pruning import ManifestPruner, ManifestPruningResult
 from partition_files.partition_entries import PartitionEntries, PartitionEntriesCollector
 from partition_files.partition_file_records import PartitionFileRecord, PartitionFileRecordBuilder
@@ -65,11 +64,11 @@ class PartitionFiles:
         finally:
             self._on_stage_end(STAGE_READ_MANIFEST_ENTRIES)
 
-        self._on_stage_start(STAGE_MATCH_DELETE_FILES)
+        self._on_stage_start(STAGE_BUILD_FILE_NODES)
         try:
             self._build_nodes()
         finally:
-            self._on_stage_end(STAGE_MATCH_DELETE_FILES)
+            self._on_stage_end(STAGE_BUILD_FILE_NODES)
 
         return to_json_safe({"nodes": self._node_dicts(), "summary": self._summary(), "errors": {}, "warnings": {}})
 
@@ -89,8 +88,6 @@ class PartitionFiles:
 
     def _build_nodes(self) -> None:
         self._files = PartitionFileRecordBuilder(self._metadata).build(self._entries.rows)
-        unpartitioned_spec_ids = {spec_id for spec_id, spec in self._metadata.specs_by_id.items() if spec.is_unpartitioned}
-        DeleteFileMatcher(self._files, unpartitioned_spec_ids).match()
         self._manifests = PartitionManifestRecordBuilder(self._metadata, self._snapshot_id).build(
             self._pruning.manifests, self._files, self._entries.manifest_errors
         )

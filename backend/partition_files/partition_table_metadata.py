@@ -9,7 +9,7 @@ from pyspark.sql.types import ArrayType, LongType, MapType, StringType, StructFi
 from base_classes.spark_table_action import SparkTableAction
 from base_classes.utils import collect_graph_metadata_file, timed
 from collectors.utils import normalize_legacy_v1_metadata_dict
-from partition_files.constants import INLINE_MANIFESTS_ERROR, LEGACY_PARTITION_FIELD_ID_START, MISSING_SNAPSHOT_ERROR, VOID_TRANSFORM
+from partition_files.constants import INLINE_MANIFESTS_ERROR, LEGACY_PARTITION_FIELD_ID_START, MISSING_SNAPSHOT_ERROR
 from partition_files.utils import format_epoch_millis
 
 METADATA_SPEC_KEYS = ["format-version", "partition-specs", "partition-spec", "default-spec-id", "schemas", "schema", "current-schema-id"]
@@ -28,14 +28,6 @@ class PartitionSpecField:
 class PartitionSpec:
     spec_id: int
     fields: list[PartitionSpecField]
-
-    @property
-    def is_unpartitioned(self) -> bool:
-        for spec_field in self.fields:
-            if spec_field.transform != VOID_TRANSFORM:
-                return False
-
-        return True
 
 
 @dataclass

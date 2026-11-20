@@ -1,4 +1,5 @@
 import type { MouseEvent } from "react";
+import DockedSplit from "../../components/DockedSplit";
 import { useViewInGraph } from "../../hooks/useViewInGraph";
 import FileTreeContent from "../fileTree/components/FileTreeContent";
 import FileTreeInspector from "../fileTree/components/FileTreeInspector";
@@ -81,72 +82,78 @@ const PartitionFilesView = ({
         }}
         search={state.fileSearch}
       />
-      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
-        <main className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-hidden px-3 py-3 sm:px-8 sm:py-4">
-          <div className="rounded-lg border border-edge bg-surface px-3 py-2 shadow-md">
-            <PartitionGroupBySelector
-              fieldNames={groupableFields}
-              groupByFields={groupByFields}
-              onChange={state.setGroupByFields}
+      <DockedSplit
+        className="min-h-0 flex-1"
+        panelDefaultSize="38%"
+        main={
+          <main className="flex h-full min-h-0 min-w-0 flex-col gap-3 overflow-hidden px-3 py-3 sm:px-8 sm:py-4">
+            <div className="rounded-lg border border-edge bg-surface px-3 py-2 shadow-md">
+              <PartitionGroupBySelector
+                fieldNames={groupableFields}
+                groupByFields={groupByFields}
+                onChange={state.setGroupByFields}
+              />
+            </div>
+            <FileTreeContent
+              checkedFileIds={state.checkedFileIds}
+              expandedItemIds={expandedItemIds}
+              inspectedFileId={
+                inspectedItem?.kind === "file" ? inspectedItem.file.id : null
+              }
+              inspectedPartitionPathNodeId={
+                inspectedItem?.kind === "partition-path"
+                  ? inspectedItem.partitionPathNode.id
+                  : null
+              }
+              inspectedPartitionId={null}
+              onCollapseMany={(itemIds) => {
+                const nextIds = new Set(expandedItemIds);
+                for (const itemId of itemIds) nextIds.delete(itemId);
+                updateExpanded(nextIds);
+              }}
+              onExpandMany={(itemIds) => {
+                updateExpanded(new Set([...expandedItemIds, ...itemIds]));
+              }}
+              onInspectFile={(file) => {
+                state.setInspectedItem({ file, kind: "file" });
+              }}
+              onInspectPartitionPathNode={(partitionPathNode) => {
+                state.setInspectedItem({
+                  kind: "partition-path",
+                  partitionPathNode,
+                });
+              }}
+              onInspectPartition={(partition) => {
+                state.setInspectedItem({ kind: "partition", partition });
+              }}
+              onToggleExpanded={(itemId) => {
+                const nextIds = new Set(expandedItemIds);
+                if (nextIds.has(itemId)) nextIds.delete(itemId);
+                else nextIds.add(itemId);
+                updateExpanded(nextIds);
+              }}
+              onToggleChecked={state.toggleChecked}
+              onToggleFiles={state.toggleFiles}
+              onViewInGraph={handleViewInGraph}
+              partitions={partitions}
+              partitionPathNodes={partitionPathNodes}
+              search={state.fileSearch}
+              viewMode="tree"
             />
-          </div>
-          <FileTreeContent
-            checkedFileIds={state.checkedFileIds}
-            expandedItemIds={expandedItemIds}
-            inspectedFileId={
-              inspectedItem?.kind === "file" ? inspectedItem.file.id : null
-            }
-            inspectedPartitionPathNodeId={
-              inspectedItem?.kind === "partition-path"
-                ? inspectedItem.partitionPathNode.id
-                : null
-            }
-            inspectedPartitionId={null}
-            onCollapseMany={(itemIds) => {
-              const nextIds = new Set(expandedItemIds);
-              for (const itemId of itemIds) nextIds.delete(itemId);
-              updateExpanded(nextIds);
-            }}
-            onExpandMany={(itemIds) => {
-              updateExpanded(new Set([...expandedItemIds, ...itemIds]));
-            }}
-            onInspectFile={(file) => {
-              state.setInspectedItem({ file, kind: "file" });
-            }}
-            onInspectPartitionPathNode={(partitionPathNode) => {
-              state.setInspectedItem({
-                kind: "partition-path",
-                partitionPathNode,
-              });
-            }}
-            onInspectPartition={(partition) => {
-              state.setInspectedItem({ kind: "partition", partition });
-            }}
-            onToggleExpanded={(itemId) => {
-              const nextIds = new Set(expandedItemIds);
-              if (nextIds.has(itemId)) nextIds.delete(itemId);
-              else nextIds.add(itemId);
-              updateExpanded(nextIds);
-            }}
-            onToggleChecked={state.toggleChecked}
-            onToggleFiles={state.toggleFiles}
-            onViewInGraph={handleViewInGraph}
-            partitions={partitions}
-            partitionPathNodes={partitionPathNodes}
-            search={state.fileSearch}
-            viewMode="tree"
-          />
-        </main>
-        {inspectedItem !== null && (
-          <FileTreeInspector
-            inspectedItem={inspectedItem}
-            onClose={() => {
-              state.setInspectedItem(null);
-            }}
-            onViewInGraph={handleViewInGraph}
-          />
-        )}
-      </div>
+          </main>
+        }
+        sidePanel={
+          inspectedItem === null ? null : (
+            <FileTreeInspector
+              inspectedItem={inspectedItem}
+              onClose={() => {
+                state.setInspectedItem(null);
+              }}
+              onViewInGraph={handleViewInGraph}
+            />
+          )
+        }
+      />
     </div>
   );
 };

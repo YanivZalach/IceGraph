@@ -8,6 +8,7 @@ from pyspark.sql.types import ArrayType, BinaryType, IntegerType, LongType, Stri
 
 from base_classes.spark_table_action import SparkTableAction
 from base_classes.utils import timed
+from extractors.data_files_extractor import DataFilesExtractor
 from icegraph_logger import logger
 from partition_files.constants import MANIFEST_ENTRY_STATUS_DELETED, PARTITION_MATCH_MATCHED, PARTITION_MATCH_UNDECIDED
 from partition_files.manifest_pruning import ManifestCandidate
@@ -40,7 +41,6 @@ DATA_FILE_COLUMNS = [
 ENTRY_COLUMNS = [
     ("status", IntegerType()),
     ("snapshot_id", LongType()),
-    ("sequence_number", LongType()),
 ]
 
 OUTPUT_COLUMNS = (
@@ -52,8 +52,10 @@ OUTPUT_COLUMNS = (
         "manifest_path",
         "partition_spec_id",
         "manifest_content",
-        "manifest_sequence_number",
         "manifest_added_snapshot_id",
+        "stored_first_row_id",
+        "row_id_offset",
+        "manifest_first_row_id",
         "partition_match",
     ]
 )
@@ -95,6 +97,7 @@ class PartitionEntriesCollector(SparkTableAction):
         manifest_df = self._spark.read.format("avro").load(manifest.manifest_path)
         entry_fields = set(manifest_df.schema.fieldNames())
         data_file_fields = set(manifest_df.schema["data_file"].dataType.fieldNames())
+        manifest_df = DataFilesExtractor._with_row_id_inheritance(manifest_df, data_file_fields, manifest.first_row_id is not None)
 
         entry_columns = [self._optional_column(F.col(name), name in entry_fields, data_type).alias(name) for name, data_type in ENTRY_COLUMNS]
         data_file = F.col("data_file")
@@ -115,8 +118,10 @@ class PartitionEntriesCollector(SparkTableAction):
                 F.lit(manifest.manifest_path).alias("manifest_path"),
                 F.lit(manifest.spec_filter.spec_id).cast(IntegerType()).alias("partition_spec_id"),
                 F.lit(manifest.content).cast(IntegerType()).alias("manifest_content"),
-                F.lit(manifest.sequence_number).cast(LongType()).alias("manifest_sequence_number"),
                 F.lit(manifest.added_snapshot_id).cast(LongType()).alias("manifest_added_snapshot_id"),
+                F.col("stored_first_row_id"),
+                F.col("row_id_offset"),
+                F.lit(manifest.first_row_id).cast(LongType()).alias("manifest_first_row_id"),
                 F.lit(partition_match).alias("partition_match"),
             )
             .select(*OUTPUT_COLUMNS)

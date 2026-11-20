@@ -32,6 +32,7 @@ MANIFEST_LIST_SCHEMA = StructType(
         StructField("content", IntegerType(), True),
         StructField("sequence_number", LongType(), True),
         StructField("added_snapshot_id", LongType(), True),
+        StructField("first_row_id", LongType(), True),
         StructField("added_files_count", IntegerType(), True),
         StructField("existing_files_count", IntegerType(), True),
         StructField("added_data_files_count", IntegerType(), True),
@@ -48,6 +49,7 @@ class ManifestCandidate:
     content: int
     sequence_number: Optional[int]
     added_snapshot_id: Optional[int]
+    first_row_id: Optional[int]
 
 
 @dataclass(frozen=True)
@@ -88,6 +90,7 @@ class ManifestPruner(SparkTableAction):
                     content=row.content or 0,
                     sequence_number=row.sequence_number,
                     added_snapshot_id=row.added_snapshot_id,
+                    first_row_id=row.first_row_id,
                 )
             )
 

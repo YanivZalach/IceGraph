@@ -202,6 +202,12 @@ uv sync
 uv run icegraph --base-url http://localhost:3000 tables
 ```
 
+List every data and delete file of one partition at one snapshot (the latest when `-s` is omitted). In Python, the same call is `IceGraphClient.get_partition_files(table, filters, snapshot_id)`:
+
+```bash
+uv run icegraph --base-url http://localhost:3000 partition <database.table> -f <partition field>=<value> [-s <snapshot id>]
+```
+
 ## License
 
 IceGraph is open source under the [Apache License, Version 2.0](LICENSE). See

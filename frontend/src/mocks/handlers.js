@@ -2219,8 +2219,6 @@ const buildPartitionFiles = ({ snapshotId, filters }) => {
         ...child,
         partition_spec_id: 0,
         partition_match: "matched",
-        delete_files: [],
-        applies_to_data_files: [],
       }),
     );
   }

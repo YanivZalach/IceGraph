@@ -41,7 +41,6 @@ class SpecFilter:
     spec_id: int
     predicates: list[SpecPredicate]
     is_complete: bool
-    is_unpartitioned: bool
 
 
 @dataclass(frozen=True)
@@ -192,5 +191,4 @@ class PartitionFilterResolver:
             spec_id=spec.spec_id,
             predicates=predicates,
             is_complete=len(predicates) == len(fields),
-            is_unpartitioned=spec.is_unpartitioned,
         )

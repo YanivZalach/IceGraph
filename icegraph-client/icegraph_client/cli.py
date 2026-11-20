@@ -2,6 +2,7 @@ import argparse
 import inspect
 import os
 import sys
+from dataclasses import dataclass
 
 import requests
 
@@ -37,6 +38,31 @@ def _sparkdesc(client: IceGraphClient, args: argparse.Namespace):
 def _graph(client: IceGraphClient, args: argparse.Namespace):
     print(f"Building graph for '{args.table}'...", file=sys.stderr)
     return client.get_graph(args.table, args.start_snapshot_id, args.end_snapshot_id)
+
+
+@dataclass
+class PartitionFilter:
+    name: str
+    value: str
+
+
+def _parse_filter(text: str) -> PartitionFilter:
+    name, separator, value = text.partition("=")
+    if not separator or not name:
+        raise argparse.ArgumentTypeError(f"filter '{text}' must look like <partition field>=<value>")
+
+    return PartitionFilter(name=name, value=value)
+
+
+def _partition(client: IceGraphClient, args: argparse.Namespace):
+    filters = {partition_filter.name: partition_filter.value for partition_filter in args.filters}
+    print(f"Collecting partition files for '{args.table}'...", file=sys.stderr)
+    try:
+        return client.get_partition_files(args.table, filters, args.snapshot_id)
+
+    except ValueError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -81,6 +107,22 @@ def build_parser() -> argparse.ArgumentParser:
     graph_parser.add_argument("-s", "--start-snapshot-id", default=None, help="Start snapshot id")
     graph_parser.add_argument("-e", "--end-snapshot-id", default=None, help="End snapshot id")
     graph_parser.set_defaults(handler=_graph)
+
+    partition_parser = subparsers.add_parser(
+        "partition", help="List every data and delete file of one partition at one snapshot, with their manifests"
+    )
+    partition_parser.add_argument("table", help="Full table name")
+    partition_parser.add_argument(
+        "-f",
+        "--filter",
+        dest="filters",
+        action="append",
+        required=True,
+        type=_parse_filter,
+        help="Partition field filter as <partition field>=<value>, using the transform output (yyyy-MM-dd-HH for hour). Repeat for more fields",
+    )
+    partition_parser.add_argument("-s", "--snapshot-id", default=None, help="Snapshot id. Defaults to the latest snapshot")
+    partition_parser.set_defaults(handler=_partition)
 
     return parser
 

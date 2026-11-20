@@ -10,7 +10,7 @@ On the snapshot selection page, the **Partition Files** card has a snapshot pick
 
 ### How files are found
 
-IceGraph reads the snapshot's manifests the way Spark does for a partition filter: manifests that can't hold the value are skipped, and each remaining file is checked against the filter. Delete files are linked to the data files they apply to. Partition fields are matched by their field ID, so a field renamed in a later spec still matches.
+IceGraph reads the snapshot's manifests the way Spark does for a partition filter: manifests that can't hold the value are skipped, and each remaining file is checked against the filter. Partition fields are matched by their field ID, so a field renamed in a later spec still matches.
 
 ### Undecided files
 

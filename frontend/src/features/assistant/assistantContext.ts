@@ -66,7 +66,7 @@ const GRAPH_SUGGESTED_QUESTIONS = [
 const PARTITION_SUGGESTED_QUESTIONS = [
   "Summarize the files in this partition.",
   "Does this partition need compaction or delete cleanup?",
-  "Which delete files apply to which data files?",
+  "Summarize the delete files in this partition.",
 ];
 
 const SNAPSHOT_SELECTION_SUGGESTED_QUESTIONS = [

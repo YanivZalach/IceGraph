@@ -55,7 +55,7 @@ class PartitionManifestRecordBuilder:
             file_path=manifest.manifest_path,
             added_snapshot_id=manifest.added_snapshot_id,
             added_snapshot_timestamp=self._metadata.snapshot_timestamps.get(manifest.added_snapshot_id),
-            first_row_id=None,
+            first_row_id=manifest.first_row_id,
             first_row_id_by_snapshot=None,
             partitions=partitions,
             total_rows_in_downstream_files=sum(child.row_count or 0 for child in children),

@@ -1,5 +1,5 @@
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from decimal import Decimal
 from typing import Optional
 
@@ -15,18 +15,9 @@ from partition_files.time_partition_utils import format_time_transform_value
 
 
 @dataclass
-class HiddenPartitionFileMetadata(HiddenDataFileMetadata):
-    content: int
-    partition_key: str
-
-
-@dataclass
 class PartitionFileRecord(DataFileRecord):
     partition_spec_id: int
-    data_sequence_number: int
     partition_match: str
-    delete_files: list[str] = field(default_factory=list)
-    applies_to_data_files: list[str] = field(default_factory=list)
 
 
 class PartitionFileRecordBuilder:
@@ -50,7 +41,6 @@ class PartitionFileRecordBuilder:
     def _build_file_record(self, entry: dict) -> PartitionFileRecord:
         content = entry["content"] or FILE_CONTENT_DATA
         added_snapshot_id = entry["snapshot_id"] if entry["snapshot_id"] is not None else entry["manifest_added_snapshot_id"]
-        data_sequence_number = entry["sequence_number"] if entry["sequence_number"] is not None else entry["manifest_sequence_number"]
         raw_metrics = RawFileMetrics(
             column_sizes=entry["column_sizes"],
             value_counts=entry["value_counts"],
@@ -67,7 +57,7 @@ class PartitionFileRecordBuilder:
             format=entry["file_format"],
             file_size_in_bytes=str(entry["file_size_in_bytes"]),
             row_count=entry["record_count"],
-            first_row_id=None,
+            first_row_id=self._first_row_id(entry),
             first_row_id_by_snapshot=None,
             referenced_data_file=entry["referenced_data_file"],
             content_offset=entry["content_offset"],
@@ -82,13 +72,10 @@ class PartitionFileRecordBuilder:
             readable_metrics={},
             child_files=[],
             partition_spec_id=entry["partition_spec_id"],
-            data_sequence_number=data_sequence_number or 0,
             partition_match=entry["partition_match"],
-            hidden_data_file_metadata=HiddenPartitionFileMetadata(
+            hidden_data_file_metadata=HiddenDataFileMetadata(
                 pointing_manifests=[{"path": entry["manifest_path"], "status": entry["status"]}],
                 raw_metrics=raw_metrics,
-                content=content,
-                partition_key=f"{entry['partition_spec_id']}:{entry['partition_json']}",
             ),
         )
         self._set_readable_metrics(record)
@@ -105,6 +92,16 @@ class PartitionFileRecordBuilder:
                 partition_field["formatted_value"] = formatted_value
 
         return partition
+
+    @staticmethod
+    def _first_row_id(entry: dict) -> Optional[int]:
+        if entry["stored_first_row_id"] is not None:
+            return entry["stored_first_row_id"]
+
+        if entry["manifest_first_row_id"] is None or entry["row_id_offset"] is None:
+            return None
+
+        return entry["manifest_first_row_id"] + entry["row_id_offset"]
 
     @staticmethod
     def _node_id(file_path: str, content_offset: Optional[int]) -> str:

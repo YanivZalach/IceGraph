@@ -115,6 +115,16 @@ etc.) go to stderr, so stdout is always safe to parse directly.
   When summarizing a `graph` result to the user, lead with `issues.errors`, then `issues.warnings`,
   before general structure/counts — errors are what the Issues panel in the UI leads with too.
 
+- `partition <table> -f <partition field>=<value> [-f ...] [-s SNAPSHOT_ID]` → `{nodes: [...],
+  summary: {...}, issues: {errors: {...}, warnings: {...}}}` with every data and delete file of one
+  partition at one snapshot, plus the snapshot and the manifests that point to them. Filters use the
+  same values as `p.<field>` in partition files links (`yyyy-MM-dd-HH` for `hour`, and so on) and
+  are combined with AND. Without `-s` it uses the latest snapshot (printed to stderr). Each file node
+  has `partition_match`: `matched`, or `undecided` when its partition spec lacks a filtered field,
+  so it can't be ruled out. `summary` holds the resolved filters, `undecided_spec_ids`, and
+  `undecided_files_count`. When the partition has too many files, the command fails and prints a
+  Spark SQL query that lists them all.
+
 For a question about a table that the latest metadata can answer, try `metadata <table>` first.
 This is faster than building a graph. Examples include columns and schemas, partition specs,
 sort orders, table properties, branches and tags, table location, and format version. Use

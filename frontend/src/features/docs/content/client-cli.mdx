@@ -32,6 +32,7 @@ icegraph snapshots <table> [--before-snapshot-id ID]
 icegraph metadata <table>
 icegraph sparkdesc <table>
 icegraph graph <table> [--start-snapshot-id ID] [--end-snapshot-id ID]
+icegraph partition <table> --filter FIELD=VALUE [--filter FIELD=VALUE ...] [--snapshot-id ID]
 ```
 
 Each command prints its result as JSON on stdout, so it pipes and redirects cleanly (e.g. into `jq`, Python, or a file). Status messages go to stderr, so they never end up mixed into the JSON output.
@@ -41,3 +42,5 @@ Each command prints its result as JSON on stdout, so it pipes and redirects clea
 `metadata` returns the table's latest metadata, plus `warnings`, which maps a source to a list of messages and is empty when there are none. For example, it warns when the table uses an Iceberg format version other than 1, 2, or 3, which IceGraph doesn't fully support yet.
 
 `sparkdesc` returns Spark's description of any table Spark can resolve, Iceberg or not, as `{"spark_schema": {...}, "spark_partitions": [...], "sections": [...], "properties": {...}, "warnings": {...}}`. Use it when another command reports that the table is not an Iceberg table.
+
+`partition` returns every data and delete file of one partition at one snapshot, with the snapshot and the manifests that point to them, as `{"nodes": [...], "summary": {...}, "issues": {...}}`, the same result as the Partition Files pages. Each `--filter` takes a partition field and its value in the same form as the Partition Files form, such as `ts_hour=2024-03-15-10`; repeat it for more fields. Without `--snapshot-id` it uses the latest snapshot. When the partition has more files than the server's limit, it fails and prints a Spark SQL query that lists every file.
