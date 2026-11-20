@@ -1,10 +1,15 @@
 import type { MouseEvent } from "react";
 import DockedSplit from "../../components/DockedSplit";
+import PanelIssueNotice from "../../components/PanelIssueNotice";
 import { useViewInGraph } from "../../hooks/useViewInGraph";
 import FileTreeContent from "../fileTree/components/FileTreeContent";
 import FileTreeInspector from "../fileTree/components/FileTreeInspector";
-import { isDataFileNode } from "../fileTree/model/graphIndex";
+import {
+  buildFileTreeGraphIndex,
+  isDataFileNode,
+} from "../fileTree/model/graphIndex";
 import { getAllPartitionPathNodeIds } from "../fileTree/model/partitionModel";
+import { getSnapshotFileResult } from "../fileTree/model/snapshotLineage";
 import type { FileTreeContext } from "../fileTree/schemas";
 import type { PartitionFilesSummary } from "./api/partitionFilesSchemas";
 import PartitionFilesToolbar from "./components/PartitionFilesToolbar";
@@ -27,6 +32,12 @@ const PartitionFilesView = ({
   const { viewInGraph } = useViewInGraph("/partition/graph");
   const state = usePartitionFilesState();
   const files = fileTreeContext.nodes.filter(isDataFileNode);
+  const graphIndex = buildFileTreeGraphIndex(fileTreeContext);
+  const snapshotErrors = getSnapshotFileResult(
+    graphIndex.snapshots[0],
+    graphIndex,
+    "snapshot",
+  ).errors;
   const groupableFields = listGroupableFields(
     files,
     summary.filters.map(({ name }) => name),
@@ -87,6 +98,9 @@ const PartitionFilesView = ({
         panelDefaultSize="38%"
         main={
           <main className="flex h-full min-h-0 min-w-0 flex-col gap-3 overflow-hidden px-3 py-3 sm:px-8 sm:py-4">
+            {snapshotErrors.length > 0 && (
+              <PanelIssueNotice type="error">{snapshotErrors}</PanelIssueNotice>
+            )}
             <div className="rounded-lg border border-edge bg-surface px-3 py-2 shadow-md">
               <PartitionGroupBySelector
                 fieldNames={groupableFields}
