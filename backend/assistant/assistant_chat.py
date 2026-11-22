@@ -1,7 +1,7 @@
 import asyncio
 from collections.abc import Callable
 
-from openai import APIConnectionError, APIError, APIStatusError, APITimeoutError, AsyncOpenAI, BadRequestError
+from openai import APIConnectionError, APIError, APIStatusError, APITimeoutError, AsyncOpenAI, BadRequestError, DefaultAsyncHttpxClient
 
 from assistant.assistant_request import AssistantRequest
 from assistant.constants import (
@@ -81,6 +81,7 @@ class AssistantChat:
             base_url=Env.AI_API_BASE_URL,
             api_key=Env.AI_API_KEY or KEYLESS_API_KEY,
             timeout=Env.AI_REQUEST_TIMEOUT_SECONDS,
+            http_client=DefaultAsyncHttpxClient(verify=Env.AI_VERIFY_SSL),
         ) as client:
             async with await client.chat.completions.create(model=Env.AI_MODEL, messages=self._chat_messages, stream=True) as stream:
                 async for chunk in stream:
