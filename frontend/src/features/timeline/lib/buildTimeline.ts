@@ -9,7 +9,10 @@ import type {
 } from "./classification/commitDescription";
 import { describeCommit } from "./classification/describeCommit";
 import { UNRECOGNIZED_METADATA_TITLE } from "./classification/describeMetadataOnlyCommit";
-import { writeHeadline } from "./classification/describeWriteCommit";
+import {
+  describeWriteCommit,
+  writeHeadline,
+} from "./classification/describeWriteCommit";
 import { findDraftPublication } from "./findDraftPublication";
 import { formatShortId } from "./format/formatShortId";
 import { parseTimelineNodes } from "./parseTimelineNodes";
@@ -41,19 +44,57 @@ const DEGRADED_COMMIT: CommitDescription = {
   movedToBranchName: null,
 };
 
+const toTimelineRow = (
+  file: MetadataFileNode,
+  commit: CommitDescription,
+): CommitRow => ({
+  ...commitRowDefaults(file),
+  kind: commit.kind,
+  title: commit.title,
+  category: commit.category,
+  impact: commit.impactSegments,
+  details: commit.detailTexts,
+  repointTargetId: commit.repointTargetId,
+  shortId: formatShortId(commit.snapshotId),
+  snapshotId: commit.snapshotId,
+  branchName: commit.branchName,
+  movedToBranchName: commit.movedToBranchName,
+});
+
+// A commit that adds a snapshot stamps the metadata file with that snapshot's
+// commit time, so a later metadata-only commit never matches it.
+const findSnapshotWrittenBy = (
+  file: MetadataFileNode,
+  snapshotsById: SnapshotsById,
+): string | null => {
+  for (const pointedSnapshot of file.pointed_snapshots_files ?? []) {
+    const snapshot = snapshotsById.get(pointedSnapshot["snapshot-id"]);
+    if (snapshot !== undefined && snapshot.timestamp === file.timestamp) {
+      return snapshot.snapshot_id;
+    }
+  }
+  return null;
+};
+
 const buildOldestRow = (
   file: MetadataFileNode,
   snapshotsById: SnapshotsById,
 ): CommitRow | BoundaryRow => {
+  const isHistoryCutOff = (file.pointed_metadata_log_count ?? 0) > 0;
+  if (isHistoryCutOff) {
+    const writtenSnapshotId = findSnapshotWrittenBy(file, snapshotsById);
+    return writtenSnapshotId === null
+      ? toBoundaryRow(file)
+      : toTimelineRow(
+          file,
+          describeWriteCommit(writtenSnapshotId, file, snapshotsById, []),
+        );
+  }
+
   const ownSnapshot =
     file.snapshot_id === null ? undefined : snapshotsById.get(file.snapshot_id);
-  // With older commits cut off, the snapshot may have been written before the
-  // loaded range, so the oldest file cannot be shown as a write.
-  const isHistoryCutOff = (file.pointed_metadata_log_count ?? 0) > 0;
-
-  if (ownSnapshot === undefined || isHistoryCutOff) {
-    const hasUnknowableSnapshot = file.snapshot_id !== null;
-    if (hasUnknowableSnapshot || isHistoryCutOff) {
+  if (ownSnapshot === undefined) {
+    if (file.snapshot_id !== null) {
       return toBoundaryRow(file);
     }
     return {
@@ -74,23 +115,6 @@ const buildOldestRow = (
     snapshotId: ownSnapshot.snapshot_id,
   };
 };
-
-const toTimelineRow = (
-  file: MetadataFileNode,
-  commit: CommitDescription,
-): CommitRow => ({
-  ...commitRowDefaults(file),
-  kind: commit.kind,
-  title: commit.title,
-  category: commit.category,
-  impact: commit.impactSegments,
-  details: commit.detailTexts,
-  repointTargetId: commit.repointTargetId,
-  shortId: formatShortId(commit.snapshotId),
-  snapshotId: commit.snapshotId,
-  branchName: commit.branchName,
-  movedToBranchName: commit.movedToBranchName,
-});
 
 const attachRefBadges = (
   row: CommitRow,
@@ -151,7 +175,11 @@ const toCommitRow = (
     const oldestRow = buildOldestRow(file, snapshotsById);
     return oldestRow.kind === "boundary"
       ? oldestRow
-      : attachRefBadges(oldestRow, newestRefs);
+      : attachDraftPublication(
+          attachRefBadges(oldestRow, newestRefs),
+          laterFiles,
+          snapshotsById,
+        );
   }
   if (predecessor.kind === "unreadable") {
     return {

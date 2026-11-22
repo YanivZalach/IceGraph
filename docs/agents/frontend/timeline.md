@@ -21,7 +21,9 @@ Rules for `frontend/src/features/timeline/`. They add to [`development.md`](deve
 2. Compare a file only with the readable file right before it. Nothing is read across a gap: no
    comparison, no draft publication, no ref badges.
 3. Never claim a change you cannot prove. With no readable predecessor the row is
-   `unknown-change` and shows only the file's own state.
+   `unknown-change` and shows only the file's own state. The oldest file of a truncated range is
+   the exception: a commit that adds a snapshot stamps the file with that snapshot's commit time,
+   so a snapshot with the file's exact timestamp proves the write. Without one it is a boundary.
 4. Each row type carries only its own fields. A gap or boundary is its own member of
    `TimelineRow`, never fields on a commit row.
 5. Components never decide meaning. Colors, icons, and filters come from `kind` and `category`,
