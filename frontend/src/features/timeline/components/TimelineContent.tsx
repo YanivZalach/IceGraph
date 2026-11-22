@@ -1,5 +1,5 @@
 import { filterTimelineRows } from "../lib/filterTimelineRows";
-import { isSelectableRow, type TimelineData } from "../lib/timelineRow";
+import type { TimelineData } from "../lib/timelineRow";
 import { useTimelineSearchState } from "../hooks/useTimelineSearchState";
 import { useTimelineSelection } from "../hooks/useTimelineSelection";
 import DockedSplit from "../../../components/DockedSplit";
@@ -14,7 +14,7 @@ interface TimelineContentProps {
 }
 
 const countEventRows = (rows: TimelineData["rows"]): number =>
-  rows.filter((row) => row.kind !== "boundary" && row.kind !== "gap").length;
+  rows.filter((row) => row.kind !== "gap").length;
 
 const TimelineContent = ({ timeline, table }: TimelineContentProps) => {
   const branchOptions = [...branchAccentsByName(timeline.rows).keys()];
@@ -29,9 +29,7 @@ const TimelineContent = ({ timeline, table }: TimelineContentProps) => {
   } = useTimelineSearchState({
     isKnownBranch: (branchName) => branchOptions.includes(branchName),
     isSelectableEvent: (filePath) =>
-      timeline.rows.some(
-        (row) => isSelectableRow(row) && row.filePath === filePath,
-      ),
+      timeline.rows.some((row) => row.filePath === filePath),
   });
   const shownRows = filterTimelineRows(
     timeline.rows,
@@ -39,9 +37,7 @@ const TimelineContent = ({ timeline, table }: TimelineContentProps) => {
     activeBranchFilter,
   );
   const selectedRow =
-    shownRows
-      .filter(isSelectableRow)
-      .find((row) => row.filePath === requestedEvent) ?? null;
+    shownRows.find((row) => row.filePath === requestedEvent) ?? null;
   const selectedFilePath = selectedRow?.filePath ?? null;
   const { handleSelect, clearSelection } = useTimelineSelection(
     shownRows,

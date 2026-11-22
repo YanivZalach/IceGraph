@@ -9,14 +9,6 @@ interface CommitCellProps {
 }
 
 const CommitCell = ({ row, branchAccents }: CommitCellProps) => {
-  if (row.kind === "boundary") {
-    return (
-      <span className="text-xs text-slate-500 italic">
-        start of loaded range
-      </span>
-    );
-  }
-
   if (row.kind === "gap") {
     return (
       <span className={cn("text-sm font-medium", eventToneFor(row).textClass)}>

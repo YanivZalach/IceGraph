@@ -54,9 +54,7 @@ const TimelineList = ({
     getRowId: (row) => row.filePath,
   });
 
-  const hasReadableEvents = timeline.rows.some(
-    (row) => row.kind !== "boundary" && row.kind !== "gap",
-  );
+  const hasReadableEvents = timeline.rows.some((row) => row.kind !== "gap");
   const emptyState = !hasReadableEvents && (
     <TimelineEmptyState
       tableName={table}

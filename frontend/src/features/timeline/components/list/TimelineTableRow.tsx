@@ -16,16 +16,11 @@ const TimelineTableRow = ({
   isSelected,
   onSelect,
 }: TimelineTableRowProps) => {
-  const isBoundary = row.original.kind === "boundary";
   const cells = row.getAllCells().map((cell) => (
     <td key={cell.id} className={CELL_CLASS_BY_COLUMN[cell.column.id]}>
       <FlexRender cell={cell} />
     </td>
   ));
-
-  if (isBoundary) {
-    return <tr>{cells}</tr>;
-  }
 
   return (
     <tr

@@ -2,17 +2,13 @@
 import type { MetadataFileNode, SnapshotRefs } from "../api/nodeSchemas";
 import type { TableMetadata } from "../api/tableMetadataSchema";
 import { buildBranchLanes } from "./buildBranchLanes";
-import { readSnapshotImpact } from "./impactSegment";
 import type {
   CommitDescription,
   SnapshotsById,
 } from "./classification/commitDescription";
 import { describeCommit } from "./classification/describeCommit";
 import { UNRECOGNIZED_METADATA_TITLE } from "./classification/describeMetadataOnlyCommit";
-import {
-  describeWriteCommit,
-  writeHeadline,
-} from "./classification/describeWriteCommit";
+import { describeWriteCommit } from "./classification/describeWriteCommit";
 import { findDraftPublication } from "./findDraftPublication";
 import { formatShortId } from "./format/formatShortId";
 import { parseTimelineNodes } from "./parseTimelineNodes";
@@ -23,8 +19,6 @@ import {
 } from "./sequenceTimelineFiles";
 import {
   commitRowDefaults,
-  toBoundaryRow,
-  type BoundaryRow,
   type CommitRow,
   type GapRow,
   type RefBadge,
@@ -61,8 +55,13 @@ const toTimelineRow = (
   movedToBranchName: commit.movedToBranchName,
 });
 
-// A commit that adds a snapshot stamps the metadata file with that snapshot's
-// commit time, so a later metadata-only commit never matches it.
+const toUnknownChangeRow = (file: MetadataFileNode): CommitRow => ({
+  ...commitRowDefaults(file),
+  kind: "unknown-change",
+  title: "Change unknown",
+  category: "quiet",
+});
+
 const findSnapshotWrittenBy = (
   file: MetadataFileNode,
   snapshotsById: SnapshotsById,
@@ -79,40 +78,30 @@ const findSnapshotWrittenBy = (
 const buildOldestRow = (
   file: MetadataFileNode,
   snapshotsById: SnapshotsById,
-): CommitRow | BoundaryRow => {
+): CommitRow => {
   const isHistoryCutOff = (file.pointed_metadata_log_count ?? 0) > 0;
-  if (isHistoryCutOff) {
-    const writtenSnapshotId = findSnapshotWrittenBy(file, snapshotsById);
-    return writtenSnapshotId === null
-      ? toBoundaryRow(file)
-      : toTimelineRow(
-          file,
-          describeWriteCommit(writtenSnapshotId, file, snapshotsById, []),
-        );
-  }
+  const loadedOwnSnapshotId =
+    file.snapshot_id !== null && snapshotsById.has(file.snapshot_id)
+      ? file.snapshot_id
+      : null;
+  const writtenSnapshotId = isHistoryCutOff
+    ? findSnapshotWrittenBy(file, snapshotsById)
+    : loadedOwnSnapshotId;
 
-  const ownSnapshot =
-    file.snapshot_id === null ? undefined : snapshotsById.get(file.snapshot_id);
-  if (ownSnapshot === undefined) {
-    if (file.snapshot_id !== null) {
-      return toBoundaryRow(file);
-    }
-    return {
-      ...commitRowDefaults(file),
-      kind: "metadata-only",
-      title: "Start of history",
-      category: "quiet",
-    };
+  if (writtenSnapshotId !== null) {
+    return toTimelineRow(
+      file,
+      describeWriteCommit(writtenSnapshotId, file, snapshotsById, []),
+    );
   }
-
+  if (isHistoryCutOff || file.snapshot_id !== null) {
+    return toUnknownChangeRow(file);
+  }
   return {
     ...commitRowDefaults(file),
-    kind: "published-write",
-    branchName: "main",
-    ...writeHeadline(ownSnapshot.operation_description, ownSnapshot.summary),
-    impact: readSnapshotImpact(ownSnapshot.summary, ownSnapshot.operation),
-    shortId: formatShortId(ownSnapshot.snapshot_id),
-    snapshotId: ownSnapshot.snapshot_id,
+    kind: "metadata-only",
+    title: "Start of history",
+    category: "quiet",
   };
 };
 
@@ -170,24 +159,16 @@ const toCommitRow = (
   { file, predecessor }: Extract<SequenceItem, { kind: "commit" }>,
   laterFiles: MetadataFileNode[],
   { snapshotsById, tableMetadata, newestRefs }: DescribeContext,
-): CommitRow | BoundaryRow => {
+): CommitRow => {
   if (predecessor.kind === "none") {
-    const oldestRow = buildOldestRow(file, snapshotsById);
-    return oldestRow.kind === "boundary"
-      ? oldestRow
-      : attachDraftPublication(
-          attachRefBadges(oldestRow, newestRefs),
-          laterFiles,
-          snapshotsById,
-        );
+    return attachDraftPublication(
+      attachRefBadges(buildOldestRow(file, snapshotsById), newestRefs),
+      laterFiles,
+      snapshotsById,
+    );
   }
   if (predecessor.kind === "unreadable") {
-    return {
-      ...commitRowDefaults(file),
-      kind: "unknown-change",
-      title: "Change unknown",
-      category: "quiet",
-    };
+    return toUnknownChangeRow(file);
   }
 
   let commit = DEGRADED_COMMIT;

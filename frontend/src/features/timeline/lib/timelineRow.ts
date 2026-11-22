@@ -48,21 +48,9 @@ export interface GapRow {
   unreadableFiles: UnreadableFileSummary[];
 }
 
-/** The oldest loaded file when older events exist: its change cannot be seen. */
-export interface BoundaryRow {
-  kind: "boundary";
-  filePath: string;
-  timestampMs: number;
-}
+export type TimelineRow = CommitRow | GapRow;
 
-export type SelectableRow = CommitRow | GapRow;
-
-export type TimelineRow = SelectableRow | BoundaryRow;
-
-export const isSelectableRow = (row: TimelineRow): row is SelectableRow =>
-  row.kind !== "boundary";
-
-export const titleOf = (row: SelectableRow): string =>
+export const titleOf = (row: TimelineRow): string =>
   row.kind === "gap"
     ? formatUnreadableEvents(row.unreadableFiles.length)
     : row.title;
@@ -76,12 +64,6 @@ export interface TimelineData {
   filesByPath: ReadonlyMap<string, MetadataFileNode>;
   branchGraph: BranchGraph;
 }
-
-export const toBoundaryRow = (file: MetadataFileNode): BoundaryRow => ({
-  kind: "boundary",
-  filePath: file.file_path,
-  timestampMs: file.timestamp,
-});
 
 export const commitRowDefaults = (
   file: MetadataFileNode,

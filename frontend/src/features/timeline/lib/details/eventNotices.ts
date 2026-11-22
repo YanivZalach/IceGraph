@@ -34,7 +34,7 @@ const nodeNotices = (
 
 const UNKNOWN_CHANGE_NOTICE: DetailNotice = {
   kind: "warning",
-  text: "The event before this one could not be read, so what this event changed cannot be shown. Everything below is this event's own state.",
+  text: "The event before this one could not be read or is not loaded, so what this event changed cannot be shown. Everything below is this event's own state.",
 };
 
 export const buildEventNotices = (
