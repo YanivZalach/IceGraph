@@ -38,7 +38,6 @@ export const filterTimelineRows = (
   }
   return rows.filter(
     (row) =>
-      row.kind !== "boundary" &&
       row.kind !== "gap" &&
       matchesKind(row, kind) &&
       (branchName === null || mentionsBranch(row, branchName)),

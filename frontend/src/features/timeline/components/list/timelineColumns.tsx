@@ -19,10 +19,10 @@ const columnHelper = createColumnHelper<
 >();
 
 const nodeBranchNameOf = (row: TimelineRow): string | null =>
-  row.kind === "gap" || row.kind === "boundary" ? null : row.branchName;
+  row.kind === "gap" ? null : row.branchName;
 
 const railMarker = (row: TimelineRow): RailMarker => {
-  if (row.kind === "boundary" || row.kind === "unknown-change") {
+  if (row.kind === "unknown-change") {
     return "none";
   }
   if (row.kind === "gap") {
@@ -90,7 +90,7 @@ export const buildTimelineColumns = (
     id: "changes",
     header: "Changes",
     cell: ({ row }) =>
-      row.original.kind === "boundary" || row.original.kind === "gap" ? null : (
+      row.original.kind === "gap" ? null : (
         <span title={impactPlainText(row.original.impact)}>
           <ImpactLine
             segments={row.original.impact}
@@ -103,9 +103,7 @@ export const buildTimelineColumns = (
     id: "snapshot",
     header: "Snapshot",
     cell: ({ row }) =>
-      row.original.kind === "gap" || row.original.kind === "boundary"
-        ? ""
-        : row.original.shortId,
+      row.original.kind === "gap" ? "" : row.original.shortId,
   }),
   columnHelper.display({
     id: "time",

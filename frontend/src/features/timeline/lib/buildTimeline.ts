@@ -2,14 +2,13 @@
 import type { MetadataFileNode, SnapshotRefs } from "../api/nodeSchemas";
 import type { TableMetadata } from "../api/tableMetadataSchema";
 import { buildBranchLanes } from "./buildBranchLanes";
-import { readSnapshotImpact } from "./impactSegment";
 import type {
   CommitDescription,
   SnapshotsById,
 } from "./classification/commitDescription";
 import { describeCommit } from "./classification/describeCommit";
 import { UNRECOGNIZED_METADATA_TITLE } from "./classification/describeMetadataOnlyCommit";
-import { writeHeadline } from "./classification/describeWriteCommit";
+import { describeWriteCommit } from "./classification/describeWriteCommit";
 import { findDraftPublication } from "./findDraftPublication";
 import { formatShortId } from "./format/formatShortId";
 import { parseTimelineNodes } from "./parseTimelineNodes";
@@ -20,8 +19,6 @@ import {
 } from "./sequenceTimelineFiles";
 import {
   commitRowDefaults,
-  toBoundaryRow,
-  type BoundaryRow,
   type CommitRow,
   type GapRow,
   type RefBadge,
@@ -41,40 +38,6 @@ const DEGRADED_COMMIT: CommitDescription = {
   movedToBranchName: null,
 };
 
-const buildOldestRow = (
-  file: MetadataFileNode,
-  snapshotsById: SnapshotsById,
-): CommitRow | BoundaryRow => {
-  const ownSnapshot =
-    file.snapshot_id === null ? undefined : snapshotsById.get(file.snapshot_id);
-  // With older commits cut off, the snapshot may have been written before the
-  // loaded range, so the oldest file cannot be shown as a write.
-  const isHistoryCutOff = (file.pointed_metadata_log_count ?? 0) > 0;
-
-  if (ownSnapshot === undefined || isHistoryCutOff) {
-    const hasUnknowableSnapshot = file.snapshot_id !== null;
-    if (hasUnknowableSnapshot || isHistoryCutOff) {
-      return toBoundaryRow(file);
-    }
-    return {
-      ...commitRowDefaults(file),
-      kind: "metadata-only",
-      title: "Start of history",
-      category: "quiet",
-    };
-  }
-
-  return {
-    ...commitRowDefaults(file),
-    kind: "published-write",
-    branchName: "main",
-    ...writeHeadline(ownSnapshot.operation_description, ownSnapshot.summary),
-    impact: readSnapshotImpact(ownSnapshot.summary, ownSnapshot.operation),
-    shortId: formatShortId(ownSnapshot.snapshot_id),
-    snapshotId: ownSnapshot.snapshot_id,
-  };
-};
-
 const toTimelineRow = (
   file: MetadataFileNode,
   commit: CommitDescription,
@@ -91,6 +54,56 @@ const toTimelineRow = (
   branchName: commit.branchName,
   movedToBranchName: commit.movedToBranchName,
 });
+
+const toUnknownChangeRow = (file: MetadataFileNode): CommitRow => ({
+  ...commitRowDefaults(file),
+  kind: "unknown-change",
+  title: "Change unknown",
+  category: "quiet",
+});
+
+const findSnapshotWrittenBy = (
+  file: MetadataFileNode,
+  snapshotsById: SnapshotsById,
+): string | null => {
+  for (const pointedSnapshot of file.pointed_snapshots_files ?? []) {
+    const snapshot = snapshotsById.get(pointedSnapshot["snapshot-id"]);
+    if (snapshot !== undefined && snapshot.timestamp === file.timestamp) {
+      return snapshot.snapshot_id;
+    }
+  }
+  return null;
+};
+
+const buildOldestRow = (
+  file: MetadataFileNode,
+  snapshotsById: SnapshotsById,
+): CommitRow => {
+  const isHistoryCutOff = (file.pointed_metadata_log_count ?? 0) > 0;
+  const loadedOwnSnapshotId =
+    file.snapshot_id !== null && snapshotsById.has(file.snapshot_id)
+      ? file.snapshot_id
+      : null;
+  const writtenSnapshotId = isHistoryCutOff
+    ? findSnapshotWrittenBy(file, snapshotsById)
+    : loadedOwnSnapshotId;
+
+  if (writtenSnapshotId !== null) {
+    return toTimelineRow(
+      file,
+      describeWriteCommit(writtenSnapshotId, file, snapshotsById, []),
+    );
+  }
+  if (isHistoryCutOff || file.snapshot_id !== null) {
+    return toUnknownChangeRow(file);
+  }
+  return {
+    ...commitRowDefaults(file),
+    kind: "metadata-only",
+    title: "Start of history",
+    category: "quiet",
+  };
+};
 
 const attachRefBadges = (
   row: CommitRow,
@@ -146,20 +159,16 @@ const toCommitRow = (
   { file, predecessor }: Extract<SequenceItem, { kind: "commit" }>,
   laterFiles: MetadataFileNode[],
   { snapshotsById, tableMetadata, newestRefs }: DescribeContext,
-): CommitRow | BoundaryRow => {
+): CommitRow => {
   if (predecessor.kind === "none") {
-    const oldestRow = buildOldestRow(file, snapshotsById);
-    return oldestRow.kind === "boundary"
-      ? oldestRow
-      : attachRefBadges(oldestRow, newestRefs);
+    return attachDraftPublication(
+      attachRefBadges(buildOldestRow(file, snapshotsById), newestRefs),
+      laterFiles,
+      snapshotsById,
+    );
   }
   if (predecessor.kind === "unreadable") {
-    return {
-      ...commitRowDefaults(file),
-      kind: "unknown-change",
-      title: "Change unknown",
-      category: "quiet",
-    };
+    return toUnknownChangeRow(file);
   }
 
   let commit = DEGRADED_COMMIT;
@@ -243,11 +252,9 @@ export const buildTimeline = (
     unreadableCommitCount,
     isTableMetadataUnreadable: tableMetadata === null,
     // previous_file is nulled at the load cutoff; the metadata log count survives it
-    olderCommitCount: Math.max(
-      0,
-      (filesOldestFirst[0]?.pointed_metadata_log_count ?? 0) -
-        loadedButUnreadableOlderCount,
-    ),
+    hasOlderEvents:
+      (filesOldestFirst[0]?.pointed_metadata_log_count ?? 0) >
+      loadedButUnreadableOlderCount,
     snapshotsById,
     filesByPath: new Map(
       filesOldestFirst.map((file) => [file.file_path, file]),

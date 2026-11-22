@@ -20,10 +20,12 @@ Rules for `frontend/src/features/timeline/`. They add to [`development.md`](deve
    `lib/classification/`. `buildTimeline.ts` only maps items to rows.
 2. Compare a file only with the readable file right before it. Nothing is read across a gap: no
    comparison, no draft publication, no ref badges.
-3. Never claim a change you cannot prove. With no readable predecessor the row is
-   `unknown-change` and shows only the file's own state.
-4. Each row type carries only its own fields. A gap or boundary is its own member of
-   `TimelineRow`, never fields on a commit row.
+3. Show every metadata file as a row, but never claim a change you cannot prove. With no readable
+   predecessor the row is `unknown-change` and shows only the file's own state. The oldest file of
+   a truncated range is the exception: a commit that adds a snapshot stamps the file with that
+   snapshot's commit time, so a snapshot with the file's exact timestamp proves the write.
+4. Each row type carries only its own fields. A gap is its own member of `TimelineRow`, never
+   fields on a commit row.
 5. Components never decide meaning. Colors, icons, and filters come from `kind` and `category`,
    never from `title` text. Anything worked out from the data is worked out in `lib/`.
 6. `lib/` is pure: no React, router, or DOM imports.

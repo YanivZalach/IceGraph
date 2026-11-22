@@ -49,7 +49,7 @@ const OPERATION_HEADLINES: Record<string, Headline> = {
  * Engines name the same row change differently (an UPDATE is an `overwrite` in Spark, a `delete`
  * plus `append` elsewhere), so the title follows the row counts; `operation` only names rewrites.
  */
-export const writeHeadline = (
+const writeHeadline = (
   operationDescription: string | null,
   summary: SnapshotSummary | null,
 ): Headline => {

@@ -1,5 +1,5 @@
 import type { CommitCategory } from "../lib/classification/commitDescription";
-import type { SelectableRow, TimelineRow } from "../lib/timelineRow";
+import type { TimelineRow } from "../lib/timelineRow";
 
 const BRANCH_ACCENTS = [
   {
@@ -74,7 +74,7 @@ export const branchAccentsByName = (
   };
 
   for (const row of rows) {
-    if (row.kind === "gap" || row.kind === "boundary") {
+    if (row.kind === "gap") {
       continue;
     }
     assign(row.branchName);
@@ -146,5 +146,5 @@ const GAP_TONE = tone(
  * Each kind of change reads in its own light tone, bright enough to stay readable on the card.
  * The list title and the details panel share it, so a row keeps its color when opened.
  */
-export const eventToneFor = (row: SelectableRow): Tone =>
+export const eventToneFor = (row: TimelineRow): Tone =>
   row.kind === "gap" ? GAP_TONE : TONE_BY_CATEGORY[row.category];
