@@ -1,5 +1,4 @@
 import { Fragment, useState } from "react";
-import { Link } from "@tanstack/react-router";
 import { useTable } from "@tanstack/react-table";
 import { cn } from "../../../../shared/lib/cn";
 import { UI_FIELD_LABEL_CLASS } from "../../../../uiTypography";
@@ -138,13 +137,9 @@ const TimelineList = ({
         </div>
       </div>
       {hasOlderEvents && !isFiltering && (
-        <Link
-          to="/snapshots-selection"
-          search={{ table }}
-          className="self-center rounded-lg px-3 py-2 text-xs text-slate-500 italic transition-colors hover:bg-surface hover:text-slate-300"
-        >
+        <p className="self-center px-3 py-2 text-xs text-slate-500 italic">
           ↓ Earlier events not loaded
-        </Link>
+        </p>
       )}
     </div>
   );
