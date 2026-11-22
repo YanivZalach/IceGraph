@@ -74,6 +74,9 @@ class Env:
     # Model the AI assistant requests. The assistant is disabled when empty.
     AI_MODEL: str = os.getenv("AI_MODEL", "")
 
+    # Whether the TLS certificate of the AI API is verified.
+    AI_VERIFY_SSL: bool = os.getenv("AI_VERIFY_SSL", "false").lower() == "true"
+
     # Maximum time allowed for one AI assistant answer.
     AI_REQUEST_TIMEOUT_SECONDS: int = int(os.getenv("AI_REQUEST_TIMEOUT_SECONDS", "120"))
 
