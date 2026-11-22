@@ -252,11 +252,9 @@ export const buildTimeline = (
     unreadableCommitCount,
     isTableMetadataUnreadable: tableMetadata === null,
     // previous_file is nulled at the load cutoff; the metadata log count survives it
-    olderCommitCount: Math.max(
-      0,
-      (filesOldestFirst[0]?.pointed_metadata_log_count ?? 0) -
-        loadedButUnreadableOlderCount,
-    ),
+    hasOlderEvents:
+      (filesOldestFirst[0]?.pointed_metadata_log_count ?? 0) >
+      loadedButUnreadableOlderCount,
     snapshotsById,
     filesByPath: new Map(
       filesOldestFirst.map((file) => [file.file_path, file]),

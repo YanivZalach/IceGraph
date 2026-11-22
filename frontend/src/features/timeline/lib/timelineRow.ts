@@ -59,7 +59,7 @@ export interface TimelineData {
   rows: TimelineRow[];
   unreadableCommitCount: number;
   isTableMetadataUnreadable: boolean;
-  olderCommitCount: number;
+  hasOlderEvents: boolean;
   snapshotsById: ReadonlyMap<string, SnapshotNode>;
   filesByPath: ReadonlyMap<string, MetadataFileNode>;
   branchGraph: BranchGraph;

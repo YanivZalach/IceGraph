@@ -35,7 +35,7 @@ const TimelineList = ({
   selectedFilePath,
   onSelect,
 }: TimelineListProps) => {
-  const { olderCommitCount } = timeline;
+  const { hasOlderEvents } = timeline;
   const [nowMs] = useState(() => Date.now());
   const branchAccents = branchAccentsByName(
     timeline.rows,
@@ -81,9 +81,6 @@ const TimelineList = ({
       </p>
     );
   }
-
-  const eventsWord = olderCommitCount === 1 ? "event" : "events";
-  const olderHistoryLabel = `↓ ${olderCommitCount.toString()} earlier ${eventsWord} not loaded`;
 
   return (
     <div className="flex flex-col gap-3">
@@ -140,13 +137,13 @@ const TimelineList = ({
           </table>
         </div>
       </div>
-      {olderCommitCount > 0 && !isFiltering && (
+      {hasOlderEvents && !isFiltering && (
         <Link
           to="/snapshots-selection"
           search={{ table }}
           className="self-center rounded-lg px-3 py-2 text-xs text-slate-500 italic transition-colors hover:bg-surface hover:text-slate-300"
         >
-          {olderHistoryLabel}
+          ↓ Earlier events not loaded
         </Link>
       )}
     </div>
